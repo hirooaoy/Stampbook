@@ -6,6 +6,12 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		2BFBBEE82EA9BF9A00124BD5 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 2BFBBEE72EA9BF9A00124BD5 /* FirebaseAuth */; };
+		2BFBBEEA2EA9BF9A00124BD5 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 2BFBBEE92EA9BF9A00124BD5 /* FirebaseFirestore */; };
+		2BFBBEEC2EA9BF9A00124BD5 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 2BFBBEEB2EA9BF9A00124BD5 /* FirebaseStorage */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		2BB670E42EA2C2050089DBAB /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -35,16 +41,6 @@
 			path = Stampbook;
 			sourceTree = "<group>";
 		};
-		2BB670E62EA2C2050089DBAB /* StampbookTests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = StampbookTests;
-			sourceTree = "<group>";
-		};
-		2BB670F02EA2C2050089DBAB /* StampbookUITests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = StampbookUITests;
-			sourceTree = "<group>";
-		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -52,6 +48,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2BFBBEE82EA9BF9A00124BD5 /* FirebaseAuth in Frameworks */,
+				2BFBBEEA2EA9BF9A00124BD5 /* FirebaseFirestore in Frameworks */,
+				2BFBBEEC2EA9BF9A00124BD5 /* FirebaseStorage in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -76,8 +75,6 @@
 			isa = PBXGroup;
 			children = (
 				2BB670D82EA2C2020089DBAB /* Stampbook */,
-				2BB670E62EA2C2050089DBAB /* StampbookTests */,
-				2BB670F02EA2C2050089DBAB /* StampbookUITests */,
 				2BB670D72EA2C2020089DBAB /* Products */,
 			);
 			sourceTree = "<group>";
@@ -112,6 +109,9 @@
 			);
 			name = Stampbook;
 			packageProductDependencies = (
+				2BFBBEE72EA9BF9A00124BD5 /* FirebaseAuth */,
+				2BFBBEE92EA9BF9A00124BD5 /* FirebaseFirestore */,
+				2BFBBEEB2EA9BF9A00124BD5 /* FirebaseStorage */,
 			);
 			productName = Stampbook;
 			productReference = 2BB670D62EA2C2020089DBAB /* Stampbook.app */;
@@ -129,9 +129,6 @@
 			);
 			dependencies = (
 				2BB670E52EA2C2050089DBAB /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				2BB670E62EA2C2050089DBAB /* StampbookTests */,
 			);
 			name = StampbookTests;
 			packageProductDependencies = (
@@ -152,9 +149,6 @@
 			);
 			dependencies = (
 				2BB670EF2EA2C2050089DBAB /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				2BB670F02EA2C2050089DBAB /* StampbookUITests */,
 			);
 			name = StampbookUITests;
 			packageProductDependencies = (
@@ -195,6 +189,9 @@
 			);
 			mainGroup = 2BB670CD2EA2C2020089DBAB;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				2BFBBEE62EA9BF9A00124BD5 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 2BB670D72EA2C2020089DBAB /* Products */;
 			projectDirPath = "";
@@ -395,16 +392,20 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Stampbook/Stampbook.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 28VYBXMX82;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Stampbook;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.travel";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "We need your location to show you where you are on the map and help you collect stamps at different locations.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -427,16 +428,20 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Stampbook/Stampbook.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 28VYBXMX82;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Stampbook;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.travel";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "We need your location to show you where you are on the map and help you collect stamps at different locations.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -578,6 +583,35 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		2BFBBEE62EA9BF9A00124BD5 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 11.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		2BFBBEE72EA9BF9A00124BD5 /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2BFBBEE62EA9BF9A00124BD5 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+		2BFBBEE92EA9BF9A00124BD5 /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2BFBBEE62EA9BF9A00124BD5 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
+		2BFBBEEB2EA9BF9A00124BD5 /* FirebaseStorage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2BFBBEE62EA9BF9A00124BD5 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseStorage;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 2BB670CE2EA2C2020089DBAB /* Project object */;
 }

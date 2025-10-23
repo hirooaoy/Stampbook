@@ -1,6 +1,7 @@
 {
   "images" : [
     {
+      "filename" : "iPhone 16 Pro - 31 (1).png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
@@ -12,6 +13,7 @@
           "value" : "dark"
         }
       ],
+      "filename" : "iPhone 16 Pro - 32.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"

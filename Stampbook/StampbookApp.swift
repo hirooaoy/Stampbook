@@ -1,17 +1,20 @@
-//
-//  StampbookApp.swift
-//  Stampbook
-//
-//  Created by Hiroo Aoyama on 10/17/25.
-//
-
 import SwiftUI
+import FirebaseCore
 
 @main
 struct StampbookApp: App {
+    @StateObject private var authManager = AuthManager()
+    
+    init() {
+        // Initialize Firebase
+        FirebaseApp.configure()
+    }
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(authManager)
         }
     }
 }
+

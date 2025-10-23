@@ -1,0 +1,27 @@
+[
+  {
+    "id": "sf-coffee",
+    "name": "Great Coffee in San Francisco",
+    "description": "Discover the finest coffee shops in San Francisco",
+    "region": "san-francisco"
+  },
+  {
+    "id": "sf-must-visits",
+    "name": "San Francisco Must Visits",
+    "description": "Essential spots to visit in San Francisco",
+    "region": "san-francisco"
+  },
+  {
+    "id": "sf-golden-gate-park",
+    "name": "Explore Golden Gate Park",
+    "description": "Discover hidden gems and iconic landmarks in San Francisco's urban oasis",
+    "region": "san-francisco"
+  },
+  {
+    "id": "sf-community-gardens",
+    "name": "Popular Community Gardens in San Francisco",
+    "description": "Discover vibrant community gardens where neighbors grow together",
+    "region": "san-francisco"
+  }
+]
+
