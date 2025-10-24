@@ -166,11 +166,11 @@ struct StampDetailView: View {
                                     Image(systemName: "photo")
                                         .font(.body)
                                         .foregroundColor(.primary)
-                                        .frame(width: 20, alignment: .leading)
+                                        .frame(width: 20, height: 20, alignment: .center)
                                     Text("Add Photos")
                                         .font(.body)
                                         .foregroundColor(.primary)
-                                    Spacer()
+                                    Spacer(minLength: 6)
                                     Image(systemName: "chevron.right")
                                         .font(.body)
                                         .foregroundColor(.secondary)
@@ -187,7 +187,7 @@ struct StampDetailView: View {
                                     Image(systemName: "note.text")
                                         .font(.body)
                                         .foregroundColor(.primary)
-                                        .frame(width: 20, alignment: .leading)
+                                        .frame(width: 20, height: 20, alignment: .center)
                                     
                                     if userNotes.isEmpty {
                                         Text("Add Notes")
@@ -202,7 +202,7 @@ struct StampDetailView: View {
                                             .frame(maxWidth: .infinity, alignment: .leading)
                                     }
                                     
-                                    Spacer(minLength: 12)
+                                    Spacer(minLength: 6)
                                     
                                     Image(systemName: "chevron.right")
                                         .font(.body)
