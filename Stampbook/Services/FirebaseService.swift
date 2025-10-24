@@ -74,6 +74,8 @@ class FirebaseService {
     }
     
     // MARK: - Photo Upload (for Step 3)
+    // NOTE: Limit to 5 photos per stamp to control Firebase Storage costs
+    // Requires Blaze plan (pay-as-you-go) to use Storage
     
     /// Upload a photo to Firebase Storage
     /// Returns the download URL
