@@ -1,10 +1,30 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    // Users can only access their own stamp photos
+    // Stamp photos - PUBLIC by default (visible to all signed-in users)
+    // Path structure: /users/{userId}/stamps/{stampId}/{filename}
+    match /users/{userId}/stamps/{stampId}/{filename} {
+      // Anyone signed in can view photos (for social feed)
+      allow read: if request.auth != null;
+      
+      // Only the owner can upload
+      allow write: if request.auth != null 
+                   && request.auth.uid == userId
+                   && request.resource.contentType.matches('image/.*')  // Only images
+                   && request.resource.size < 5 * 1024 * 1024;  // Max 5MB per file
+      
+      // Only the owner can delete
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Legacy path support (if any old photos exist)
     match /users/{userId}/stamp_photos/{allPaths=**} {
-      allow read: if request.auth != null && request.auth.uid == userId;
-      allow write: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null;
+      allow write: if request.auth != null 
+                   && request.auth.uid == userId
+                   && request.resource.contentType.matches('image/.*')
+                   && request.resource.size < 5 * 1024 * 1024;
+      allow delete: if request.auth != null && request.auth.uid == userId;
     }
     
     // Deny all other access

@@ -11,6 +11,7 @@ struct Stamp: Identifiable, Codable {
     let collectionIds: [String]
     let about: String
     let notesFromOthers: [String]
+    let thingsToDoFromEditors: [String]
     
     var coordinate: CLLocationCoordinate2D {
         CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
@@ -39,12 +40,12 @@ struct Stamp: Identifiable, Codable {
     
     // For backward compatibility with JSON that uses collectionId
     enum CodingKeys: String, CodingKey {
-        case id, name, latitude, longitude, address, imageName, about, notesFromOthers
+        case id, name, latitude, longitude, address, imageName, about, notesFromOthers, thingsToDoFromEditors
         case collectionIds
         case collectionId
     }
     
-    init(id: String, name: String, latitude: Double, longitude: Double, address: String, imageName: String, collectionIds: [String], about: String, notesFromOthers: [String]) {
+    init(id: String, name: String, latitude: Double, longitude: Double, address: String, imageName: String, collectionIds: [String], about: String, notesFromOthers: [String], thingsToDoFromEditors: [String] = []) {
         self.id = id
         self.name = name
         self.latitude = latitude
@@ -54,6 +55,7 @@ struct Stamp: Identifiable, Codable {
         self.collectionIds = collectionIds
         self.about = about
         self.notesFromOthers = notesFromOthers
+        self.thingsToDoFromEditors = thingsToDoFromEditors
     }
     
     init(from decoder: Decoder) throws {
@@ -66,6 +68,7 @@ struct Stamp: Identifiable, Codable {
         imageName = try container.decode(String.self, forKey: .imageName)
         about = try container.decode(String.self, forKey: .about)
         notesFromOthers = try container.decode([String].self, forKey: .notesFromOthers)
+        thingsToDoFromEditors = try container.decodeIfPresent([String].self, forKey: .thingsToDoFromEditors) ?? []
         
         // Support both collectionIds (array) and collectionId (string) for backward compatibility
         if let ids = try? container.decode([String].self, forKey: .collectionIds) {
@@ -88,6 +91,7 @@ struct Stamp: Identifiable, Codable {
         try container.encode(collectionIds, forKey: .collectionIds)
         try container.encode(about, forKey: .about)
         try container.encode(notesFromOthers, forKey: .notesFromOthers)
+        try container.encode(thingsToDoFromEditors, forKey: .thingsToDoFromEditors)
     }
 }
 

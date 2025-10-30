@@ -37,14 +37,9 @@ struct StampDetailView: View {
             .first(where: { $0.stampId == stamp.id })?.userNotes ?? ""
     }
     
-    private var formattedShortDate: String {
+    private var formattedFullDate: String {
         guard let date = collectedDate else { return "" }
-        return date.formatted(.dateTime.month(.abbreviated).day())
-    }
-    
-    private var formattedYear: String {
-        guard let date = collectedDate else { return "" }
-        return date.formatted(.dateTime.year())
+        return date.formatted(.dateTime.month(.abbreviated).day().year())
     }
     
     var body: some View {
@@ -104,9 +99,9 @@ struct StampDetailView: View {
                             HStack(spacing: 12) {
                                 // Rank card
                                 HStack(spacing: 12) {
-                                    Image(systemName: "number")
+                                    Image(systemName: "medal.fill")
                                         .font(.system(size: 24))
-                                        .foregroundColor(.purple)
+                                        .foregroundColor(.yellow)
                                     
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text("Number")
@@ -136,10 +131,10 @@ struct StampDetailView: View {
                                         .foregroundColor(.red)
                                     
                                     VStack(alignment: .leading, spacing: 2) {
-                                        Text(formattedYear)
+                                        Text("Date")
                                             .font(.caption)
                                             .foregroundColor(.secondary)
-                                        Text(formattedShortDate)
+                                        Text(formattedFullDate)
                                             .font(.body)
                                             .fontWeight(.semibold)
                                             .foregroundColor(.primary)
@@ -158,25 +153,15 @@ struct StampDetailView: View {
                             }
                             .padding(.bottom, 16)
                             
-                            // Add photos button
-                            Button(action: {
-                                // TODO: Implement add photo
-                            }) {
-                                HStack(spacing: 8) {
-                                    Image(systemName: "photo")
-                                        .font(.body)
-                                        .foregroundColor(.primary)
-                                        .frame(width: 20, height: 20, alignment: .center)
-                                    Text("Add Photos")
-                                        .font(.body)
-                                        .foregroundColor(.primary)
-                                    Spacer(minLength: 6)
-                                    Image(systemName: "chevron.right")
-                                        .font(.body)
-                                        .foregroundColor(.secondary)
-                                }
+                            // Photo section
+                            if let collectedStamp = stampsManager.userCollection.collectedStamps.first(where: { $0.stampId == stamp.id }) {
+                                // Always show photo gallery (it handles both empty and non-empty states)
+                                PhotoGalleryView(
+                                    stampId: stamp.id,
+                                    imageNames: collectedStamp.userImageNames
+                                )
+                                .padding(.bottom, 16)
                             }
-                            .padding(.bottom, 16)
                             
                             // Add notes button
                             Button(action: {
@@ -192,6 +177,7 @@ struct StampDetailView: View {
                                     if userNotes.isEmpty {
                                         Text("Add Notes")
                                             .font(.body)
+                                            .fontWeight(.semibold)
                                             .foregroundColor(.primary)
                                             .frame(maxWidth: .infinity, alignment: .leading)
                                     } else {
@@ -272,57 +258,90 @@ struct StampDetailView: View {
                     .padding(.horizontal, 24)
                     .padding(.bottom, 36)
                     
-                    // Divider
-                    Divider()
-                        .padding(.horizontal, 24)
-                        .padding(.bottom, 36)
-                    
-                    // Notes from others section
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("Notes from others")
-                            .font(.headline)
-                            .foregroundColor(.secondary)
+                    // Things to do section
+                    if !stamp.thingsToDoFromEditors.isEmpty {
+                        // Divider
+                        Divider()
+                            .padding(.horizontal, 24)
+                            .padding(.bottom, 36)
                         
-                        VStack(alignment: .leading, spacing: 16) {
-                            ForEach(stamp.notesFromOthers, id: \.self) { note in
-                                HStack(alignment: .center, spacing: 12) {
-                                    // Profile thumbnail
-                                    Circle()
-                                        .fill(Color.gray.opacity(0.2))
-                                        .frame(width: 40, height: 40)
-                                        .overlay(
-                                            Image(systemName: "person.fill")
-                                                .font(.system(size: 18))
-                                                .foregroundColor(.gray)
-                                        )
-                                    
-                                    // Note text
-                                    Text(note)
-                                        .font(.body)
-                                        .foregroundColor(.primary)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Things to do")
+                                .font(.headline)
+                                .foregroundColor(.secondary)
+                            
+                            VStack(alignment: .leading, spacing: 8) {
+                                ForEach(stamp.thingsToDoFromEditors, id: \.self) { tip in
+                                    HStack(alignment: .top, spacing: 8) {
+                                        Text("•")
+                                            .font(.body)
+                                            .foregroundColor(.primary)
+                                        Text(tip)
+                                            .font(.body)
+                                            .foregroundColor(.primary)
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                    }
                                 }
                             }
                         }
-                        
-                        // See all button
-                        Button(action: {
-                            // TODO: Implement see all notes
-                        }) {
-                            Text("See all")
-                                .font(.body)
-                                .fontWeight(.semibold)
-                                .foregroundColor(.primary)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.top, 8)
-                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 24)
+                        .padding(.bottom, 36)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 36)
+                    
+                    // Notes from others section (only show when signed in)
+                    if authManager.isSignedIn {
+                        // Divider
+                        Divider()
+                            .padding(.horizontal, 24)
+                            .padding(.bottom, 36)
+                        
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text("Notes from others")
+                                .font(.headline)
+                                .foregroundColor(.secondary)
+                            
+                            VStack(alignment: .leading, spacing: 16) {
+                                ForEach(stamp.notesFromOthers, id: \.self) { note in
+                                    HStack(alignment: .center, spacing: 12) {
+                                        // Profile thumbnail
+                                        Circle()
+                                            .fill(Color.gray.opacity(0.2))
+                                            .frame(width: 40, height: 40)
+                                            .overlay(
+                                                Image(systemName: "person.fill")
+                                                    .font(.system(size: 18))
+                                                    .foregroundColor(.gray)
+                                            )
+                                        
+                                        // Note text
+                                        Text(note)
+                                            .font(.body)
+                                            .foregroundColor(.primary)
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                    }
+                                }
+                            }
+                            
+                            // See all button
+                            Button(action: {
+                                // TODO: Implement see all notes
+                            }) {
+                                Text("See all")
+                                    .font(.body)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.primary)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.top, 8)
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 24)
+                        .padding(.bottom, 36)
+                    }
                     
                     // Collections section - only show if stamp belongs to at least one collection
-                    let stampCollections = stampsManager.collections.filter { collection in
+                    let stampCollections = stampsManager.sortedCollections.filter { collection in
                         stamp.collectionIds.contains(collection.id)
                     }
                     
@@ -339,23 +358,16 @@ struct StampDetailView: View {
                             
                             ForEach(stampCollections) { collection in
                                 NavigationLink(destination: CollectionDetailView(collection: collection)) {
-                                    VStack(alignment: .leading, spacing: 8) {
-                                        Text(collection.name)
-                                            .font(.title3)
-                                            .fontWeight(.semibold)
-                                            .foregroundColor(.primary)
-                                        
-                                        let collectedCount = stampsManager.collectedStampsInCollection(collection.id)
-                                        let totalCount = stampsManager.stampsInCollection(collection.id).count
-                                        Text("\(collectedCount) out of \(totalCount) stamp\(totalCount == 1 ? "" : "s") collected")
-                                            .font(.subheadline)
-                                            .foregroundColor(.secondary)
-                                    }
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .padding(.vertical, 32)
-                                    .padding(.horizontal, 20)
-                                    .background(Color(.secondarySystemBackground))
-                                    .cornerRadius(12)
+                                    let collectedCount = stampsManager.collectedStampsInCollection(collection.id)
+                                    let totalCount = stampsManager.stampsInCollection(collection.id).count
+                                    let percentage = totalCount > 0 ? Double(collectedCount) / Double(totalCount) : 0.0
+                                    
+                                    CollectionCardView(
+                                        name: collection.name,
+                                        collectedCount: collectedCount,
+                                        totalCount: totalCount,
+                                        completionPercentage: percentage
+                                    )
                                 }
                                 .buttonStyle(PlainButtonStyle())
                             }
@@ -375,7 +387,7 @@ struct StampDetailView: View {
                 if !authManager.isSignedIn {
                     // Not signed in - show text and native Sign In with Apple button
                     VStack(spacing: 16) {
-                        Text("Want to start collecting?")
+                        Text("Start your stamp collection")
                             .font(.headline)
                             .foregroundColor(.primary)
                         
@@ -568,27 +580,3 @@ struct StampDetailView: View {
         }
     }
 }
-
-#Preview {
-    StampDetailView(
-        stamp: Stamp(
-            id: "us-ca-sf-baker-beach",
-            name: "Baker Beach",
-            latitude: 37.7937,
-            longitude: -122.4844,
-            address: "1504 Pershing Dr\nSan Francisco, CA, USA 94129",
-            imageName: "us-ca-sf-baker-beach",
-            collectionIds: ["sf-must-visits"],
-            about: "Baker Beach is a public beach on the peninsula of San Francisco, California. The beach lies on the shore of the Pacific Ocean in the northwest of the city, with stunning views of the Golden Gate Bridge.",
-            notesFromOthers: [
-                "Great spot for photos of the Golden Gate Bridge!",
-                "Battery Chamberlin trail gives amazing panoramic views",
-                "Sunset here is absolutely stunning"
-            ]
-        ),
-        userLocation: nil,
-        showBackButton: false
-    )
-    .environmentObject(StampsManager())
-}
-

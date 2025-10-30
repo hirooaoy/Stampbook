@@ -1,5 +1,8 @@
 import SwiftUI
 
+// MARK: - Collection Detail View
+// Available to both signed-in and signed-out users for browsing
+// Signed-out users can view stamps but see lock icons on uncollected stamps
 struct CollectionDetailView: View {
     @EnvironmentObject var stampsManager: StampsManager
     @Environment(\.dismiss) private var dismiss

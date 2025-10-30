@@ -9,9 +9,37 @@ struct CollectedStamp: Codable, Identifiable {
     let collectedDate: Date
     var userNotes: String
     var userImageNames: [String] // References to locally saved images
+    var userImagePaths: [String] // Firebase Storage paths for cloud images
+    
     // Future fields:
     // var collectionLocation: CLLocationCoordinate2D?
     // var isPublic: Bool = false (for social features)
+    
+    // MARK: - Backward Compatibility
+    
+    enum CodingKeys: String, CodingKey {
+        case stampId, userId, collectedDate, userNotes, userImageNames, userImagePaths
+    }
+    
+    init(stampId: String, userId: String, collectedDate: Date, userNotes: String, userImageNames: [String], userImagePaths: [String]) {
+        self.stampId = stampId
+        self.userId = userId
+        self.collectedDate = collectedDate
+        self.userNotes = userNotes
+        self.userImageNames = userImageNames
+        self.userImagePaths = userImagePaths
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        stampId = try container.decode(String.self, forKey: .stampId)
+        userId = try container.decode(String.self, forKey: .userId)
+        collectedDate = try container.decode(Date.self, forKey: .collectedDate)
+        userNotes = try container.decode(String.self, forKey: .userNotes)
+        userImageNames = try container.decode([String].self, forKey: .userImageNames)
+        // Decode userImagePaths with default empty array if not present (backward compatibility)
+        userImagePaths = try container.decodeIfPresent([String].self, forKey: .userImagePaths) ?? []
+    }
 }
 
 // MARK: - Backend Integration Notes
@@ -77,7 +105,8 @@ class UserStampCollection: ObservableObject {
             userId: userId,
             collectedDate: Date(),
             userNotes: "",
-            userImageNames: []
+            userImageNames: [],
+            userImagePaths: []
         )
         
         // Optimistic update: Save locally first (instant UX)
@@ -121,16 +150,84 @@ class UserStampCollection: ObservableObject {
         }
     }
     
-    func addImage(for stampId: String, imageName: String) {
+    func addImage(for stampId: String, imageName: String, storagePath: String? = nil) {
         // Update in allStamps
         if let allIndex = allStamps.firstIndex(where: { $0.stampId == stampId }) {
             allStamps[allIndex].userImageNames.append(imageName)
+            if let path = storagePath {
+                allStamps[allIndex].userImagePaths.append(path)
+            }
         }
         // Update in filtered collectedStamps
         if let index = collectedStamps.firstIndex(where: { $0.stampId == stampId }) {
             collectedStamps[index].userImageNames.append(imageName)
+            if let path = storagePath {
+                collectedStamps[index].userImagePaths.append(path)
+            }
         }
         saveCollectedStamps()
+        
+        // Sync to Firestore
+        if let userId = currentUserId {
+            Task {
+                do {
+                    try await firebaseService.updateStampImages(stampId: stampId, userId: userId, imageNames: collectedStamps.first(where: { $0.stampId == stampId })?.userImageNames ?? [], imagePaths: collectedStamps.first(where: { $0.stampId == stampId })?.userImagePaths ?? [])
+                    print("✅ Images synced to Firestore")
+                } catch {
+                    print("⚠️ Failed to sync images: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
+    
+    func removeImage(for stampId: String, imageName: String) {
+        // Update in allStamps
+        if let allIndex = allStamps.firstIndex(where: { $0.stampId == stampId }) {
+            if let imageIndex = allStamps[allIndex].userImageNames.firstIndex(of: imageName) {
+                allStamps[allIndex].userImageNames.remove(at: imageIndex)
+                // Remove corresponding storage path if exists
+                if imageIndex < allStamps[allIndex].userImagePaths.count {
+                    let storagePath = allStamps[allIndex].userImagePaths[imageIndex]
+                    allStamps[allIndex].userImagePaths.remove(at: imageIndex)
+                    
+                    // Delete from Firebase Storage
+                    Task {
+                        do {
+                            try await ImageManager.shared.deleteImageFromFirebase(path: storagePath)
+                        } catch {
+                            print("⚠️ Failed to delete image from Firebase: \(error.localizedDescription)")
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Update in filtered collectedStamps
+        if let index = collectedStamps.firstIndex(where: { $0.stampId == stampId }) {
+            if let imageIndex = collectedStamps[index].userImageNames.firstIndex(of: imageName) {
+                collectedStamps[index].userImageNames.remove(at: imageIndex)
+                // Remove corresponding storage path if exists
+                if imageIndex < collectedStamps[index].userImagePaths.count {
+                    collectedStamps[index].userImagePaths.remove(at: imageIndex)
+                }
+            }
+        }
+        
+        // Delete local file
+        ImageManager.shared.deleteImage(named: imageName)
+        saveCollectedStamps()
+        
+        // Sync to Firestore
+        if let userId = currentUserId {
+            Task {
+                do {
+                    try await firebaseService.updateStampImages(stampId: stampId, userId: userId, imageNames: collectedStamps.first(where: { $0.stampId == stampId })?.userImageNames ?? [], imagePaths: collectedStamps.first(where: { $0.stampId == stampId })?.userImagePaths ?? [])
+                    print("✅ Image removal synced to Firestore")
+                } catch {
+                    print("⚠️ Failed to sync image removal: \(error.localizedDescription)")
+                }
+            }
+        }
     }
     
     func resetAll() {

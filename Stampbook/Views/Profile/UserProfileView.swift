@@ -1,5 +1,8 @@
 import SwiftUI
 
+// MARK: - Other User Profile View
+// Only accessible from posts in feed (which require sign-in to view)
+// No additional signed-out protection needed
 struct UserProfileView: View {
     @EnvironmentObject var stampsManager: StampsManager
     @State private var selectedTab: StampTab = .all
@@ -360,10 +363,15 @@ struct UserProfileView: View {
             VStack(spacing: 20) {
                 ForEach(stampsManager.collections) { collection in
                     NavigationLink(destination: CollectionDetailView(collection: collection)) {
-                        CollectionCard(
+                        let collectedCount = stampsManager.collectedStampsInCollection(collection.id)
+                        let totalCount = stampsManager.stampsInCollection(collection.id).count
+                        let percentage = totalCount > 0 ? Double(collectedCount) / Double(totalCount) : 0.0
+                        
+                        CollectionCardView(
                             name: collection.name,
-                            collectedCount: stampsManager.collectedStampsInCollection(collection.id),
-                            totalCount: stampsManager.stampsInCollection(collection.id).count
+                            collectedCount: collectedCount,
+                            totalCount: totalCount,
+                            completionPercentage: percentage
                         )
                     }
                     .buttonStyle(PlainButtonStyle())
@@ -371,30 +379,6 @@ struct UserProfileView: View {
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 32)
-        }
-    }
-    
-    struct CollectionCard: View {
-        let name: String
-        let collectedCount: Int
-        let totalCount: Int
-        
-        var body: some View {
-            VStack(alignment: .leading, spacing: 8) {
-                Text(name)
-                    .font(.title3)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.primary)
-                
-                Text("\(collectedCount) out of \(totalCount) stamp\(totalCount == 1 ? "" : "s") collected")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.vertical, 32)
-            .padding(.horizontal, 20)
-            .background(Color(.secondarySystemBackground))
-            .cornerRadius(12)
         }
     }
 }

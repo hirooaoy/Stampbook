@@ -16,15 +16,26 @@ struct StampsView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                // Top bar (only when signed in)
-                if authManager.isSignedIn {
-                    HStack {
+                // Top bar
+                HStack {
+                    if authManager.isSignedIn {
+                        // Signed-in: Show username
                         Text("@hirooaoy")
                             .font(.headline)
                             .fontWeight(.semibold)
-                        
-                        Spacer()
-                        
+                    } else {
+                        // Signed-out: Show app logo
+                        Image("AppLogo")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 32, height: 32)
+                            .cornerRadius(6)
+                    }
+                    
+                    Spacer()
+                    
+                    if authManager.isSignedIn {
+                        // Signed-in menu
                         HStack(spacing: 16) {
                             Button(action: {
                                 // TODO: Implement edit profile
@@ -40,13 +51,40 @@ struct StampsView: View {
                                 Image(systemName: "ellipsis")
                                     .font(.system(size: 24))
                                     .foregroundColor(.primary)
+                                    .frame(width: 44, height: 44)  // Larger tap target
+                                    .contentShape(Rectangle())     // Make entire frame tappable
                             }
                         }
+                    } else {
+                        // Signed-out menu: Just ellipsis with Menu
+                        Menu {
+                            Button(action: {
+                                // TODO: Open privacy policy
+                                print("Privacy Policy tapped")
+                            }) {
+                                Label("Privacy Policy", systemImage: "hand.raised")
+                            }
+                            
+                            Divider()
+                            
+                            Button(action: {
+                                // TODO: Open business info
+                                print("For Local Business tapped")
+                            }) {
+                                Label("For Local Business", systemImage: "storefront")
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis")
+                                .font(.system(size: 24))
+                                .foregroundColor(.primary)
+                                .frame(width: 44, height: 44)  // Larger tap target
+                                .contentShape(Rectangle())     // Make entire frame tappable
+                        }
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 8)
-                    .padding(.bottom, 8)
                 }
+                .padding(.horizontal, 20)
+                .padding(.top, 8)
+                .padding(.bottom, 8)
                 
                 // Scrollable content
                 ScrollView {
@@ -414,12 +452,17 @@ struct StampsView: View {
         
         var body: some View {
             VStack(spacing: 20) {
-                ForEach(stampsManager.collections) { collection in
+                ForEach(stampsManager.sortedCollections) { collection in
                     NavigationLink(destination: CollectionDetailView(collection: collection)) {
-                        CollectionCard(
+                        let collectedCount = stampsManager.collectedStampsInCollection(collection.id)
+                        let totalCount = stampsManager.stampsInCollection(collection.id).count
+                        let percentage = totalCount > 0 ? Double(collectedCount) / Double(totalCount) : 0.0
+                        
+                        CollectionCardView(
                             name: collection.name,
-                            collectedCount: stampsManager.collectedStampsInCollection(collection.id),
-                            totalCount: stampsManager.stampsInCollection(collection.id).count
+                            collectedCount: collectedCount,
+                            totalCount: totalCount,
+                            completionPercentage: percentage
                         )
                     }
                     .buttonStyle(PlainButtonStyle())
@@ -427,30 +470,6 @@ struct StampsView: View {
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 32)
-        }
-    }
-    
-    struct CollectionCard: View {
-        let name: String
-        let collectedCount: Int
-        let totalCount: Int
-        
-        var body: some View {
-            VStack(alignment: .leading, spacing: 8) {
-                Text(name)
-                    .font(.title3)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.primary)
-                
-                Text("\(collectedCount) out of \(totalCount) stamp\(totalCount == 1 ? "" : "s") collected")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.vertical, 32)
-            .padding(.horizontal, 20)
-            .background(Color(.secondarySystemBackground))
-            .cornerRadius(12)
         }
     }
 }

@@ -57,6 +57,20 @@ class FirebaseService {
         ])
     }
     
+    /// Update images for a collected stamp
+    func updateStampImages(stampId: String, userId: String, imageNames: [String], imagePaths: [String]) async throws {
+        let docRef = db
+            .collection("users")
+            .document(userId)
+            .collection("collected_stamps")
+            .document(stampId)
+        
+        try await docRef.updateData([
+            "userImageNames": imageNames,
+            "userImagePaths": imagePaths
+        ])
+    }
+    
     /// Delete all collected stamps for a user (used in resetAll)
     func deleteAllCollectedStamps(for userId: String) async throws {
         let snapshot = try await db

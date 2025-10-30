@@ -2,18 +2,45 @@ import SwiftUI
 import MapKit
 import Combine
 
+// MARK: - Privacy-First Map View
+// ==========================================
+// PRIVACY IMPLEMENTATION:
+// - Anonymous users: Can browse map, search locations, view stamps
+// - NO location tracking until user signs in (GDPR compliant)
+// - "Locate Me" button prompts sign-in for anonymous users
+// - Location permission requested ONLY after authentication
+//
+// This approach:
+// ✅ Prevents unnecessary location tracking
+// ✅ Gives users control over their data
+// ✅ Clear purpose for location access (stamp collection)
+// ✅ GDPR Article 5 compliant (data minimization, purpose limitation)
+// ==========================================
+
 struct MapView: View {
     /// The radius in meters within which a user can collect a stamp
-    static let stampCollectionRadius: Double = 10000 // 10km - FOR TESTING (change back to 100 for production)
+    static let stampCollectionRadius: Double = 100 // 100m for production
     
     @StateObject private var locationManager = LocationManager()
+    @StateObject private var networkMonitor = NetworkMonitor()
     @StateObject private var searchCompleter = LocationSearchCompleter()
     @EnvironmentObject var stampsManager: StampsManager
+    @EnvironmentObject var authManager: AuthManager
     @State private var selectedStamp: Stamp?
     @State private var shouldRecenterMap = false
     @State private var searchText = ""
     @State private var searchRegion: MKCoordinateRegion?
     @State private var isShowingSearch = false
+    @State private var showSignInSheet = false  // Shows sign-in bottom sheet
+    
+    // Connection transition states
+    @State private var bannerState: BannerState = .hidden
+    
+    enum BannerState {
+        case hidden
+        case offline
+        case reconnecting
+    }
     
     private var collectedStampIds: Set<String> {
         Set(stampsManager.userCollection.collectedStamps.map { $0.stampId })
@@ -47,16 +74,61 @@ struct MapView: View {
     }
     
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
+        ZStack {
             NativeMapView(
                 stamps: stampsManager.stamps,
                 collectedStampIds: collectedStampIds,
                 userLocation: locationManager.location,
+                isTrackingLocation: locationManager.isTrackingEnabled,
                 selectedStamp: $selectedStamp,
                 shouldRecenter: $shouldRecenterMap,
                 searchRegion: $searchRegion
             )
             .ignoresSafeArea()
+            
+            // Connection status banner at top
+            VStack {
+                if bannerState != .hidden {
+                    HStack(alignment: .center, spacing: 10) {
+                        // Icon on left (vertically centered)
+                        bannerIcon
+                            .font(.title3)
+                            .foregroundColor(bannerIconColor)
+                        
+                        // Content on right (left-aligned)
+                        VStack(alignment: .leading, spacing: 2) {
+                            // Title
+                            Text(bannerState == .offline ? "Offline" : "Reconnecting...")
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.primary)
+                            
+                            // Subtitle (only shows when offline)
+                            if bannerState == .offline {
+                                Text("You can still collect stamps")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(.ultraThinMaterial)
+                    .background(bannerBackgroundColor)
+                    .clipShape(Capsule())
+                    .shadow(
+                        color: .black.opacity(0.15),
+                        radius: 8,
+                        x: 0,
+                        y: 4
+                    )
+                    .padding(.top, 12)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                }
+                
+                Spacer()
+            }
+            .animation(.easeInOut(duration: 0.3), value: bannerState)
             
             // Floating buttons stack
             VStack(spacing: 12) {
@@ -83,15 +155,20 @@ struct MapView: View {
                         )
                 }
                 
-                // Re-center button
+                // Re-center button (PRIVACY: Only works when signed in)
                 Button(action: {
-                    shouldRecenterMap = true
+                    if authManager.isSignedIn {
+                        shouldRecenterMap = true
+                    } else {
+                        // PRIVACY: Prompt sign-in instead of requesting location for anonymous user
+                        showSignInSheet = true
+                    }
                 }) {
                     Image(systemName: "location.fill")
                         .font(.system(size: 20))
                         .foregroundColor(.white)
                         .frame(width: 50, height: 50)
-                        .background(Color.blue)
+                        .background(authManager.isSignedIn ? Color.blue : Color.gray)
                         .clipShape(Circle())
                         .shadow(
                             color: .black.opacity(0.2),
@@ -101,6 +178,7 @@ struct MapView: View {
                         )
                 }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
             .padding(.trailing, 20)
             .padding(.bottom, 20)
         }
@@ -125,12 +203,97 @@ struct MapView: View {
             }
         }
         .onAppear {
-            if locationManager.authorizationStatus == .notDetermined {
-                locationManager.requestPermission()
-            } else if locationManager.authorizationStatus == .authorizedWhenInUse ||
-                      locationManager.authorizationStatus == .authorizedAlways {
-                locationManager.startUpdatingLocation()
+            // PRIVACY: Only request location permission if user is signed in
+            // Anonymous users can browse the map without any location tracking
+            if authManager.isSignedIn {
+                locationManager.startTrackingForAuthenticatedUser()
             }
+        }
+        .onChange(of: authManager.isSignedIn) { oldValue, newValue in
+            // PRIVACY: Handle sign-in/sign-out transitions
+            if newValue == true {
+                // User just signed in - NOW we request location permission
+                // This ensures clear purpose: location is for stamp collection
+                locationManager.startTrackingForAuthenticatedUser()
+            } else {
+                // User signed out - stop tracking location immediately
+                // Clears cached location data (GDPR right to erasure)
+                locationManager.stopTracking()
+            }
+        }
+        .onChange(of: networkMonitor.isConnected) { oldValue, newValue in
+            handleConnectionChange(wasConnected: oldValue, isConnected: newValue)
+        }
+        .sheet(isPresented: $showSignInSheet) {
+            SignInSheet(
+                title: "Sign In Required",
+                message: "Sign in to see your location and start your stamp collection"
+            )
+            .environmentObject(authManager)
+        }
+    }
+    
+    // MARK: - Banner Helpers
+    
+    private var bannerIcon: Image {
+        switch bannerState {
+        case .offline:
+            return Image(systemName: "wifi.slash")
+        case .reconnecting:
+            return Image(systemName: "wifi")
+        case .hidden:
+            return Image(systemName: "wifi")
+        }
+    }
+    
+    private var bannerIconColor: Color {
+        switch bannerState {
+        case .offline:
+            return .orange
+        case .reconnecting:
+            return .green
+        case .hidden:
+            return .primary
+        }
+    }
+    
+    private var bannerText: String {
+        switch bannerState {
+        case .offline:
+            return "Offline • You can still collect stamps"
+        case .reconnecting:
+            return "Reconnecting..."
+        case .hidden:
+            return ""
+        }
+    }
+    
+    private var bannerBackgroundColor: Color {
+        switch bannerState {
+        case .offline:
+            return Color.yellow.opacity(0.2)
+        case .reconnecting:
+            return Color.green.opacity(0.15)
+        case .hidden:
+            return Color.clear
+        }
+    }
+    
+    private func handleConnectionChange(wasConnected: Bool, isConnected: Bool) {
+        if !wasConnected && isConnected {
+            // Going from offline to online
+            bannerState = .reconnecting
+            
+            // Show "Reconnecting..." for 3 seconds, then hide
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                bannerState = .hidden
+            }
+        } else if wasConnected && !isConnected {
+            // Going from online to offline
+            bannerState = .offline
+        } else if !isConnected && bannerState == .hidden {
+            // Initial offline state
+            bannerState = .offline
         }
     }
 }
@@ -140,19 +303,22 @@ struct NativeMapView: UIViewRepresentable {
     let stamps: [Stamp]
     let collectedStampIds: Set<String>
     let userLocation: CLLocation?
+    let isTrackingLocation: Bool  // PRIVACY: Only show blue dot when actively tracking
     @Binding var selectedStamp: Stamp?
     @Binding var shouldRecenter: Bool
     @Binding var searchRegion: MKCoordinateRegion?
     
     // Constants
-    private static let defaultSpan = MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
-    private static let sanFranciscoCoordinate = CLLocationCoordinate2D(latitude: 37.7749, longitude: -122.4194)
+    private static let defaultSpan = MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
+    // Default location: Golden Gate Bridge viewpoint
+    private static let defaultCoordinate = CLLocationCoordinate2D(latitude: 37.81368955948842, longitude: -122.47779410452)
     
     func makeUIView(context: Context) -> MKMapView {
         let mapView = MKMapView()
         mapView.delegate = context.coordinator
-        mapView.showsUserLocation = true
-        mapView.userTrackingMode = .followWithHeading
+        // PRIVACY: Don't show user location by default - will be controlled in updateUIView
+        mapView.showsUserLocation = false
+        mapView.userTrackingMode = .none
         
         // Configure map appearance
         let config = MKStandardMapConfiguration()
@@ -162,7 +328,7 @@ struct NativeMapView: UIViewRepresentable {
         
         // Set initial region
         let initialRegion = MKCoordinateRegion(
-            center: Self.sanFranciscoCoordinate,
+            center: Self.defaultCoordinate,
             span: Self.defaultSpan
         )
         mapView.setRegion(initialRegion, animated: false)
@@ -171,6 +337,20 @@ struct NativeMapView: UIViewRepresentable {
     }
     
     func updateUIView(_ mapView: MKMapView, context: Context) {
+        // PRIVACY: Control blue dot visibility based on tracking state
+        // Only show user location when actively tracking (user is signed in)
+        if isTrackingLocation {
+            if !mapView.showsUserLocation {
+                mapView.showsUserLocation = true
+                mapView.userTrackingMode = .followWithHeading
+            }
+        } else {
+            if mapView.showsUserLocation {
+                mapView.showsUserLocation = false
+                mapView.userTrackingMode = .none
+            }
+        }
+        
         // Update annotations when stamps, location, or collection status change
         context.coordinator.updateAnnotations(mapView: mapView, stamps: stamps, collectedStampIds: collectedStampIds, userLocation: userLocation)
         
@@ -345,6 +525,7 @@ struct NativeMapView: UIViewRepresentable {
                 if clusterView == nil {
                     clusterView = MKAnnotationView(annotation: cluster, reuseIdentifier: identifier)
                     clusterView?.canShowCallout = false
+                    clusterView?.centerOffset = CGPoint(x: 0, y: -30) // Anchor cluster pin tip to coordinate
                 } else {
                     clusterView?.annotation = cluster
                 }
@@ -376,6 +557,7 @@ struct NativeMapView: UIViewRepresentable {
             if annotationView == nil {
                 annotationView = MKAnnotationView(annotation: annotation, reuseIdentifier: Self.stampAnnotationIdentifier)
                 annotationView?.canShowCallout = false
+                annotationView?.centerOffset = CGPoint(x: 0, y: -30) // Anchor pin tip to coordinate
             } else {
                 annotationView?.annotation = annotation
             }
@@ -475,7 +657,7 @@ class LocationSearchCompleter: NSObject, ObservableObject, MKLocalSearchComplete
         completer = MKLocalSearchCompleter()
         super.init()
         completer.delegate = self
-        completer.resultTypes = [.address]  // Only addresses - no POIs
+        completer.resultTypes = [.address, .pointOfInterest]  // Include POIs like parks, landmarks
     }
     
     func search(query: String) {

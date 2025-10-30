@@ -1,5 +1,6 @@
 import SwiftUI
 import AuthenticationServices
+import PhotosUI
 
 struct FeedView: View {
     @EnvironmentObject var authManager: AuthManager
@@ -17,19 +18,19 @@ struct FeedView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                // Top bar with logo and icons (only when signed in)
-                if authManager.isSignedIn {
-                    HStack {
-                        // Logo on the left (app icon)
-                        Image("AppLogo")
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: 32, height: 32)
-                            .cornerRadius(6)
-                        
+                // Top bar with logo and icons
+                HStack {
+                    // Logo on the left (app icon)
+                    Image("AppLogo")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 32, height: 32)
+                        .cornerRadius(6)
+                    
                     Spacer()
-                        
-                        // Search, notification, and ellipses on the right
+                    
+                    if authManager.isSignedIn {
+                        // Signed-in menu: Search, notification, and ellipses
                         HStack(spacing: 16) {
                             Button(action: {
                                 // TODO: Implement search functionality
@@ -53,13 +54,40 @@ struct FeedView: View {
                                 Image(systemName: "ellipsis")
                                     .font(.system(size: 24))
                                     .foregroundColor(.primary)
+                                    .frame(width: 44, height: 44)  // Larger tap target
+                                    .contentShape(Rectangle())     // Make entire frame tappable
                             }
                         }
+                    } else {
+                        // Signed-out menu: Just ellipsis with Menu
+                        Menu {
+                            Button(action: {
+                                // TODO: Open privacy policy
+                                print("Privacy Policy tapped")
+                            }) {
+                                Label("Privacy Policy", systemImage: "hand.raised")
+                            }
+                            
+                            Divider()
+                            
+                            Button(action: {
+                                // TODO: Open business info
+                                print("For Local Business tapped")
+                            }) {
+                                Label("For Local Business", systemImage: "storefront")
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis")
+                                .font(.system(size: 24))
+                                .foregroundColor(.primary)
+                                .frame(width: 44, height: 44)  // Larger tap target
+                                .contentShape(Rectangle())     // Make entire frame tappable
+                        }
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 8)
-                    .padding(.bottom, 8)
                 }
+                .padding(.horizontal, 20)
+                .padding(.top, 8)
+                .padding(.bottom, 8)
                 
                 // Scrollable content
                 ScrollView {
@@ -381,6 +409,7 @@ struct FeedView: View {
         @State private var showNotesEditor: Bool = false
         @State private var editingNotes: String = ""
         @EnvironmentObject var stampsManager: StampsManager
+        @EnvironmentObject var authManager: AuthManager
         
         var body: some View {
             VStack(alignment: .leading, spacing: 12) {
@@ -459,50 +488,19 @@ struct FeedView: View {
                     Spacer()
                 }
                 
-                // Photos section - stamp + user photos
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        // First photo: Stamp (tappable)
-                        Button(action: {
-                            navigateToStampDetail = true
-                        }) {
-                            Image(stamp.imageName)
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .frame(width: 80, height: 80)
-                                .clipped()
-                                .cornerRadius(12)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        
-                        // Show user photos first (if any)
-                        ForEach(userPhotos, id: \.self) { photoName in
-                            Image(photoName)
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .frame(width: 80, height: 80)
-                                .clipped()
-                                .cornerRadius(12)
-                        }
-                        
-                        // Add button at the end for current user
-                        if isCurrentUser {
-                            Button(action: {
-                                // TODO: Add photo action
-                            }) {
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color.gray.opacity(0.3))
-                                    .frame(width: 80, height: 80)
-                                    .overlay(
-                                        Image(systemName: "plus")
-                                            .font(.system(size: 24))
-                                            .foregroundColor(.gray)
-                                    )
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                        }
+                // Photos section - stamp + user photos using PhotoGalleryView
+                PhotoGalleryView(
+                    stampId: stamp.id,
+                    imageNames: userPhotos,
+                    maxPhotos: 5,
+                    showStampImage: true,
+                    stampImageName: stamp.imageName,
+                    onStampImageTap: {
+                        navigateToStampDetail = true
                     }
-                }
+                )
+                .environmentObject(stampsManager)
+                .environmentObject(authManager)
                 
                 // Note section
                 if let note = note, !note.isEmpty {
@@ -522,6 +520,7 @@ struct FeedView: View {
                                 .foregroundColor(.primary)
                             Text("Add Notes")
                                 .font(.subheadline)
+                                .fontWeight(.semibold)
                                 .foregroundColor(.primary)
                         }
                     }

@@ -22,6 +22,12 @@
     "name": "Popular Community Gardens in San Francisco",
     "description": "Discover vibrant community gardens where neighbors grow together",
     "region": "san-francisco"
+  },
+  {
+    "id": "acadia-must-visits",
+    "name": "Acadia National Park Explorer's Log",
+    "description": "Iconic natural wonders and local favorites in and around Acadia National Park",
+    "region": "acadia"
   }
 ]
 
