@@ -316,8 +316,12 @@ struct AsyncThumbnailView: View {
     }
     
     private func loadThumbnail() async {
+        let loadStart = CFAbsoluteTimeGetCurrent()
+        
         // 🔧 FIX: Check memory cache first (fast!)
         if let cachedThumbnail = ImageCacheManager.shared.getThumbnail(key: imageName) {
+            let loadTime = CFAbsoluteTimeGetCurrent() - loadStart
+            print("⏱️ [AsyncThumbnail] Memory cache hit: \(String(format: "%.3f", loadTime))s for \(imageName)")
             await MainActor.run {
                 self.thumbnail = cachedThumbnail
                 self.isLoading = false
@@ -327,6 +331,9 @@ struct AsyncThumbnailView: View {
         
         // Step 1: Try loading thumbnail from local disk cache
         if let cachedThumbnail = ImageManager.shared.loadThumbnail(named: imageName) {
+            let loadTime = CFAbsoluteTimeGetCurrent() - loadStart
+            print("⏱️ [AsyncThumbnail] Disk cache hit: \(String(format: "%.3f", loadTime))s for \(imageName)")
+            
             // Store in memory cache for faster access next time
             ImageCacheManager.shared.setThumbnail(cachedThumbnail, key: imageName)
             
@@ -340,11 +347,13 @@ struct AsyncThumbnailView: View {
         // Step 2: If not cached and we have a storage path, download from Firebase
         if let storagePath = storagePath, !storagePath.isEmpty {
             do {
-                print("⬇️ Thumbnail not cached, downloading from Firebase: \(imageName)")
+                print("⬇️ [AsyncThumbnail] Downloading from Firebase: \(imageName)")
                 let downloadedThumbnail = try await ImageManager.shared.downloadAndCacheThumbnail(
                     storagePath: storagePath,
                     stampId: stampId
                 )
+                let loadTime = CFAbsoluteTimeGetCurrent() - loadStart
+                print("⏱️ [AsyncThumbnail] Firebase download: \(String(format: "%.3f", loadTime))s for \(imageName)")
                 
                 // Store in memory cache
                 ImageCacheManager.shared.setThumbnail(downloadedThumbnail, key: imageName)
@@ -360,6 +369,8 @@ struct AsyncThumbnailView: View {
         }
         
         // Step 3: Failed to load
+        let loadTime = CFAbsoluteTimeGetCurrent() - loadStart
+        print("⏱️ [AsyncThumbnail] Load failed: \(String(format: "%.3f", loadTime))s for \(imageName)")
         await MainActor.run {
             self.thumbnail = nil
             self.isLoading = false

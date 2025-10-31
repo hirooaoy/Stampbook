@@ -17,6 +17,7 @@ struct StampDetailView: View {
     @State private var editingNotes = ""
     @State private var stampStats: StampStatistics?
     @State private var userRank: Int?
+    @State private var collectionProgress: [String: Int] = [:] // collectionId -> collected count
     
     private var isCollected: Bool {
         stampsManager.isCollected(stamp)
@@ -391,15 +392,15 @@ struct StampDetailView: View {
                             
                             ForEach(stampCollections) { collection in
                                 NavigationLink(destination: CollectionDetailView(collection: collection)) {
-                                    // Use hardcoded total from collection model
-                                    let collectedCount = stampsManager.collectedStampsInCollection(collection.id)
-                                    let totalCount = collection.totalStamps
+                                    // Use pre-calculated progress from state
+                                    let collectedInCollection = collectionProgress[collection.id] ?? 0
+                                    let percentage = collection.totalStamps > 0 ? Double(collectedInCollection) / Double(collection.totalStamps) : 0.0
                                     
                                     CollectionCardView(
                                         name: collection.name,
-                                        collectedCount: collectedCount,
-                                        totalCount: totalCount,
-                                        completionPercentage: totalCount > 0 ? Double(collectedCount) / Double(totalCount) : 0
+                                        collectedCount: collectedInCollection,
+                                        totalCount: collection.totalStamps,
+                                        completionPercentage: percentage
                                     )
                                 }
                                 .buttonStyle(PlainButtonStyle())
@@ -510,6 +511,9 @@ struct StampDetailView: View {
                 if isCollected, let userId = authManager.userId {
                     userRank = await stampsManager.getUserRankForStamp(stampId: stamp.id, userId: userId)
                 }
+                
+                // Calculate collection progress for all collections this stamp belongs to
+                await calculateCollectionProgress()
             }
         }
         .onChange(of: isCollected) { _, newValue in
@@ -539,6 +543,9 @@ struct StampDetailView: View {
                             }
                         }
                     }
+                    
+                    // Recalculate collection progress when stamp is collected
+                    await calculateCollectionProgress()
                 }
             } else {
                 showMemorySection = false
@@ -615,6 +622,34 @@ struct StampDetailView: View {
             .padding(.top, 32)
             .presentationDetents([.height(280)])
             .presentationDragIndicator(.visible)
+        }
+    }
+    
+    private func calculateCollectionProgress() async {
+        // Fetch only the user's collected stamps (same approach as StampsView)
+        let collectedStampIds = stampsManager.userCollection.collectedStamps.map { $0.stampId }
+        guard !collectedStampIds.isEmpty else {
+            // No collected stamps - progress is 0 for all
+            await MainActor.run {
+                collectionProgress = [:]
+            }
+            return
+        }
+        
+        // Fetch the actual stamp data (uses cache for efficiency)
+        let collectedStamps = await stampsManager.fetchStamps(ids: collectedStampIds)
+        
+        // Calculate progress for each collection this stamp belongs to
+        var progress: [String: Int] = [:]
+        for collection in stampsManager.collections where stamp.collectionIds.contains(collection.id) {
+            let count = collectedStamps.filter { stamp in
+                stamp.collectionIds.contains(collection.id)
+            }.count
+            progress[collection.id] = count
+        }
+        
+        await MainActor.run {
+            collectionProgress = progress
         }
     }
     

@@ -20,6 +20,7 @@ import SwiftUI
 struct UserSearchView: View {
     @EnvironmentObject var followManager: FollowManager
     @EnvironmentObject var authManager: AuthManager
+    @EnvironmentObject var profileManager: ProfileManager // BEST PRACTICE: Pass to keep counts synced
     @Environment(\.dismiss) var dismiss
     
     @State private var searchText = ""
@@ -177,6 +178,7 @@ struct UserSearchRow: View {
     let user: UserProfile
     @EnvironmentObject var followManager: FollowManager
     @EnvironmentObject var authManager: AuthManager
+    @EnvironmentObject var profileManager: ProfileManager // BEST PRACTICE: Pass to keep counts synced
     
     var isCurrentUser: Bool {
         authManager.userId == user.id
@@ -213,7 +215,8 @@ struct UserSearchRow: View {
             if !isCurrentUser {
                 Button(action: {
                     guard let currentUserId = authManager.userId else { return }
-                    followManager.toggleFollow(currentUserId: currentUserId, targetUserId: user.id)
+                    // BEST PRACTICE: Pass ProfileManager to keep counts synced across views
+                    followManager.toggleFollow(currentUserId: currentUserId, targetUserId: user.id, profileManager: profileManager)
                 }) {
                     Text(isFollowing ? "Following" : "Follow")
                         .font(.footnote)

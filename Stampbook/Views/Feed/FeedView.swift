@@ -1,6 +1,7 @@
 import SwiftUI
 import AuthenticationServices
 import PhotosUI
+import MessageUI
 
 struct FeedView: View {
     @EnvironmentObject var authManager: AuthManager
@@ -12,6 +13,8 @@ struct FeedView: View {
     @State private var selectedFeedTab: FeedTab = .all
     @State private var showUserSearch = false
     @State private var showSignOutConfirmation = false
+    @State private var showMailComposer = false
+    @State private var mailMessageType: MailComposeView.MessageType = .feedback
     
     enum FeedTab: String, CaseIterable {
         case all = "All"
@@ -90,15 +93,15 @@ struct FeedView: View {
                                 Divider()
                                 
                                 Button(action: {
-                                    // TODO: Report a problem
-                                    print("Report a problem tapped")
+                                    mailMessageType = .problem
+                                    showMailComposer = true
                                 }) {
                                     Label("Report a problem", systemImage: "exclamationmark.bubble")
                                 }
                                 
                                 Button(action: {
-                                    // TODO: Send feedback
-                                    print("Send Feedback tapped")
+                                    mailMessageType = .feedback
+                                    showMailComposer = true
                                 }) {
                                     Label("Send Feedback", systemImage: "envelope")
                                 }
@@ -147,15 +150,15 @@ struct FeedView: View {
                             Divider()
                             
                             Button(action: {
-                                // TODO: Report a problem
-                                print("Report a problem tapped")
+                                mailMessageType = .problem
+                                showMailComposer = true
                             }) {
                                 Label("Report a problem", systemImage: "exclamationmark.bubble")
                             }
                             
                             Button(action: {
-                                // TODO: Send feedback
-                                print("Send Feedback tapped")
+                                mailMessageType = .feedback
+                                showMailComposer = true
                             }) {
                                 Label("Send Feedback", systemImage: "envelope")
                             }
@@ -261,6 +264,17 @@ struct FeedView: View {
                     UserSearchView()
                         .environmentObject(authManager)
                 }
+                .sheet(isPresented: $showMailComposer) {
+                    if MFMailComposeViewController.canSendMail() {
+                        MailComposeView(
+                            recipient: "support@stampbook.app",
+                            subject: mailMessageType == .feedback ? "Stampbook Feedback" : "Stampbook Problem Report",
+                            messageType: mailMessageType
+                        )
+                    } else {
+                        MailFallbackView(messageType: mailMessageType)
+                    }
+                }
                 .alert("Sign Out", isPresented: $showSignOutConfirmation) {
                     Button("Cancel", role: .cancel) {}
                     Button("Sign Out", role: .destructive) {
@@ -286,9 +300,9 @@ struct FeedView: View {
                 if !authManager.isSignedIn {
                     // Not signed in - show sign-in prompt (handled by parent)
                     EmptyView()
-                } else if feedManager.feedPosts.isEmpty && (!hasLoadedOnce || feedManager.isLoading) {
+                } else if feedManager.feedPosts.isEmpty && !hasLoadedOnce {
                     // Loading with no content - show skeleton posts
-                    // Show skeleton if: never loaded OR actively loading
+                    // Show skeleton only if we've never successfully loaded
                     ForEach(0..<3, id: \.self) { index in
                         SkeletonPostView()
                         
@@ -340,7 +354,7 @@ struct FeedView: View {
                     }
                     
                     // Loading indicator at bottom (if refreshing existing content)
-                    if feedManager.isLoading {
+                    if feedManager.isLoading && hasLoadedOnce {
                         ProgressView()
                             .padding(.top, 16)
                     }
@@ -349,7 +363,6 @@ struct FeedView: View {
             .padding(.horizontal, 20)
             .padding(.top, 8)
             .padding(.bottom, 32)
-            .animation(.easeInOut(duration: 0.3), value: feedManager.feedPosts.isEmpty)
             .onAppear {
                 loadFeedIfNeeded()
             }
@@ -388,9 +401,9 @@ struct FeedView: View {
                 if !authManager.isSignedIn {
                     // Not signed in - show sign-in prompt (handled by parent)
                     EmptyView()
-                } else if feedManager.myPosts.isEmpty && (!hasLoadedOnce || feedManager.isLoading) {
+                } else if feedManager.myPosts.isEmpty && !hasLoadedOnce {
                     // Loading with no content - show skeleton posts
-                    // Show skeleton if: never loaded OR actively loading
+                    // Show skeleton only if we've never successfully loaded
                     ForEach(0..<3, id: \.self) { index in
                         SkeletonPostView()
                         
@@ -442,7 +455,7 @@ struct FeedView: View {
                     }
                     
                     // Loading indicator at bottom (if refreshing existing content)
-                    if feedManager.isLoading {
+                    if feedManager.isLoading && hasLoadedOnce {
                         ProgressView()
                             .padding(.top, 16)
                     }
@@ -451,7 +464,6 @@ struct FeedView: View {
             .padding(.horizontal, 20)
             .padding(.top, 8)
             .padding(.bottom, 32)
-            .animation(.easeInOut(duration: 0.3), value: feedManager.myPosts.isEmpty)
             .onAppear {
                 loadFeedIfNeeded()
             }
@@ -503,9 +515,10 @@ struct FeedView: View {
         @EnvironmentObject var stampsManager: StampsManager
         @EnvironmentObject var authManager: AuthManager
         
-        // Computed property for avatar URL - stable value
+        // Avatar URL comes from feed data (already fetched from Firebase)
+        // No need for special handling - feed includes current user's profile with avatarUrl
         private var computedAvatarUrl: String? {
-            isCurrentUser ? authManager.userProfile?.avatarUrl : avatarUrl
+            avatarUrl
         }
         
         var body: some View {
@@ -718,12 +731,18 @@ struct FeedView: View {
             // Skip if already loaded or loading
             guard stamp == nil, !isLoadingStamp else { return }
             
+            isLoadingStamp = true
+            
             Task {
+                let prefetchStart = CFAbsoluteTimeGetCurrent()
                 // PREFETCH: Load stamp in background when post appears (Instagram pattern)
                 let stamps = await stampsManager.fetchStamps(ids: [stampId])
+                let prefetchTime = CFAbsoluteTimeGetCurrent() - prefetchStart
+                print("⏱️ [PostView] Stamp prefetch: \(String(format: "%.3f", prefetchTime))s for \(stampId)")
                 
                 await MainActor.run {
                     stamp = stamps.first
+                    isLoadingStamp = false
                 }
             }
         }
@@ -751,6 +770,85 @@ struct FeedView: View {
                     
                     if stamp != nil {
                         navigateToStampDetail = true
+                    }
+                }
+            }
+        }
+    }
+    
+    // MARK: - Mail Fallback View
+    struct MailFallbackView: View {
+        let messageType: MailComposeView.MessageType
+        @Environment(\.dismiss) var dismiss
+        @State private var emailCopied = false
+        
+        var body: some View {
+            NavigationStack {
+                VStack(spacing: 24) {
+                    Spacer()
+                    
+                    Image(systemName: "envelope.circle.fill")
+                        .font(.system(size: 80))
+                        .foregroundColor(.blue)
+                    
+                    VStack(spacing: 12) {
+                        Text("Email Not Configured")
+                            .font(.title2)
+                            .fontWeight(.semibold)
+                        
+                        Text("To \(messageType == .feedback ? "send feedback" : "report a problem"), please contact us at:")
+                            .font(.body)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 32)
+                        
+                        // Email address with copy button
+                        Button(action: {
+                            UIPasteboard.general.string = "support@stampbook.app"
+                            emailCopied = true
+                            
+                            // Reset after 2 seconds
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                emailCopied = false
+                            }
+                        }) {
+                            HStack {
+                                Text("support@stampbook.app")
+                                    .font(.headline)
+                                    .foregroundColor(.primary)
+                                
+                                Image(systemName: emailCopied ? "checkmark.circle.fill" : "doc.on.doc")
+                                    .foregroundColor(emailCopied ? .green : .blue)
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 12)
+                            .background(Color.gray.opacity(0.1))
+                            .cornerRadius(8)
+                        }
+                        
+                        if emailCopied {
+                            Text("Email copied to clipboard!")
+                                .font(.caption)
+                                .foregroundColor(.green)
+                                .transition(.opacity)
+                        }
+                    }
+                    
+                    Text("You can send us an email from any email app installed on your device.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 48)
+                    
+                    Spacer()
+                }
+                .navigationTitle(messageType == .feedback ? "Send Feedback" : "Report Problem")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button("Done") {
+                            dismiss()
+                        }
                     }
                 }
             }

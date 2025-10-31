@@ -42,7 +42,7 @@ class FollowManager: ObservableObject {
     // MARK: - Follow/Unfollow Actions
     
     /// Follow a user (with optimistic UI update and state synchronization)
-    func followUser(currentUserId: String, targetUserId: String, onSuccess: ((UserProfile?) -> Void)? = nil) {
+    func followUser(currentUserId: String, targetUserId: String, profileManager: ProfileManager? = nil, onSuccess: ((UserProfile?) -> Void)? = nil) {
         // Set processing state
         isProcessingFollow[targetUserId] = true
         
@@ -55,6 +55,14 @@ class FollowManager: ObservableObject {
         }
         if let counts = followCounts[targetUserId] {
             followCounts[targetUserId] = (counts.followers + 1, counts.following)
+        }
+        
+        // BEST PRACTICE: Also optimistically update ProfileManager if provided
+        if let profileManager = profileManager, 
+           var currentProfile = profileManager.currentUserProfile,
+           currentProfile.id == currentUserId {
+            currentProfile.followingCount += 1
+            profileManager.updateProfile(currentProfile)
         }
         
         Task {
@@ -79,6 +87,11 @@ class FollowManager: ObservableObject {
                         }
                         if let profile = currentProfile {
                             self.followCounts[currentUserId] = (profile.followerCount, profile.followingCount)
+                            
+                            // BEST PRACTICE: Sync ProfileManager with latest counts from Firebase
+                            if let profileManager = profileManager, profile.id == currentUserId {
+                                profileManager.updateProfile(profile)
+                            }
                         }
                         
                         self.isProcessingFollow[targetUserId] = false
@@ -106,6 +119,14 @@ class FollowManager: ObservableObject {
                         self.followCounts[targetUserId] = (max(0, counts.followers - 1), counts.following)
                     }
                     
+                    // BEST PRACTICE: Rollback ProfileManager too
+                    if let profileManager = profileManager,
+                       var currentProfile = profileManager.currentUserProfile,
+                       currentProfile.id == currentUserId {
+                        currentProfile.followingCount = max(0, currentProfile.followingCount - 1)
+                        profileManager.updateProfile(currentProfile)
+                    }
+                    
                     // Remove from following list if it was added
                     self.following.removeAll { $0.id == targetUserId }
                     
@@ -118,7 +139,7 @@ class FollowManager: ObservableObject {
     }
     
     /// Unfollow a user (with optimistic UI update and state synchronization)
-    func unfollowUser(currentUserId: String, targetUserId: String, onSuccess: ((UserProfile?) -> Void)? = nil) {
+    func unfollowUser(currentUserId: String, targetUserId: String, profileManager: ProfileManager? = nil, onSuccess: ((UserProfile?) -> Void)? = nil) {
         // Set processing state
         isProcessingFollow[targetUserId] = true
         
@@ -131,6 +152,14 @@ class FollowManager: ObservableObject {
         }
         if let counts = followCounts[targetUserId] {
             followCounts[targetUserId] = (max(0, counts.followers - 1), counts.following)
+        }
+        
+        // BEST PRACTICE: Also optimistically update ProfileManager if provided
+        if let profileManager = profileManager,
+           var currentProfile = profileManager.currentUserProfile,
+           currentProfile.id == currentUserId {
+            currentProfile.followingCount = max(0, currentProfile.followingCount - 1)
+            profileManager.updateProfile(currentProfile)
         }
         
         // SMART UPDATE: Remove from following list immediately (optimistic)
@@ -152,6 +181,11 @@ class FollowManager: ObservableObject {
                         }
                         if let profile = currentProfile {
                             self.followCounts[currentUserId] = (profile.followerCount, profile.followingCount)
+                            
+                            // BEST PRACTICE: Sync ProfileManager with latest counts from Firebase
+                            if let profileManager = profileManager, profile.id == currentUserId {
+                                profileManager.updateProfile(profile)
+                            }
                         }
                         
                         self.isProcessingFollow[targetUserId] = false
@@ -179,6 +213,14 @@ class FollowManager: ObservableObject {
                         self.followCounts[targetUserId] = (counts.followers + 1, counts.following)
                     }
                     
+                    // BEST PRACTICE: Rollback ProfileManager too
+                    if let profileManager = profileManager,
+                       var currentProfile = profileManager.currentUserProfile,
+                       currentProfile.id == currentUserId {
+                        currentProfile.followingCount += 1
+                        profileManager.updateProfile(currentProfile)
+                    }
+                    
                     // Re-fetch following list to restore state
                     self.fetchFollowing(userId: currentUserId)
                     
@@ -191,13 +233,13 @@ class FollowManager: ObservableObject {
     }
     
     /// Toggle follow status for a user
-    func toggleFollow(currentUserId: String, targetUserId: String, onSuccess: ((UserProfile?) -> Void)? = nil) {
+    func toggleFollow(currentUserId: String, targetUserId: String, profileManager: ProfileManager? = nil, onSuccess: ((UserProfile?) -> Void)? = nil) {
         let currentlyFollowing = isFollowing[targetUserId] ?? false
         
         if currentlyFollowing {
-            unfollowUser(currentUserId: currentUserId, targetUserId: targetUserId, onSuccess: onSuccess)
+            unfollowUser(currentUserId: currentUserId, targetUserId: targetUserId, profileManager: profileManager, onSuccess: onSuccess)
         } else {
-            followUser(currentUserId: currentUserId, targetUserId: targetUserId, onSuccess: onSuccess)
+            followUser(currentUserId: currentUserId, targetUserId: targetUserId, profileManager: profileManager, onSuccess: onSuccess)
         }
     }
     

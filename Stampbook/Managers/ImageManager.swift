@@ -628,16 +628,22 @@ class ImageManager {
     /// Returns cached image if already exists (checks memory and disk)
     /// OPTIMIZED: Deduplicates concurrent requests for same URL
     func downloadAndCacheProfilePicture(url: String, userId: String) async throws -> UIImage {
+        let downloadStart = CFAbsoluteTimeGetCurrent()
+        
         // Generate cache filename from URL hash
         let filename = profilePictureCacheFilename(url: url, userId: userId)
         
         // Check memory cache first (fastest)
         if let cachedImage = ImageCacheManager.shared.getFullImage(key: filename) {
+            let cacheTime = CFAbsoluteTimeGetCurrent() - downloadStart
+            print("⏱️ [ImageManager] Profile pic memory cache: \(String(format: "%.3f", cacheTime))s")
             return cachedImage
         }
         
         // Check if already cached on disk
         if let cachedImage = loadProfilePicture(named: filename) {
+            let cacheTime = CFAbsoluteTimeGetCurrent() - downloadStart
+            print("⏱️ [ImageManager] Profile pic disk cache: \(String(format: "%.3f", cacheTime))s")
             return cachedImage
         }
         
@@ -646,28 +652,48 @@ class ImageManager {
         let downloadTask: Task<UIImage, Error> = profilePictureQueue.sync {
             // Check if there's already a download in progress
             if let existingTask = inFlightProfilePictures[url] {
+                print("⏱️ [ImageManager] Waiting for in-flight profile pic download")
                 return existingTask
             }
             
             // Create and store new task atomically
             let newTask = Task<UIImage, Error> {
                 // Download from URL
-                print("⬇️ Downloading profile picture from: \(url)")
+                let networkStart = CFAbsoluteTimeGetCurrent()
+                print("⬇️ [ImageManager] Downloading profile picture from: \(url)")
                 guard let imageUrl = URL(string: url) else {
                     throw ImageError.invalidImageData
                 }
                 
-                let (data, _) = try await URLSession.shared.data(from: imageUrl)
+                // Start network request
+                print("🌐 [ImageManager] Starting URLSession request...")
+                let requestStart = CFAbsoluteTimeGetCurrent()
+                let (data, response) = try await URLSession.shared.data(from: imageUrl)
+                let requestTime = CFAbsoluteTimeGetCurrent() - requestStart
                 
+                // Log response details
+                if let httpResponse = response as? HTTPURLResponse {
+                    print("📡 [ImageManager] HTTP \(httpResponse.statusCode) - \(data.count) bytes in \(String(format: "%.3f", requestTime))s")
+                }
+                
+                let networkTime = CFAbsoluteTimeGetCurrent() - networkStart
+                print("⏱️ [ImageManager] Profile pic network download: \(String(format: "%.3f", networkTime))s")
+                
+                // Decode image
+                let decodeStart = CFAbsoluteTimeGetCurrent()
                 guard let image = UIImage(data: data) else {
                     throw ImageError.invalidImageData
                 }
+                let decodeTime = CFAbsoluteTimeGetCurrent() - decodeStart
+                print("🖼️ [ImageManager] Image decoded in \(String(format: "%.3f", decodeTime))s")
                 
                 // Cache to disk for future use
+                let cacheStart = CFAbsoluteTimeGetCurrent()
                 let fileURL = self.getDocumentsDirectory().appendingPathComponent(filename)
                 do {
                     try data.write(to: fileURL)
-                    print("✅ Profile picture cached locally: \(filename)")
+                    let cacheTime = CFAbsoluteTimeGetCurrent() - cacheStart
+                    print("✅ Profile picture cached locally: \(filename) in \(String(format: "%.3f", cacheTime))s")
                     // Also store in memory cache
                     ImageCacheManager.shared.setFullImage(image, key: filename)
                 } catch {
@@ -690,6 +716,9 @@ class ImageManager {
             _ = profilePictureQueue.sync {
                 inFlightProfilePictures.removeValue(forKey: url)
             }
+            
+            let totalTime = CFAbsoluteTimeGetCurrent() - downloadStart
+            print("⏱️ [ImageManager] Total profile pic load: \(String(format: "%.3f", totalTime))s")
             
             return image
         } catch {

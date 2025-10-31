@@ -32,10 +32,17 @@ struct SkeletonPostView: View {
                 }
             }
             
-            // Photo skeleton (square-ish)
-            RoundedRectangle(cornerRadius: 8)
-                .fill(Color.gray.opacity(0.3))
-                .aspectRatio(1.2, contentMode: .fit)
+            // Photo gallery skeleton - horizontal scroll with 120x120 squares
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    // Show 3 skeleton photo squares to match PhotoGalleryView layout
+                    ForEach(0..<3, id: \.self) { _ in
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.gray.opacity(0.3))
+                            .frame(width: 120, height: 120)
+                    }
+                }
+            }
             
             // Like/comment row skeleton
             HStack(spacing: 16) {

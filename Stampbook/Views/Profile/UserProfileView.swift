@@ -11,7 +11,8 @@ struct UserProfileView: View {
     @EnvironmentObject var stampsManager: StampsManager
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var followManager: FollowManager // Shared instance
-    @StateObject private var profileManager = ProfileManager()
+    @EnvironmentObject var currentUserProfileManager: ProfileManager // BEST PRACTICE: Global ProfileManager for current user counts
+    @StateObject private var profileManager = ProfileManager() // Local ProfileManager for viewing this user's profile
     
     @State private var selectedTab: StampTab = .all
     @State private var showBlockMenu = false
@@ -225,7 +226,8 @@ struct UserProfileView: View {
                     HStack(spacing: 8) {
                         Button(action: {
                             guard let currentUserId = authManager.userId else { return }
-                            followManager.toggleFollow(currentUserId: currentUserId, targetUserId: userId) { updatedProfile in
+                            // BEST PRACTICE: Pass current user's ProfileManager to keep counts synced
+                            followManager.toggleFollow(currentUserId: currentUserId, targetUserId: userId, profileManager: currentUserProfileManager) { updatedProfile in
                                 // Update local profile state with returned profile
                                 if let profile = updatedProfile {
                                     userProfile = profile
@@ -595,8 +597,8 @@ struct UserProfileView: View {
                                 userStamps.first(where: { $0.id == collected.stampId })?.collectionIds.contains(collection.id) ?? false
                             }.count
                             
-                            // Count total stamps in collection from user's loaded stamps
-                            let totalCount = userStamps.filter { $0.collectionIds.contains(collection.id) }.count
+                            // Use the hard-coded totalStamps from the collection (same as current user's profile)
+                            let totalCount = collection.totalStamps
                             let percentage = totalCount > 0 ? Double(collectedCount) / Double(totalCount) : 0.0
                             
                             CollectionCardView(

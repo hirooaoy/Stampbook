@@ -12,6 +12,7 @@ struct StampsView: View {
     @State private var showEditProfile = false
     @State private var showMailComposer = false
     @State private var showMailError = false
+    @State private var showMailFallback = false
     @State private var mailMessageType: MailComposeView.MessageType = .feedback
     @State private var showSignOutConfirmation = false
     
@@ -89,22 +90,14 @@ struct StampsView: View {
                                 
                                 Button(action: {
                                     mailMessageType = .problem
-                                    if MFMailComposeViewController.canSendMail() {
-                                        showMailComposer = true
-                                    } else {
-                                        showMailError = true
-                                    }
+                                    showMailComposer = true
                                 }) {
                                     Label("Report a problem", systemImage: "exclamationmark.bubble")
                                 }
                                 
                                 Button(action: {
                                     mailMessageType = .feedback
-                                    if MFMailComposeViewController.canSendMail() {
-                                        showMailComposer = true
-                                    } else {
-                                        showMailError = true
-                                    }
+                                    showMailComposer = true
                                 }) {
                                     Label("Send Feedback", systemImage: "envelope")
                                 }
@@ -154,22 +147,14 @@ struct StampsView: View {
                             
                             Button(action: {
                                 mailMessageType = .problem
-                                if MFMailComposeViewController.canSendMail() {
-                                    showMailComposer = true
-                                } else {
-                                    showMailError = true
-                                }
+                                showMailComposer = true
                             }) {
                                 Label("Report a problem", systemImage: "exclamationmark.bubble")
                             }
                             
                             Button(action: {
                                 mailMessageType = .feedback
-                                if MFMailComposeViewController.canSendMail() {
-                                    showMailComposer = true
-                                } else {
-                                    showMailError = true
-                                }
+                                showMailComposer = true
                             }) {
                                 Label("Send Feedback", systemImage: "envelope")
                             }
@@ -492,16 +477,15 @@ struct StampsView: View {
                     }
                 }
                 .sheet(isPresented: $showMailComposer) {
-                    MailComposeView(
-                        recipient: "support@stampbook.app",
-                        subject: mailMessageType == .feedback ? "Stampbook Feedback" : "Stampbook Problem Report",
-                        messageType: mailMessageType
-                    )
-                }
-                .alert("Cannot Send Email", isPresented: $showMailError) {
-                    Button("OK", role: .cancel) { }
-                } message: {
-                    Text("Please configure a mail account in Settings to send feedback.")
+                    if MFMailComposeViewController.canSendMail() {
+                        MailComposeView(
+                            recipient: "support@stampbook.app",
+                            subject: mailMessageType == .feedback ? "Stampbook Feedback" : "Stampbook Problem Report",
+                            messageType: mailMessageType
+                        )
+                    } else {
+                        MailFallbackView(messageType: mailMessageType)
+                    }
                 }
                 .alert("Sign Out", isPresented: $showSignOutConfirmation) {
                     Button("Cancel", role: .cancel) {}
@@ -682,7 +666,6 @@ struct StampsView: View {
         @State private var collectionMetadata: [String: (total: Int, collected: Int)] = [:]
         @State private var isLoadingMetadata = false
         @State private var hasLoadedOnce = false
-        @State private var hasInitialSync = false
         
         var body: some View {
             VStack(spacing: 20) {
@@ -735,14 +718,7 @@ struct StampsView: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 32)
             .task {
-                // Ensure user's collected stamps are synced before loading metadata
-                if !hasInitialSync {
-                    if let userId = authManager.userId {
-                        print("🔄 [CollectionsContent] Syncing user stamps from Firestore before loading metadata")
-                        await stampsManager.userCollection.refresh(userId: userId)
-                        hasInitialSync = true
-                    }
-                }
+                // Load metadata using already-synced data (no need to refresh from Firestore every time)
                 loadCollectionMetadata()
             }
             .onChange(of: stampsManager.userCollection.collectedStamps.count) { oldValue, newValue in
@@ -764,69 +740,43 @@ struct StampsView: View {
             isLoadingMetadata = true
             
             Task {
-                // Add timeout to prevent infinite loading
-                let timeoutTask = Task {
-                    try await Task.sleep(nanoseconds: 10_000_000_000) // 10 seconds
-                    throw TimeoutError()
+                let startTime = Date()
+                
+                // OPTIMIZED: Instead of fetching ALL stamps in each collection,
+                // only fetch the stamps that the user has collected, then count by collection
+                let collectedStampIds = stampsManager.userCollection.collectedStamps.map { $0.stampId }
+                
+                print("📚 [CollectionsContent] Processing \(stampsManager.collections.count) collections")
+                print("🎯 [CollectionsContent] User has \(collectedStampIds.count) collected stamps")
+                
+                // Fetch only the user's collected stamps (much faster than fetching all stamps in all collections!)
+                let collectedStamps = await stampsManager.fetchStamps(ids: collectedStampIds)
+                let fetchTime = Date().timeIntervalSince(startTime)
+                print("⏱️ [CollectionsContent] Fetched \(collectedStamps.count) stamps in \(String(format: "%.2f", fetchTime))s")
+                
+                // Count how many collected stamps belong to each collection
+                var metadata: [String: (total: Int, collected: Int)] = [:]
+                
+                for collection in stampsManager.collections {
+                    // Use the hard-coded totalStamps from the collection
+                    let total = collection.totalStamps
+                    
+                    // Count how many of the user's collected stamps belong to this collection
+                    let collected = collectedStamps.filter { stamp in
+                        stamp.collectionIds.contains(collection.id)
+                    }.count
+                    
+                    metadata[collection.id] = (total: total, collected: collected)
+                    print("✅ [CollectionsContent] \(collection.name): \(collected)/\(total)")
                 }
                 
-                let loadTask = Task {
-                    // For each collection, count stamps
-                    var metadata: [String: (total: Int, collected: Int)] = [:]
-                    let collectedStampIds = Set(stampsManager.userCollection.collectedStamps.map { $0.stampId })
-                    
-                    print("📚 [CollectionsContent] Processing \(stampsManager.collections.count) collections")
-                    print("🎯 [CollectionsContent] User has \(collectedStampIds.count) collected stamps: \(Array(collectedStampIds).prefix(10))")
-                    
-                    for collection in stampsManager.collections {
-                        // Fetch stamps in this collection to check which ones are collected
-                        let stamps = await stampsManager.fetchStampsInCollection(collectionId: collection.id)
-                        
-                        // Use the hard-coded totalStamps from the collection
-                        let total = collection.totalStamps
-                        let collected = stamps.filter { collectedStampIds.contains($0.id) }.count
-                        
-                        metadata[collection.id] = (total: total, collected: collected)
-                        print("✅ [CollectionsContent] \(collection.name): \(collected)/\(total) (Firestore has \(stamps.count) stamps)")
-                    }
-                    
-                    return metadata
-                }
+                let totalTime = Date().timeIntervalSince(startTime)
+                print("✅ [CollectionsContent] Metadata load complete in \(String(format: "%.2f", totalTime))s")
                 
-                do {
-                    // Race between load and timeout
-                    let metadata = try await withThrowingTaskGroup(of: [String: (total: Int, collected: Int)]?.self) { group in
-                        group.addTask { try await loadTask.value }
-                        group.addTask {
-                            _ = try await timeoutTask.value
-                            return nil
-                        }
-                        
-                        // Get first result
-                        if let result = try await group.next() {
-                            // Cancel the other task
-                            group.cancelAll()
-                            if let metadata = result {
-                                return metadata
-                            } else {
-                                throw TimeoutError()
-                            }
-                        }
-                        throw TimeoutError()
-                    }
-                    
-                    await MainActor.run {
-                        collectionMetadata = metadata
-                        isLoadingMetadata = false
-                        hasLoadedOnce = true
-                        print("✅ [CollectionsContent] Metadata load complete")
-                    }
-                } catch {
-                    print("❌ [CollectionsContent] Metadata load failed or timed out: \(error)")
-                    await MainActor.run {
-                        isLoadingMetadata = false
-                        hasLoadedOnce = true
-                    }
+                await MainActor.run {
+                    collectionMetadata = metadata
+                    isLoadingMetadata = false
+                    hasLoadedOnce = true
                 }
             }
         }
@@ -898,6 +848,85 @@ struct StampsView: View {
             .padding(16)
             .background(Color.gray.opacity(0.1))
             .cornerRadius(12)
+        }
+    }
+    
+    // MARK: - Mail Fallback View
+    struct MailFallbackView: View {
+        let messageType: MailComposeView.MessageType
+        @Environment(\.dismiss) var dismiss
+        @State private var emailCopied = false
+        
+        var body: some View {
+            NavigationStack {
+                VStack(spacing: 24) {
+                    Spacer()
+                    
+                    Image(systemName: "envelope.circle.fill")
+                        .font(.system(size: 80))
+                        .foregroundColor(.blue)
+                    
+                    VStack(spacing: 12) {
+                        Text("Email Not Configured")
+                            .font(.title2)
+                            .fontWeight(.semibold)
+                        
+                        Text("To \(messageType == .feedback ? "send feedback" : "report a problem"), please contact us at:")
+                            .font(.body)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 32)
+                        
+                        // Email address with copy button
+                        Button(action: {
+                            UIPasteboard.general.string = "support@stampbook.app"
+                            emailCopied = true
+                            
+                            // Reset after 2 seconds
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                emailCopied = false
+                            }
+                        }) {
+                            HStack {
+                                Text("support@stampbook.app")
+                                    .font(.headline)
+                                    .foregroundColor(.primary)
+                                
+                                Image(systemName: emailCopied ? "checkmark.circle.fill" : "doc.on.doc")
+                                    .foregroundColor(emailCopied ? .green : .blue)
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 12)
+                            .background(Color.gray.opacity(0.1))
+                            .cornerRadius(8)
+                        }
+                        
+                        if emailCopied {
+                            Text("Email copied to clipboard!")
+                                .font(.caption)
+                                .foregroundColor(.green)
+                                .transition(.opacity)
+                        }
+                    }
+                    
+                    Text("You can send us an email from any email app installed on your device.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 48)
+                    
+                    Spacer()
+                }
+                .navigationTitle(messageType == .feedback ? "Send Feedback" : "Report Problem")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button("Done") {
+                            dismiss()
+                        }
+                    }
+                }
+            }
         }
     }
 }

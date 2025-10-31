@@ -121,29 +121,55 @@ class FirebaseService {
     /// - Returns: Array of stamps matching the IDs
     ///
     /// **PERFORMANCE:** Firestore `in` queries support up to 10 items per query.
-    /// This method automatically batches larger requests.
+    /// This method automatically batches larger requests and executes batches in parallel.
     func fetchStampsByIds(_ ids: [String]) async throws -> [Stamp] {
         guard !ids.isEmpty else { return [] }
+        
+        let overallStart = CFAbsoluteTimeGetCurrent()
         
         // Firestore 'in' queries support max 10 items
         // Batch into chunks of 10
         let batchSize = 10
-        var allStamps: [Stamp] = []
+        let batches = stride(from: 0, to: ids.count, by: batchSize).map {
+            Array(ids[$0..<min($0 + batchSize, ids.count)])
+        }
         
-        for i in stride(from: 0, to: ids.count, by: batchSize) {
-            let batchIds = Array(ids[i..<min(i + batchSize, ids.count)])
-            
-            let snapshot = try await db
-                .collection("stamps")
-                .whereField(FieldPath.documentID(), in: batchIds)
-                .getDocuments()
-            
-            let stamps = snapshot.documents.compactMap { doc -> Stamp? in
-                try? doc.data(as: Stamp.self)
+        print("🔄 [FirebaseService] Fetching \(ids.count) stamps in \(batches.count) parallel batches...")
+        
+        // Execute all batches in PARALLEL for better performance
+        let allStamps = try await withThrowingTaskGroup(of: [Stamp].self, returning: [Stamp].self) { group in
+            for (index, batchIds) in batches.enumerated() {
+                group.addTask {
+                    let batchStart = CFAbsoluteTimeGetCurrent()
+                    print("📦 [FirebaseService] Batch \(index + 1)/\(batches.count): Fetching \(batchIds.count) stamps...")
+                    
+                    let snapshot = try await self.db
+                        .collection("stamps")
+                        .whereField(FieldPath.documentID(), in: batchIds)
+                        .getDocuments()
+                    
+                    let stamps = await MainActor.run {
+                        snapshot.documents.compactMap { doc -> Stamp? in
+                            try? doc.data(as: Stamp.self)
+                        }
+                    }
+                    
+                    let batchTime = CFAbsoluteTimeGetCurrent() - batchStart
+                    print("✅ [FirebaseService] Batch \(index + 1)/\(batches.count): Completed in \(String(format: "%.3f", batchTime))s (\(stamps.count) stamps)")
+                    
+                    return stamps
+                }
             }
             
-            allStamps.append(contentsOf: stamps)
+            var allStamps: [Stamp] = []
+            for try await stamps in group {
+                allStamps.append(contentsOf: stamps)
+            }
+            return allStamps
         }
+        
+        let overallTime = CFAbsoluteTimeGetCurrent() - overallStart
+        print("⏱️ [FirebaseService] Total fetchStampsByIds: \(String(format: "%.3f", overallTime))s (\(allStamps.count)/\(ids.count) stamps)")
         
         return allStamps
     }
@@ -892,11 +918,19 @@ class FirebaseService {
     /// Collection: users/{userId}/collected_stamps
     /// Fields: userId (Ascending), collectedDate (Descending)
     func fetchFollowingFeed(userId: String, limit: Int = 50, stampsPerUser: Int = 10, initialBatchSize: Int = 15) async throws -> [(profile: UserProfile, stamp: CollectedStamp)] {
+        let overallStart = CFAbsoluteTimeGetCurrent()
+        
         // 1. Get current user's profile (for including in feed)
+        let profileStart = CFAbsoluteTimeGetCurrent()
         let currentUserProfile = try await fetchUserProfile(userId: userId)
+        let profileTime = CFAbsoluteTimeGetCurrent() - profileStart
+        print("⏱️ [FirebaseService] User profile fetch: \(String(format: "%.3f", profileTime))s")
         
         // 2. Get list of users being followed (uses cache if available)
+        let followingStart = CFAbsoluteTimeGetCurrent()
         let followingProfiles = try await fetchFollowing(userId: userId, useCache: true)
+        let followingTime = CFAbsoluteTimeGetCurrent() - followingStart
+        print("⏱️ [FirebaseService] Following list fetch: \(String(format: "%.3f", followingTime))s (\(followingProfiles.count) users)")
         
         // 3. Combine current user + followed users for feed
         // This ensures "All" tab shows your posts + followed users' posts
@@ -914,38 +948,54 @@ class FirebaseService {
         // 5. Fetch stamps from users in parallel for better performance
         var allFeedItems: [(profile: UserProfile, stamp: CollectedStamp)] = []
         
+        let stampsStart = CFAbsoluteTimeGetCurrent()
+        print("🔄 [FirebaseService] Fetching collected stamps from \(profilesToFetch.count) users in parallel...")
+        
         // Use TaskGroup for parallel fetching
         await withTaskGroup(of: (UserProfile, [CollectedStamp]).self) { group in
-            for profile in profilesToFetch {
+            for (index, profile) in profilesToFetch.enumerated() {
                 group.addTask {
+                    let userStart = CFAbsoluteTimeGetCurrent()
                     do {
                         // Fetch recent stamps for this user (10 per user for balanced feed)
                         let stamps = try await self.fetchCollectedStamps(for: profile.id, limit: stampsPerUser)
+                        let userTime = CFAbsoluteTimeGetCurrent() - userStart
+                        print("✅ [FirebaseService] User \(index + 1)/\(profilesToFetch.count) (@\(profile.username)): \(stamps.count) stamps in \(String(format: "%.3f", userTime))s")
                         return (profile, stamps)
                     } catch {
-                        print("⚠️ Failed to fetch stamps for user \(profile.username): \(error.localizedDescription)")
+                        let userTime = CFAbsoluteTimeGetCurrent() - userStart
+                        print("⚠️ [FirebaseService] User \(index + 1)/\(profilesToFetch.count) (@\(profile.username)): Failed after \(String(format: "%.3f", userTime))s - \(error.localizedDescription)")
                         return (profile, [])
                     }
                 }
             }
             
             // Collect results
+            var completed = 0
             for await (profile, stamps) in group {
+                completed += 1
                 for stamp in stamps {
                     allFeedItems.append((profile: profile, stamp: stamp))
                 }
+                print("📊 [FirebaseService] Progress: \(completed)/\(profilesToFetch.count) users completed")
             }
         }
         
+        let stampsTime = CFAbsoluteTimeGetCurrent() - stampsStart
+        print("⏱️ [FirebaseService] All user stamps fetched in \(String(format: "%.3f", stampsTime))s")
+        
         // 6. Sort by collection date (most recent first)
+        let sortStart = CFAbsoluteTimeGetCurrent()
         allFeedItems.sort { $0.stamp.collectedDate > $1.stamp.collectedDate }
+        let sortTime = CFAbsoluteTimeGetCurrent() - sortStart
         
         // 7. Limit total items returned (pagination support)
         if allFeedItems.count > limit {
             allFeedItems = Array(allFeedItems.prefix(limit))
         }
         
-        print("✅ Fetched \(allFeedItems.count) feed items from \(batchSize) users (initial batch)")
+        let overallTime = CFAbsoluteTimeGetCurrent() - overallStart
+        print("✅ Fetched \(allFeedItems.count) feed items from \(batchSize) users in \(String(format: "%.3f", overallTime))s (sort: \(String(format: "%.3f", sortTime))s)")
         
         return allFeedItems
     }

@@ -18,6 +18,11 @@ class StampsManager: ObservableObject {
     // LRU cache for stamp data (max 300 stamps in memory)
     private let stampCache = LRUCache<String, Stamp>(capacity: 300)
     
+    // In-flight request deduplication: Track pending fetches by stamp ID
+    // Prevents duplicate concurrent requests for the same stamp
+    // Uses actor for thread-safe async access
+    private let fetchCoordinator = FetchCoordinator()
+    
     // Smart refresh tracking
     @Published var lastRefreshTime: Date?
     private let refreshInterval: TimeInterval = 300 // 5 minutes
@@ -127,40 +132,77 @@ class StampsManager: ObservableObject {
     // MARK: - Lazy Loading Methods (NEW ARCHITECTURE)
     
     /// Fetch specific stamps by IDs (for feed, profiles)
-    /// Uses LRU cache for instant repeat access
+    /// Uses LRU cache for instant repeat access + in-flight request deduplication
     /// - Parameter ids: Array of stamp IDs to fetch
     /// - Returns: Array of stamps matching the IDs
     func fetchStamps(ids: [String]) async -> [Stamp] {
+        let fetchStart = CFAbsoluteTimeGetCurrent()
+        
         var results: [Stamp] = []
         var uncachedIds: [String] = []
+        var pendingTasks: [Task<[Stamp], Never>] = []
         
-        // Check cache first
+        // Check cache and in-flight requests
         for id in ids {
             if let cached = stampCache.get(id) {
                 results.append(cached)
                 print("💾 [StampsManager] Cache HIT: \(id)")
+            } else if let existingTask = await fetchCoordinator.getTask(for: id) {
+                // Another request is already fetching this stamp - wait for it
+                pendingTasks.append(existingTask)
+                print("⏳ [StampsManager] Waiting for in-flight fetch: \(id)")
             } else {
                 uncachedIds.append(id)
             }
         }
         
+        // Wait for any pending tasks
+        for task in pendingTasks {
+            let stamps = await task.value
+            results.append(contentsOf: stamps)
+        }
+        
         // Fetch uncached stamps from Firebase
         if !uncachedIds.isEmpty {
-            print("🌐 [StampsManager] Fetching \(uncachedIds.count) uncached stamps")
-            do {
-                let fetched = try await firebaseService.fetchStampsByIds(uncachedIds)
-                
-                // Add to cache
-                for stamp in fetched {
-                    stampCache.set(stamp.id, stamp)
+            let firebaseStart = CFAbsoluteTimeGetCurrent()
+            print("🌐 [StampsManager] Fetching \(uncachedIds.count) uncached stamps: [\(uncachedIds.joined(separator: ", "))]")
+            
+            // Create a task for this fetch and store it
+            let fetchTask = Task<[Stamp], Never> {
+                do {
+                    let fetchStart = CFAbsoluteTimeGetCurrent()
+                    let fetched = try await self.firebaseService.fetchStampsByIds(uncachedIds)
+                    let totalFetchTime = CFAbsoluteTimeGetCurrent() - fetchStart
+                    
+                    // Add to cache
+                    let cacheStart = CFAbsoluteTimeGetCurrent()
+                    for stamp in fetched {
+                        self.stampCache.set(stamp.id, stamp)
+                    }
+                    let cacheTime = CFAbsoluteTimeGetCurrent() - cacheStart
+                    
+                    print("⏱️ [StampsManager] Firebase fetch: \(String(format: "%.3f", totalFetchTime))s (\(fetched.count) stamps) - cache: \(String(format: "%.3f", cacheTime))s")
+                    return fetched
+                } catch {
+                    let errorTime = CFAbsoluteTimeGetCurrent() - firebaseStart
+                    print("❌ [StampsManager] Failed to fetch stamps after \(String(format: "%.3f", errorTime))s: \(error.localizedDescription)")
+                    return []
                 }
-                
-                results.append(contentsOf: fetched)
-                print("✅ [StampsManager] Fetched and cached \(fetched.count) stamps")
-            } catch {
-                print("❌ [StampsManager] Failed to fetch stamps: \(error.localizedDescription)")
             }
+            
+            // Register the task for each ID being fetched
+            await fetchCoordinator.registerTask(fetchTask, for: uncachedIds)
+            
+            // Wait for fetch to complete
+            let fetched = await fetchTask.value
+            results.append(contentsOf: fetched)
+            
+            // Clean up completed tasks
+            await fetchCoordinator.removeTask(for: uncachedIds)
         }
+        
+        let totalTime = CFAbsoluteTimeGetCurrent() - fetchStart
+        print("⏱️ [StampsManager] Total fetchStamps: \(String(format: "%.3f", totalTime))s (\(results.count)/\(ids.count) stamps)")
         
         return results
     }
@@ -404,37 +446,6 @@ class StampsManager: ObservableObject {
         // Future: await cloudSync.resetUserData()
     }
     
-    // Helper methods for collections
-    func stampsInCollection(_ collectionId: String) -> [Stamp] {
-        stamps.filter { $0.collectionIds.contains(collectionId) }
-    }
-    
-    func collectedStampsInCollection(_ collectionId: String) -> Int {
-        let stampsInCollection = stamps.filter { $0.collectionIds.contains(collectionId) }
-        let collectedStampIds = Set(userCollection.collectedStamps.map { $0.stampId })
-        return stampsInCollection.filter { collectedStampIds.contains($0.id) }.count
-    }
-    
-    private func completionPercentage(for collectionId: String) -> Double {
-        let total = stampsInCollection(collectionId).count
-        guard total > 0 else { return 0 }
-        let collected = collectedStampsInCollection(collectionId)
-        return Double(collected) / Double(total)
-    }
-    
-    var sortedCollections: [Collection] {
-        collections.sorted { collection1, collection2 in
-            let completion1 = completionPercentage(for: collection1.id)
-            let completion2 = completionPercentage(for: collection2.id)
-            
-            if completion1 != completion2 {
-                return completion1 > completion2  // Higher completion first
-            } else {
-                return collection1.name < collection2.name  // Alphabetical tiebreaker
-            }
-        }
-    }
-    
     // MARK: - Statistics
     
     /// Reconcile user stats with actual collected stamps count
@@ -525,6 +536,33 @@ class StampsManager: ObservableObject {
         })
         
         return countries.count
+    }
+}
+
+// MARK: - Fetch Coordinator Actor
+
+/// Thread-safe coordinator for in-flight fetch requests
+/// Prevents duplicate concurrent fetches of the same stamp
+actor FetchCoordinator {
+    private var inFlightFetches: [String: Task<[Stamp], Never>] = [:]
+    
+    /// Get existing task for stamp ID, if any
+    func getTask(for id: String) -> Task<[Stamp], Never>? {
+        return inFlightFetches[id]
+    }
+    
+    /// Register a new fetch task for stamp IDs
+    func registerTask(_ task: Task<[Stamp], Never>, for ids: [String]) {
+        for id in ids {
+            inFlightFetches[id] = task
+        }
+    }
+    
+    /// Remove completed tasks for stamp IDs
+    func removeTask(for ids: [String]) {
+        for id in ids {
+            inFlightFetches.removeValue(forKey: id)
+        }
     }
 }
 
