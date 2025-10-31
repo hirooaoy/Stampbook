@@ -54,3 +54,4 @@ GoogleService-Info.plist
 # OS
 .DS_Store
 
+serviceAccountKey.json
