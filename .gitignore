@@ -55,3 +55,9 @@ GoogleService-Info.plist
 .DS_Store
 
 serviceAccountKey.json
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

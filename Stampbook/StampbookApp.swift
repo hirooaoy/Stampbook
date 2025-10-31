@@ -18,11 +18,15 @@ struct StampbookApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     
     @StateObject private var authManager = AuthManager()
+    @StateObject private var networkMonitor = NetworkMonitor()
+    @StateObject private var followManager = FollowManager() // Shared instance across the app
     
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(authManager)
+                .environmentObject(networkMonitor)
+                .environmentObject(followManager)
         }
     }
 }

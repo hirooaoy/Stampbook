@@ -309,7 +309,8 @@ struct NativeMapView: UIViewRepresentable {
     @Binding var searchRegion: MKCoordinateRegion?
     
     // Constants
-    private static let defaultSpan = MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
+    private static let defaultSpan = MKCoordinateSpan(latitudeDelta: 0.04, longitudeDelta: 0.04) // Zoomed out for default Golden Gate view
+    private static let locateMeSpan = MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01) // Closer zoom for user location
     // Default location: Golden Gate Bridge viewpoint
     private static let defaultCoordinate = CLLocationCoordinate2D(latitude: 37.81368955948842, longitude: -122.47779410452)
     
@@ -342,7 +343,7 @@ struct NativeMapView: UIViewRepresentable {
         if isTrackingLocation {
             if !mapView.showsUserLocation {
                 mapView.showsUserLocation = true
-                mapView.userTrackingMode = .followWithHeading
+                mapView.userTrackingMode = .none  // Show blue dot without auto-rotation
             }
         } else {
             if mapView.showsUserLocation {
@@ -364,7 +365,7 @@ struct NativeMapView: UIViewRepresentable {
         
         // Handle recenter
         if shouldRecenter, let location = userLocation {
-            let region = MKCoordinateRegion(center: location.coordinate, span: Self.defaultSpan)
+            let region = MKCoordinateRegion(center: location.coordinate, span: Self.locateMeSpan)
             mapView.setRegion(region, animated: true)
             DispatchQueue.main.async {
                 self.shouldRecenter = false
@@ -437,12 +438,21 @@ struct NativeMapView: UIViewRepresentable {
             if currentStampIds != newStampIds || 
                collectedStampIds != previousCollectedStampIds ||
                currentInRangeStampIds != previousInRangeStampIds {
-                // Remove old annotations (except user location)
+                // 🔧 FIX: Clean up hosting controllers for removed annotations to prevent memory leaks
                 let oldAnnotations = mapView.annotations.filter { !($0 is MKUserLocation) }
-                mapView.removeAnnotations(oldAnnotations)
                 
-                // Clear hosting controllers for removed annotations
-                hostingControllers.removeAll()
+                // Remove hosting controllers for annotations being removed
+                for annotation in oldAnnotations {
+                    let annotationId = ObjectIdentifier(annotation)
+                    if let hostingController = hostingControllers[annotationId] {
+                        // Remove view from superview and release controller
+                        hostingController.view.removeFromSuperview()
+                        hostingControllers.removeValue(forKey: annotationId)
+                    }
+                }
+                
+                // Remove old annotations
+                mapView.removeAnnotations(oldAnnotations)
                 
                 // Add stamp annotations
                 let annotations = stamps.map { stamp -> StampAnnotation in
@@ -626,7 +636,7 @@ struct NativeMapView: UIViewRepresentable {
         // Auto-center on first location update
         func mapView(_ mapView: MKMapView, didUpdate userLocation: MKUserLocation) {
             if !hasSetInitialRegion, let location = userLocation.location {
-                let region = MKCoordinateRegion(center: location.coordinate, span: NativeMapView.defaultSpan)
+                let region = MKCoordinateRegion(center: location.coordinate, span: NativeMapView.locateMeSpan)
                 mapView.setRegion(region, animated: true)
                 hasSetInitialRegion = true
             }

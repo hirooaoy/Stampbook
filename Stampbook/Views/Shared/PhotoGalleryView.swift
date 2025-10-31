@@ -6,7 +6,6 @@ struct PhotoGalleryView: View {
     @EnvironmentObject var authManager: AuthManager
     
     let stampId: String
-    let imageNames: [String]
     let maxPhotos: Int
     
     // Optional: Show stamp image as first item (for Feed)
@@ -15,19 +14,16 @@ struct PhotoGalleryView: View {
     let onStampImageTap: (() -> Void)?
     
     @State private var selectedItems: [PhotosPickerItem] = []
-    @State private var uploadingPhotos: Set<String> = [] // Track which photos are uploading
     @State private var selectedPhotoIndex: PhotoIndex?
     
     init(
         stampId: String,
-        imageNames: [String],
         maxPhotos: Int = 5,
         showStampImage: Bool = false,
         stampImageName: String? = nil,
         onStampImageTap: (() -> Void)? = nil
     ) {
         self.stampId = stampId
-        self.imageNames = imageNames
         self.maxPhotos = maxPhotos
         self.showStampImage = showStampImage
         self.stampImageName = stampImageName
@@ -40,15 +36,23 @@ struct PhotoGalleryView: View {
         var index: Int { id }
     }
     
+    // Compute imageNames dynamically from stampsManager
+    private var imageNames: [String] {
+        stampsManager.userCollection.collectedStamps
+            .first(where: { $0.stampId == stampId })?
+            .userImageNames ?? []
+    }
+    
+    // Get uploading photos from stampsManager
+    private var uploadingPhotos: Set<String> {
+        stampsManager.userCollection.getUploadingPhotos(for: stampId)
+    }
+    
     var canAddMore: Bool {
         imageNames.count < maxPhotos
     }
     
     var body: some View {
-        let _ = print("🔍 PhotoGalleryView body - imageNames.count: \(imageNames.count), uploadingPhotos.count: \(uploadingPhotos.count), canAddMore: \(canAddMore)")
-        let _ = print("🔍 imageNames: \(imageNames)")
-        let _ = print("🔍 uploadingPhotos: \(uploadingPhotos)")
-        
         // If no photos and not in Feed view, show "Add Photos" button
         if imageNames.isEmpty && !showStampImage {
             PhotosPicker(
@@ -97,7 +101,7 @@ struct PhotoGalleryView: View {
                             Image(stampImageName)
                                 .resizable()
                                 .aspectRatio(contentMode: .fill)
-                                .frame(width: 80, height: 80)
+                                .frame(width: 120, height: 120)
                                 .clipped()
                                 .cornerRadius(12)
                         }
@@ -107,39 +111,23 @@ struct PhotoGalleryView: View {
                     // Display existing photos
                     ForEach(Array(imageNames.enumerated()), id: \.offset) { index, imageName in
                         Button(action: {
-                            print("🖼️ Photo tapped - Index: \(index), Filename: \(imageName)")
-                            print("🖼️ Stamp ID: \(stampId)")
-                            print("🖼️ Total images in gallery: \(imageNames.count)")
                             selectedPhotoIndex = PhotoIndex(id: index)
                         }) {
                             ZStack {
-                                // Use thumbnail for better performance
-                                if let image = ImageManager.shared.loadThumbnail(named: imageName) {
-                                    let _ = print("🔍 [\(index)] Loaded thumbnail for: \(imageName)")
-                                    Image(uiImage: image)
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                        .frame(width: 80, height: 80)
-                                        .clipped()
-                                        .cornerRadius(12)
-                                } else {
-                                    let _ = print("🔍 [\(index)] NO thumbnail for: \(imageName)")
-                                    // Placeholder if image fails to load
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color.gray.opacity(0.3))
-                                        .frame(width: 80, height: 80)
-                                        .overlay(
-                                            Image(systemName: "photo")
-                                                .foregroundColor(.gray)
-                                        )
-                                }
+                                // Use AsyncThumbnailView to handle both local and Firebase loading
+                                AsyncThumbnailView(
+                                    imageName: imageName,
+                                    storagePath: getStoragePath(for: imageName),
+                                    stampId: stampId
+                                )
+                                .frame(width: 120, height: 120)
+                                .cornerRadius(12)
                                 
                                 // Show loading spinner if this photo is uploading
                                 if uploadingPhotos.contains(imageName) {
-                                    let _ = print("🔍 [\(index)] Showing spinner for: \(imageName)")
                                     RoundedRectangle(cornerRadius: 12)
                                         .fill(Color.black.opacity(0.5))
-                                        .frame(width: 80, height: 80)
+                                        .frame(width: 120, height: 120)
                                     
                                     ProgressView()
                                         .tint(.white)
@@ -150,9 +138,19 @@ struct PhotoGalleryView: View {
                         .buttonStyle(PlainButtonStyle())
                     }
                     
+                    // Show placeholder spinners for photos being processed (before thumbnails are ready)
+                    ForEach(Array(uploadingPhotos.subtracting(Set(imageNames))), id: \.self) { _ in
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.gray.opacity(0.3))
+                            .frame(width: 120, height: 120)
+                            .overlay(
+                                ProgressView()
+                                    .tint(.gray)
+                            )
+                    }
+                    
                     // Add photo button (if under limit)
                     if canAddMore {
-                        let _ = print("🔍 Showing + button")
                         PhotosPicker(
                             selection: $selectedItems,
                             maxSelectionCount: maxPhotos - imageNames.count,
@@ -160,10 +158,10 @@ struct PhotoGalleryView: View {
                         ) {
                             RoundedRectangle(cornerRadius: 12)
                                 .fill(Color.gray.opacity(0.3))
-                                .frame(width: 80, height: 80)
+                                .frame(width: 120, height: 120)
                                 .overlay(
                                     Image(systemName: "plus")
-                                        .font(.system(size: 24))
+                                        .font(.system(size: 30))
                                         .foregroundColor(.gray)
                                 )
                         }
@@ -190,7 +188,17 @@ struct PhotoGalleryView: View {
     private func handlePhotoSelection(_ items: [PhotosPickerItem]) async {
         guard !items.isEmpty else { return }
         
-        // Load images from PhotosPicker
+        // 1. IMMEDIATELY create placeholder filenames and show spinners
+        let count = min(items.count, maxPhotos - imageNames.count)
+        var placeholderFilenames: [String] = []
+        for i in 0..<count {
+            let placeholder = "uploading_\(stampId)_\(Date().timeIntervalSince1970)_\(i)"
+            placeholderFilenames.append(placeholder)
+            // Add to uploading state immediately for instant feedback
+            stampsManager.userCollection.addUploadingPhoto(stampId: stampId, filename: placeholder)
+        }
+        
+        // 2. Load images from PhotosPicker
         var loadedImages: [UIImage] = []
         for item in items {
             guard imageNames.count + loadedImages.count < maxPhotos else {
@@ -207,30 +215,153 @@ struct PhotoGalleryView: View {
             }
         }
         
-        // Use shared upload workflow from ImageManager
+        // 3. Use shared upload workflow from ImageManager
         await ImageManager.shared.uploadPhotos(
             loadedImages,
             stampId: stampId,
             userId: authManager.userId
         ) { filenames in
-            print("🔍 [PhotoGallery] onPhotosAdded callback - adding \(filenames.count) photos")
+            // Replace placeholders with real filenames atomically
+            for placeholder in placeholderFilenames {
+                stampsManager.userCollection.removeUploadingPhoto(stampId: stampId, filename: placeholder)
+            }
+            
             // All photos loaded and saved - add to UI at once
             for filename in filenames {
-                print("🔍 [PhotoGallery] Adding to uploadingPhotos: \(filename)")
-                uploadingPhotos.insert(filename)
-                print("🔍 [PhotoGallery] Adding to stampsManager: \(filename)")
-                stampsManager.userCollection.addImage(for: stampId, imageName: filename)
+                stampsManager.userCollection.addUploadingPhoto(stampId: stampId, filename: filename)
+                // Note: Storage path will be added later when upload completes
+                stampsManager.userCollection.addImage(for: stampId, imageName: filename, storagePath: nil)
             }
-            print("🔍 [PhotoGallery] uploadingPhotos now has \(uploadingPhotos.count) items: \(uploadingPhotos)")
-        } onUploadComplete: { filename in
-            print("🔍 [PhotoGallery] onUploadComplete callback - removing spinner for: \(filename)")
-            // Each photo uploaded - remove spinner
-            uploadingPhotos.remove(filename)
-            print("🔍 [PhotoGallery] uploadingPhotos now has \(uploadingPhotos.count) items: \(uploadingPhotos)")
+        } onUploadComplete: { filename, storagePath in
+            // Update the stamp with the Firebase storage path
+            if let storagePath = storagePath {
+                stampsManager.userCollection.updateImagePath(for: stampId, imageName: filename, storagePath: storagePath)
+            }
+            
+            // Remove spinner
+            stampsManager.userCollection.removeUploadingPhoto(stampId: stampId, filename: filename)
         }
         
         // Clear selection
         selectedItems.removeAll()
+    }
+    
+    /// Get the storage path for a given image name
+    private func getStoragePath(for imageName: String) -> String? {
+        guard let collectedStamp = stampsManager.userCollection.collectedStamps
+            .first(where: { $0.stampId == stampId }),
+              let index = collectedStamp.userImageNames.firstIndex(of: imageName),
+              index < collectedStamp.userImagePaths.count else {
+            return nil
+        }
+        
+        let path = collectedStamp.userImagePaths[index]
+        return path.isEmpty ? nil : path
+    }
+}
+
+// MARK: - Async Thumbnail View
+
+/// Loads thumbnails with automatic fallback to Firebase Storage
+/// 🔧 FIX: Uses memory cache and aggressively clears thumbnails when off-screen
+struct AsyncThumbnailView: View {
+    let imageName: String
+    let storagePath: String?
+    let stampId: String
+    
+    @State private var thumbnail: UIImage?
+    @State private var isLoading = true
+    @State private var loadTask: Task<Void, Never>?
+    
+    var body: some View {
+        ZStack {
+            if isLoading {
+                // Show placeholder while loading
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.gray.opacity(0.3))
+                    .overlay(
+                        ProgressView()
+                            .tint(.gray)
+                    )
+            } else if let thumbnail = thumbnail {
+                // Display the loaded thumbnail
+                Image(uiImage: thumbnail)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .clipped()
+            } else {
+                // Failed to load - show placeholder
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.gray.opacity(0.3))
+                    .overlay(
+                        Image(systemName: "photo")
+                            .foregroundColor(.gray)
+                    )
+            }
+        }
+        .task {
+            loadTask = Task {
+                await loadThumbnail()
+            }
+        }
+        .onDisappear {
+            // 🔧 FIX: Cancel loading task and clear thumbnail when off-screen
+            // PhotoGalleryView scrolls horizontally, so off-screen thumbnails should be freed
+            loadTask?.cancel()
+            thumbnail = nil
+            isLoading = true
+        }
+    }
+    
+    private func loadThumbnail() async {
+        // 🔧 FIX: Check memory cache first (fast!)
+        if let cachedThumbnail = ImageCacheManager.shared.getThumbnail(key: imageName) {
+            await MainActor.run {
+                self.thumbnail = cachedThumbnail
+                self.isLoading = false
+            }
+            return
+        }
+        
+        // Step 1: Try loading thumbnail from local disk cache
+        if let cachedThumbnail = ImageManager.shared.loadThumbnail(named: imageName) {
+            // Store in memory cache for faster access next time
+            ImageCacheManager.shared.setThumbnail(cachedThumbnail, key: imageName)
+            
+            await MainActor.run {
+                self.thumbnail = cachedThumbnail
+                self.isLoading = false
+            }
+            return
+        }
+        
+        // Step 2: If not cached and we have a storage path, download from Firebase
+        if let storagePath = storagePath, !storagePath.isEmpty {
+            do {
+                print("⬇️ Thumbnail not cached, downloading from Firebase: \(imageName)")
+                let downloadedThumbnail = try await ImageManager.shared.downloadAndCacheThumbnail(
+                    storagePath: storagePath,
+                    stampId: stampId
+                )
+                
+                // Store in memory cache
+                ImageCacheManager.shared.setThumbnail(downloadedThumbnail, key: imageName)
+                
+                await MainActor.run {
+                    self.thumbnail = downloadedThumbnail
+                    self.isLoading = false
+                }
+                return
+            } catch {
+                print("⚠️ Failed to download thumbnail from Firebase: \(error.localizedDescription)")
+            }
+        }
+        
+        // Step 3: Failed to load
+        await MainActor.run {
+            self.thumbnail = nil
+            self.isLoading = false
+        }
     }
 }
 

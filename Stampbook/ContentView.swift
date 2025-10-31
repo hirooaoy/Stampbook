@@ -6,6 +6,11 @@ struct ContentView: View {
     @State private var selectedTab = 0
     
     var body: some View {
+        // TODO: Add loading/error state UI overlay
+        // - Show ProgressView when stampsManager.isLoading is true
+        // - Show error message with retry button when stampsManager.loadError is not nil
+        // - Blur/disable main content during loading/error states
+        
         TabView(selection: $selectedTab) {
             FeedView(selectedTab: $selectedTab)
                 .tabItem {

@@ -1,24 +1,44 @@
 import SwiftUI
 
 struct FollowListView: View {
+    let userId: String // The user whose followers/following we're viewing
+    let userDisplayName: String
+    @EnvironmentObject var followManager: FollowManager // Shared instance
+    @EnvironmentObject var authManager: AuthManager
     @State private var selectedTab: FollowTab
     @State private var searchText = ""
     
-    init(initialTab: FollowTab = .followers) {
+    init(userId: String, userDisplayName: String, initialTab: FollowTab = .followers) {
+        self.userId = userId
+        self.userDisplayName = userDisplayName
         _selectedTab = State(initialValue: initialTab)
     }
     
     enum FollowTab: String, CaseIterable {
-        case followers = "10 Followers"
-        case following = "15 Following"
+        case followers = "Followers"
+        case following = "Following"
+    }
+    
+    var filteredUsers: [UserProfile] {
+        let users = selectedTab == .followers ? followManager.followers : followManager.following
+        
+        if searchText.isEmpty {
+            return users
+        } else {
+            return users.filter { user in
+                user.displayName.localizedCaseInsensitiveContains(searchText) ||
+                user.username.localizedCaseInsensitiveContains(searchText)
+            }
+        }
     }
     
     var body: some View {
         VStack(spacing: 0) {
-            // Native segmented control
+            // Native segmented control with counts
             Picker("View", selection: $selectedTab) {
                 ForEach(FollowTab.allCases, id: \.self) { tab in
-                    Text(tab.rawValue)
+                    let count = tab == .followers ? followManager.followers.count : followManager.following.count
+                    Text("\(count) \(tab.rawValue)")
                         .font(.system(size: 24, weight: .medium))
                         .tag(tab)
                 }
@@ -28,6 +48,14 @@ struct FollowListView: View {
             .padding(.horizontal, 20)
             .padding(.top, 16)
             .padding(.bottom, 16)
+            .onChange(of: selectedTab) { oldTab, newTab in
+                // Refresh data when switching tabs
+                if newTab == .followers && followManager.followers.isEmpty {
+                    followManager.fetchFollowers(userId: userId)
+                } else if newTab == .following && followManager.following.isEmpty {
+                    followManager.fetchFollowing(userId: userId)
+                }
+            }
             
             // Search bar
             HStack {
@@ -53,65 +81,102 @@ struct FollowListView: View {
             .padding(.bottom, 16)
             
             // List of users
-            ScrollView {
-                LazyVStack(spacing: 16) {
-                    ForEach(0..<20, id: \.self) { index in
-                        NavigationLink(destination: UserProfileView(username: "username", displayName: "User Name")) {
-                            UserRow()
+            if followManager.isLoading {
+                Spacer()
+                ProgressView()
+                    .scaleEffect(1.2)
+                Spacer()
+            } else if filteredUsers.isEmpty {
+                Spacer()
+                Text(searchText.isEmpty ? "No \(selectedTab.rawValue.lowercased()) yet" : "No results")
+                    .foregroundColor(.secondary)
+                    .font(.body)
+                Spacer()
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 16) {
+                        ForEach(filteredUsers) { user in
+                            NavigationLink(destination: UserProfileView(userId: user.id, username: user.username, displayName: user.displayName)) {
+                                UserRow(user: user)
+                            }
+                            .buttonStyle(PlainButtonStyle())
                         }
-                        .buttonStyle(PlainButtonStyle())
                     }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 8)
                 }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 8)
             }
         }
-        .navigationTitle("Hiroo")
+        .navigationTitle(userDisplayName)
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            // Load initial data
+            if selectedTab == .followers {
+                followManager.fetchFollowers(userId: userId)
+            } else {
+                followManager.fetchFollowing(userId: userId)
+            }
+        }
     }
 }
 
 struct UserRow: View {
-    @State private var isFollowing = false
+    let user: UserProfile
+    @EnvironmentObject var followManager: FollowManager // Shared instance
+    @EnvironmentObject var authManager: AuthManager
+    
+    var isCurrentUser: Bool {
+        authManager.userId == user.id
+    }
+    
+    var isFollowing: Bool {
+        followManager.isFollowing[user.id] ?? false
+    }
     
     var body: some View {
         HStack(spacing: 12) {
-            // Profile picture
-            Circle()
-                .fill(Color.gray.opacity(0.3))
-                .frame(width: 48, height: 48)
-                .overlay(
-                    Image(systemName: "person.fill")
-                        .font(.system(size: 24))
-                        .foregroundColor(.gray)
-                )
+            // Profile picture with caching
+            ProfileImageView(
+                avatarUrl: user.avatarUrl,
+                userId: user.id,
+                size: 48
+            )
             
-            // Name
+            // Name and username
             VStack(alignment: .leading, spacing: 2) {
-                Text("User Name")
+                Text(user.displayName)
                     .font(.body)
                     .fontWeight(.medium)
                     .foregroundColor(.primary)
                 
-                Text("@username")
+                Text("@\(user.username)")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
             
             Spacer()
             
-            // Follow button
-            Button(action: {
-                isFollowing.toggle()
-            }) {
-                Text(isFollowing ? "Following" : "Follow")
-                    .font(.footnote)
-                    .fontWeight(.semibold)
-                    .foregroundColor(isFollowing ? .primary : .white)
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 8)
-                    .background(isFollowing ? Color(.systemGray5) : Color.blue)
-                    .cornerRadius(8)
+            // Follow button (don't show for current user)
+            if !isCurrentUser {
+                Button(action: {
+                    guard let currentUserId = authManager.userId else { return }
+                    followManager.toggleFollow(currentUserId: currentUserId, targetUserId: user.id)
+                }) {
+                    Text(isFollowing ? "Following" : "Follow")
+                        .font(.footnote)
+                        .fontWeight(.semibold)
+                        .foregroundColor(isFollowing ? .primary : .white)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 8)
+                        .background(isFollowing ? Color(.systemGray5) : Color.blue)
+                        .cornerRadius(8)
+                }
+            }
+        }
+        .onAppear {
+            // Check follow status when row appears
+            if let currentUserId = authManager.userId, !isCurrentUser {
+                followManager.checkFollowStatus(currentUserId: currentUserId, targetUserId: user.id)
             }
         }
     }
@@ -119,7 +184,9 @@ struct UserRow: View {
 
 #Preview {
     NavigationStack {
-        FollowListView()
+        FollowListView(userId: "testUserId", userDisplayName: "Hiroo")
+            .environmentObject(AuthManager())
+            .environmentObject(FollowManager())
     }
 }
 

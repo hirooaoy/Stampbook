@@ -61,13 +61,21 @@ struct CollectedStamp: Codable, Identifiable {
 class UserStampCollection: ObservableObject {
     @Published private(set) var collectedStamps: [CollectedStamp] = []
     
+    // Track which photos are currently uploading (stampId -> Set of filenames)
+    @Published var uploadingPhotos: [String: Set<String>] = [:]
+    
+    // Track failed deletions for retry (storage paths that failed to delete)
+    @Published private var pendingDeletions: Set<String> = []
+    
     private let userDefaultsKey = "collectedStamps"
-    private var currentUserId: String?
+    private let pendingDeletionsKey = "pendingDeletions"
+    private(set) var currentUserId: String?
     private var allStamps: [CollectedStamp] = [] // Store all stamps, filter by user
     private let firebaseService = FirebaseService.shared
     
     init() {
         loadCollectedStamps()
+        loadPendingDeletions()
     }
     
     /// Set the current user and filter stamps to show only their collected stamps
@@ -79,8 +87,16 @@ class UserStampCollection: ObservableObject {
         if let userId = userId {
             Task {
                 await syncFromFirestore(userId: userId)
+                // Retry any pending deletions when user signs in
+                await retryPendingDeletions()
             }
         }
+    }
+    
+    /// Refresh collected stamps from server (pull-to-refresh)
+    func refresh(userId: String) async {
+        await syncFromFirestore(userId: userId)
+        await retryPendingDeletions()
     }
     
     /// Filter stamps to only show current user's stamps
@@ -180,24 +196,96 @@ class UserStampCollection: ObservableObject {
         }
     }
     
-    func removeImage(for stampId: String, imageName: String) {
+    /// Update the storage path for an existing image (called after Firebase upload completes)
+    func updateImagePath(for stampId: String, imageName: String, storagePath: String) {
+        // Update in allStamps
+        if let allIndex = allStamps.firstIndex(where: { $0.stampId == stampId }),
+           let imageIndex = allStamps[allIndex].userImageNames.firstIndex(of: imageName) {
+            // Ensure imagePaths array is large enough
+            while allStamps[allIndex].userImagePaths.count <= imageIndex {
+                allStamps[allIndex].userImagePaths.append("")
+            }
+            allStamps[allIndex].userImagePaths[imageIndex] = storagePath
+        }
+        
+        // Update in filtered collectedStamps
+        if let index = collectedStamps.firstIndex(where: { $0.stampId == stampId }),
+           let imageIndex = collectedStamps[index].userImageNames.firstIndex(of: imageName) {
+            // Ensure imagePaths array is large enough
+            while collectedStamps[index].userImagePaths.count <= imageIndex {
+                collectedStamps[index].userImagePaths.append("")
+            }
+            collectedStamps[index].userImagePaths[imageIndex] = storagePath
+        }
+        
+        saveCollectedStamps()
+        
+        // Sync to Firestore
+        if let userId = currentUserId {
+            Task {
+                do {
+                    try await firebaseService.updateStampImages(
+                        stampId: stampId,
+                        userId: userId,
+                        imageNames: collectedStamps.first(where: { $0.stampId == stampId })?.userImageNames ?? [],
+                        imagePaths: collectedStamps.first(where: { $0.stampId == stampId })?.userImagePaths ?? []
+                    )
+                    print("✅ Image path synced to Firestore: \(storagePath)")
+                } catch {
+                    print("⚠️ Failed to sync image path: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
+    
+    func removeImage(for stampId: String, imageName: String) async throws {
+        // Get the storage path BEFORE removing from arrays
+        var storagePath: String?
+        if let allIndex = allStamps.firstIndex(where: { $0.stampId == stampId }),
+           let imageIndex = allStamps[allIndex].userImageNames.firstIndex(of: imageName),
+           imageIndex < allStamps[allIndex].userImagePaths.count {
+            storagePath = allStamps[allIndex].userImagePaths[imageIndex]
+        }
+        
+        // STEP 1: Delete from Firebase Storage FIRST (blocking operation)
+        if let storagePath = storagePath, !storagePath.isEmpty {
+            do {
+                try await ImageManager.shared.deleteImageFromFirebase(path: storagePath)
+                print("✅ Deleted image from Firebase Storage: \(storagePath)")
+                // Remove from pending deletions if it was there
+                pendingDeletions.remove(storagePath)
+                savePendingDeletions()
+            } catch {
+                print("⚠️ Failed to delete from Firebase Storage: \(error.localizedDescription)")
+                
+                // Check if it's a network error - if so, add to pending deletions
+                let nsError = error as NSError
+                let isNetworkError = nsError.domain == NSURLErrorDomain || 
+                                   (nsError.domain == "FIRStorageErrorDomain" && nsError.code == -13030)
+                
+                if isNetworkError {
+                    print("📝 Network error detected - adding to pending deletions for retry")
+                    pendingDeletions.insert(storagePath)
+                    savePendingDeletions()
+                    // Don't throw - allow local deletion to proceed
+                    // Will retry when network is available
+                } else {
+                    // Re-throw non-network errors (permissions, etc)
+                    throw error
+                }
+            }
+        } else {
+            print("⚠️ No storage path found for image: \(imageName) - skipping Firebase deletion")
+        }
+        
+        // STEP 2: Only after Firebase deletion succeeds (or is queued), update local state
         // Update in allStamps
         if let allIndex = allStamps.firstIndex(where: { $0.stampId == stampId }) {
             if let imageIndex = allStamps[allIndex].userImageNames.firstIndex(of: imageName) {
                 allStamps[allIndex].userImageNames.remove(at: imageIndex)
                 // Remove corresponding storage path if exists
                 if imageIndex < allStamps[allIndex].userImagePaths.count {
-                    let storagePath = allStamps[allIndex].userImagePaths[imageIndex]
                     allStamps[allIndex].userImagePaths.remove(at: imageIndex)
-                    
-                    // Delete from Firebase Storage
-                    Task {
-                        do {
-                            try await ImageManager.shared.deleteImageFromFirebase(path: storagePath)
-                        } catch {
-                            print("⚠️ Failed to delete image from Firebase: \(error.localizedDescription)")
-                        }
-                    }
                 }
             }
         }
@@ -213,26 +301,33 @@ class UserStampCollection: ObservableObject {
             }
         }
         
-        // Delete local file
+        // STEP 3: Delete local file
         ImageManager.shared.deleteImage(named: imageName)
         saveCollectedStamps()
         
-        // Sync to Firestore
+        // STEP 4: Sync to Firestore
         if let userId = currentUserId {
-            Task {
-                do {
-                    try await firebaseService.updateStampImages(stampId: stampId, userId: userId, imageNames: collectedStamps.first(where: { $0.stampId == stampId })?.userImageNames ?? [], imagePaths: collectedStamps.first(where: { $0.stampId == stampId })?.userImagePaths ?? [])
-                    print("✅ Image removal synced to Firestore")
-                } catch {
-                    print("⚠️ Failed to sync image removal: \(error.localizedDescription)")
-                }
+            do {
+                try await firebaseService.updateStampImages(
+                    stampId: stampId, 
+                    userId: userId, 
+                    imageNames: collectedStamps.first(where: { $0.stampId == stampId })?.userImageNames ?? [], 
+                    imagePaths: collectedStamps.first(where: { $0.stampId == stampId })?.userImagePaths ?? []
+                )
+                print("✅ Image removal synced to Firestore")
+            } catch {
+                print("⚠️ Failed to sync image removal to Firestore: \(error.localizedDescription)")
+                // Don't throw - local deletion already happened, Firestore will sync later
             }
         }
     }
     
+    /// ⚠️ DEVELOPMENT PURPOSES ONLY - Resets all collected stamps
+    /// This function is NOT accessible from the UI and should only be used for testing/debugging
     func resetAll() {
         allStamps.removeAll()
         collectedStamps.removeAll()
+        uploadingPhotos.removeAll()
         saveCollectedStamps()
         
         // Delete from Firestore
@@ -248,7 +343,57 @@ class UserStampCollection: ObservableObject {
         }
     }
     
+    // MARK: - Uploading Photos Tracking
+    
+    func addUploadingPhoto(stampId: String, filename: String) {
+        if uploadingPhotos[stampId] == nil {
+            uploadingPhotos[stampId] = []
+        }
+        uploadingPhotos[stampId]?.insert(filename)
+    }
+    
+    func removeUploadingPhoto(stampId: String, filename: String) {
+        uploadingPhotos[stampId]?.remove(filename)
+        if uploadingPhotos[stampId]?.isEmpty == true {
+            uploadingPhotos.removeValue(forKey: stampId)
+        }
+    }
+    
+    func getUploadingPhotos(for stampId: String) -> Set<String> {
+        return uploadingPhotos[stampId] ?? []
+    }
+    
     // MARK: - Firestore Sync
+    
+    /// Retry pending deletions (called when network becomes available)
+    func retryPendingDeletions() async {
+        guard !pendingDeletions.isEmpty else {
+            print("✅ No pending deletions to retry")
+            return
+        }
+        
+        print("🔄 Retrying \(pendingDeletions.count) pending deletions...")
+        
+        let pathsToRetry = Array(pendingDeletions)
+        for path in pathsToRetry {
+            do {
+                try await ImageManager.shared.deleteImageFromFirebase(path: path)
+                print("✅ Successfully deleted previously failed image: \(path)")
+                pendingDeletions.remove(path)
+            } catch {
+                print("⚠️ Still unable to delete \(path): \(error.localizedDescription)")
+                // Keep in pending deletions for next retry
+            }
+        }
+        
+        savePendingDeletions()
+        
+        if pendingDeletions.isEmpty {
+            print("✅ All pending deletions completed")
+        } else {
+            print("⚠️ \(pendingDeletions.count) deletions still pending")
+        }
+    }
     
     /// Fetch stamps from Firestore and merge with local data
     private func syncFromFirestore(userId: String) async {
@@ -307,6 +452,21 @@ class UserStampCollection: ObservableObject {
                 print("⚠️ Failed to decode collected stamps (schema changed). Clearing old data.")
                 UserDefaults.standard.removeObject(forKey: userDefaultsKey)
             }
+        }
+    }
+    
+    // MARK: - Pending Deletions Persistence
+    
+    private func savePendingDeletions() {
+        let paths = Array(pendingDeletions)
+        UserDefaults.standard.set(paths, forKey: pendingDeletionsKey)
+        print("💾 Saved \(paths.count) pending deletions")
+    }
+    
+    private func loadPendingDeletions() {
+        if let paths = UserDefaults.standard.array(forKey: pendingDeletionsKey) as? [String] {
+            pendingDeletions = Set(paths)
+            print("📥 Loaded \(paths.count) pending deletions")
         }
     }
 }

@@ -12,23 +12,64 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
     
-    // Users can only read/write their own collected stamps
+    // Users can read anyone's collected stamps (for social feed)
+    // But can only create/update/delete their own
     match /users/{userId}/collected_stamps/{stampId} {
-      allow read: if isOwner(userId);
+      allow read: if isSignedIn();
       allow create: if isOwner(userId) && request.resource.data.userId == userId;
       allow update: if isOwner(userId);
       allow delete: if isOwner(userId);
     }
     
-    // Future: User profile data (when you add it)
+    // User profile data
     match /users/{userId} {
       allow read: if isSignedIn(); // Anyone can read user profiles (for social features)
-      allow write: if isOwner(userId); // But only owner can write
+      allow create, delete: if isOwner(userId); // Only owner can create/delete
+      allow update: if isOwner(userId) || 
+                       // Allow updating follower/following counts during follow operations
+                       (isSignedIn() && 
+                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followerCount', 'followingCount', 'lastActiveAt']));
     }
     
-    // Deny all other access by default
-    match /{document=**} {
-      allow read, write: if false;
+    // Followers subcollection: users/{userId}/followers/{followerId}
+    // Anyone can read to see who follows a user
+    // Only the follower themselves can create/delete their follow relationship
+    match /users/{userId}/followers/{followerId} {
+      allow read: if isSignedIn();
+      // The person following (followerId) can create/delete their own follow entry in someone else's followers list
+      // This allows User A to write to users/B/followers/A when A follows B
+      allow create, delete: if isSignedIn() && request.auth.uid == followerId;
+      allow update: if false; // Follow relationships are immutable once created
+    }
+    
+    // Following subcollection: users/{userId}/following/{followingId}
+    // Anyone can read to see who a user follows
+    // Only the user themselves can create/delete their following entries
+    match /users/{userId}/following/{followingId} {
+      allow read: if isSignedIn();
+      // User can only modify their own following list
+      allow create: if isOwner(userId);
+      allow delete: if isOwner(userId);
+      allow update: if false; // Follow relationships are immutable once created
+    }
+    
+    // Stamps collection - read-only for all authenticated users
+    match /stamps/{stampId} {
+      allow read: if true; // Anyone can read stamps (even not signed in)
+      allow write: if false; // Only admins can write (via Firebase Console)
+    }
+    
+    // Collections - read-only for all authenticated users
+    match /collections/{collectionId} {
+      allow read: if true; // Anyone can read collections
+      allow write: if false; // Only admins can write (via Firebase Console)
+    }
+    
+    // Stamp statistics - read by anyone, write only by authenticated users when collecting
+    match /stamp_statistics/{stampId} {
+      allow read: if true; // Anyone can read statistics
+      allow create, update: if isSignedIn(); // Only authenticated users can update (when collecting)
+      allow delete: if false; // Never allow deletion
     }
   }
 }

@@ -4,15 +4,17 @@ import PhotosUI
 
 struct FeedView: View {
     @EnvironmentObject var authManager: AuthManager
+    @EnvironmentObject var stampsManager: StampsManager
     @Environment(\.colorScheme) var colorScheme
     @Binding var selectedTab: Int
     @State private var showNotifications = false
     @State private var showFeedMenu = false
     @State private var selectedFeedTab: FeedTab = .all
+    @State private var showUserSearch = false
     
     enum FeedTab: String, CaseIterable {
         case all = "All"
-        case onlyYou = "Only You"
+        case onlyYou = "Only Yours"
     }
     
     var body: some View {
@@ -33,7 +35,7 @@ struct FeedView: View {
                         // Signed-in menu: Search, notification, and ellipses
                         HStack(spacing: 16) {
                             Button(action: {
-                                // TODO: Implement search functionality
+                                showUserSearch = true
                             }) {
                                 Image(systemName: "magnifyingglass")
                                     .font(.system(size: 24))
@@ -75,6 +77,13 @@ struct FeedView: View {
                                 print("For Local Business tapped")
                             }) {
                                 Label("For Local Business", systemImage: "storefront")
+                            }
+                            
+                            Button(action: {
+                                // TODO: Open creator info
+                                print("For Creators tapped")
+                            }) {
+                                Label("For Creators", systemImage: "sparkles")
                             }
                         } label: {
                             Image(systemName: "ellipsis")
@@ -159,6 +168,15 @@ struct FeedView: View {
                         }
                     }
                 }
+                .refreshable {
+                    await stampsManager.refresh()
+                }
+                .onAppear {
+                    // Smart refresh: Shows cached data immediately, refreshes in background if stale
+                    Task {
+                        await stampsManager.refreshIfNeeded()
+                    }
+                }
                 .toolbar(.hidden, for: .navigationBar)
                 .alert("Notifications", isPresented: $showNotifications) {
                     Button("OK", role: .cancel) {}
@@ -172,6 +190,10 @@ struct FeedView: View {
                     
                     Button("Cancel", role: .cancel) {}
                 }
+                .sheet(isPresented: $showUserSearch) {
+                    UserSearchView()
+                        .environmentObject(authManager)
+                }
             }
         }
     }
@@ -180,11 +202,17 @@ struct FeedView: View {
         @Binding var selectedTab: Int
         @EnvironmentObject var stampsManager: StampsManager
         @EnvironmentObject var authManager: AuthManager
+        @State private var showSkeleton = true
+        @State private var feedPosts: [FeedPost] = []
+        @State private var isLoadingFeed = false
         
         // Struct to hold post data
         private struct FeedPost: Identifiable {
             let id: String
+            let userId: String
             let userName: String
+            let displayName: String
+            let avatarUrl: String?
             let stampName: String
             let location: String
             let date: String
@@ -197,74 +225,19 @@ struct FeedView: View {
             let commentCount: Int
         }
         
-        // Computed property to get all posts (user + mock posts)
-        private var allPosts: [FeedPost] {
-            var posts: [FeedPost] = []
-            
-            // Add user's collected stamps
-            let userPosts = stampsManager.userCollection.collectedStamps.compactMap { collectedStamp -> FeedPost? in
-                guard let stamp = stampsManager.stamps.first(where: { $0.id == collectedStamp.stampId }) else {
-                    return nil
-                }
-                return FeedPost(
-                    id: "user-\(collectedStamp.stampId)",
-                    userName: "Hiroo", // TODO: Replace with actual user name from auth
-                    stampName: stamp.name,
-                    location: stamp.cityCountry,
-                    date: formatDate(collectedStamp.collectedDate),
-                    actualDate: collectedStamp.collectedDate,
-                    isCurrentUser: true,
-                    stamp: stamp,
-                    userPhotos: collectedStamp.userImageNames,
-                    note: collectedStamp.userNotes.isEmpty ? nil : collectedStamp.userNotes,
-                    likeCount: 0, // TODO: Add social features
-                    commentCount: 0
-                )
-            }
-            posts.append(contentsOf: userPosts)
-            
-            // Add mock posts from other users (TODO: Replace with backend data)
-            if let ferryBuilding = stampsManager.stamps.first(where: { $0.id == "us-ca-sf-ferry-building" }) {
-                posts.append(FeedPost(
-                    id: "john-ferry",
-                    userName: "John",
-                    stampName: ferryBuilding.name,
-                    location: ferryBuilding.cityCountry,
-                    date: "Oct 20, 2025",
-                    actualDate: dateFromString("Oct 20, 2025") ?? Date(),
-                    isCurrentUser: false,
-                    stamp: ferryBuilding,
-                    userPhotos: [],
-                    note: "I love the vibes in there. What a great market!",
-                    likeCount: 24,
-                    commentCount: 7
-                ))
-            }
-            
-            if let doloresPark = stampsManager.stamps.first(where: { $0.id == "us-ca-sf-dolores-park" }) {
-                posts.append(FeedPost(
-                    id: "sarah-dolores",
-                    userName: "Sarah",
-                    stampName: doloresPark.name,
-                    location: doloresPark.cityCountry,
-                    date: "Oct 19, 2025",
-                    actualDate: dateFromString("Oct 19, 2025") ?? Date(),
-                    isCurrentUser: false,
-                    stamp: doloresPark,
-                    userPhotos: [],
-                    note: nil,
-                    likeCount: 8,
-                    commentCount: 2
-                ))
-            }
-            
-            // Sort by date (most recent first)
-            return posts.sorted { $0.actualDate > $1.actualDate }
-        }
-        
         var body: some View {
             VStack(spacing: 20) {
-                if !authManager.isSignedIn || allPosts.isEmpty {
+                if showSkeleton && isLoadingFeed && feedPosts.isEmpty {
+                    // Skeleton loading state - only show on first load with no data
+                    ForEach(0..<3, id: \.self) { index in
+                        SkeletonPostView()
+                            .redacted(reason: .placeholder)
+                        
+                        if index < 2 {
+                            Divider()
+                        }
+                    }
+                } else if !authManager.isSignedIn || feedPosts.isEmpty {
                     // Empty state (when signed out or no posts)
                     VStack(spacing: 16) {
                         Image(systemName: "newspaper")
@@ -275,16 +248,18 @@ struct FeedView: View {
                             .font(.title3)
                             .fontWeight(.semibold)
                         
-                        Text("Follow others or collect stamps to see activity")
+                        Text("Follow others to see their stamp collections")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
                     }
                     .padding(.top, 80)
                 } else {
-                    ForEach(Array(allPosts.enumerated()), id: \.element.id) { index, post in
+                    ForEach(Array(feedPosts.enumerated()), id: \.element.id) { index, post in
                         PostView(
-                            userName: post.userName,
+                            userId: post.userId,
+                            userName: post.displayName,
+                            avatarUrl: post.avatarUrl,
                             stampName: post.stampName,
                             location: post.location,
                             date: post.date,
@@ -297,7 +272,7 @@ struct FeedView: View {
                             selectedTab: $selectedTab
                         )
                         
-                        if index < allPosts.count - 1 {
+                        if index < feedPosts.count - 1 {
                             Divider()
                         }
                     }
@@ -306,6 +281,74 @@ struct FeedView: View {
             .padding(.horizontal, 20)
             .padding(.top, 8)
             .padding(.bottom, 32)
+            .onAppear {
+                loadFeed()
+            }
+            .onChange(of: stampsManager.lastRefreshTime) { oldValue, newValue in
+                // Reload feed when stamps are refreshed
+                loadFeed()
+            }
+        }
+        
+        /// Load feed from followed users
+        private func loadFeed() {
+            guard let userId = authManager.userId else { return }
+            guard authManager.isSignedIn else { return }
+            
+            isLoadingFeed = true
+            
+            Task {
+                do {
+                    let feedItems = try await FirebaseService.shared.fetchFollowingFeed(userId: userId, limit: 100)
+                    
+                    // Convert to FeedPost
+                    var posts: [FeedPost] = []
+                    
+                    for (profile, collectedStamp) in feedItems {
+                        guard let stamp = stampsManager.stamps.first(where: { $0.id == collectedStamp.stampId }) else {
+                            continue
+                        }
+                        
+                        let post = FeedPost(
+                            id: "\(profile.id)-\(collectedStamp.stampId)",
+                            userId: profile.id,
+                            userName: profile.username,
+                            displayName: profile.displayName,
+                            avatarUrl: profile.avatarUrl,
+                            stampName: stamp.name,
+                            location: stamp.cityCountry,
+                            date: formatDate(collectedStamp.collectedDate),
+                            actualDate: collectedStamp.collectedDate,
+                            isCurrentUser: profile.id == userId,
+                            stamp: stamp,
+                            userPhotos: collectedStamp.userImageNames,
+                            note: collectedStamp.userNotes.isEmpty ? nil : collectedStamp.userNotes,
+                            likeCount: 0,
+                            commentCount: 0
+                        )
+                        posts.append(post)
+                    }
+                    
+                    await MainActor.run {
+                        self.feedPosts = posts
+                        self.isLoadingFeed = false
+                        
+                        // Hide skeleton after a smooth delay
+                        Task {
+                            try? await Task.sleep(nanoseconds: 150_000_000) // 150ms
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                showSkeleton = false
+                            }
+                        }
+                    }
+                } catch {
+                    print("❌ Failed to load feed: \(error.localizedDescription)")
+                    await MainActor.run {
+                        self.isLoadingFeed = false
+                        self.showSkeleton = false
+                    }
+                }
+            }
         }
         
         private func formatDate(_ date: Date) -> String {
@@ -325,6 +368,7 @@ struct FeedView: View {
         @Binding var selectedTab: Int
         @EnvironmentObject var stampsManager: StampsManager
         @EnvironmentObject var authManager: AuthManager
+        @State private var showSkeleton = true
         
         // Computed property to get user's collected stamps with their data
         private var userCollectedPosts: [(stamp: Stamp, collectedStamp: CollectedStamp)] {
@@ -340,7 +384,17 @@ struct FeedView: View {
         
         var body: some View {
             VStack(spacing: 20) {
-                if !authManager.isSignedIn || userCollectedPosts.isEmpty {
+                if showSkeleton && stampsManager.isLoading && userCollectedPosts.isEmpty {
+                    // Skeleton loading state - only show on first load with no data
+                    ForEach(0..<3, id: \.self) { index in
+                        SkeletonPostView()
+                            .redacted(reason: .placeholder)
+                        
+                        if index < 2 {
+                            Divider()
+                        }
+                    }
+                } else if !authManager.isSignedIn || userCollectedPosts.isEmpty {
                     // Empty state (when signed out or no stamps)
                     VStack(spacing: 16) {
                         Image(systemName: "book.closed.fill")
@@ -361,7 +415,9 @@ struct FeedView: View {
                     // Show collected stamps as posts
                     ForEach(Array(userCollectedPosts.enumerated()), id: \.element.stamp.id) { index, post in
                         PostView(
-                            userName: "Hiroo", // TODO: Replace with actual user name from auth
+                            userId: authManager.userId ?? "",
+                            userName: authManager.userDisplayName ?? "User",
+                            avatarUrl: authManager.userProfile?.avatarUrl,
                             stampName: post.stamp.name,
                             location: post.stamp.cityCountry,
                             date: formatDate(post.collectedStamp.collectedDate),
@@ -383,6 +439,17 @@ struct FeedView: View {
             .padding(.horizontal, 20)
             .padding(.top, 8)
             .padding(.bottom, 32)
+            .onChange(of: stampsManager.isLoading) { oldValue, newValue in
+                if !newValue {
+                    // Add minimum display time for smooth transition
+                    Task {
+                        try? await Task.sleep(nanoseconds: 150_000_000) // 150ms
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            showSkeleton = false
+                        }
+                    }
+                }
+            }
         }
         
         private func formatDate(_ date: Date) -> String {
@@ -393,7 +460,9 @@ struct FeedView: View {
     }
     
     struct PostView: View {
+        let userId: String
         let userName: String
+        let avatarUrl: String?
         let stampName: String
         let location: String
         let date: String
@@ -424,7 +493,7 @@ struct FeedView: View {
                         .buttonStyle(PlainButtonStyle())
                     } else {
                         // Other user - navigate to their profile
-                        NavigationLink(destination: UserProfileView(username: userName, displayName: userName)) {
+                        NavigationLink(destination: UserProfileView(userId: userId, username: "", displayName: userName)) {
                             profilePicture
                         }
                         .buttonStyle(PlainButtonStyle())
@@ -491,7 +560,6 @@ struct FeedView: View {
                 // Photos section - stamp + user photos using PhotoGalleryView
                 PhotoGalleryView(
                     stampId: stamp.id,
-                    imageNames: userPhotos,
                     maxPhotos: 5,
                     showStampImage: true,
                     stampImageName: stamp.imageName,
@@ -575,14 +643,11 @@ struct FeedView: View {
         }
         
         private var profilePicture: some View {
-            Circle()
-                .fill(Color.gray.opacity(0.3))
-                .frame(width: 40, height: 40)
-                .overlay(
-                    Image(systemName: "person.fill")
-                        .font(.system(size: 20))
-                        .foregroundColor(.gray)
-                )
+            ProfileImageView(
+                avatarUrl: isCurrentUser ? authManager.userProfile?.avatarUrl : avatarUrl,
+                userId: userId,
+                size: 40
+            )
         }
         
         private func buildCollectionText() -> AttributedString {
@@ -613,6 +678,46 @@ struct FeedView: View {
                     .foregroundColor(.primary)
             }
             .buttonStyle(PlainButtonStyle())
+        }
+    }
+    
+    // MARK: - Skeleton Loading View
+    struct SkeletonPostView: View {
+        var body: some View {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .top, spacing: 12) {
+                    // Profile picture placeholder
+                    Circle()
+                        .fill(Color.gray.opacity(0.3))
+                        .frame(width: 40, height: 40)
+                    
+                    // Text content placeholders
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("User Name collected Stamp Name")
+                            .font(.body)
+                        
+                        Text("City, Country")
+                            .font(.subheadline)
+                        
+                        Text("Jan 1, 2024")
+                            .font(.subheadline)
+                    }
+                    
+                    Spacer()
+                }
+                
+                // Photo gallery placeholder - small squares like real feed
+                HStack(spacing: 8) {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.gray.opacity(0.3))
+                        .frame(width: 120, height: 120)
+                    
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.gray.opacity(0.3))
+                        .frame(width: 120, height: 120)
+                }
+            }
+            .padding(.vertical, 8)
         }
     }
 }

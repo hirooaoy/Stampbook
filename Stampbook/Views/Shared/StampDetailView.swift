@@ -15,6 +15,8 @@ struct StampDetailView: View {
     @State private var showMemorySection = false
     @State private var showNotesEditor = false
     @State private var editingNotes = ""
+    @State private var stampStats: StampStatistics?
+    @State private var userRank: Int?
     
     private var isCollected: Bool {
         stampsManager.isCollected(stamp)
@@ -53,10 +55,18 @@ struct StampDetailView: View {
                             .multilineTextAlignment(.center)
                             .fixedSize(horizontal: false, vertical: true)
                         
-                        // TODO: Replace with real collection count from backend
-                        Text(isCollected ? "14 people have this stamp" : "13 people have this stamp")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
+                        // Show real collection count from Firebase
+                        if let stats = stampStats {
+                            let count = stats.totalCollectors
+                            Text(count == 1 ? "1 person has this stamp" : "\(count) people have this stamp")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        } else {
+                            // Loading or no stats yet
+                            Text("Loading...")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        }
                     }
                     .padding(.horizontal, 24)
                     .padding(.top, 8)
@@ -107,12 +117,22 @@ struct StampDetailView: View {
                                         Text("Number")
                                             .font(.caption)
                                             .foregroundColor(.secondary)
-                                        Text("14")
-                                            .font(.body)
-                                            .fontWeight(.semibold)
-                                            .foregroundColor(.primary)
-                                            .lineLimit(1)
-                                            .minimumScaleFactor(0.5)
+                                        
+                                        if let rank = userRank {
+                                            Text("#\(rank)")
+                                                .font(.body)
+                                                .fontWeight(.semibold)
+                                                .foregroundColor(.primary)
+                                                .lineLimit(1)
+                                                .minimumScaleFactor(0.5)
+                                        } else {
+                                            Text("Calculating...")
+                                                .font(.body)
+                                                .fontWeight(.semibold)
+                                                .foregroundColor(.secondary)
+                                                .lineLimit(1)
+                                                .minimumScaleFactor(0.5)
+                                        }
                                     }
                                     
                                     Spacer()
@@ -154,11 +174,10 @@ struct StampDetailView: View {
                             .padding(.bottom, 16)
                             
                             // Photo section
-                            if let collectedStamp = stampsManager.userCollection.collectedStamps.first(where: { $0.stampId == stamp.id }) {
+                            if stampsManager.userCollection.collectedStamps.first(where: { $0.stampId == stamp.id }) != nil {
                                 // Always show photo gallery (it handles both empty and non-empty states)
                                 PhotoGalleryView(
-                                    stampId: stamp.id,
-                                    imageNames: collectedStamp.userImageNames
+                                    stampId: stamp.id
                                 )
                                 .padding(.bottom, 16)
                             }
@@ -469,14 +488,48 @@ struct StampDetailView: View {
             if isCollected {
                 showMemorySection = true
             }
+            
+            // Fetch stamp statistics (one-time fetch on appear vs real-time listener: lower cost, simpler code, fresh enough for social proof)
+            Task {
+                stampStats = await stampsManager.fetchStampStatistics(stampId: stamp.id)
+                
+                // If user has collected this stamp, fetch their rank
+                if isCollected, let userId = authManager.userId {
+                    userRank = await stampsManager.getUserRankForStamp(stampId: stamp.id, userId: userId)
+                }
+            }
         }
         .onChange(of: isCollected) { _, newValue in
             if newValue {
                 withAnimation(.spring(response: 0.4, dampingFraction: 1.0)) {
                     showMemorySection = true
                 }
+                
+                // Fetch statistics when stamp is collected
+                Task {
+                    stampStats = await stampsManager.fetchStampStatistics(stampId: stamp.id)
+                    
+                    if let userId = authManager.userId {
+                        userRank = await stampsManager.getUserRankForStamp(stampId: stamp.id, userId: userId)
+                        
+                        // If rank is nil, retry after a short delay (Firebase transaction may not be complete yet)
+                        if userRank == nil {
+                            try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+                            stampStats = await stampsManager.fetchStampStatistics(stampId: stamp.id)
+                            userRank = await stampsManager.getUserRankForStamp(stampId: stamp.id, userId: userId)
+                            
+                            // If still nil, try one more time
+                            if userRank == nil {
+                                try? await Task.sleep(nanoseconds: 1_500_000_000) // 1.5 seconds
+                                stampStats = await stampsManager.fetchStampStatistics(stampId: stamp.id)
+                                userRank = await stampsManager.getUserRankForStamp(stampId: stamp.id, userId: userId)
+                            }
+                        }
+                    }
+                }
             } else {
                 showMemorySection = false
+                userRank = nil
             }
         }
         .fullScreenCover(isPresented: $showNotesEditor) {

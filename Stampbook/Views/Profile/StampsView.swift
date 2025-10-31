@@ -4,9 +4,11 @@ import AuthenticationServices
 struct StampsView: View {
     @EnvironmentObject var stampsManager: StampsManager
     @EnvironmentObject var authManager: AuthManager
+    @StateObject private var profileManager = ProfileManager()
     @Environment(\.colorScheme) var colorScheme
     @State private var selectedTab: StampTab = .all
     @State private var showProfileMenu = false
+    @State private var showEditProfile = false
     
     enum StampTab: String, CaseIterable {
         case all = "All"
@@ -20,9 +22,15 @@ struct StampsView: View {
                 HStack {
                     if authManager.isSignedIn {
                         // Signed-in: Show username
-                        Text("@hirooaoy")
-                            .font(.headline)
-                            .fontWeight(.semibold)
+                        if let profile = profileManager.currentUserProfile {
+                            Text("@\(profile.username)")
+                                .font(.headline)
+                                .fontWeight(.semibold)
+                        } else {
+                            Text("@user")
+                                .font(.headline)
+                                .fontWeight(.semibold)
+                        }
                     } else {
                         // Signed-out: Show app logo
                         Image("AppLogo")
@@ -37,14 +45,17 @@ struct StampsView: View {
                     if authManager.isSignedIn {
                         // Signed-in menu
                         HStack(spacing: 16) {
+                            // Edit Profile Button - Opens ProfileEditView sheet
                             Button(action: {
-                                // TODO: Implement edit profile
+                                showEditProfile = true
                             }) {
                                 Image(systemName: "pencil.circle")
                                     .font(.system(size: 24))
                                     .foregroundColor(.primary)
                             }
+                            .disabled(profileManager.currentUserProfile == nil)
                             
+                            // More Options Menu (debug/dev tools)
                             Button(action: {
                                 showProfileMenu = true
                             }) {
@@ -72,6 +83,13 @@ struct StampsView: View {
                                 print("For Local Business tapped")
                             }) {
                                 Label("For Local Business", systemImage: "storefront")
+                            }
+                            
+                            Button(action: {
+                                // TODO: Open creator info
+                                print("For Creators tapped")
+                            }) {
+                                Label("For Creators", systemImage: "sparkles")
                             }
                         } label: {
                             Image(systemName: "ellipsis")
@@ -135,25 +153,58 @@ struct StampsView: View {
                         if authManager.isSignedIn {
                         HStack(spacing: 12) {
                             // Profile picture
-                            Circle()
-                                .fill(Color.gray.opacity(0.3))
+                            if let avatarUrl = profileManager.currentUserProfile?.avatarUrl,
+                               let url = URL(string: avatarUrl) {
+                                AsyncImage(url: url) { image in
+                                    image
+                                        .resizable()
+                                        .scaledToFill()
+                                } placeholder: {
+                                    Circle()
+                                        .fill(Color.gray.opacity(0.3))
+                                        .overlay(
+                                            ProgressView()
+                                        )
+                                }
                                 .frame(width: 64, height: 64)
-                                .overlay(
-                                    Image(systemName: "person.fill")
-                                        .font(.system(size: 32))
-                                        .foregroundColor(.gray)
-                                )
+                                .clipShape(Circle())
+                            } else {
+                                Circle()
+                                    .fill(Color.gray.opacity(0.3))
+                                    .frame(width: 64, height: 64)
+                                    .overlay(
+                                        Image(systemName: "person.fill")
+                                            .font(.system(size: 32))
+                                            .foregroundColor(.gray)
+                                    )
+                            }
                             
                             // Name and bio
                             VStack(alignment: .leading, spacing: 4) {
-                                Text("Hiroo")
-                                    .font(.title3)
-                                    .fontWeight(.semibold)
-                                
-                                Text("I love traveling and taking pictures around the world")
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
-                                    .lineLimit(2)
+                                if let profile = profileManager.currentUserProfile {
+                                    Text(profile.displayName)
+                                        .font(.title3)
+                                        .fontWeight(.semibold)
+                                    
+                                    if !profile.bio.isEmpty {
+                                        Text(profile.bio)
+                                            .font(.subheadline)
+                                            .foregroundColor(.secondary)
+                                            .lineLimit(2)
+                                    }
+                                } else {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text("Loading User Name")
+                                            .font(.title3)
+                                            .fontWeight(.semibold)
+                                        
+                                        Text("Loading bio text here that spans multiple lines")
+                                            .font(.subheadline)
+                                            .foregroundColor(.secondary)
+                                            .lineLimit(2)
+                                    }
+                                    .redacted(reason: .placeholder)
+                                }
                             }
                             
                             Spacer()
@@ -176,12 +227,20 @@ struct StampsView: View {
                                         Text("Rank")
                                             .font(.caption)
                                             .foregroundColor(.secondary)
-                                        Text("#1852")
-                                            .font(.body)
-                                            .fontWeight(.semibold)
-                                            .foregroundColor(.primary)
-                                            .lineLimit(1)
-                                            .minimumScaleFactor(0.5)
+                                        if let rank = profileManager.userRank {
+                                            Text("#\(rank)")
+                                                .font(.body)
+                                                .fontWeight(.semibold)
+                                                .foregroundColor(.primary)
+                                                .lineLimit(1)
+                                                .minimumScaleFactor(0.5)
+                                        } else {
+                                            Text("...")
+                                                .font(.body)
+                                                .fontWeight(.semibold)
+                                                .foregroundColor(.secondary)
+                                                .lineLimit(1)
+                                        }
                                     }
                                     
                                     Spacer()
@@ -192,6 +251,15 @@ struct StampsView: View {
                                 .frame(height: 70)
                                 .background(Color.gray.opacity(0.1))
                                 .cornerRadius(12)
+                                .onAppear {
+                                    // Lazy load rank when card appears
+                                    if profileManager.userRank == nil,
+                                       let profile = profileManager.currentUserProfile {
+                                        Task {
+                                            await profileManager.fetchUserRank(for: profile)
+                                        }
+                                    }
+                                }
                                 
                                 // Countries card
                                 HStack(spacing: 12) {
@@ -203,7 +271,7 @@ struct StampsView: View {
                                         Text("Countries")
                                             .font(.caption)
                                             .foregroundColor(.secondary)
-                                        Text("1")
+                                        Text("\(profileManager.currentUserProfile?.uniqueCountriesVisited ?? 0)")
                                             .font(.body)
                                             .fontWeight(.semibold)
                                             .foregroundColor(.primary)
@@ -221,7 +289,11 @@ struct StampsView: View {
                                 .cornerRadius(12)
                                 
                                 // Followers card
-                                NavigationLink(destination: FollowListView(initialTab: .followers)) {
+                                NavigationLink(destination: FollowListView(
+                                    userId: authManager.userId ?? "",
+                                    userDisplayName: profileManager.currentUserProfile?.displayName ?? "User",
+                                    initialTab: .followers
+                                )) {
                                     HStack(spacing: 12) {
                                         Image(systemName: "person.2.fill")
                                             .font(.system(size: 24))
@@ -231,7 +303,7 @@ struct StampsView: View {
                                             Text("Followers")
                                                 .font(.caption)
                                                 .foregroundColor(.secondary)
-                                            Text("10")
+                                            Text("\(profileManager.currentUserProfile?.followerCount ?? 0)")
                                                 .font(.body)
                                                 .fontWeight(.semibold)
                                                 .foregroundColor(.primary)
@@ -251,7 +323,11 @@ struct StampsView: View {
                                 .buttonStyle(PlainButtonStyle())
                                 
                                 // Following card
-                                NavigationLink(destination: FollowListView(initialTab: .following)) {
+                                NavigationLink(destination: FollowListView(
+                                    userId: authManager.userId ?? "",
+                                    userDisplayName: profileManager.currentUserProfile?.displayName ?? "User",
+                                    initialTab: .following
+                                )) {
                                     HStack(spacing: 12) {
                                         Image(systemName: "person.fill.checkmark")
                                             .font(.system(size: 24))
@@ -261,7 +337,7 @@ struct StampsView: View {
                                             Text("Following")
                                                 .font(.caption)
                                                 .foregroundColor(.secondary)
-                                            Text("15")
+                                            Text("\(profileManager.currentUserProfile?.followingCount ?? 0)")
                                                 .font(.body)
                                                 .fontWeight(.semibold)
                                                 .foregroundColor(.primary)
@@ -308,24 +384,60 @@ struct StampsView: View {
                         }
                     }
                 }
+                .refreshable {
+                    // Refresh in parallel for better performance
+                    await withTaskGroup(of: Void.self) { group in
+                        group.addTask {
+                            await profileManager.refresh()
+                        }
+                        group.addTask {
+                            await stampsManager.refresh()
+                        }
+                    }
+                }
                 .toolbar(.hidden, for: .navigationBar)
+                // MARK: - Profile Edit Sheet
+                // Shows ProfileEditView when user taps pencil icon
+                // On save, updates the local profile state and syncs to Firebase
+                .sheet(isPresented: $showEditProfile) {
+                    if let profile = profileManager.currentUserProfile {
+                        ProfileEditView(profile: profile) { updatedProfile in
+                            // Update local profile state when save succeeds
+                            profileManager.updateProfile(updatedProfile)
+                        }
+                        .environmentObject(authManager)
+                    }
+                }
+                // MARK: - Profile Loading
+                // Load profile when user signs in or app opens
+                .onChange(of: authManager.isSignedIn) { oldValue, newValue in
+                    if newValue, let userId = authManager.userId {
+                        // Load profile when user signs in
+                        profileManager.loadProfile(userId: userId)
+                    } else {
+                        // Clear profile when user signs out
+                        profileManager.clearProfile()
+                    }
+                }
+                .onAppear {
+                    // Load profile if already signed in on app launch
+                    if authManager.isSignedIn, let userId = authManager.userId {
+                        profileManager.loadProfile(userId: userId)
+                    }
+                }
+                // MARK: - Profile Refresh on Stamp Collection
+                // Refresh profile stats when user collects stamps
+                .onChange(of: stampsManager.userCollection.collectedStamps.count) { oldCount, newCount in
+                    // Only refresh if count increased (stamp collected)
+                    if newCount > oldCount && authManager.isSignedIn {
+                        // Add slight delay to ensure Firebase stats are updated
+                        Task {
+                            try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+                            profileManager.refreshProfile()
+                        }
+                    }
+                }
                 .alert("Developer Options", isPresented: $showProfileMenu) {
-                    Button("Collect All") {
-                        if let userId = authManager.userId {
-                            stampsManager.obtainAll(userId: userId)
-                        }
-                    }
-                    
-                    Button("Collect Half") {
-                        if let userId = authManager.userId {
-                            stampsManager.obtainHalf(userId: userId)
-                        }
-                    }
-                    
-                    Button("Reset All", role: .destructive) {
-                        stampsManager.resetAll()
-                    }
-                    
                     Button("Sign Out", role: .destructive) {
                         authManager.signOut()
                     }
@@ -339,6 +451,7 @@ struct StampsView: View {
     struct AllStampsContent: View {
         @EnvironmentObject var stampsManager: StampsManager
         @State private var displayedCount = 20 // Initial load
+        @State private var showSkeleton = true
         
         private let columns = [
             GridItem(.flexible(), spacing: 16),
@@ -365,7 +478,17 @@ struct StampsView: View {
         
         var body: some View {
             Group {
-                if sortedCollectedStamps.isEmpty {
+                if showSkeleton && stampsManager.isLoading {
+                    // Skeleton loading state - show only when actively loading
+                    LazyVGrid(columns: columns, spacing: 24) {
+                        ForEach(0..<8, id: \.self) { _ in
+                            SkeletonStampGridItem()
+                                .redacted(reason: .placeholder)
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 32)
+                } else if sortedCollectedStamps.isEmpty {
                     // Empty state
                     VStack {
                         Spacer()
@@ -415,6 +538,17 @@ struct StampsView: View {
                     .padding(.bottom, 32)
                 }
             }
+            .onChange(of: stampsManager.isLoading) { oldValue, newValue in
+                if !newValue {
+                    // Add minimum display time for smooth transition
+                    Task {
+                        try? await Task.sleep(nanoseconds: 150_000_000) // 150ms
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            showSkeleton = false
+                        }
+                    }
+                }
+            }
         }
         
         private func loadMoreStamps() {
@@ -449,27 +583,121 @@ struct StampsView: View {
     
     struct CollectionsContent: View {
         @EnvironmentObject var stampsManager: StampsManager
+        @State private var showSkeleton = true
         
         var body: some View {
             VStack(spacing: 20) {
-                ForEach(stampsManager.sortedCollections) { collection in
-                    NavigationLink(destination: CollectionDetailView(collection: collection)) {
-                        let collectedCount = stampsManager.collectedStampsInCollection(collection.id)
-                        let totalCount = stampsManager.stampsInCollection(collection.id).count
-                        let percentage = totalCount > 0 ? Double(collectedCount) / Double(totalCount) : 0.0
-                        
-                        CollectionCardView(
-                            name: collection.name,
-                            collectedCount: collectedCount,
-                            totalCount: totalCount,
-                            completionPercentage: percentage
-                        )
+                if showSkeleton && stampsManager.isLoading {
+                    // Skeleton loading state - show only when actively loading
+                    ForEach(0..<4, id: \.self) { _ in
+                        SkeletonCollectionCard()
+                            .redacted(reason: .placeholder)
                     }
-                    .buttonStyle(PlainButtonStyle())
+                } else if stampsManager.collections.isEmpty {
+                    // Empty state
+                    VStack {
+                        Spacer()
+                        
+                        Image(systemName: "folder.fill")
+                            .font(.system(size: 60))
+                            .foregroundColor(.gray)
+                            .padding(.bottom, 20)
+                        
+                        Text("Collections")
+                            .font(.title2)
+                            .fontWeight(.semibold)
+                        
+                        Text("Collections will appear here")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 40)
+                        
+                        Spacer()
+                    }
+                    .frame(height: 300)
+                } else {
+                    ForEach(stampsManager.sortedCollections) { collection in
+                        NavigationLink(destination: CollectionDetailView(collection: collection)) {
+                            let collectedCount = stampsManager.collectedStampsInCollection(collection.id)
+                            let totalCount = stampsManager.stampsInCollection(collection.id).count
+                            let percentage = totalCount > 0 ? Double(collectedCount) / Double(totalCount) : 0.0
+                            
+                            CollectionCardView(
+                                name: collection.name,
+                                collectedCount: collectedCount,
+                                totalCount: totalCount,
+                                completionPercentage: percentage
+                            )
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
                 }
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 32)
+            .onChange(of: stampsManager.isLoading) { oldValue, newValue in
+                if !newValue {
+                    // Add minimum display time for smooth transition
+                    Task {
+                        try? await Task.sleep(nanoseconds: 150_000_000) // 150ms
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            showSkeleton = false
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // MARK: - Skeleton Loading Views
+    struct SkeletonStampGridItem: View {
+        var body: some View {
+            VStack(spacing: 12) {
+                // Stamp image placeholder
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(height: 160)
+                
+                // Stamp name placeholder (2 lines)
+                VStack(spacing: 4) {
+                    Text("Placeholder Stamp Name")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                    Text("Second Line")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                }
+                .frame(maxWidth: .infinity, minHeight: 40, maxHeight: 40, alignment: .top)
+            }
+        }
+    }
+    
+    struct SkeletonCollectionCard: View {
+        var body: some View {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Collection Name Here")
+                    .font(.title3)
+                    .fontWeight(.semibold)
+                
+                HStack {
+                    Text("0 / 0")
+                        .font(.subheadline)
+                    
+                    Spacer()
+                    
+                    Text("0%")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                }
+                
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(height: 8)
+            }
+            .padding(16)
+            .background(Color.gray.opacity(0.1))
+            .cornerRadius(12)
         }
     }
 }
