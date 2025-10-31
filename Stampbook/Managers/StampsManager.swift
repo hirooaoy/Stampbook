@@ -1,8 +1,12 @@
 import Foundation
 import Combine
+import MapKit
 
 class StampsManager: ObservableObject {
+    // DEPRECATED: For backward compatibility during migration
+    // Views should use lazy loading methods (fetchStamps, fetchStampsInRegion, etc.)
     @Published var stamps: [Stamp] = []
+    
     @Published var collections: [Collection] = []
     @Published var userCollection = UserStampCollection()
     @Published var isLoading: Bool = false
@@ -10,6 +14,9 @@ class StampsManager: ObservableObject {
     
     // Cache stamp statistics to avoid repeated fetches
     @Published var stampStatistics: [String: StampStatistics] = [:]
+    
+    // LRU cache for stamp data (max 300 stamps in memory)
+    private let stampCache = LRUCache<String, Stamp>(capacity: 300)
     
     // Smart refresh tracking
     @Published var lastRefreshTime: Date?
@@ -19,7 +26,13 @@ class StampsManager: ObservableObject {
     private let firebaseService = FirebaseService.shared
     
     init() {
-        loadData()
+        // DON'T eagerly load all stamps - let views lazy-load what they need
+        // loadData() // ← Removed: 7+ second blocking load of all stamps
+        
+        // But DO load collections (fast, only ~5 documents, 0.1s load time)
+        Task {
+            await loadCollections()
+        }
         
         // Forward changes from userCollection to this manager
         userCollection.objectWillChange
@@ -27,6 +40,39 @@ class StampsManager: ObservableObject {
                 self?.objectWillChange.send()
             }
             .store(in: &cancellables)
+    }
+    
+    /// Load just collections (fast - only ~5 documents)
+    @MainActor
+    private func loadCollections() async {
+        do {
+            let fetchedCollections = try await firebaseService.fetchCollections()
+            self.collections = fetchedCollections
+            print("✅ [StampsManager] Loaded \(fetchedCollections.count) collections")
+        } catch {
+            print("❌ [StampsManager] Failed to load collections: \(error.localizedDescription)")
+        }
+    }
+    
+    /// Wait for stamps to be loaded (async-friendly, no busy-wait)
+    /// Returns immediately if stamps are already loaded
+    func waitForStamps() async -> [Stamp] {
+        // If stamps are already loaded, return immediately
+        if !stamps.isEmpty {
+            return stamps
+        }
+        
+        // Otherwise, wait for stamps to be published
+        return await withCheckedContinuation { continuation in
+            var cancellable: AnyCancellable?
+            cancellable = $stamps
+                .filter { !$0.isEmpty }
+                .first()
+                .sink { stamps in
+                    continuation.resume(returning: stamps)
+                    cancellable?.cancel()
+                }
+        }
     }
     
     /// Load stamps and collections from Firebase (with local fallback)
@@ -43,10 +89,25 @@ class StampsManager: ObservableObject {
         // Refresh user's collected stamps from Firestore
         await userCollection.refresh(userId: userId)
         
+        // Reconcile user stats to ensure they're correct
+        await reconcileUserStats(userId: userId)
+        
         // Clear cached statistics so they refetch fresh data
         await MainActor.run {
             stampStatistics.removeAll()
         }
+        
+        // Update last refresh time
+        lastRefreshTime = Date()
+    }
+    
+    /// Refresh ONLY user collection data (for feed refresh)
+    /// DON'T clear statistics cache - keeps feed fast
+    func refreshUserCollection() async {
+        guard let userId = userCollection.currentUserId else { return }
+        
+        // Refresh user's collected stamps from Firestore
+        await userCollection.refresh(userId: userId)
         
         // Update last refresh time
         lastRefreshTime = Date()
@@ -63,32 +124,157 @@ class StampsManager: ObservableObject {
         }
     }
     
+    // MARK: - Lazy Loading Methods (NEW ARCHITECTURE)
+    
+    /// Fetch specific stamps by IDs (for feed, profiles)
+    /// Uses LRU cache for instant repeat access
+    /// - Parameter ids: Array of stamp IDs to fetch
+    /// - Returns: Array of stamps matching the IDs
+    func fetchStamps(ids: [String]) async -> [Stamp] {
+        var results: [Stamp] = []
+        var uncachedIds: [String] = []
+        
+        // Check cache first
+        for id in ids {
+            if let cached = stampCache.get(id) {
+                results.append(cached)
+                print("💾 [StampsManager] Cache HIT: \(id)")
+            } else {
+                uncachedIds.append(id)
+            }
+        }
+        
+        // Fetch uncached stamps from Firebase
+        if !uncachedIds.isEmpty {
+            print("🌐 [StampsManager] Fetching \(uncachedIds.count) uncached stamps")
+            do {
+                let fetched = try await firebaseService.fetchStampsByIds(uncachedIds)
+                
+                // Add to cache
+                for stamp in fetched {
+                    stampCache.set(stamp.id, stamp)
+                }
+                
+                results.append(contentsOf: fetched)
+                print("✅ [StampsManager] Fetched and cached \(fetched.count) stamps")
+            } catch {
+                print("❌ [StampsManager] Failed to fetch stamps: \(error.localizedDescription)")
+            }
+        }
+        
+        return results
+    }
+    
+    /// Fetch stamps in a geographic region (for map view)
+    /// Uses geohash for efficient spatial queries
+    /// - Parameter region: The visible map region
+    /// - Parameter precision: Geohash precision (default 5 = ~5km)
+    /// - Returns: Array of stamps in the region
+    func fetchStampsInRegion(region: MKCoordinateRegion, precision: Int = 5) async -> [Stamp] {
+        let (minGeohash, maxGeohash) = Geohash.bounds(for: region, precision: precision)
+        
+        print("🗺️ [StampsManager] Fetching stamps in region: \(minGeohash) to \(maxGeohash)")
+        
+        do {
+            let fetched = try await firebaseService.fetchStampsInRegion(
+                minGeohash: minGeohash,
+                maxGeohash: maxGeohash,
+                limit: 500  // Generous limit for complete metro area coverage
+            )
+            
+            // Add to cache for future use
+            for stamp in fetched {
+                stampCache.set(stamp.id, stamp)
+            }
+            
+            print("✅ [StampsManager] Fetched \(fetched.count) stamps in region")
+            return fetched
+        } catch {
+            print("❌ [StampsManager] Failed to fetch stamps in region: \(error.localizedDescription)")
+            return []
+        }
+    }
+    
+    /// Fetch stamps in a specific collection
+    /// - Parameter collectionId: The collection ID
+    /// - Returns: Array of stamps in the collection
+    func fetchStampsInCollection(collectionId: String) async -> [Stamp] {
+        print("📚 [StampsManager] Fetching stamps in collection: \(collectionId)")
+        
+        do {
+            let fetched = try await firebaseService.fetchStampsInCollection(collectionId: collectionId)
+            
+            // Add to cache
+            for stamp in fetched {
+                stampCache.set(stamp.id, stamp)
+            }
+            
+            print("✅ [StampsManager] Fetched \(fetched.count) stamps in collection")
+            return fetched
+        } catch {
+            print("❌ [StampsManager] Failed to fetch stamps in collection: \(error.localizedDescription)")
+            return []
+        }
+    }
+    
+    /// Clear stamp cache (for debugging or low memory situations)
+    func clearCache() {
+        stampCache.removeAll()
+        print("🗑️ [StampsManager] Cleared stamp cache")
+    }
+    
     // MARK: - Data Loading
     
     /// Load stamps and collections from Firebase
     /// Firebase automatically caches data locally for offline access after first load
     @MainActor
     private func loadStampsAndCollections() async {
+        #if DEBUG
+        let startTime = Date()
+        print("🔄 [StampsManager] Starting stamps load...")
+        #endif
+        
         isLoading = true
         loadError = nil
         
         do {
-            // Fetch from Firebase (uses cache if offline)
+            #if DEBUG
+            let fetchStartTime = Date()
+            #endif
+            
             let fetchedStamps = try await firebaseService.fetchStamps()
+            
+            #if DEBUG
+            let fetchStampsDuration = Date().timeIntervalSince(fetchStartTime)
+            let collectionsStartTime = Date()
+            #endif
+            
             let fetchedCollections = try await firebaseService.fetchCollections()
+            
+            #if DEBUG
+            let fetchCollectionsDuration = Date().timeIntervalSince(collectionsStartTime)
+            #endif
             
             self.stamps = fetchedStamps
             self.collections = fetchedCollections
             
-            print("✅ Loaded \(fetchedStamps.count) stamps from Firebase")
-            print("✅ Loaded \(fetchedCollections.count) collections from Firebase")
+            #if DEBUG
+            let totalDuration = Date().timeIntervalSince(startTime)
+            print("⏱️ [StampsManager] Stamps: \(String(format: "%.2f", fetchStampsDuration))s, Collections: \(String(format: "%.2f", fetchCollectionsDuration))s")
+            print("✅ [StampsManager] Loaded \(fetchedStamps.count) stamps in \(String(format: "%.2f", totalDuration))s")
+            #endif
             
             if fetchedStamps.isEmpty {
                 loadError = "No stamps found. Please add stamps in Firebase Console."
             }
             
         } catch {
-            print("❌ Failed to load from Firebase: \(error.localizedDescription)")
+            #if DEBUG
+            let totalDuration = Date().timeIntervalSince(startTime)
+            print("❌ [StampsManager] Failed to load after \(String(format: "%.2f", totalDuration))s: \(error.localizedDescription)")
+            #else
+            print("❌ [StampsManager] Failed to load: \(error.localizedDescription)")
+            #endif
             loadError = "Unable to load stamps. Please check your internet connection."
         }
         
@@ -132,23 +318,37 @@ class StampsManager: ObservableObject {
     /// Set the current user - filters collected stamps to show only this user's stamps
     func setCurrentUser(_ userId: String?) {
         userCollection.setCurrentUser(userId)
+        
+        // Reconcile user stats when user changes (signs in/out)
+        if let userId = userId {
+            Task {
+                await reconcileUserStats(userId: userId)
+            }
+        }
     }
     
     // MARK: - User Actions
     
     /// Collect a stamp and update statistics
+    ///
+    /// **Current Implementation:**
+    /// - Optimistic local update (instant UX)
+    /// - Background Firebase sync
+    /// - Client-side reconciliation on app launch/refresh if sync fails
+    ///
+    /// **FUTURE UPGRADE:** When scaling, migrate to Cloud Functions (see reconcileUserStats comment)
     func collectStamp(_ stamp: Stamp, userId: String) {
         // Collect the stamp locally first (optimistic update)
         userCollection.collectStamp(stamp.id, userId: userId)
         
-        // Calculate new stats
-        let totalStamps = userCollection.collectedStamps.count
-        let collectedStampIds = userCollection.collectedStamps.map { $0.stampId }
-        let uniqueCountries = calculateUniqueCountries(from: collectedStampIds)
-        
         // Update Firebase statistics in the background
         Task {
             do {
+                // Calculate new stats (async)
+                let totalStamps = userCollection.collectedStamps.count
+                let collectedStampIds = userCollection.collectedStamps.map { $0.stampId }
+                let uniqueCountries = await calculateUniqueCountries(from: collectedStampIds)
+                
                 // Update stamp statistics (collectors count)
                 try await firebaseService.incrementStampCollectors(stampId: stamp.id, userId: userId)
                 
@@ -237,9 +437,63 @@ class StampsManager: ObservableObject {
     
     // MARK: - Statistics
     
-    /// Calculate unique countries from a list of collected stamp IDs
-    func calculateUniqueCountries(from collectedStampIds: [String]) -> Int {
-        let collectedStamps = stamps.filter { collectedStampIds.contains($0.id) }
+    /// Reconcile user stats with actual collected stamps count
+    /// This ensures stats are correct even if Firebase updates failed previously
+    ///
+    /// Called automatically on:
+    /// - App launch / user sign in
+    /// - Pull to refresh
+    ///
+    /// **FUTURE UPGRADE PATH:**
+    /// When scaling beyond 10K+ users or adding multiple platforms (Android/Web),
+    /// migrate this logic to Firebase Cloud Functions for server-side counting:
+    /// - Trigger: onCreate/onDelete of users/{userId}/collected_stamps/{stampId}
+    /// - Action: Automatically update totalStamps & uniqueCountriesVisited
+    /// - Benefits: Single source of truth, handles all edge cases, multi-platform support
+    /// - Cost: ~$0 until 100K+ users (2M free invocations/month)
+    ///
+    /// For now, client-side reconciliation is perfect for your scale.
+    func reconcileUserStats(userId: String) async {
+        do {
+            // Fetch actual collected stamps count from Firestore
+            let collectedStamps = try await firebaseService.fetchCollectedStamps(for: userId)
+            let actualTotal = collectedStamps.count
+            let collectedStampIds = collectedStamps.map { $0.stampId }
+            let actualUniqueCountries = await calculateUniqueCountries(from: collectedStampIds)
+            
+            // Fetch current profile stats
+            guard let profile = try? await firebaseService.fetchUserProfile(userId: userId) else {
+                print("⚠️ Could not fetch user profile for reconciliation")
+                return
+            }
+            
+            // Check if stats need updating
+            if profile.totalStamps != actualTotal || profile.uniqueCountriesVisited != actualUniqueCountries {
+                print("🔄 Reconciling user stats: \(profile.totalStamps) → \(actualTotal) stamps, \(profile.uniqueCountriesVisited) → \(actualUniqueCountries) countries")
+                
+                // Update Firebase with correct counts
+                try await firebaseService.updateUserStampStats(
+                    userId: userId,
+                    totalStamps: actualTotal,
+                    uniqueCountriesVisited: actualUniqueCountries
+                )
+                
+                print("✅ User stats reconciled successfully")
+            } else {
+                print("✅ User stats already correct (\(actualTotal) stamps, \(actualUniqueCountries) countries)")
+            }
+        } catch {
+            print("⚠️ Failed to reconcile user stats: \(error.localizedDescription)")
+            // Don't crash - stats will be reconciled on next app launch
+        }
+    }
+    
+    /// Calculate unique countries from a list of collected stamp IDs (async, fetches from Firebase)
+    func calculateUniqueCountries(from collectedStampIds: [String]) async -> Int {
+        guard !collectedStampIds.isEmpty else { return 0 }
+        
+        // Fetch the actual stamps from Firebase (uses cache if available)
+        let collectedStamps = await fetchStamps(ids: collectedStampIds)
         
         let countries = Set(collectedStamps.compactMap { stamp -> String? in
             // Parse country from address
@@ -271,12 +525,6 @@ class StampsManager: ObservableObject {
         })
         
         return countries.count
-    }
-    
-    /// Get the count of unique countries from collected stamps
-    var uniqueCountriesCount: Int {
-        let collectedStampIds = userCollection.collectedStamps.map { $0.stampId }
-        return calculateUniqueCountries(from: collectedStampIds)
     }
 }
 

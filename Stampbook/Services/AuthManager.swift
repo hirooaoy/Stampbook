@@ -65,6 +65,7 @@ class AuthManager: NSObject, ObservableObject {
             isSignedIn = false
             userId = nil
             userDisplayName = nil
+            userProfile = nil
         } catch {
             print("Error signing out: \(error.localizedDescription)")
         }

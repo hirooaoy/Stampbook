@@ -18,8 +18,16 @@ class ProfileManager: ObservableObject {
     /// Load the current user's profile from Firebase
     /// Rank is loaded lazily in the view when needed
     func loadProfile(userId: String, loadRank: Bool = false) {
+        // Prevent duplicate loads
+        if isLoading {
+            print("⚠️ [ProfileManager] Already loading profile, skipping duplicate request")
+            return
+        }
+        
         isLoading = true
         error = nil
+        
+        print("🔄 [ProfileManager] Loading profile for userId: \(userId)")
         
         Task {
             do {
@@ -28,7 +36,7 @@ class ProfileManager: ObservableObject {
                     self.currentUserProfile = profile
                     self.isLoading = false
                 }
-                print("✅ Loaded user profile: \(profile.displayName)")
+                print("✅ [ProfileManager] Loaded user profile: \(profile.displayName)")
                 
                 // Fetch rank only if requested (opt-in for better performance)
                 if loadRank {
@@ -39,7 +47,7 @@ class ProfileManager: ObservableObject {
                     self.error = error.localizedDescription
                     self.isLoading = false
                 }
-                print("❌ Failed to load profile: \(error.localizedDescription)")
+                print("❌ [ProfileManager] Failed to load profile: \(error.localizedDescription)")
             }
         }
     }

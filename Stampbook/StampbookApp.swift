@@ -20,6 +20,7 @@ struct StampbookApp: App {
     @StateObject private var authManager = AuthManager()
     @StateObject private var networkMonitor = NetworkMonitor()
     @StateObject private var followManager = FollowManager() // Shared instance across the app
+    @StateObject private var profileManager = ProfileManager() // Shared profile cache across the app
     
     var body: some Scene {
         WindowGroup {
@@ -27,6 +28,7 @@ struct StampbookApp: App {
                 .environmentObject(authManager)
                 .environmentObject(networkMonitor)
                 .environmentObject(followManager)
+                .environmentObject(profileManager)
         }
     }
 }

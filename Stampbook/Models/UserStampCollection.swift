@@ -2,7 +2,7 @@ import Foundation
 import Combine
 
 // TODO: BACKEND - Consider adding collectionLocation (lat/long where user actually collected it)
-struct CollectedStamp: Codable, Identifiable {
+struct CollectedStamp: Codable, Identifiable, Equatable {
     var id: String { stampId } // Make it Identifiable for Firestore
     let stampId: String
     let userId: String

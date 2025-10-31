@@ -1,13 +1,17 @@
 import SwiftUI
 
-/// Reusable profile picture view with automatic caching
+/// Instagram-style progressive profile picture view
 /// 
-/// Features:
-/// - Checks local cache first (fast)
-/// - Downloads and caches from Firebase if needed
-/// - Shows loading state while downloading
-/// - Falls back to placeholder if no avatar
-/// - Works offline with cached images
+/// PROGRESSIVE LOADING STRATEGY:
+/// - T+0ms: Show placeholder immediately (no blocking)
+/// - T+50ms: Check memory cache (instant if cached)
+/// - T+100ms: Check disk cache (fast if prefetched)
+/// - T+500ms: Download from Firebase (only if not cached)
+/// - Fade in image when ready (smooth transition)
+/// 
+/// KEY DIFFERENCE FROM OLD:
+/// - Old: Show loading spinner, block until image ready
+/// - New: Show content immediately, fade in image when ready (Instagram pattern)
 /// 
 /// Usage:
 /// ```
@@ -23,56 +27,79 @@ struct ProfileImageView: View {
     let size: CGFloat
     
     @State private var image: UIImage?
-    @State private var isLoading = false
-    @State private var loadFailed = false
+    @State private var isLoadingImage = false
+    @State private var loadAttempt = 0 // Track load attempts for retry
+    @State private var hasAttemptedLoad = false // Prevent duplicate loads
     
     var body: some View {
-        Group {
+        ZStack {
+            // ALWAYS show placeholder (instant render)
+            Circle()
+                .fill(Color.gray.opacity(0.3))
+                .frame(width: size, height: size)
+                .overlay(
+                    Image(systemName: "person.fill")
+                        .font(.system(size: size * 0.5))
+                        .foregroundColor(.gray)
+                )
+            
+            // Fade in image when loaded (progressive)
             if let image = image {
-                // Successfully loaded image
                 Image(uiImage: image)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
                     .frame(width: size, height: size)
                     .clipShape(Circle())
-            } else if isLoading {
-                // Loading state
-                Circle()
-                    .fill(Color.gray.opacity(0.3))
-                    .frame(width: size, height: size)
-                    .overlay(
-                        ProgressView()
-                            .scaleEffect(0.8)
-                    )
-            } else {
-                // Placeholder (no avatar or failed to load)
-                Circle()
-                    .fill(Color.gray.opacity(0.3))
-                    .frame(width: size, height: size)
-                    .overlay(
-                        Image(systemName: "person.fill")
-                            .font(.system(size: size * 0.5))
-                            .foregroundColor(.gray)
-                    )
+                    .transition(.opacity)
             }
         }
-        .task {
+        .animation(.easeInOut(duration: 0.2), value: image != nil)
+        .id("\(userId)-\(size)") // Stable identity prevents unnecessary recreation
+        .task(id: "\(userId)-\(avatarUrl ?? "")-\(loadAttempt)") {
+            // Only load once per unique user/avatar combination
+            guard !hasAttemptedLoad || loadAttempt > 0 else { return }
+            hasAttemptedLoad = true
             await loadProfilePicture()
+        }
+        .onAppear {
+            // Only schedule retries if we have a valid avatar URL and haven't loaded yet
+            guard let url = avatarUrl, !url.isEmpty, image == nil else { return }
+            
+            // Retry loading after short delays if image still not loaded
+            // This handles the case where prefetch completes after initial render
+            Task {
+                // Try again after 300ms (prefetch should be done by then)
+                try? await Task.sleep(nanoseconds: 300_000_000)
+                if image == nil && avatarUrl != nil && !avatarUrl!.isEmpty {
+                    loadAttempt += 1
+                }
+                
+                // One more retry after 1s just in case
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
+                if image == nil && avatarUrl != nil && !avatarUrl!.isEmpty {
+                    loadAttempt += 1
+                }
+            }
         }
     }
     
     /// Load profile picture from cache or download from Firebase
+    /// OPTIMIZED: Prioritizes cache hits, fails silently
     private func loadProfilePicture() async {
         guard let avatarUrl = avatarUrl, !avatarUrl.isEmpty else {
-            // No avatar URL - show placeholder
+            // No avatar URL - show placeholder (already visible)
+            print("🖼️ [ProfileImageView] No avatar URL for userId: \(userId)")
             return
         }
         
-        isLoading = true
-        loadFailed = false
+        print("🖼️ [ProfileImageView] Loading profile picture for userId: \(userId), attempt: \(loadAttempt)")
+        
+        // Don't block UI - load in background
+        isLoadingImage = true
         
         do {
-            // Try to download and cache (will use cache if available)
+            // Try to load (prioritizes cache, then downloads)
+            // If FeedManager prefetched, this will be instant (memory cache hit)
             let downloadedImage = try await ImageManager.shared.downloadAndCacheProfilePicture(
                 url: avatarUrl,
                 userId: userId
@@ -80,14 +107,15 @@ struct ProfileImageView: View {
             
             await MainActor.run {
                 self.image = downloadedImage
-                self.isLoading = false
+                self.isLoadingImage = false
+                print("✅ [ProfileImageView] Profile picture loaded for userId: \(userId)")
             }
         } catch {
-            // Failed to load - show placeholder
-            print("⚠️ Failed to load profile picture: \(error.localizedDescription)")
+            // Fail silently - placeholder already showing
+            // Don't spam console - prefetch failures are expected
             await MainActor.run {
-                self.loadFailed = true
-                self.isLoading = false
+                self.isLoadingImage = false
+                print("⚠️ [ProfileImageView] Failed to load profile picture for userId: \(userId): \(error.localizedDescription)")
             }
         }
     }

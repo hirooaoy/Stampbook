@@ -8,14 +8,13 @@ struct CollectionDetailView: View {
     @Environment(\.dismiss) private var dismiss
     let collection: Collection
     
+    @State private var collectionStamps: [Stamp] = []
+    @State private var isLoading = true
+    
     private let columns = [
         GridItem(.flexible(), spacing: 16),
         GridItem(.flexible(), spacing: 16)
     ]
-    
-    private var stampsInCollection: [Stamp] {
-        stampsManager.stampsInCollection(collection.id)
-    }
     
     var body: some View {
         VStack(spacing: 0) {
@@ -37,30 +36,69 @@ struct CollectionDetailView: View {
                     .padding(.top, 8)
                     .padding(.bottom, 32)
                     
-                    // Grid of stamps
-                    LazyVGrid(columns: columns, spacing: 24) {
-                        ForEach(stampsInCollection) { stamp in
-                            NavigationLink(destination: 
-                                StampDetailView(
-                                    stamp: stamp,
-                                    userLocation: nil,
-                                    showBackButton: true
-                                )
-                                .environmentObject(stampsManager)
-                            ) {
-                                CollectionStampItem(stamp: stamp)
+                    if isLoading {
+                        // Loading skeleton
+                        LazyVGrid(columns: columns, spacing: 24) {
+                            ForEach(0..<6, id: \.self) { _ in
+                                VStack(spacing: 12) {
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color.gray.opacity(0.3))
+                                        .frame(height: 160)
+                                    
+                                    Text("Loading...")
+                                        .font(.subheadline)
+                                        .fontWeight(.medium)
+                                        .frame(maxWidth: .infinity, minHeight: 40, maxHeight: 40, alignment: .top)
+                                }
+                                .redacted(reason: .placeholder)
                             }
-                            .buttonStyle(PlainButtonStyle())
                         }
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 48)
+                    } else {
+                        // Grid of stamps
+                        LazyVGrid(columns: columns, spacing: 24) {
+                            ForEach(collectionStamps) { stamp in
+                                NavigationLink(destination: 
+                                    StampDetailView(
+                                        stamp: stamp,
+                                        userLocation: nil,
+                                        showBackButton: true
+                                    )
+                                    .environmentObject(stampsManager)
+                                ) {
+                                    CollectionStampItem(stamp: stamp)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 48)
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 48)
                 }
             }
         }
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarHidden(false)
+        .onAppear {
+            loadCollectionStamps()
+        }
+    }
+    
+    private func loadCollectionStamps() {
+        guard isLoading else { return }
+        
+        Task {
+            // LAZY LOADING: Fetch ONLY stamps in this collection
+            print("🎯 [CollectionDetailView] Fetching stamps for collection: \(collection.id)")
+            let stamps = await stampsManager.fetchStampsInCollection(collectionId: collection.id)
+            
+            await MainActor.run {
+                collectionStamps = stamps
+                isLoading = false
+            }
+        }
     }
 }
 

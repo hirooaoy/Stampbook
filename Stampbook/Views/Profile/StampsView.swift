@@ -1,14 +1,19 @@
 import SwiftUI
 import AuthenticationServices
+import MessageUI
 
 struct StampsView: View {
     @EnvironmentObject var stampsManager: StampsManager
     @EnvironmentObject var authManager: AuthManager
-    @StateObject private var profileManager = ProfileManager()
+    @EnvironmentObject var profileManager: ProfileManager // Shared instance - no more loading!
+    @EnvironmentObject var followManager: FollowManager
     @Environment(\.colorScheme) var colorScheme
     @State private var selectedTab: StampTab = .all
-    @State private var showProfileMenu = false
     @State private var showEditProfile = false
+    @State private var showMailComposer = false
+    @State private var showMailError = false
+    @State private var mailMessageType: MailComposeView.MessageType = .feedback
+    @State private var showSignOutConfirmation = false
     
     enum StampTab: String, CaseIterable {
         case all = "All"
@@ -44,7 +49,7 @@ struct StampsView: View {
                     
                     if authManager.isSignedIn {
                         // Signed-in menu
-                        HStack(spacing: 16) {
+                        HStack(spacing: 8) {
                             // Edit Profile Button - Opens ProfileEditView sheet
                             Button(action: {
                                 showEditProfile = true
@@ -55,10 +60,63 @@ struct StampsView: View {
                             }
                             .disabled(profileManager.currentUserProfile == nil)
                             
-                            // More Options Menu (debug/dev tools)
-                            Button(action: {
-                                showProfileMenu = true
-                            }) {
+                            // More Options Menu
+                            Menu {
+                                Button(action: {
+                                    // TODO: Open about (will include Privacy Policy and Terms of Service inside)
+                                    print("About Stampbook tapped")
+                                }) {
+                                    Label("About Stampbook", systemImage: "info.circle")
+                                }
+                                
+                                Divider()
+                                
+                                Button(action: {
+                                    // TODO: Open business info
+                                    print("For Local Business tapped")
+                                }) {
+                                    Label("For Local Business", systemImage: "storefront")
+                                }
+                                
+                                Button(action: {
+                                    // TODO: Open creator info
+                                    print("For Creators tapped")
+                                }) {
+                                    Label("For Creators", systemImage: "sparkles")
+                                }
+                                
+                                Divider()
+                                
+                                Button(action: {
+                                    mailMessageType = .problem
+                                    if MFMailComposeViewController.canSendMail() {
+                                        showMailComposer = true
+                                    } else {
+                                        showMailError = true
+                                    }
+                                }) {
+                                    Label("Report a problem", systemImage: "exclamationmark.bubble")
+                                }
+                                
+                                Button(action: {
+                                    mailMessageType = .feedback
+                                    if MFMailComposeViewController.canSendMail() {
+                                        showMailComposer = true
+                                    } else {
+                                        showMailError = true
+                                    }
+                                }) {
+                                    Label("Send Feedback", systemImage: "envelope")
+                                }
+                                
+                                Divider()
+                                
+                                Button(role: .destructive, action: {
+                                    showSignOutConfirmation = true
+                                }) {
+                                    Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
+                                }
+                            } label: {
                                 Image(systemName: "ellipsis")
                                     .font(.system(size: 24))
                                     .foregroundColor(.primary)
@@ -70,10 +128,10 @@ struct StampsView: View {
                         // Signed-out menu: Just ellipsis with Menu
                         Menu {
                             Button(action: {
-                                // TODO: Open privacy policy
-                                print("Privacy Policy tapped")
+                                // TODO: Open about (will include Privacy Policy and Terms of Service inside)
+                                print("About Stampbook tapped")
                             }) {
-                                Label("Privacy Policy", systemImage: "hand.raised")
+                                Label("About Stampbook", systemImage: "info.circle")
                             }
                             
                             Divider()
@@ -90,6 +148,30 @@ struct StampsView: View {
                                 print("For Creators tapped")
                             }) {
                                 Label("For Creators", systemImage: "sparkles")
+                            }
+                            
+                            Divider()
+                            
+                            Button(action: {
+                                mailMessageType = .problem
+                                if MFMailComposeViewController.canSendMail() {
+                                    showMailComposer = true
+                                } else {
+                                    showMailError = true
+                                }
+                            }) {
+                                Label("Report a problem", systemImage: "exclamationmark.bubble")
+                            }
+                            
+                            Button(action: {
+                                mailMessageType = .feedback
+                                if MFMailComposeViewController.canSendMail() {
+                                    showMailComposer = true
+                                } else {
+                                    showMailError = true
+                                }
+                            }) {
+                                Label("Send Feedback", systemImage: "envelope")
                             }
                         } label: {
                             Image(systemName: "ellipsis")
@@ -153,31 +235,11 @@ struct StampsView: View {
                         if authManager.isSignedIn {
                         HStack(spacing: 12) {
                             // Profile picture
-                            if let avatarUrl = profileManager.currentUserProfile?.avatarUrl,
-                               let url = URL(string: avatarUrl) {
-                                AsyncImage(url: url) { image in
-                                    image
-                                        .resizable()
-                                        .scaledToFill()
-                                } placeholder: {
-                                    Circle()
-                                        .fill(Color.gray.opacity(0.3))
-                                        .overlay(
-                                            ProgressView()
-                                        )
-                                }
-                                .frame(width: 64, height: 64)
-                                .clipShape(Circle())
-                            } else {
-                                Circle()
-                                    .fill(Color.gray.opacity(0.3))
-                                    .frame(width: 64, height: 64)
-                                    .overlay(
-                                        Image(systemName: "person.fill")
-                                            .font(.system(size: 32))
-                                            .foregroundColor(.gray)
-                                    )
-                            }
+                            ProfileImageView(
+                                avatarUrl: profileManager.currentUserProfile?.avatarUrl,
+                                userId: authManager.userId ?? "",
+                                size: 64
+                            )
                             
                             // Name and bio
                             VStack(alignment: .leading, spacing: 4) {
@@ -303,7 +365,8 @@ struct StampsView: View {
                                             Text("Followers")
                                                 .font(.caption)
                                                 .foregroundColor(.secondary)
-                                            Text("\(profileManager.currentUserProfile?.followerCount ?? 0)")
+                                            // Use cached count if available, fallback to profile
+                                            Text("\(followManager.followCounts[authManager.userId ?? ""]?.followers ?? profileManager.currentUserProfile?.followerCount ?? 0)")
                                                 .font(.body)
                                                 .fontWeight(.semibold)
                                                 .foregroundColor(.primary)
@@ -337,7 +400,8 @@ struct StampsView: View {
                                             Text("Following")
                                                 .font(.caption)
                                                 .foregroundColor(.secondary)
-                                            Text("\(profileManager.currentUserProfile?.followingCount ?? 0)")
+                                            // Use cached count if available, fallback to profile
+                                            Text("\(followManager.followCounts[authManager.userId ?? ""]?.following ?? profileManager.currentUserProfile?.followingCount ?? 0)")
                                                 .font(.body)
                                                 .fontWeight(.semibold)
                                                 .foregroundColor(.primary)
@@ -385,17 +449,24 @@ struct StampsView: View {
                     }
                 }
                 .refreshable {
-                    // Refresh in parallel for better performance
-                    await withTaskGroup(of: Void.self) { group in
-                        group.addTask {
-                            await profileManager.refresh()
-                        }
-                        group.addTask {
-                            await stampsManager.refresh()
-                        }
-                    }
+                    // Just refresh profile stats - user's stamps are already synced
+                    // No need to refetch all collected stamps from Firestore every time
+                    await profileManager.refresh()
                 }
                 .toolbar(.hidden, for: .navigationBar)
+                // MARK: - Cache Follow Counts
+                // Initialize cache when profile loads
+                .onAppear {
+                    if let profile = profileManager.currentUserProfile, let userId = authManager.userId {
+                        followManager.updateFollowCounts(userId: userId, followerCount: profile.followerCount, followingCount: profile.followingCount)
+                    }
+                }
+                // Update cache when profile changes
+                .onChange(of: profileManager.currentUserProfile) { oldProfile, newProfile in
+                    if let profile = newProfile, let userId = authManager.userId {
+                        followManager.updateFollowCounts(userId: userId, followerCount: profile.followerCount, followingCount: profile.followingCount)
+                    }
+                }
                 // MARK: - Profile Edit Sheet
                 // Shows ProfileEditView when user taps pencil icon
                 // On save, updates the local profile state and syncs to Firebase
@@ -406,23 +477,6 @@ struct StampsView: View {
                             profileManager.updateProfile(updatedProfile)
                         }
                         .environmentObject(authManager)
-                    }
-                }
-                // MARK: - Profile Loading
-                // Load profile when user signs in or app opens
-                .onChange(of: authManager.isSignedIn) { oldValue, newValue in
-                    if newValue, let userId = authManager.userId {
-                        // Load profile when user signs in
-                        profileManager.loadProfile(userId: userId)
-                    } else {
-                        // Clear profile when user signs out
-                        profileManager.clearProfile()
-                    }
-                }
-                .onAppear {
-                    // Load profile if already signed in on app launch
-                    if authManager.isSignedIn, let userId = authManager.userId {
-                        profileManager.loadProfile(userId: userId)
                     }
                 }
                 // MARK: - Profile Refresh on Stamp Collection
@@ -437,12 +491,25 @@ struct StampsView: View {
                         }
                     }
                 }
-                .alert("Developer Options", isPresented: $showProfileMenu) {
+                .sheet(isPresented: $showMailComposer) {
+                    MailComposeView(
+                        recipient: "support@stampbook.app",
+                        subject: mailMessageType == .feedback ? "Stampbook Feedback" : "Stampbook Problem Report",
+                        messageType: mailMessageType
+                    )
+                }
+                .alert("Cannot Send Email", isPresented: $showMailError) {
+                    Button("OK", role: .cancel) { }
+                } message: {
+                    Text("Please configure a mail account in Settings to send feedback.")
+                }
+                .alert("Sign Out", isPresented: $showSignOutConfirmation) {
+                    Button("Cancel", role: .cancel) {}
                     Button("Sign Out", role: .destructive) {
                         authManager.signOut()
                     }
-                    
-                    Button("Cancel", role: .cancel) {}
+                } message: {
+                    Text("Are you sure you want to sign out?")
                 }
             }
         }
@@ -452,6 +519,8 @@ struct StampsView: View {
         @EnvironmentObject var stampsManager: StampsManager
         @State private var displayedCount = 20 // Initial load
         @State private var showSkeleton = true
+        @State private var userStamps: [Stamp] = [] // Lazy-loaded user stamps
+        @State private var isLoadingStamps = false
         
         private let columns = [
             GridItem(.flexible(), spacing: 16),
@@ -464,7 +533,7 @@ struct StampsView: View {
                 .sorted { $0.collectedDate > $1.collectedDate } // Latest first
             
             return collectedStamps.compactMap { collected in
-                if let stamp = stampsManager.stamps.first(where: { $0.id == collected.stampId }) {
+                if let stamp = userStamps.first(where: { $0.id == collected.stampId }) {
                     return (stamp, collected.collectedDate)
                 }
                 return nil
@@ -478,7 +547,7 @@ struct StampsView: View {
         
         var body: some View {
             Group {
-                if showSkeleton && stampsManager.isLoading {
+                if isLoadingStamps || (showSkeleton && userStamps.isEmpty) {
                     // Skeleton loading state - show only when actively loading
                     LazyVGrid(columns: columns, spacing: 24) {
                         ForEach(0..<8, id: \.self) { _ in
@@ -538,8 +607,34 @@ struct StampsView: View {
                     .padding(.bottom, 32)
                 }
             }
-            .onChange(of: stampsManager.isLoading) { oldValue, newValue in
-                if !newValue {
+            .onAppear {
+                loadUserStamps()
+            }
+            .onChange(of: stampsManager.userCollection.collectedStamps.count) { oldValue, newValue in
+                // Reload when user collects new stamps
+                if newValue != oldValue {
+                    loadUserStamps()
+                }
+            }
+        }
+        
+        private func loadUserStamps() {
+            guard !isLoadingStamps else { return }
+            
+            isLoadingStamps = true
+            showSkeleton = true
+            
+            Task {
+                // LAZY LOADING: Fetch ONLY stamps the user has collected
+                let collectedStampIds = stampsManager.userCollection.collectedStamps.map { $0.stampId }
+                print("🎯 [AllStampsContent] Fetching \(collectedStampIds.count) user stamps")
+                
+                let stamps = await stampsManager.fetchStamps(ids: collectedStampIds)
+                
+                await MainActor.run {
+                    userStamps = stamps
+                    isLoadingStamps = false
+                    
                     // Add minimum display time for smooth transition
                     Task {
                         try? await Task.sleep(nanoseconds: 150_000_000) // 150ms
@@ -583,12 +678,16 @@ struct StampsView: View {
     
     struct CollectionsContent: View {
         @EnvironmentObject var stampsManager: StampsManager
-        @State private var showSkeleton = true
+        @EnvironmentObject var authManager: AuthManager
+        @State private var collectionMetadata: [String: (total: Int, collected: Int)] = [:]
+        @State private var isLoadingMetadata = false
+        @State private var hasLoadedOnce = false
+        @State private var hasInitialSync = false
         
         var body: some View {
             VStack(spacing: 20) {
-                if showSkeleton && stampsManager.isLoading {
-                    // Skeleton loading state - show only when actively loading
+                if isLoadingMetadata && !hasLoadedOnce {
+                    // Skeleton loading state - show only on FIRST load
                     ForEach(0..<4, id: \.self) { _ in
                         SkeletonCollectionCard()
                             .redacted(reason: .placeholder)
@@ -617,16 +716,15 @@ struct StampsView: View {
                     }
                     .frame(height: 300)
                 } else {
-                    ForEach(stampsManager.sortedCollections) { collection in
+                    ForEach(sortedCollections()) { collection in
                         NavigationLink(destination: CollectionDetailView(collection: collection)) {
-                            let collectedCount = stampsManager.collectedStampsInCollection(collection.id)
-                            let totalCount = stampsManager.stampsInCollection(collection.id).count
-                            let percentage = totalCount > 0 ? Double(collectedCount) / Double(totalCount) : 0.0
+                            let metadata = collectionMetadata[collection.id] ?? (total: 0, collected: 0)
+                            let percentage = metadata.total > 0 ? Double(metadata.collected) / Double(metadata.total) : 0.0
                             
                             CollectionCardView(
                                 name: collection.name,
-                                collectedCount: collectedCount,
-                                totalCount: totalCount,
+                                collectedCount: metadata.collected,
+                                totalCount: metadata.total,
                                 completionPercentage: percentage
                             )
                         }
@@ -636,15 +734,117 @@ struct StampsView: View {
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 32)
-            .onChange(of: stampsManager.isLoading) { oldValue, newValue in
-                if !newValue {
-                    // Add minimum display time for smooth transition
-                    Task {
-                        try? await Task.sleep(nanoseconds: 150_000_000) // 150ms
-                        withAnimation(.easeInOut(duration: 0.3)) {
-                            showSkeleton = false
-                        }
+            .task {
+                // Ensure user's collected stamps are synced before loading metadata
+                if !hasInitialSync {
+                    if let userId = authManager.userId {
+                        print("🔄 [CollectionsContent] Syncing user stamps from Firestore before loading metadata")
+                        await stampsManager.userCollection.refresh(userId: userId)
+                        hasInitialSync = true
                     }
+                }
+                loadCollectionMetadata()
+            }
+            .onChange(of: stampsManager.userCollection.collectedStamps.count) { oldValue, newValue in
+                // Reload metadata when user collects new stamps
+                if newValue != oldValue {
+                    loadCollectionMetadata()
+                }
+            }
+        }
+        
+        private func loadCollectionMetadata() {
+            // Prevent multiple simultaneous loads
+            guard !isLoadingMetadata else {
+                print("⚠️ [CollectionsContent] Already loading metadata, skipping")
+                return
+            }
+            
+            print("🔄 [CollectionsContent] Starting metadata load")
+            isLoadingMetadata = true
+            
+            Task {
+                // Add timeout to prevent infinite loading
+                let timeoutTask = Task {
+                    try await Task.sleep(nanoseconds: 10_000_000_000) // 10 seconds
+                    throw TimeoutError()
+                }
+                
+                let loadTask = Task {
+                    // For each collection, count stamps
+                    var metadata: [String: (total: Int, collected: Int)] = [:]
+                    let collectedStampIds = Set(stampsManager.userCollection.collectedStamps.map { $0.stampId })
+                    
+                    print("📚 [CollectionsContent] Processing \(stampsManager.collections.count) collections")
+                    print("🎯 [CollectionsContent] User has \(collectedStampIds.count) collected stamps: \(Array(collectedStampIds).prefix(10))")
+                    
+                    for collection in stampsManager.collections {
+                        // Fetch stamps in this collection to check which ones are collected
+                        let stamps = await stampsManager.fetchStampsInCollection(collectionId: collection.id)
+                        
+                        // Use the hard-coded totalStamps from the collection
+                        let total = collection.totalStamps
+                        let collected = stamps.filter { collectedStampIds.contains($0.id) }.count
+                        
+                        metadata[collection.id] = (total: total, collected: collected)
+                        print("✅ [CollectionsContent] \(collection.name): \(collected)/\(total) (Firestore has \(stamps.count) stamps)")
+                    }
+                    
+                    return metadata
+                }
+                
+                do {
+                    // Race between load and timeout
+                    let metadata = try await withThrowingTaskGroup(of: [String: (total: Int, collected: Int)]?.self) { group in
+                        group.addTask { try await loadTask.value }
+                        group.addTask {
+                            _ = try await timeoutTask.value
+                            return nil
+                        }
+                        
+                        // Get first result
+                        if let result = try await group.next() {
+                            // Cancel the other task
+                            group.cancelAll()
+                            if let metadata = result {
+                                return metadata
+                            } else {
+                                throw TimeoutError()
+                            }
+                        }
+                        throw TimeoutError()
+                    }
+                    
+                    await MainActor.run {
+                        collectionMetadata = metadata
+                        isLoadingMetadata = false
+                        hasLoadedOnce = true
+                        print("✅ [CollectionsContent] Metadata load complete")
+                    }
+                } catch {
+                    print("❌ [CollectionsContent] Metadata load failed or timed out: \(error)")
+                    await MainActor.run {
+                        isLoadingMetadata = false
+                        hasLoadedOnce = true
+                    }
+                }
+            }
+        }
+        
+        private struct TimeoutError: Error {}
+        
+        private func sortedCollections() -> [Collection] {
+            stampsManager.collections.sorted { collection1, collection2 in
+                let metadata1 = collectionMetadata[collection1.id] ?? (total: 0, collected: 0)
+                let metadata2 = collectionMetadata[collection2.id] ?? (total: 0, collected: 0)
+                
+                let completion1 = metadata1.total > 0 ? Double(metadata1.collected) / Double(metadata1.total) : 0.0
+                let completion2 = metadata2.total > 0 ? Double(metadata2.collected) / Double(metadata2.total) : 0.0
+                
+                if completion1 != completion2 {
+                    return completion1 > completion2  // Higher completion first
+                } else {
+                    return collection1.name < collection2.name  // Alphabetical tiebreaker
                 }
             }
         }

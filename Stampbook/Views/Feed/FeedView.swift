@@ -5,16 +5,25 @@ import PhotosUI
 struct FeedView: View {
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var stampsManager: StampsManager
+    @StateObject private var feedManager = FeedManager() // Persists across tab switches
     @Environment(\.colorScheme) var colorScheme
     @Binding var selectedTab: Int
     @State private var showNotifications = false
-    @State private var showFeedMenu = false
     @State private var selectedFeedTab: FeedTab = .all
     @State private var showUserSearch = false
+    @State private var showSignOutConfirmation = false
     
     enum FeedTab: String, CaseIterable {
         case all = "All"
         case onlyYou = "Only Yours"
+    }
+    
+    /// Refresh feed data without clearing cached statistics
+    private func refreshFeedData() async {
+        // Just refresh the feed - no need to sync user's collected stamps
+        // The feed will show the latest posts from Firebase
+        guard let userId = authManager.userId else { return }
+        await feedManager.refresh(userId: userId, stampsManager: stampsManager)
     }
     
     var body: some View {
@@ -33,13 +42,15 @@ struct FeedView: View {
                     
                     if authManager.isSignedIn {
                         // Signed-in menu: Search, notification, and ellipses
-                        HStack(spacing: 16) {
+                        HStack(spacing: 8) {
                             Button(action: {
                                 showUserSearch = true
                             }) {
                                 Image(systemName: "magnifyingglass")
                                     .font(.system(size: 24))
                                     .foregroundColor(.primary)
+                                    .frame(width: 44, height: 44)  // Larger tap target
+                                    .contentShape(Rectangle())     // Make entire frame tappable
                             }
                             
                             Button(action: {
@@ -48,11 +59,58 @@ struct FeedView: View {
                                 Image(systemName: "bell")
                                     .font(.system(size: 24))
                                     .foregroundColor(.primary)
+                                    .frame(width: 44, height: 44)  // Larger tap target
+                                    .contentShape(Rectangle())     // Make entire frame tappable
                             }
                             
-                            Button(action: {
-                                showFeedMenu = true
-                            }) {
+                            Menu {
+                                Button(action: {
+                                    // TODO: Open about (will include Privacy Policy and Terms of Service inside)
+                                    print("About Stampbook tapped")
+                                }) {
+                                    Label("About Stampbook", systemImage: "info.circle")
+                                }
+                                
+                                Divider()
+                                
+                                Button(action: {
+                                    // TODO: Open business info
+                                    print("For Local Business tapped")
+                                }) {
+                                    Label("For Local Business", systemImage: "storefront")
+                                }
+                                
+                                Button(action: {
+                                    // TODO: Open creator info
+                                    print("For Creators tapped")
+                                }) {
+                                    Label("For Creators", systemImage: "sparkles")
+                                }
+                                
+                                Divider()
+                                
+                                Button(action: {
+                                    // TODO: Report a problem
+                                    print("Report a problem tapped")
+                                }) {
+                                    Label("Report a problem", systemImage: "exclamationmark.bubble")
+                                }
+                                
+                                Button(action: {
+                                    // TODO: Send feedback
+                                    print("Send Feedback tapped")
+                                }) {
+                                    Label("Send Feedback", systemImage: "envelope")
+                                }
+                                
+                                Divider()
+                                
+                                Button(role: .destructive, action: {
+                                    showSignOutConfirmation = true
+                                }) {
+                                    Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
+                                }
+                            } label: {
                                 Image(systemName: "ellipsis")
                                     .font(.system(size: 24))
                                     .foregroundColor(.primary)
@@ -64,10 +122,10 @@ struct FeedView: View {
                         // Signed-out menu: Just ellipsis with Menu
                         Menu {
                             Button(action: {
-                                // TODO: Open privacy policy
-                                print("Privacy Policy tapped")
+                                // TODO: Open about (will include Privacy Policy and Terms of Service inside)
+                                print("About Stampbook tapped")
                             }) {
-                                Label("Privacy Policy", systemImage: "hand.raised")
+                                Label("About Stampbook", systemImage: "info.circle")
                             }
                             
                             Divider()
@@ -84,6 +142,22 @@ struct FeedView: View {
                                 print("For Creators tapped")
                             }) {
                                 Label("For Creators", systemImage: "sparkles")
+                            }
+                            
+                            Divider()
+                            
+                            Button(action: {
+                                // TODO: Report a problem
+                                print("Report a problem tapped")
+                            }) {
+                                Label("Report a problem", systemImage: "exclamationmark.bubble")
+                            }
+                            
+                            Button(action: {
+                                // TODO: Send feedback
+                                print("Send Feedback tapped")
+                            }) {
+                                Label("Send Feedback", systemImage: "envelope")
                             }
                         } label: {
                             Image(systemName: "ellipsis")
@@ -160,16 +234,16 @@ struct FeedView: View {
                                 
                                 // Content based on selected tab
                                 if selectedFeedTab == .all {
-                                    AllFeedContent(selectedTab: $selectedTab)
+                                    AllFeedContent(selectedTab: $selectedTab, feedManager: feedManager)
                                 } else {
-                                    OnlyYouContent(selectedTab: $selectedTab)
+                                    OnlyYouContent(selectedTab: $selectedTab, feedManager: feedManager)
                                 }
                             }
                         }
                     }
                 }
                 .refreshable {
-                    await stampsManager.refresh()
+                    await refreshFeedData()
                 }
                 .onAppear {
                     // Smart refresh: Shows cached data immediately, refreshes in background if stale
@@ -183,16 +257,17 @@ struct FeedView: View {
                 } message: {
                     Text("No new notifications")
                 }
-                .alert("Feed Options", isPresented: $showFeedMenu) {
-                    Button("Settings") {
-                        // TODO: Implement feed settings
-                    }
-                    
-                    Button("Cancel", role: .cancel) {}
-                }
                 .sheet(isPresented: $showUserSearch) {
                     UserSearchView()
                         .environmentObject(authManager)
+                }
+                .alert("Sign Out", isPresented: $showSignOutConfirmation) {
+                    Button("Cancel", role: .cancel) {}
+                    Button("Sign Out", role: .destructive) {
+                        authManager.signOut()
+                    }
+                } message: {
+                    Text("Are you sure you want to sign out?")
                 }
             }
         }
@@ -200,45 +275,29 @@ struct FeedView: View {
     
     struct AllFeedContent: View {
         @Binding var selectedTab: Int
+        @ObservedObject var feedManager: FeedManager
         @EnvironmentObject var stampsManager: StampsManager
         @EnvironmentObject var authManager: AuthManager
-        @State private var showSkeleton = true
-        @State private var feedPosts: [FeedPost] = []
-        @State private var isLoadingFeed = false
-        
-        // Struct to hold post data
-        private struct FeedPost: Identifiable {
-            let id: String
-            let userId: String
-            let userName: String
-            let displayName: String
-            let avatarUrl: String?
-            let stampName: String
-            let location: String
-            let date: String
-            let actualDate: Date
-            let isCurrentUser: Bool
-            let stamp: Stamp
-            let userPhotos: [String]
-            let note: String?
-            let likeCount: Int
-            let commentCount: Int
-        }
+        @State private var hasLoadedOnce = false
         
         var body: some View {
             VStack(spacing: 20) {
-                if showSkeleton && isLoadingFeed && feedPosts.isEmpty {
-                    // Skeleton loading state - only show on first load with no data
+                // SIMPLE LOADING PATTERN: One consistent rule
+                if !authManager.isSignedIn {
+                    // Not signed in - show sign-in prompt (handled by parent)
+                    EmptyView()
+                } else if feedManager.feedPosts.isEmpty && (!hasLoadedOnce || feedManager.isLoading) {
+                    // Loading with no content - show skeleton posts
+                    // Show skeleton if: never loaded OR actively loading
                     ForEach(0..<3, id: \.self) { index in
                         SkeletonPostView()
-                            .redacted(reason: .placeholder)
                         
                         if index < 2 {
                             Divider()
                         }
                     }
-                } else if !authManager.isSignedIn || feedPosts.isEmpty {
-                    // Empty state (when signed out or no posts)
+                } else if feedManager.feedPosts.isEmpty {
+                    // Empty state (no posts after loading)
                     VStack(spacing: 16) {
                         Image(systemName: "newspaper")
                             .font(.system(size: 60))
@@ -255,147 +314,92 @@ struct FeedView: View {
                     }
                     .padding(.top, 80)
                 } else {
-                    ForEach(Array(feedPosts.enumerated()), id: \.element.id) { index, post in
+                    // Show posts (from cache or fresh data)
+                    ForEach(Array(feedManager.feedPosts.enumerated()), id: \.element.id) { index, post in
                         PostView(
                             userId: post.userId,
                             userName: post.displayName,
                             avatarUrl: post.avatarUrl,
                             stampName: post.stampName,
+                            stampImageName: post.stampImageName,
                             location: post.location,
                             date: post.date,
                             isCurrentUser: post.isCurrentUser,
-                            stamp: post.stamp,
+                            stampId: post.stampId,
                             userPhotos: post.userPhotos,
                             note: post.note,
                             likeCount: post.likeCount,
                             commentCount: post.commentCount,
                             selectedTab: $selectedTab
                         )
+                        .transition(.opacity)
                         
-                        if index < feedPosts.count - 1 {
+                        if index < feedManager.feedPosts.count - 1 {
                             Divider()
                         }
+                    }
+                    
+                    // Loading indicator at bottom (if refreshing existing content)
+                    if feedManager.isLoading {
+                        ProgressView()
+                            .padding(.top, 16)
                     }
                 }
             }
             .padding(.horizontal, 20)
             .padding(.top, 8)
             .padding(.bottom, 32)
+            .animation(.easeInOut(duration: 0.3), value: feedManager.feedPosts.isEmpty)
             .onAppear {
-                loadFeed()
-            }
-            .onChange(of: stampsManager.lastRefreshTime) { oldValue, newValue in
-                // Reload feed when stamps are refreshed
-                loadFeed()
+                loadFeedIfNeeded()
             }
         }
         
-        /// Load feed from followed users
-        private func loadFeed() {
+        /// Load feed with smart caching
+        private func loadFeedIfNeeded() {
             guard let userId = authManager.userId else { return }
             guard authManager.isSignedIn else { return }
             
-            isLoadingFeed = true
-            
             Task {
-                do {
-                    let feedItems = try await FirebaseService.shared.fetchFollowingFeed(userId: userId, limit: 100)
-                    
-                    // Convert to FeedPost
-                    var posts: [FeedPost] = []
-                    
-                    for (profile, collectedStamp) in feedItems {
-                        guard let stamp = stampsManager.stamps.first(where: { $0.id == collectedStamp.stampId }) else {
-                            continue
-                        }
-                        
-                        let post = FeedPost(
-                            id: "\(profile.id)-\(collectedStamp.stampId)",
-                            userId: profile.id,
-                            userName: profile.username,
-                            displayName: profile.displayName,
-                            avatarUrl: profile.avatarUrl,
-                            stampName: stamp.name,
-                            location: stamp.cityCountry,
-                            date: formatDate(collectedStamp.collectedDate),
-                            actualDate: collectedStamp.collectedDate,
-                            isCurrentUser: profile.id == userId,
-                            stamp: stamp,
-                            userPhotos: collectedStamp.userImageNames,
-                            note: collectedStamp.userNotes.isEmpty ? nil : collectedStamp.userNotes,
-                            likeCount: 0,
-                            commentCount: 0
-                        )
-                        posts.append(post)
-                    }
-                    
-                    await MainActor.run {
-                        self.feedPosts = posts
-                        self.isLoadingFeed = false
-                        
-                        // Hide skeleton after a smooth delay
-                        Task {
-                            try? await Task.sleep(nanoseconds: 150_000_000) // 150ms
-                            withAnimation(.easeInOut(duration: 0.3)) {
-                                showSkeleton = false
-                            }
-                        }
-                    }
-                } catch {
-                    print("❌ Failed to load feed: \(error.localizedDescription)")
-                    await MainActor.run {
-                        self.isLoadingFeed = false
-                        self.showSkeleton = false
-                    }
+                await feedManager.loadFeed(
+                    userId: userId,
+                    stampsManager: stampsManager,
+                    forceRefresh: false
+                )
+                
+                // Mark that we've attempted to load at least once
+                await MainActor.run {
+                    hasLoadedOnce = true
                 }
             }
-        }
-        
-        private func formatDate(_ date: Date) -> String {
-            let formatter = DateFormatter()
-            formatter.dateFormat = "MMM d, yyyy"
-            return formatter.string(from: date)
-        }
-        
-        private func dateFromString(_ dateString: String) -> Date? {
-            let formatter = DateFormatter()
-            formatter.dateFormat = "MMM d, yyyy"
-            return formatter.date(from: dateString)
         }
     }
     
     struct OnlyYouContent: View {
         @Binding var selectedTab: Int
+        @ObservedObject var feedManager: FeedManager
         @EnvironmentObject var stampsManager: StampsManager
         @EnvironmentObject var authManager: AuthManager
-        @State private var showSkeleton = true
-        
-        // Computed property to get user's collected stamps with their data
-        private var userCollectedPosts: [(stamp: Stamp, collectedStamp: CollectedStamp)] {
-            stampsManager.userCollection.collectedStamps
-                .compactMap { collectedStamp in
-                    guard let stamp = stampsManager.stamps.first(where: { $0.id == collectedStamp.stampId }) else {
-                        return nil
-                    }
-                    return (stamp: stamp, collectedStamp: collectedStamp)
-                }
-                .sorted { $0.collectedStamp.collectedDate > $1.collectedStamp.collectedDate } // Most recent first
-        }
+        @State private var hasLoadedOnce = false
         
         var body: some View {
             VStack(spacing: 20) {
-                if showSkeleton && stampsManager.isLoading && userCollectedPosts.isEmpty {
-                    // Skeleton loading state - only show on first load with no data
+                // SIMPLE LOADING PATTERN: Same as All tab - consistent!
+                if !authManager.isSignedIn {
+                    // Not signed in - show sign-in prompt (handled by parent)
+                    EmptyView()
+                } else if feedManager.myPosts.isEmpty && (!hasLoadedOnce || feedManager.isLoading) {
+                    // Loading with no content - show skeleton posts
+                    // Show skeleton if: never loaded OR actively loading
                     ForEach(0..<3, id: \.self) { index in
                         SkeletonPostView()
-                            .redacted(reason: .placeholder)
                         
                         if index < 2 {
                             Divider()
                         }
                     }
-                } else if !authManager.isSignedIn || userCollectedPosts.isEmpty {
-                    // Empty state (when signed out or no stamps)
+                } else if feedManager.myPosts.isEmpty {
+                    // Empty state (no posts after loading)
                     VStack(spacing: 16) {
                         Image(systemName: "book.closed.fill")
                             .font(.system(size: 60))
@@ -412,50 +416,66 @@ struct FeedView: View {
                     }
                     .padding(.top, 80)
                 } else {
-                    // Show collected stamps as posts
-                    ForEach(Array(userCollectedPosts.enumerated()), id: \.element.stamp.id) { index, post in
+                    // Show filtered posts from feedManager
+                    ForEach(Array(feedManager.myPosts.enumerated()), id: \.element.id) { index, post in
                         PostView(
-                            userId: authManager.userId ?? "",
-                            userName: authManager.userDisplayName ?? "User",
-                            avatarUrl: authManager.userProfile?.avatarUrl,
-                            stampName: post.stamp.name,
-                            location: post.stamp.cityCountry,
-                            date: formatDate(post.collectedStamp.collectedDate),
+                            userId: post.userId,
+                            userName: post.displayName,
+                            avatarUrl: post.avatarUrl,
+                            stampName: post.stampName,
+                            stampImageName: post.stampImageName,
+                            location: post.location,
+                            date: post.date,
                             isCurrentUser: true,
-                            stamp: post.stamp,
-                            userPhotos: post.collectedStamp.userImageNames,
-                            note: post.collectedStamp.userNotes.isEmpty ? nil : post.collectedStamp.userNotes,
-                            likeCount: 0, // TODO: Add social features
-                            commentCount: 0, // TODO: Add social features
+                            stampId: post.stampId,
+                            userPhotos: post.userPhotos,
+                            note: post.note,
+                            likeCount: post.likeCount,
+                            commentCount: post.commentCount,
                             selectedTab: $selectedTab
                         )
+                        .transition(.opacity)
                         
-                        if index < userCollectedPosts.count - 1 {
+                        if index < feedManager.myPosts.count - 1 {
                             Divider()
                         }
+                    }
+                    
+                    // Loading indicator at bottom (if refreshing existing content)
+                    if feedManager.isLoading {
+                        ProgressView()
+                            .padding(.top, 16)
                     }
                 }
             }
             .padding(.horizontal, 20)
             .padding(.top, 8)
             .padding(.bottom, 32)
-            .onChange(of: stampsManager.isLoading) { oldValue, newValue in
-                if !newValue {
-                    // Add minimum display time for smooth transition
-                    Task {
-                        try? await Task.sleep(nanoseconds: 150_000_000) // 150ms
-                        withAnimation(.easeInOut(duration: 0.3)) {
-                            showSkeleton = false
-                        }
-                    }
-                }
+            .animation(.easeInOut(duration: 0.3), value: feedManager.myPosts.isEmpty)
+            .onAppear {
+                loadFeedIfNeeded()
             }
         }
         
-        private func formatDate(_ date: Date) -> String {
-            let formatter = DateFormatter()
-            formatter.dateFormat = "MMM d, yyyy"
-            return formatter.string(from: date)
+        /// Load feed with smart caching (reuses data from All tab if available)
+        private func loadFeedIfNeeded() {
+            guard let userId = authManager.userId else { return }
+            guard authManager.isSignedIn else { return }
+            
+            // If All tab already loaded, myPosts is instantly available (filtered from cache)
+            // Otherwise, trigger feed load which will populate both All and Only Yours
+            Task {
+                await feedManager.loadFeed(
+                    userId: userId,
+                    stampsManager: stampsManager,
+                    forceRefresh: false
+                )
+                
+                // Mark that we've attempted to load at least once
+                await MainActor.run {
+                    hasLoadedOnce = true
+                }
+            }
         }
     }
     
@@ -464,10 +484,11 @@ struct FeedView: View {
         let userName: String
         let avatarUrl: String?
         let stampName: String
+        let stampImageName: String
         let location: String
         let date: String
         let isCurrentUser: Bool // true if this is the current user's post
-        let stamp: Stamp // The actual stamp object
+        let stampId: String // The stamp ID to fetch from manager
         let userPhotos: [String] // Additional user photos (can be empty)
         let note: String? // Optional note
         let likeCount: Int
@@ -477,24 +498,38 @@ struct FeedView: View {
         @State private var navigateToStampDetail: Bool = false
         @State private var showNotesEditor: Bool = false
         @State private var editingNotes: String = ""
+        @State private var stamp: Stamp? // Lazy-loaded stamp
+        @State private var isLoadingStamp = false
         @EnvironmentObject var stampsManager: StampsManager
         @EnvironmentObject var authManager: AuthManager
+        
+        // Computed property for avatar URL - stable value
+        private var computedAvatarUrl: String? {
+            isCurrentUser ? authManager.userProfile?.avatarUrl : avatarUrl
+        }
         
         var body: some View {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(alignment: .top, spacing: 12) {
+                    // Create ProfileImageView once and reuse it
+                    let profileImage = ProfileImageView(
+                        avatarUrl: computedAvatarUrl,
+                        userId: userId,
+                        size: 40
+                    )
+                    
                     if isCurrentUser {
                         // Current user - tapping should switch to Stamps tab
                         Button(action: {
                             selectedTab = 2
                         }) {
-                            profilePicture
+                            profileImage
                         }
                         .buttonStyle(PlainButtonStyle())
                     } else {
                         // Other user - navigate to their profile
                         NavigationLink(destination: UserProfileView(userId: userId, username: "", displayName: userName)) {
-                            profilePicture
+                            profileImage
                         }
                         .buttonStyle(PlainButtonStyle())
                     }
@@ -559,12 +594,12 @@ struct FeedView: View {
                 
                 // Photos section - stamp + user photos using PhotoGalleryView
                 PhotoGalleryView(
-                    stampId: stamp.id,
+                    stampId: stampId,
                     maxPhotos: 5,
-                    showStampImage: true,
-                    stampImageName: stamp.imageName,
+                    showStampImage: !stampImageName.isEmpty,
+                    stampImageName: stampImageName,
                     onStampImageTap: {
-                        navigateToStampDetail = true
+                        loadStampAndNavigate()
                     }
                 )
                 .environmentObject(stampsManager)
@@ -629,25 +664,24 @@ struct FeedView: View {
             }
             .padding(.vertical, 8)
             .navigationDestination(isPresented: $navigateToStampDetail) {
-                StampDetailView(
-                    stamp: stamp,
-                    userLocation: nil,
-                    showBackButton: true
-                )
+                if let stamp = stamp {
+                    StampDetailView(
+                        stamp: stamp,
+                        userLocation: nil,
+                        showBackButton: true
+                    )
+                }
             }
             .sheet(isPresented: $showNotesEditor) {
                 NotesEditorView(notes: $editingNotes) { savedNotes in
-                    stampsManager.userCollection.updateNotes(for: stamp.id, notes: savedNotes)
+                    stampsManager.userCollection.updateNotes(for: stampId, notes: savedNotes)
                 }
             }
-        }
-        
-        private var profilePicture: some View {
-            ProfileImageView(
-                avatarUrl: isCurrentUser ? authManager.userProfile?.avatarUrl : avatarUrl,
-                userId: userId,
-                size: 40
-            )
+            .onAppear {
+                // PREFETCH: Load stamp data in background when post appears
+                // Makes navigation instant when user taps (Instagram pattern)
+                prefetchStampData()
+            }
         }
         
         private func buildCollectionText() -> AttributedString {
@@ -671,7 +705,7 @@ struct FeedView: View {
         
         private func buildCollectionTextButton() -> some View {
             Button(action: {
-                navigateToStampDetail = true
+                loadStampAndNavigate()
             }) {
                 Text(buildCollectionText())
                     .font(.body)
@@ -679,45 +713,47 @@ struct FeedView: View {
             }
             .buttonStyle(PlainButtonStyle())
         }
-    }
-    
-    // MARK: - Skeleton Loading View
-    struct SkeletonPostView: View {
-        var body: some View {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(alignment: .top, spacing: 12) {
-                    // Profile picture placeholder
-                    Circle()
-                        .fill(Color.gray.opacity(0.3))
-                        .frame(width: 40, height: 40)
-                    
-                    // Text content placeholders
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("User Name collected Stamp Name")
-                            .font(.body)
-                        
-                        Text("City, Country")
-                            .font(.subheadline)
-                        
-                        Text("Jan 1, 2024")
-                            .font(.subheadline)
-                    }
-                    
-                    Spacer()
-                }
+        
+        private func prefetchStampData() {
+            // Skip if already loaded or loading
+            guard stamp == nil, !isLoadingStamp else { return }
+            
+            Task {
+                // PREFETCH: Load stamp in background when post appears (Instagram pattern)
+                let stamps = await stampsManager.fetchStamps(ids: [stampId])
                 
-                // Photo gallery placeholder - small squares like real feed
-                HStack(spacing: 8) {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.gray.opacity(0.3))
-                        .frame(width: 120, height: 120)
-                    
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.gray.opacity(0.3))
-                        .frame(width: 120, height: 120)
+                await MainActor.run {
+                    stamp = stamps.first
                 }
             }
-            .padding(.vertical, 8)
+        }
+        
+        private func loadStampAndNavigate() {
+            // If stamp is already prefetched, navigate immediately
+            if let _ = stamp {
+                navigateToStampDetail = true
+                return
+            }
+            
+            guard !isLoadingStamp else { return }
+            
+            isLoadingStamp = true
+            
+            Task {
+                // FALLBACK: Fetch stamp only if prefetch didn't complete
+                print("🎯 [FeedView] Fetching stamp for navigation: \(stampId)")
+                
+                let stamps = await stampsManager.fetchStamps(ids: [stampId])
+                
+                await MainActor.run {
+                    stamp = stamps.first
+                    isLoadingStamp = false
+                    
+                    if stamp != nil {
+                        navigateToStampDetail = true
+                    }
+                }
+            }
         }
     }
 }

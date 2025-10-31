@@ -213,6 +213,8 @@ struct StampDetailView: View {
                                         .font(.body)
                                         .foregroundColor(.secondary)
                                 }
+                                .frame(minHeight: 44)              // Larger tap target
+                                .contentShape(Rectangle())         // Make entire frame tappable
                             }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -308,6 +310,17 @@ struct StampDetailView: View {
                         .padding(.bottom, 36)
                     }
                     
+                    // TODO: IMPLEMENT NOTES SECTION
+                    // Phase 1: Add "Notes from following" section first (show notes from people you follow)
+                    // Phase 2: Add "Notes from others" section after (show all public notes)
+                    // UI Design:
+                    // - Section heading: "Notes from others" or "Notes from following"
+                    // - Each note shows: profile thumbnail (40x40 circle) + username + note text
+                    // - "See all" button at bottom to navigate to full notes view
+                    // - Only visible when signed in
+                    // - Divider above section
+                    
+                    /*
                     // Notes from others section (only show when signed in)
                     if authManager.isSignedIn {
                         // Divider
@@ -358,9 +371,10 @@ struct StampDetailView: View {
                         .padding(.horizontal, 24)
                         .padding(.bottom, 36)
                     }
+                    */
                     
                     // Collections section - only show if stamp belongs to at least one collection
-                    let stampCollections = stampsManager.sortedCollections.filter { collection in
+                    let stampCollections = stampsManager.collections.filter { collection in
                         stamp.collectionIds.contains(collection.id)
                     }
                     
@@ -377,15 +391,15 @@ struct StampDetailView: View {
                             
                             ForEach(stampCollections) { collection in
                                 NavigationLink(destination: CollectionDetailView(collection: collection)) {
+                                    // Use hardcoded total from collection model
                                     let collectedCount = stampsManager.collectedStampsInCollection(collection.id)
-                                    let totalCount = stampsManager.stampsInCollection(collection.id).count
-                                    let percentage = totalCount > 0 ? Double(collectedCount) / Double(totalCount) : 0.0
+                                    let totalCount = collection.totalStamps
                                     
                                     CollectionCardView(
                                         name: collection.name,
                                         collectedCount: collectedCount,
                                         totalCount: totalCount,
-                                        completionPercentage: percentage
+                                        completionPercentage: totalCount > 0 ? Double(collectedCount) / Double(totalCount) : 0
                                     )
                                 }
                                 .buttonStyle(PlainButtonStyle())
@@ -482,7 +496,6 @@ struct StampDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)
         .presentationDetents([.fraction(0.75), .large])
-        .presentationDragIndicator(.visible)
         .onAppear {
             // Show Memory section immediately if stamp is already collected
             if isCollected {

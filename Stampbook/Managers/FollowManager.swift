@@ -70,6 +70,12 @@ class FollowManager: ObservableObject {
                         // Update cached counts with real values
                         if let profile = targetProfile {
                             self.followCounts[targetUserId] = (profile.followerCount, profile.followingCount)
+                            
+                            // SMART UPDATE: Add to following list if we're currently viewing it
+                            // (only if not already in the list)
+                            if !self.following.contains(where: { $0.id == targetUserId }) {
+                                self.following.append(profile)
+                            }
                         }
                         if let profile = currentProfile {
                             self.followCounts[currentUserId] = (profile.followerCount, profile.followingCount)
@@ -100,6 +106,9 @@ class FollowManager: ObservableObject {
                         self.followCounts[targetUserId] = (max(0, counts.followers - 1), counts.following)
                     }
                     
+                    // Remove from following list if it was added
+                    self.following.removeAll { $0.id == targetUserId }
+                    
                     self.isProcessingFollow[targetUserId] = false
                     self.error = error.localizedDescription
                 }
@@ -123,6 +132,9 @@ class FollowManager: ObservableObject {
         if let counts = followCounts[targetUserId] {
             followCounts[targetUserId] = (max(0, counts.followers - 1), counts.following)
         }
+        
+        // SMART UPDATE: Remove from following list immediately (optimistic)
+        following.removeAll { $0.id == targetUserId }
         
         Task {
             do {
@@ -155,7 +167,7 @@ class FollowManager: ObservableObject {
                     print("ℹ️ Wasn't following user \(targetUserId)")
                 }
             } catch {
-                // Rollback on error
+                // Rollback on error - re-add to following list
                 await MainActor.run {
                     self.isFollowing[targetUserId] = true
                     
@@ -166,6 +178,9 @@ class FollowManager: ObservableObject {
                     if let counts = self.followCounts[targetUserId] {
                         self.followCounts[targetUserId] = (counts.followers + 1, counts.following)
                     }
+                    
+                    // Re-fetch following list to restore state
+                    self.fetchFollowing(userId: currentUserId)
                     
                     self.isProcessingFollow[targetUserId] = false
                     self.error = error.localizedDescription

@@ -12,6 +12,7 @@ struct Stamp: Identifiable, Codable {
     let about: String
     let notesFromOthers: [String]
     let thingsToDoFromEditors: [String]
+    let geohash: String? // Optional for backward compatibility
     
     var coordinate: CLLocationCoordinate2D {
         CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
@@ -40,12 +41,12 @@ struct Stamp: Identifiable, Codable {
     
     // For backward compatibility with JSON that uses collectionId
     enum CodingKeys: String, CodingKey {
-        case id, name, latitude, longitude, address, imageName, about, notesFromOthers, thingsToDoFromEditors
+        case id, name, latitude, longitude, address, imageName, about, notesFromOthers, thingsToDoFromEditors, geohash
         case collectionIds
         case collectionId
     }
     
-    init(id: String, name: String, latitude: Double, longitude: Double, address: String, imageName: String, collectionIds: [String], about: String, notesFromOthers: [String], thingsToDoFromEditors: [String] = []) {
+    init(id: String, name: String, latitude: Double, longitude: Double, address: String, imageName: String, collectionIds: [String], about: String, notesFromOthers: [String], thingsToDoFromEditors: [String] = [], geohash: String? = nil) {
         self.id = id
         self.name = name
         self.latitude = latitude
@@ -56,6 +57,7 @@ struct Stamp: Identifiable, Codable {
         self.about = about
         self.notesFromOthers = notesFromOthers
         self.thingsToDoFromEditors = thingsToDoFromEditors
+        self.geohash = geohash
     }
     
     init(from decoder: Decoder) throws {
@@ -69,6 +71,7 @@ struct Stamp: Identifiable, Codable {
         about = try container.decode(String.self, forKey: .about)
         notesFromOthers = try container.decode([String].self, forKey: .notesFromOthers)
         thingsToDoFromEditors = try container.decodeIfPresent([String].self, forKey: .thingsToDoFromEditors) ?? []
+        geohash = try container.decodeIfPresent(String.self, forKey: .geohash)
         
         // Support both collectionIds (array) and collectionId (string) for backward compatibility
         if let ids = try? container.decode([String].self, forKey: .collectionIds) {
@@ -92,6 +95,7 @@ struct Stamp: Identifiable, Codable {
         try container.encode(about, forKey: .about)
         try container.encode(notesFromOthers, forKey: .notesFromOthers)
         try container.encode(thingsToDoFromEditors, forKey: .thingsToDoFromEditors)
+        try container.encodeIfPresent(geohash, forKey: .geohash)
     }
 }
 

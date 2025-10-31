@@ -110,12 +110,9 @@ struct FollowListView: View {
         .navigationTitle(userDisplayName)
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
-            // Load initial data
-            if selectedTab == .followers {
-                followManager.fetchFollowers(userId: userId)
-            } else {
-                followManager.fetchFollowing(userId: userId)
-            }
+            // Load both followers and following data to show accurate counts
+            followManager.fetchFollowers(userId: userId)
+            followManager.fetchFollowing(userId: userId)
         }
     }
 }

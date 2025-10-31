@@ -18,6 +18,8 @@ struct UserProfileView: View {
     @State private var userProfile: UserProfile?
     @State private var userRank: Int? // Rank for the viewed user
     @State private var showFollowError = false
+    @State private var userCollectedStamps: [CollectedStamp] = [] // Stamps for the viewed user
+    @State private var isLoadingStamps = false
     
     var isCurrentUser: Bool {
         authManager.userId == userId
@@ -279,15 +281,17 @@ struct UserProfileView: View {
                 
                 // Content based on selected tab
                 if selectedTab == .all {
-                    AllStampsContent()
+                    AllStampsContent(userCollectedStamps: userCollectedStamps, isLoadingStamps: isLoadingStamps)
                 } else {
-                    CollectionsContent()
+                    CollectionsContent(userCollectedStamps: userCollectedStamps)
                 }
             }
         }
         .refreshable {
             // Pull-to-refresh to get latest profile data (without rank for speed)
             await profileManager.refreshWithoutRank()
+            // Also refresh stamps
+            loadUserStamps()
         }
         .navigationBarTitleDisplayMode(.inline)
         .alert("Error", isPresented: $showFollowError) {
@@ -319,6 +323,9 @@ struct UserProfileView: View {
             // Load user profile
             profileManager.loadProfile(userId: userId)
             
+            // Load user's collected stamps
+            loadUserStamps()
+            
             // Cache initial counts in FollowManager
             if let profile = userProfile {
                 followManager.updateFollowCounts(userId: userId, followerCount: profile.followerCount, followingCount: profile.followingCount)
@@ -335,13 +342,39 @@ struct UserProfileView: View {
             if let profile = profile {
                 followManager.updateFollowCounts(userId: userId, followerCount: profile.followerCount, followingCount: profile.followingCount)
                 
-                // Rank is loaded lazily when rank card appears (for better performance)
+                // Fetch rank now that profile is loaded
+                if userRank == nil {
+                    Task {
+                        await fetchUserRank(for: profile)
+                    }
+                }
             }
         }
         .onChange(of: followManager.error) { oldError, newError in
             // Show error alert when error occurs
             if newError != nil {
                 showFollowError = true
+            }
+        }
+    }
+    
+    /// Load collected stamps for the viewed user
+    private func loadUserStamps() {
+        isLoadingStamps = true
+        Task {
+            do {
+                // Fetch stamps from Firebase for this specific user
+                let stamps = try await FirebaseService.shared.fetchCollectedStamps(for: userId)
+                await MainActor.run {
+                    self.userCollectedStamps = stamps
+                    self.isLoadingStamps = false
+                }
+                print("✅ Loaded \(stamps.count) stamps for user: \(userId)")
+            } catch {
+                await MainActor.run {
+                    self.isLoadingStamps = false
+                }
+                print("❌ Failed to load user stamps: \(error.localizedDescription)")
             }
         }
     }
@@ -363,8 +396,13 @@ struct UserProfileView: View {
     }
     
     struct AllStampsContent: View {
+        let userCollectedStamps: [CollectedStamp]
+        let isLoadingStamps: Bool
+        
         @EnvironmentObject var stampsManager: StampsManager
         @State private var displayedCount = 20 // Initial load
+        @State private var userStamps: [Stamp] = [] // Lazy-loaded stamps
+        @State private var isLoadingLazyStamps = false
         
         private let columns = [
             GridItem(.flexible(), spacing: 16),
@@ -373,11 +411,11 @@ struct UserProfileView: View {
         
         // Get collected stamps sorted by date (latest first)
         private var sortedCollectedStamps: [(stamp: Stamp, collectedDate: Date)] {
-            let collectedStamps = stampsManager.userCollection.collectedStamps
+            let collectedStamps = userCollectedStamps
                 .sorted { $0.collectedDate > $1.collectedDate } // Latest first
             
             return collectedStamps.compactMap { collected in
-                if let stamp = stampsManager.stamps.first(where: { $0.id == collected.stampId }) {
+                if let stamp = userStamps.first(where: { $0.id == collected.stampId }) {
                     return (stamp, collected.collectedDate)
                 }
                 return nil
@@ -391,7 +429,16 @@ struct UserProfileView: View {
         
         var body: some View {
             Group {
-                if sortedCollectedStamps.isEmpty {
+                if isLoadingLazyStamps && userStamps.isEmpty {
+                    // Loading skeleton
+                    VStack {
+                        Spacer()
+                        ProgressView()
+                            .scaleEffect(1.5)
+                        Spacer()
+                    }
+                    .frame(height: 300)
+                } else if sortedCollectedStamps.isEmpty && !isLoadingLazyStamps {
                     // Empty state
                     VStack {
                         Spacer()
@@ -441,6 +488,31 @@ struct UserProfileView: View {
                     .padding(.bottom, 32)
                 }
             }
+            .onAppear {
+                loadUserStamps()
+            }
+            .onChange(of: userCollectedStamps) { _, _ in
+                loadUserStamps()
+            }
+        }
+        
+        private func loadUserStamps() {
+            guard !isLoadingLazyStamps else { return }
+            
+            isLoadingLazyStamps = true
+            
+            Task {
+                // LAZY LOADING: Fetch ONLY stamps this user has collected
+                let collectedStampIds = userCollectedStamps.map { $0.stampId }
+                print("🎯 [UserProfileView] Fetching \(collectedStampIds.count) user stamps")
+                
+                let stamps = await stampsManager.fetchStamps(ids: collectedStampIds)
+                
+                await MainActor.run {
+                    userStamps = stamps
+                    isLoadingLazyStamps = false
+                }
+            }
         }
         
         private func loadMoreStamps() {
@@ -474,28 +546,109 @@ struct UserProfileView: View {
     }
     
     struct CollectionsContent: View {
+        let userCollectedStamps: [CollectedStamp]
+        
         @EnvironmentObject var stampsManager: StampsManager
+        @State private var userStamps: [Stamp] = [] // Lazy-loaded stamps
+        @State private var isLoading = false
+        @State private var loadedStampIds: Set<String> = [] // Track what we've loaded
         
         var body: some View {
-            VStack(spacing: 20) {
-                ForEach(stampsManager.collections) { collection in
-                    NavigationLink(destination: CollectionDetailView(collection: collection)) {
-                        let collectedCount = stampsManager.collectedStampsInCollection(collection.id)
-                        let totalCount = stampsManager.stampsInCollection(collection.id).count
-                        let percentage = totalCount > 0 ? Double(collectedCount) / Double(totalCount) : 0.0
-                        
-                        CollectionCardView(
-                            name: collection.name,
-                            collectedCount: collectedCount,
-                            totalCount: totalCount,
-                            completionPercentage: percentage
-                        )
+            if isLoading && userStamps.isEmpty {
+                // Loading state
+                VStack {
+                    Spacer()
+                    ProgressView()
+                        .scaleEffect(1.5)
+                    Spacer()
+                }
+                .frame(height: 300)
+            } else if userCollectedStamps.isEmpty && !isLoading {
+                // Empty state
+                VStack {
+                    Spacer()
+                    
+                    Image(systemName: "folder.fill")
+                        .font(.system(size: 60))
+                        .foregroundColor(.gray)
+                        .padding(.bottom, 20)
+                    
+                    Text("Collections")
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                    
+                    Text("This user hasn't collected any stamps yet")
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 40)
+                    
+                    Spacer()
+                }
+                .frame(height: 300)
+            } else {
+                VStack(spacing: 20) {
+                    ForEach(stampsManager.collections) { collection in
+                        NavigationLink(destination: CollectionDetailView(collection: collection)) {
+                            // Calculate collected count for this user's stamps
+                            let collectedCount = userCollectedStamps.filter { collected in
+                                userStamps.first(where: { $0.id == collected.stampId })?.collectionIds.contains(collection.id) ?? false
+                            }.count
+                            
+                            // Count total stamps in collection from user's loaded stamps
+                            let totalCount = userStamps.filter { $0.collectionIds.contains(collection.id) }.count
+                            let percentage = totalCount > 0 ? Double(collectedCount) / Double(totalCount) : 0.0
+                            
+                            CollectionCardView(
+                                name: collection.name,
+                                collectedCount: collectedCount,
+                                totalCount: totalCount,
+                                completionPercentage: percentage
+                            )
+                        }
+                        .buttonStyle(PlainButtonStyle())
                     }
-                    .buttonStyle(PlainButtonStyle())
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 32)
+                .onAppear {
+                    loadUserStamps()
+                }
+                .onChange(of: userCollectedStamps.count) { _, _ in
+                    // Only reload if the stamp IDs have actually changed
+                    let currentStampIds = Set(userCollectedStamps.map { $0.stampId })
+                    if currentStampIds != loadedStampIds {
+                        loadUserStamps()
+                    }
                 }
             }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 32)
+        }
+        
+        private func loadUserStamps() {
+            guard !isLoading else { return }
+            
+            let collectedStampIds = userCollectedStamps.map { $0.stampId }
+            
+            // Don't reload if we already have these stamps
+            let currentStampIds = Set(collectedStampIds)
+            if currentStampIds == loadedStampIds && !userStamps.isEmpty {
+                return
+            }
+            
+            isLoading = true
+            
+            Task {
+                // LAZY LOADING: Fetch ONLY stamps this user has collected
+                print("🎯 [UserProfileView.Collections] Fetching \(collectedStampIds.count) user stamps")
+                
+                let stamps = await stampsManager.fetchStamps(ids: collectedStampIds)
+                
+                await MainActor.run {
+                    userStamps = stamps
+                    loadedStampIds = currentStampIds
+                    isLoading = false
+                }
+            }
         }
     }
 }

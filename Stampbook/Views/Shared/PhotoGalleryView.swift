@@ -94,7 +94,9 @@ struct PhotoGalleryView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     // Optional: Show stamp image first (for Feed)
-                    if showStampImage, let stampImageName = stampImageName {
+                    if showStampImage, 
+                       let stampImageName = stampImageName,
+                       !stampImageName.isEmpty {
                         Button(action: {
                             onStampImageTap?()
                         }) {
