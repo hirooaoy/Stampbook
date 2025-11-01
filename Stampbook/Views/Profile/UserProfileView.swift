@@ -11,11 +11,14 @@ struct UserProfileView: View {
     @EnvironmentObject var stampsManager: StampsManager
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var followManager: FollowManager // Shared instance
+    @EnvironmentObject var blockManager: BlockManager // Shared instance for blocking
     @EnvironmentObject var currentUserProfileManager: ProfileManager // BEST PRACTICE: Global ProfileManager for current user counts
     @StateObject private var profileManager = ProfileManager() // Local ProfileManager for viewing this user's profile
     
     @State private var selectedTab: StampTab = .all
-    @State private var showBlockMenu = false
+    @State private var showMoreMenu = false
+    @State private var showBlockConfirmation = false
+    @State private var showFeedback = false // Show feedback sheet for reporting
     @State private var userProfile: UserProfile?
     @State private var userRank: Int? // Rank for the viewed user
     @State private var showFollowError = false
@@ -35,258 +38,291 @@ struct UserProfileView: View {
         case collections = "Collections"
     }
     
+    // MARK: - View Components
+    
+    private var profileSection: some View {
+        HStack(spacing: 12) {
+            // Profile picture with caching
+            if isCurrentUser {
+                // Current user - tapping should switch to Stamps tab
+                Button(action: {
+                    // Already on own profile view (shouldn't happen)
+                }) {
+                    ProfileImageView(
+                        avatarUrl: userProfile?.avatarUrl,
+                        userId: userId,
+                        size: 64
+                    )
+                }
+                .buttonStyle(PlainButtonStyle())
+            } else {
+                // Other user - just show profile pic (already on their profile)
+                ProfileImageView(
+                    avatarUrl: userProfile?.avatarUrl,
+                    userId: userId,
+                    size: 64
+                )
+            }
+            
+            // Name and bio
+            VStack(alignment: .leading, spacing: 4) {
+                Text(userProfile?.displayName ?? displayName)
+                    .font(.title3)
+                    .fontWeight(.semibold)
+                
+                Text(userProfile?.bio ?? "")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .lineLimit(2)
+            }
+            
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 20)
+        .padding(.top, 16)
+        .padding(.bottom, 20)
+    }
+    
+    private var statsSection: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 12) {
+                rankCard
+                countriesCard
+                followersCard
+                followingCard
+            }
+            .padding(.horizontal, 20)
+        }
+        .padding(.bottom, 20)
+    }
+    
+    private var rankCard: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "trophy.fill")
+                .font(.system(size: 24))
+                .foregroundColor(.orange)
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Rank")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                if let rank = userRank {
+                    Text("#\(rank)")
+                        .font(.body)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                } else {
+                    Text("...")
+                        .font(.body)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+            }
+            
+            Spacer()
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .frame(width: 160)
+        .frame(height: 70)
+        .background(Color.gray.opacity(0.1))
+        .cornerRadius(12)
+        .onAppear {
+            // Lazy load rank when card appears
+            print("🎯 [UserProfileView] Rank card appeared for user \(userId) - userRank: \(userRank?.description ?? "nil")")
+            if userRank == nil, let profile = userProfile {
+                print("🔄 [UserProfileView] Triggering rank fetch for \(profile.displayName)...")
+                Task {
+                    await fetchUserRank(for: profile)
+                }
+            } else if userRank != nil {
+                print("✅ [UserProfileView] Rank already loaded: #\(userRank!)")
+            } else {
+                print("⚠️ [UserProfileView] Profile not loaded yet - cannot fetch rank")
+            }
+        }
+    }
+    
+    private var countriesCard: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "globe")
+                .font(.system(size: 24))
+                .foregroundColor(.blue)
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Countries")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                Text("\(userProfile?.uniqueCountriesVisited ?? 0)")
+                    .font(.body)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+            }
+            
+            Spacer()
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .frame(width: 160)
+        .frame(height: 70)
+        .background(Color.gray.opacity(0.1))
+        .cornerRadius(12)
+    }
+    
+    private var followersCard: some View {
+        NavigationLink(destination: FollowListView(userId: userId, userDisplayName: userProfile?.displayName ?? displayName, initialTab: .followers)) {
+            HStack(spacing: 12) {
+                Image(systemName: "person.2.fill")
+                    .font(.system(size: 24))
+                    .foregroundColor(.green)
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Followers")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    // Use cached count if available, fallback to profile
+                    Text("\(followManager.followCounts[userId]?.followers ?? userProfile?.followerCount ?? 0)")
+                        .font(.body)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                }
+                
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .frame(width: 160)
+            .frame(height: 70)
+            .background(Color.gray.opacity(0.1))
+            .cornerRadius(12)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+    
+    private var followingCard: some View {
+        NavigationLink(destination: FollowListView(userId: userId, userDisplayName: userProfile?.displayName ?? displayName, initialTab: .following)) {
+            HStack(spacing: 12) {
+                Image(systemName: "person.fill.checkmark")
+                    .font(.system(size: 24))
+                    .foregroundColor(.purple)
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Following")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    // Use cached count if available, fallback to profile
+                    Text("\(followManager.followCounts[userId]?.following ?? userProfile?.followingCount ?? 0)")
+                        .font(.body)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                }
+                
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .frame(width: 160)
+            .frame(height: 70)
+            .background(Color.gray.opacity(0.1))
+            .cornerRadius(12)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+    
+    @ViewBuilder
+    private var followButtonSection: some View {
+        // Follow/Following button with triple dot menu (full width)
+        // Don't show for current user
+        if !isCurrentUser {
+            HStack(spacing: 8) {
+                Button(action: {
+                    guard let currentUserId = authManager.userId else { return }
+                    // BEST PRACTICE: Pass current user's ProfileManager to keep counts synced
+                    followManager.toggleFollow(currentUserId: currentUserId, targetUserId: userId, profileManager: currentUserProfileManager) { updatedProfile in
+                        // Update local profile state with returned profile
+                        if let profile = updatedProfile {
+                            userProfile = profile
+                        }
+                    }
+                }) {
+                    HStack(spacing: 8) {
+                        if followManager.isProcessingFollow[userId] == true {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle())
+                                .scaleEffect(0.8)
+                        }
+                        Text(isFollowing ? "Following" : "Follow")
+                    }
+                    .font(.footnote)
+                    .fontWeight(.semibold)
+                    .foregroundColor(isFollowing ? .primary : .white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 44)
+                    .background(isFollowing ? Color(.systemGray5) : Color.blue)
+                    .cornerRadius(10)
+                }
+                .disabled(followManager.isProcessingFollow[userId] == true)
+                
+                // Square button with triple dot
+                Button(action: {
+                    showMoreMenu = true
+                }) {
+                    Image(systemName: "ellipsis")
+                        .font(.system(size: 18))
+                        .foregroundColor(.primary)
+                        .frame(width: 44, height: 44)
+                        .background(Color.gray.opacity(0.1))
+                        .cornerRadius(10)
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 20)
+        }
+    }
+    
+    private var tabPickerSection: some View {
+        // Native segmented control
+        Picker("View", selection: $selectedTab) {
+            ForEach(StampTab.allCases, id: \.self) { tab in
+                Text(tab.rawValue)
+                    .font(.system(size: 24, weight: .medium))
+                    .tag(tab)
+            }
+        }
+        .pickerStyle(.segmented)
+        .controlSize(.large)
+        .padding(.horizontal, 20)
+        .padding(.bottom, 20)
+    }
+    
+    @ViewBuilder
+    private var tabContentSection: some View {
+        // Content based on selected tab
+        if selectedTab == .all {
+            AllStampsContent(userCollectedStamps: userCollectedStamps, isLoadingStamps: isLoadingStamps)
+        } else {
+            CollectionsContent(userCollectedStamps: userCollectedStamps)
+        }
+    }
+    
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
-                // Profile section
-                HStack(spacing: 12) {
-                    // Profile picture with caching
-                    if isCurrentUser {
-                        // Current user - tapping should switch to Stamps tab
-                        Button(action: {
-                            // Already on own profile view (shouldn't happen)
-                        }) {
-                            ProfileImageView(
-                                avatarUrl: userProfile?.avatarUrl,
-                                userId: userId,
-                                size: 64
-                            )
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    } else {
-                        // Other user - just show profile pic (already on their profile)
-                        ProfileImageView(
-                            avatarUrl: userProfile?.avatarUrl,
-                            userId: userId,
-                            size: 64
-                        )
-                    }
-                    
-                    // Name and bio
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(userProfile?.displayName ?? displayName)
-                            .font(.title3)
-                            .fontWeight(.semibold)
-                        
-                        Text(userProfile?.bio ?? "")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .lineLimit(2)
-                    }
-                    
-                    Spacer()
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.horizontal, 20)
-                .padding(.top, 16)
-                .padding(.bottom, 20)
-                
-                // Stats cards - horizontal scrollable
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 12) {
-                        // Rank card
-                        HStack(spacing: 12) {
-                            Image(systemName: "trophy.fill")
-                                .font(.system(size: 24))
-                                .foregroundColor(.orange)
-                            
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Rank")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                if let rank = userRank {
-                                    Text("#\(rank)")
-                                        .font(.body)
-                                        .fontWeight(.semibold)
-                                        .foregroundColor(.primary)
-                                        .lineLimit(1)
-                                        .minimumScaleFactor(0.5)
-                                } else {
-                                    Text("...")
-                                        .font(.body)
-                                        .fontWeight(.semibold)
-                                        .foregroundColor(.secondary)
-                                        .lineLimit(1)
-                                }
-                            }
-                            
-                            Spacer()
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 14)
-                        .frame(width: 160)
-                        .frame(height: 70)
-                        .background(Color.gray.opacity(0.1))
-                        .cornerRadius(12)
-                        .onAppear {
-                            // Lazy load rank when card appears
-                            if userRank == nil, let profile = userProfile {
-                                Task {
-                                    await fetchUserRank(for: profile)
-                                }
-                            }
-                        }
-                        
-                        // Countries card
-                        HStack(spacing: 12) {
-                            Image(systemName: "globe")
-                                .font(.system(size: 24))
-                                .foregroundColor(.blue)
-                            
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Countries")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                Text("\(userProfile?.uniqueCountriesVisited ?? 0)")
-                                    .font(.body)
-                                    .fontWeight(.semibold)
-                                    .foregroundColor(.primary)
-                                    .lineLimit(1)
-                                    .minimumScaleFactor(0.5)
-                            }
-                            
-                            Spacer()
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 14)
-                        .frame(width: 160)
-                        .frame(height: 70)
-                        .background(Color.gray.opacity(0.1))
-                        .cornerRadius(12)
-                        
-                        // Followers card
-                        NavigationLink(destination: FollowListView(userId: userId, userDisplayName: userProfile?.displayName ?? displayName, initialTab: .followers)) {
-                            HStack(spacing: 12) {
-                                Image(systemName: "person.2.fill")
-                                    .font(.system(size: 24))
-                                    .foregroundColor(.green)
-                                
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("Followers")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                    // Use cached count if available, fallback to profile
-                                    Text("\(followManager.followCounts[userId]?.followers ?? userProfile?.followerCount ?? 0)")
-                                        .font(.body)
-                                        .fontWeight(.semibold)
-                                        .foregroundColor(.primary)
-                                        .lineLimit(1)
-                                        .minimumScaleFactor(0.5)
-                                }
-                                
-                                Spacer()
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 14)
-                            .frame(width: 160)
-                            .frame(height: 70)
-                            .background(Color.gray.opacity(0.1))
-                            .cornerRadius(12)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        
-                        // Following card
-                        NavigationLink(destination: FollowListView(userId: userId, userDisplayName: userProfile?.displayName ?? displayName, initialTab: .following)) {
-                            HStack(spacing: 12) {
-                                Image(systemName: "person.fill.checkmark")
-                                    .font(.system(size: 24))
-                                    .foregroundColor(.purple)
-                                
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("Following")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                    // Use cached count if available, fallback to profile
-                                    Text("\(followManager.followCounts[userId]?.following ?? userProfile?.followingCount ?? 0)")
-                                        .font(.body)
-                                        .fontWeight(.semibold)
-                                        .foregroundColor(.primary)
-                                        .lineLimit(1)
-                                        .minimumScaleFactor(0.5)
-                                }
-                                
-                                Spacer()
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 14)
-                            .frame(width: 160)
-                            .frame(height: 70)
-                            .background(Color.gray.opacity(0.1))
-                            .cornerRadius(12)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    }
-                    .padding(.horizontal, 20)
-                }
-                .padding(.bottom, 20)
-                
-                // Follow/Following button with triple dot menu (full width)
-                // Don't show for current user
-                if !isCurrentUser {
-                    HStack(spacing: 8) {
-                        Button(action: {
-                            guard let currentUserId = authManager.userId else { return }
-                            // BEST PRACTICE: Pass current user's ProfileManager to keep counts synced
-                            followManager.toggleFollow(currentUserId: currentUserId, targetUserId: userId, profileManager: currentUserProfileManager) { updatedProfile in
-                                // Update local profile state with returned profile
-                                if let profile = updatedProfile {
-                                    userProfile = profile
-                                }
-                            }
-                        }) {
-                            HStack(spacing: 8) {
-                                if followManager.isProcessingFollow[userId] == true {
-                                    ProgressView()
-                                        .progressViewStyle(CircularProgressViewStyle())
-                                        .scaleEffect(0.8)
-                                }
-                                Text(isFollowing ? "Following" : "Follow")
-                            }
-                            .font(.footnote)
-                            .fontWeight(.semibold)
-                            .foregroundColor(isFollowing ? .primary : .white)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 44)
-                            .background(isFollowing ? Color(.systemGray5) : Color.blue)
-                            .cornerRadius(10)
-                        }
-                        .disabled(followManager.isProcessingFollow[userId] == true)
-                        
-                        // Square button with triple dot
-                        Button(action: {
-                            showBlockMenu = true
-                        }) {
-                            Image(systemName: "ellipsis")
-                                .font(.system(size: 18))
-                                .foregroundColor(.primary)
-                                .frame(width: 44, height: 44)
-                                .background(Color.gray.opacity(0.1))
-                                .cornerRadius(10)
-                        }
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 20)
-                }
-                
-                // Native segmented control
-                Picker("View", selection: $selectedTab) {
-                    ForEach(StampTab.allCases, id: \.self) { tab in
-                        Text(tab.rawValue)
-                            .font(.system(size: 24, weight: .medium))
-                            .tag(tab)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .controlSize(.large)
-                .padding(.horizontal, 20)
-                .padding(.bottom, 20)
-                
-                // Content based on selected tab
-                if selectedTab == .all {
-                    AllStampsContent(userCollectedStamps: userCollectedStamps, isLoadingStamps: isLoadingStamps)
-                } else {
-                    CollectionsContent(userCollectedStamps: userCollectedStamps)
-                }
+                profileSection
+                statsSection
+                followButtonSection
+                tabPickerSection
+                tabContentSection
             }
         }
         .refreshable {
@@ -303,23 +339,34 @@ struct UserProfileView: View {
         } message: {
             Text(followManager.error ?? "Failed to update follow status. Please try again.")
         }
-        .alert("", isPresented: $showBlockMenu) {
+        .alert("More Options", isPresented: $showMoreMenu) {
             Button("Share Profile") {
                 // Handle share action
                 // TODO: Implement share functionality
             }
             
-            Button("Report", role: .destructive) {
-                // Handle report action
-                // TODO: Implement report functionality
+            Button("Report User", role: .destructive) {
+                // Show feedback view for reporting this user
+                showFeedback = true
             }
             
             Button("Block", role: .destructive) {
-                // Handle block action
-                // TODO: Implement block functionality
+                // Show block confirmation
+                showBlockConfirmation = true
             }
             
             Button("Cancel", role: .cancel) {}
+        }
+        .sheet(isPresented: $showFeedback) {
+            SimpleFeedbackView()
+        }
+        .alert("Block \(userProfile?.displayName ?? displayName)?", isPresented: $showBlockConfirmation) {
+            Button("Block", role: .destructive) {
+                handleBlockUser()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("They won't be able to search for your profile and see your stamps and activity. They won't be notified that you blocked them.")
         }
         .onAppear {
             // Load user profile
@@ -383,17 +430,36 @@ struct UserProfileView: View {
     
     /// Fetch rank for the viewed user (with caching)
     private func fetchUserRank(for profile: UserProfile) async {
+        let startTime = Date()
+        print("🔍 [UserProfileView] Fetching rank for \(profile.displayName) (userId: \(profile.id), totalStamps: \(profile.totalStamps))")
+        
         do {
             let rank = try await FirebaseService.shared.calculateUserRankCached(
                 userId: profile.id,
                 totalStamps: profile.totalStamps
             )
+            let elapsed = Date().timeIntervalSince(startTime)
             await MainActor.run {
                 self.userRank = rank
             }
-            print("✅ Fetched rank for \(profile.displayName): #\(rank)")
+            print("✅ [UserProfileView] Fetched rank for \(profile.displayName): #\(rank) (took \(String(format: "%.3f", elapsed))s)")
         } catch {
-            print("⚠️ Failed to fetch rank: \(error.localizedDescription)")
+            let elapsed = Date().timeIntervalSince(startTime)
+            print("❌ [UserProfileView] Failed to fetch rank after \(String(format: "%.3f", elapsed))s: \(error.localizedDescription)")
+            if let nsError = error as NSError? {
+                print("❌ [UserProfileView] Error domain: \(nsError.domain), code: \(nsError.code)")
+            }
+        }
+    }
+    
+    /// Handle blocking a user
+    private func handleBlockUser() {
+        guard let currentUserId = authManager.userId else { return }
+        
+        blockManager.blockUser(currentUserId: currentUserId, targetUserId: userId) {
+            // On success, navigate back
+            // The blocked user's profile should not be accessible anymore
+            print("✅ Successfully blocked user \(userId)")
         }
     }
     
@@ -565,30 +631,8 @@ struct UserProfileView: View {
                     Spacer()
                 }
                 .frame(height: 300)
-            } else if userCollectedStamps.isEmpty && !isLoading {
-                // Empty state
-                VStack {
-                    Spacer()
-                    
-                    Image(systemName: "folder.fill")
-                        .font(.system(size: 60))
-                        .foregroundColor(.gray)
-                        .padding(.bottom, 20)
-                    
-                    Text("Collections")
-                        .font(.title2)
-                        .fontWeight(.semibold)
-                    
-                    Text("This user hasn't collected any stamps yet")
-                        .font(.subheadline)
-                        .foregroundColor(.gray)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 40)
-                    
-                    Spacer()
-                }
-                .frame(height: 300)
             } else {
+                // Always show collections, even if user has 0 stamps collected
                 VStack(spacing: 20) {
                     ForEach(stampsManager.collections) { collection in
                         NavigationLink(destination: CollectionDetailView(collection: collection)) {

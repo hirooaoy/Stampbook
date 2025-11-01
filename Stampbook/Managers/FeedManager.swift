@@ -68,11 +68,14 @@ class FeedManager: ObservableObject {
     /// 
     /// User perceives: <100ms "instant" load
     func loadFeed(userId: String, stampsManager: StampsManager, forceRefresh: Bool = false) async {
+        print("🔍 [DEBUG] FeedManager.loadFeed called (forceRefresh: \(forceRefresh), hasPosts: \(!feedPosts.isEmpty))")
+        
         // STEP 1: Check if memory cache is fresh
         if !forceRefresh,
            !feedPosts.isEmpty,
            let lastRefresh = lastRefreshTime,
            Date().timeIntervalSince(lastRefresh) < refreshInterval {
+            print("🔍 [DEBUG] FeedManager using cached data (age: \(Date().timeIntervalSince(lastRefresh))s)")
             return
         }
         
@@ -186,8 +189,8 @@ class FeedManager: ObservableObject {
                     stampId: stamp.id,
                     userPhotos: collectedStamp.userImageNames,
                     note: collectedStamp.userNotes.isEmpty ? nil : collectedStamp.userNotes,
-                    likeCount: 0,
-                    commentCount: 0
+                    likeCount: collectedStamp.likeCount,
+                    commentCount: collectedStamp.commentCount
                 )
                 posts.append(post)
             }

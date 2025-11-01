@@ -14,6 +14,95 @@ class FirebaseService {
         let settings = FirestoreSettings()
         settings.cacheSettings = PersistentCacheSettings()
         db.settings = settings
+        
+        // Run connectivity diagnostics on initialization
+        Task {
+            await self.runConnectivityDiagnostics()
+        }
+    }
+    
+    // MARK: - Connectivity Diagnostics
+    
+    /// Run comprehensive connectivity diagnostics for Firebase
+    func runConnectivityDiagnostics() async {
+        print("\n🔍 [Firebase Diagnostics] Starting connectivity tests...\n")
+        
+        // Test 1: Basic network connectivity
+        print("1️⃣ Testing basic network connectivity...")
+        await testNetworkConnectivity()
+        
+        // Test 2: Firestore connection
+        print("\n2️⃣ Testing Firestore connection...")
+        await testFirestoreConnection()
+        
+        // Test 3: Firebase Storage connection
+        print("\n3️⃣ Testing Firebase Storage connection...")
+        await testStorageConnection()
+        
+        print("\n✅ [Firebase Diagnostics] Tests complete\n")
+    }
+    
+    private func testNetworkConnectivity() async {
+        // Try to reach Google's DNS server
+        guard let url = URL(string: "https://www.google.com") else {
+            print("❌ Failed to create URL")
+            return
+        }
+        
+        do {
+            let startTime = CFAbsoluteTimeGetCurrent()
+            let (_, response) = try await URLSession.shared.data(from: url)
+            let duration = CFAbsoluteTimeGetCurrent() - startTime
+            
+            if let httpResponse = response as? HTTPURLResponse {
+                if httpResponse.statusCode == 200 {
+                    print("✅ Internet connection OK (\(String(format: "%.3f", duration))s)")
+                } else {
+                    print("⚠️ Internet reachable but returned status code \(httpResponse.statusCode)")
+                }
+            }
+        } catch {
+            print("❌ No internet connection: \(error.localizedDescription)")
+        }
+    }
+    
+    private func testFirestoreConnection() async {
+        // Try to fetch a single stamp (lightweight query)
+        do {
+            let startTime = CFAbsoluteTimeGetCurrent()
+            let snapshot = try await db.collection("stamps")
+                .limit(to: 1)
+                .getDocuments(source: .server) // Force server fetch, not cache
+            let duration = CFAbsoluteTimeGetCurrent() - startTime
+            
+            print("✅ Firestore connection OK (\(String(format: "%.3f", duration))s, \(snapshot.documents.count) doc)")
+            print("   Project: stampbook-app")
+        } catch let error as NSError {
+            print("❌ Firestore connection FAILED (\(error.domain), code: \(error.code))")
+            print("   Message: \(error.localizedDescription)")
+            
+            // Common error codes
+            if error.domain == "FIRFirestoreErrorDomain" {
+                switch error.code {
+                case 14: // UNAVAILABLE
+                    print("   → Backend unavailable. Check Firebase Console status.")
+                case 7: // PERMISSION_DENIED
+                    print("   → Permission denied. Check Firestore security rules.")
+                case 16: // UNAUTHENTICATED
+                    print("   → Not authenticated. Check Firebase Auth setup.")
+                default:
+                    print("   → Error code \(error.code)")
+                }
+            }
+        }
+    }
+    
+    private func testStorageConnection() async {
+        // Try to get a storage reference
+        let storageRef = storage.reference()
+        let bucket = storageRef.bucket
+        print("✅ Firebase Storage connected")
+        print("   Bucket: \(bucket)")
     }
     
     // MARK: - Collected Stamps Sync
@@ -429,12 +518,18 @@ class FirebaseService {
     /// - Using approximate rank with ±10 range
     /// - Limiting leaderboard to top 1000 + user's rank
     func calculateUserRankCached(userId: String, totalStamps: Int) async throws -> Int {
+        let startTime = Date()
+        print("🔍 [FirebaseService] calculateUserRankCached called for userId: \(userId), totalStamps: \(totalStamps)")
+        
         // Check cache first
         if let cached = rankCache[userId],
            Date().timeIntervalSince(cached.timestamp) < rankCacheExpiration {
-            print("✅ Using cached rank for \(userId): #\(cached.rank)")
+            let elapsed = Date().timeIntervalSince(startTime)
+            print("✅ [FirebaseService] Using cached rank for \(userId): #\(cached.rank) (cache age: \(String(format: "%.0f", Date().timeIntervalSince(cached.timestamp)))s, took \(String(format: "%.3f", elapsed))s)")
             return cached.rank
         }
+        
+        print("🔄 [FirebaseService] Cache miss - fetching from Firestore...")
         
         // Fetch from Firestore
         let rank = try await calculateUserRank(userId: userId, totalStamps: totalStamps)
@@ -443,6 +538,9 @@ class FirebaseService {
         await MainActor.run {
             self.rankCache[userId] = (rank: rank, timestamp: Date())
         }
+        
+        let elapsed = Date().timeIntervalSince(startTime)
+        print("✅ [FirebaseService] Rank cached: #\(rank) (total time: \(String(format: "%.3f", elapsed))s)")
         
         return rank
     }
@@ -455,36 +553,50 @@ class FirebaseService {
     /// - Using approximate rank with ±10 range
     /// - Limiting leaderboard to top 1000 + user's rank
     func calculateUserRank(userId: String, totalStamps: Int) async throws -> Int {
-        #if DEBUG
         let startTime = Date()
-        print("🔍 [Rank] Calculating rank for user \(userId) with \(totalStamps) stamps...")
-        #endif
+        print("🔍 [FirebaseService] Starting calculateUserRank for userId: \(userId) with \(totalStamps) stamps...")
         
         do {
+            print("📡 [FirebaseService] Querying Firestore: users collection where totalStamps > \(totalStamps)...")
+            
             // Use getDocuments() instead of count aggregation for better reliability
             // Count aggregation can be slow or fail without proper indexes
             let snapshot = try await db.collection("users")
                 .whereField("totalStamps", isGreaterThan: totalStamps)
                 .getDocuments(source: .server)
             
+            let queryTime = Date().timeIntervalSince(startTime)
             let usersAhead = snapshot.documents.count
             let rank = usersAhead + 1
             
-            #if DEBUG
-            let duration = Date().timeIntervalSince(startTime)
-            print("✅ [Rank] Calculated rank #\(rank) (found \(usersAhead) users ahead) in \(String(format: "%.2f", duration))s")
-            #endif
+            print("✅ [FirebaseService] Query completed in \(String(format: "%.3f", queryTime))s - Found \(usersAhead) users ahead")
+            print("✅ [FirebaseService] Calculated rank: #\(rank) (total time: \(String(format: "%.3f", Date().timeIntervalSince(startTime)))s)")
             
             return rank
         } catch {
-            #if DEBUG
-            let duration = Date().timeIntervalSince(startTime)
-            print("❌ [Rank] Failed after \(String(format: "%.2f", duration))s: \(error.localizedDescription)")
+            let elapsed = Date().timeIntervalSince(startTime)
+            print("❌ [FirebaseService] Rank calculation failed after \(String(format: "%.3f", elapsed))s")
+            print("❌ [FirebaseService] Error: \(error.localizedDescription)")
+            
             if let firestoreError = error as NSError? {
-                print("❌ [Rank] Error domain: \(firestoreError.domain), code: \(firestoreError.code)")
-                print("❌ [Rank] Full error: \(firestoreError)")
+                print("❌ [FirebaseService] Error domain: \(firestoreError.domain), code: \(firestoreError.code)")
+                print("❌ [FirebaseService] Full error info: \(firestoreError)")
+                
+                // Check for specific error types
+                if firestoreError.domain == "FIRFirestoreErrorDomain" {
+                    switch firestoreError.code {
+                    case 9: // FAILED_PRECONDITION
+                        print("💡 [FirebaseService] Index may be missing - check Firestore console")
+                    case 14: // UNAVAILABLE
+                        print("💡 [FirebaseService] Network/server unavailable")
+                    case 4: // DEADLINE_EXCEEDED
+                        print("💡 [FirebaseService] Query timeout - too many users or slow connection")
+                    default:
+                        break
+                    }
+                }
             }
-            #endif
+            
             throw error
         }
     }
@@ -865,9 +977,183 @@ class FirebaseService {
         return profiles
     }
     
+    /// Public version of fetchProfilesBatched for use in views
+    /// Used by BlockedUsersView to fetch blocked user profiles
+    func fetchProfilesBatch(userIds: [String]) async throws -> [UserProfile] {
+        guard !userIds.isEmpty else { return [] }
+        return try await fetchProfilesBatched(userIds: userIds)
+    }
+    
+    // MARK: - Blocking System
+    
+    /// Block a user
+    /// - Automatically unfollows both ways if following
+    /// - Removes from followers/following lists
+    /// - Returns true if block was created, false if already blocked
+    @discardableResult
+    func blockUser(blockerId: String, blockedId: String) async throws -> Bool {
+        guard blockerId != blockedId else {
+            throw NSError(domain: "FirebaseService", code: 400, userInfo: [NSLocalizedDescriptionKey: "Cannot block yourself"])
+        }
+        
+        // Use transaction to ensure all writes succeed together
+        let didBlock = try await db.runTransaction { (transaction, errorPointer) -> Any? in
+            // References
+            let blockerRef = self.db.collection("users").document(blockerId)
+            let blockedRef = self.db.collection("users").document(blockedId)
+            let blockRef = blockerRef.collection("blocked").document(blockedId)
+            
+            // Also need to handle follow relationships (if they exist)
+            let blockerFollowingRef = blockerRef.collection("following").document(blockedId)
+            let blockedFollowingRef = blockedRef.collection("following").document(blockerId)
+            let blockerFollowerRef = blockedRef.collection("followers").document(blockerId)
+            let blockedFollowerRef = blockerRef.collection("followers").document(blockedId)
+            
+            // Read current state
+            let blockDoc: DocumentSnapshot
+            let blockerDoc: DocumentSnapshot
+            let blockedDoc: DocumentSnapshot
+            let blockerFollowingDoc: DocumentSnapshot
+            let blockedFollowingDoc: DocumentSnapshot
+            
+            do {
+                blockDoc = try transaction.getDocument(blockRef)
+                blockerDoc = try transaction.getDocument(blockerRef)
+                blockedDoc = try transaction.getDocument(blockedRef)
+                blockerFollowingDoc = try transaction.getDocument(blockerFollowingRef)
+                blockedFollowingDoc = try transaction.getDocument(blockedFollowingRef)
+            } catch let error as NSError {
+                errorPointer?.pointee = error
+                return nil
+            }
+            
+            // Check if already blocked (idempotency)
+            if blockDoc.exists {
+                print("⚠️ Already blocked - skipping")
+                return false // Already blocked
+            }
+            
+            // Create block document
+            let blockData: [String: Any] = [
+                "id": blockedId,
+                "createdAt": FieldValue.serverTimestamp()
+            ]
+            transaction.setData(blockData, forDocument: blockRef)
+            
+            // Handle existing follow relationships
+            var blockerFollowingDecrement = 0
+            var blockerFollowerDecrement = 0
+            var blockedFollowingDecrement = 0
+            var blockedFollowerDecrement = 0
+            
+            // If blocker is following blocked user, unfollow
+            if blockerFollowingDoc.exists {
+                transaction.deleteDocument(blockerFollowingRef)
+                transaction.deleteDocument(blockerFollowerRef)
+                blockerFollowingDecrement = 1
+                blockedFollowerDecrement = 1
+            }
+            
+            // If blocked user is following blocker, remove that too
+            if blockedFollowingDoc.exists {
+                transaction.deleteDocument(blockedFollowingRef)
+                transaction.deleteDocument(blockedFollowerRef)
+                blockedFollowingDecrement = 1
+                blockerFollowerDecrement = 1
+            }
+            
+            // Update counts if needed
+            if blockerFollowingDecrement > 0 || blockerFollowerDecrement > 0 {
+                let currentFollowingCount = max(0, (blockerDoc.data()?["followingCount"] as? Int ?? 0) - blockerFollowingDecrement)
+                let currentFollowerCount = max(0, (blockerDoc.data()?["followerCount"] as? Int ?? 0) - blockerFollowerDecrement)
+                
+                transaction.updateData([
+                    "followingCount": currentFollowingCount,
+                    "followerCount": currentFollowerCount,
+                    "lastActiveAt": FieldValue.serverTimestamp()
+                ], forDocument: blockerRef)
+            }
+            
+            if blockedFollowingDecrement > 0 || blockedFollowerDecrement > 0 {
+                let currentFollowingCount = max(0, (blockedDoc.data()?["followingCount"] as? Int ?? 0) - blockedFollowingDecrement)
+                let currentFollowerCount = max(0, (blockedDoc.data()?["followerCount"] as? Int ?? 0) - blockedFollowerDecrement)
+                
+                transaction.updateData([
+                    "followingCount": currentFollowingCount,
+                    "followerCount": currentFollowerCount,
+                    "lastActiveAt": FieldValue.serverTimestamp()
+                ], forDocument: blockedRef)
+            }
+            
+            return true // Successfully blocked
+        } as? Bool ?? false
+        
+        if didBlock {
+            print("✅ User \(blockerId) blocked \(blockedId)")
+            // Invalidate caches since relationships changed
+            invalidateFollowingCache(userId: blockerId)
+            invalidateFollowingCache(userId: blockedId)
+        }
+        
+        return didBlock
+    }
+    
+    /// Unblock a user
+    /// Returns true if unblock was performed, false if wasn't blocked
+    @discardableResult
+    func unblockUser(blockerId: String, blockedId: String) async throws -> Bool {
+        let blockRef = db
+            .collection("users")
+            .document(blockerId)
+            .collection("blocked")
+            .document(blockedId)
+        
+        let document = try await blockRef.getDocument()
+        
+        // Check if actually blocked (idempotency)
+        if !document.exists {
+            print("⚠️ Not blocked - skipping")
+            return false
+        }
+        
+        // Delete block relationship
+        try await blockRef.delete()
+        
+        print("✅ User \(blockerId) unblocked \(blockedId)")
+        return true
+    }
+    
+    /// Check if a user has blocked another user
+    func isBlocking(blockerId: String, blockedId: String) async throws -> Bool {
+        let docRef = db
+            .collection("users")
+            .document(blockerId)
+            .collection("blocked")
+            .document(blockedId)
+        
+        let document = try await docRef.getDocument()
+        return document.exists
+    }
+    
+    /// Fetch list of blocked user IDs for a user
+    func fetchBlockedUserIds(userId: String, limit: Int = 1000) async throws -> [String] {
+        let snapshot = try await db
+            .collection("users")
+            .document(userId)
+            .collection("blocked")
+            .order(by: "createdAt", descending: true)
+            .limit(to: limit)
+            .getDocuments()
+        
+        return snapshot.documents.map { $0.documentID }
+    }
+    
+    // MARK: - User Search
+    
     /// Search for users by username or display name (for finding users to follow)
+    /// Filters out users that current user has blocked or is blocked by
     ///
-    /// MVP: Simple username prefix search
+    /// MVP: Simple username prefix search with blocking support
     /// 
     /// POST-MVP ENHANCEMENTS:
     /// - Add displayName search (requires composite index in Firestore)
@@ -881,7 +1167,7 @@ class FirebaseService {
     ///   • Location proximity (nearby users)
     /// - Phone number lookup for contact sync
     /// - Pagination for large result sets
-    func searchUsers(query: String, limit: Int = 20) async throws -> [UserProfile] {
+    func searchUsers(query: String, currentUserId: String? = nil, limit: Int = 20) async throws -> [UserProfile] {
         guard !query.isEmpty else { return [] }
         
         let lowercaseQuery = query.lowercased()
@@ -896,8 +1182,23 @@ class FirebaseService {
             .limit(to: limit)
             .getDocuments()
         
-        let profiles = try usernameSnapshot.documents.compactMap { doc -> UserProfile? in
+        var profiles = try usernameSnapshot.documents.compactMap { doc -> UserProfile? in
             try doc.data(as: UserProfile.self)
+        }
+        
+        // Filter out blocked users if currentUserId is provided
+        if let userId = currentUserId {
+            // Fetch blocked user IDs (users that current user has blocked)
+            let blockedIds = try await fetchBlockedUserIds(userId: userId)
+            let blockedSet = Set(blockedIds)
+            
+            // Filter out users that current user has blocked
+            // Note: We don't check if other users have blocked the current user because:
+            // 1. It's a privacy violation to let users discover who blocked them
+            // 2. Firestore security rules correctly prevent reading other users' blocked lists
+            profiles = profiles.filter { profile in
+                !blockedSet.contains(profile.id)
+            }
         }
         
         return profiles
@@ -907,6 +1208,7 @@ class FirebaseService {
     
     /// Fetch recent stamps from users that the current user is following
     /// Returns tuples of (userProfile, collectedStamp) for rendering in feed
+    /// Filters out blocked users automatically
     /// 
     /// PERFORMANCE NOTES:
     /// - Fetches up to 10 most recent stamps from each followed user (optimized for pagination)
@@ -926,17 +1228,28 @@ class FirebaseService {
         let profileTime = CFAbsoluteTimeGetCurrent() - profileStart
         print("⏱️ [FirebaseService] User profile fetch: \(String(format: "%.3f", profileTime))s")
         
-        // 2. Get list of users being followed (uses cache if available)
-        let followingStart = CFAbsoluteTimeGetCurrent()
-        let followingProfiles = try await fetchFollowing(userId: userId, useCache: true)
-        let followingTime = CFAbsoluteTimeGetCurrent() - followingStart
-        print("⏱️ [FirebaseService] Following list fetch: \(String(format: "%.3f", followingTime))s (\(followingProfiles.count) users)")
+        // 2. Get blocked user IDs to filter them out
+        let blockedStart = CFAbsoluteTimeGetCurrent()
+        let blockedIds = try await fetchBlockedUserIds(userId: userId)
+        let blockedSet = Set(blockedIds)
+        let blockedTime = CFAbsoluteTimeGetCurrent() - blockedStart
+        print("⏱️ [FirebaseService] Blocked users fetch: \(String(format: "%.3f", blockedTime))s (\(blockedIds.count) blocked)")
         
-        // 3. Combine current user + followed users for feed
+        // 3. Get list of users being followed (uses cache if available)
+        let followingStart = CFAbsoluteTimeGetCurrent()
+        var followingProfiles = try await fetchFollowing(userId: userId, useCache: true)
+        
+        // Filter out blocked users from following list
+        followingProfiles = followingProfiles.filter { !blockedSet.contains($0.id) }
+        
+        let followingTime = CFAbsoluteTimeGetCurrent() - followingStart
+        print("⏱️ [FirebaseService] Following list fetch: \(String(format: "%.3f", followingTime))s (\(followingProfiles.count) users after blocking filter)")
+        
+        // 4. Combine current user + followed users for feed
         // This ensures "All" tab shows your posts + followed users' posts
         let allProfiles = [currentUserProfile] + followingProfiles
         
-        // 4. Use smaller initial batch for faster first load
+        // 5. Use smaller initial batch for faster first load
         // Fetch from first 15 users only (150 reads) instead of all 50+ (500+ reads)
         // This reduces initial load time from ~5s to ~1-2s
         // Note: Current user is ALWAYS included (not subject to batch limit)
@@ -945,7 +1258,7 @@ class FirebaseService {
         
         print("📱 Fetching feed from \(batchSize) users (\(followingProfiles.count) followed + current user, fast initial load)...")
         
-        // 5. Fetch stamps from users in parallel for better performance
+        // 6. Fetch stamps from users in parallel for better performance
         var allFeedItems: [(profile: UserProfile, stamp: CollectedStamp)] = []
         
         let stampsStart = CFAbsoluteTimeGetCurrent()
@@ -984,12 +1297,12 @@ class FirebaseService {
         let stampsTime = CFAbsoluteTimeGetCurrent() - stampsStart
         print("⏱️ [FirebaseService] All user stamps fetched in \(String(format: "%.3f", stampsTime))s")
         
-        // 6. Sort by collection date (most recent first)
+        // 7. Sort by collection date (most recent first)
         let sortStart = CFAbsoluteTimeGetCurrent()
         allFeedItems.sort { $0.stamp.collectedDate > $1.stamp.collectedDate }
         let sortTime = CFAbsoluteTimeGetCurrent() - sortStart
         
-        // 7. Limit total items returned (pagination support)
+        // 8. Limit total items returned (pagination support)
         if allFeedItems.count > limit {
             allFeedItems = Array(allFeedItems.prefix(limit))
         }
@@ -998,6 +1311,218 @@ class FirebaseService {
         print("✅ Fetched \(allFeedItems.count) feed items from \(batchSize) users in \(String(format: "%.3f", overallTime))s (sort: \(String(format: "%.3f", sortTime))s)")
         
         return allFeedItems
+    }
+    
+    // MARK: - Likes & Comments System
+    
+    /// Like a post (create or toggle like)
+    /// Returns true if liked, false if unliked
+    @discardableResult
+    func toggleLike(postId: String, stampId: String, userId: String, postOwnerId: String) async throws -> Bool {
+        let likeRef = db.collection("likes").document("\(userId)_\(postId)")
+        let postRef = db.collection("users").document(postOwnerId).collection("collected_stamps").document(stampId)
+        
+        // Use transaction to make it atomic - both operations succeed or both fail
+        let result = try await db.runTransaction({ (transaction, errorPointer) -> Bool in
+            let likeDoc: DocumentSnapshot
+            do {
+                likeDoc = try transaction.getDocument(likeRef)
+            } catch let fetchError as NSError {
+                errorPointer?.pointee = fetchError
+                return false
+            }
+            
+            if likeDoc.exists {
+                // Unlike: delete the like document and decrement count
+                transaction.deleteDocument(likeRef)
+                transaction.updateData([
+                    "likeCount": FieldValue.increment(Int64(-1))
+                ], forDocument: postRef)
+                return false
+            } else {
+                // Like: create the like document and increment count
+                let like = Like(
+                    userId: userId,
+                    postId: postId,
+                    stampId: stampId,
+                    postOwnerId: postOwnerId,
+                    createdAt: Date()
+                )
+                
+                do {
+                    try transaction.setData(from: like, forDocument: likeRef)
+                } catch let error as NSError {
+                    errorPointer?.pointee = error
+                    return false
+                }
+                
+                transaction.updateData([
+                    "likeCount": FieldValue.increment(Int64(1))
+                ], forDocument: postRef)
+                return true
+            }
+        })
+        
+        let isLiked = (result as? Bool) ?? false
+        print(isLiked ? "✅ Liked post: \(postId)" : "✅ Unliked post: \(postId)")
+        return isLiked
+    }
+    
+    /// Check if current user has liked a post
+    func hasLiked(postId: String, userId: String) async throws -> Bool {
+        let likeRef = db.collection("likes").document("\(userId)_\(postId)")
+        let document = try await likeRef.getDocument()
+        return document.exists
+    }
+    
+    /// Fetch like count for a post
+    func fetchLikeCount(postId: String) async throws -> Int {
+        let snapshot = try await db.collection("likes")
+            .whereField("postId", isEqualTo: postId)
+            .getDocuments()
+        
+        return snapshot.documents.count
+    }
+    
+    /// Fetch users who liked a post
+    func fetchPostLikes(postId: String, limit: Int = 50) async throws -> [UserProfile] {
+        let snapshot = try await db.collection("likes")
+            .whereField("postId", isEqualTo: postId)
+            .order(by: "createdAt", descending: true)
+            .limit(to: limit)
+            .getDocuments()
+        
+        let userIds = snapshot.documents.compactMap { doc -> String? in
+            try? doc.data(as: Like.self).userId
+        }
+        
+        guard !userIds.isEmpty else { return [] }
+        
+        // Batch fetch user profiles
+        return try await fetchProfilesBatched(userIds: userIds)
+    }
+    
+    /// Add a comment to a post
+    @discardableResult
+    func addComment(postId: String, stampId: String, postOwnerId: String, userId: String, text: String, userProfile: UserProfile) async throws -> Comment {
+        let commentRef = db.collection("comments").document()
+        
+        let comment = Comment(
+            userId: userId,
+            postId: postId,
+            stampId: stampId,
+            postOwnerId: postOwnerId,
+            text: text,
+            userDisplayName: userProfile.displayName,
+            userUsername: userProfile.username,
+            userAvatarUrl: userProfile.avatarUrl,
+            createdAt: Date()
+        )
+        
+        try commentRef.setData(from: comment)
+        
+        // Increment comment count on post
+        let postRef = db.collection("users").document(postOwnerId).collection("collected_stamps").document(stampId)
+        try await postRef.updateData([
+            "commentCount": FieldValue.increment(Int64(1))
+        ])
+        
+        print("✅ Added comment to post: \(postId)")
+        return comment
+    }
+    
+    /// Fetch comments for a post
+    func fetchComments(postId: String, limit: Int = 50) async throws -> [Comment] {
+        let snapshot = try await db.collection("comments")
+            .whereField("postId", isEqualTo: postId)
+            .order(by: "createdAt", descending: false) // Oldest first (chronological)
+            .limit(to: limit)
+            .getDocuments()
+        
+        let comments = snapshot.documents.compactMap { doc -> Comment? in
+            try? doc.data(as: Comment.self)
+        }
+        
+        return comments
+    }
+    
+    /// Delete a comment (only by comment author or post owner)
+    func deleteComment(commentId: String, postOwnerId: String, stampId: String) async throws {
+        print("🗑️ Attempting to delete comment: \(commentId) from post: \(postOwnerId)-\(stampId)")
+        
+        let commentRef = db.collection("comments").document(commentId)
+        
+        // First, delete the comment document
+        do {
+            try await commentRef.delete()
+            print("✅ Successfully deleted comment document: \(commentId)")
+        } catch {
+            print("❌ Failed to delete comment document: \(error.localizedDescription)")
+            throw error
+        }
+        
+        // Then, decrement comment count on post
+        let postRef = db.collection("users").document(postOwnerId).collection("collected_stamps").document(stampId)
+        do {
+            try await postRef.updateData([
+                "commentCount": FieldValue.increment(Int64(-1))
+            ])
+            print("✅ Successfully decremented comment count on post")
+        } catch {
+            print("⚠️ Failed to decrement comment count (comment was deleted but count may be off): \(error.localizedDescription)")
+            // Don't throw here - comment deletion succeeded, count decrement is less critical
+        }
+        
+        print("✅ Completed comment deletion: \(commentId)")
+    }
+    
+    /// Fetch comment count for a post
+    func fetchCommentCount(postId: String) async throws -> Int {
+        let snapshot = try await db.collection("comments")
+            .whereField("postId", isEqualTo: postId)
+            .getDocuments()
+        
+        return snapshot.documents.count
+    }
+    
+    // MARK: - Feedback System
+    
+    /// Submit user feedback or bug report to Firestore
+    /// Admins can view feedback in Firebase Console under "feedback" collection
+    ///
+    /// - Parameters:
+    ///   - userId: ID of user submitting feedback
+    ///   - type: Type of feedback (Bug Report, General Feedback, Feature Request)
+    ///   - message: The feedback message
+    func submitFeedback(userId: String, type: String, message: String) async throws {
+        // Fetch user profile for additional context
+        let userProfile = try await fetchUserProfile(userId: userId)
+        
+        // Get device and app info
+        let deviceInfo = [
+            "device": UIDevice.current.model,
+            "systemVersion": UIDevice.current.systemVersion,
+            "appVersion": Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown"
+        ]
+        
+        // Create feedback document
+        let feedbackRef = db.collection("feedback").document()
+        
+        let feedbackData: [String: Any] = [
+            "userId": userId,
+            "userEmail": userProfile.username + "@stampbook.app", // Placeholder - you might want real email
+            "username": userProfile.username,
+            "displayName": userProfile.displayName,
+            "type": type,
+            "message": message,
+            "deviceInfo": deviceInfo,
+            "timestamp": FieldValue.serverTimestamp(),
+            "status": "new" // Admin can mark as "reviewed", "in-progress", "resolved"
+        ]
+        
+        try await feedbackRef.setData(feedbackData)
+        
+        print("✅ Feedback submitted: \(feedbackRef.documentID)")
     }
 }
 

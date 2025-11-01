@@ -101,29 +101,51 @@ class ProfileManager: ObservableObject {
     /// Called automatically after loading profile
     /// Uses caching to avoid expensive Firestore queries
     func fetchUserRank(for profile: UserProfile) async {
+        let startTime = Date()
+        print("🔍 [ProfileManager] Fetching rank for \(profile.displayName) (userId: \(profile.id), totalStamps: \(profile.totalStamps))")
+        
         // Check cache first
         if let cached = cachedRanks[profile.id],
            Date().timeIntervalSince(cached.timestamp) < rankCacheExpiration {
+            let elapsed = Date().timeIntervalSince(startTime)
             await MainActor.run {
                 self.userRank = cached.rank
             }
-            print("✅ Using cached rank for \(profile.displayName): #\(cached.rank)")
+            print("✅ [ProfileManager] Using cached rank for \(profile.displayName): #\(cached.rank) (cache age: \(String(format: "%.0f", Date().timeIntervalSince(cached.timestamp)))s, query took: \(String(format: "%.3f", elapsed))s)")
             return
         }
+        
+        // Store current rank in case fetch fails
+        let previousRank = userRank
+        
+        print("🔄 [ProfileManager] Cache miss - fetching rank from Firestore...")
         
         do {
             let rank = try await firebaseService.calculateUserRank(
                 userId: profile.id,
                 totalStamps: profile.totalStamps
             )
+            let elapsed = Date().timeIntervalSince(startTime)
             await MainActor.run {
                 self.userRank = rank
                 // Cache the rank
                 self.cachedRanks[profile.id] = (rank: rank, timestamp: Date())
             }
-            print("✅ User rank: #\(rank)")
+            print("✅ [ProfileManager] User rank fetched: #\(rank) (total time: \(String(format: "%.3f", elapsed))s)")
         } catch {
-            print("⚠️ Failed to fetch rank: \(error.localizedDescription)")
+            let elapsed = Date().timeIntervalSince(startTime)
+            print("❌ [ProfileManager] Failed to fetch rank after \(String(format: "%.3f", elapsed))s: \(error.localizedDescription)")
+            if let nsError = error as NSError? {
+                print("❌ [ProfileManager] Error domain: \(nsError.domain), code: \(nsError.code)")
+            }
+            
+            // Preserve previous rank if fetch fails (don't reset to nil)
+            if let previousRank = previousRank {
+                await MainActor.run {
+                    self.userRank = previousRank
+                }
+                print("ℹ️ [ProfileManager] Keeping previous rank: #\(previousRank)")
+            }
             // Don't set error - rank is optional/non-critical
         }
     }

@@ -10,6 +10,8 @@ struct CollectedStamp: Codable, Identifiable, Equatable {
     var userNotes: String
     var userImageNames: [String] // References to locally saved images
     var userImagePaths: [String] // Firebase Storage paths for cloud images
+    var likeCount: Int // Number of likes on this post
+    var commentCount: Int // Number of comments on this post
     
     // Future fields:
     // var collectionLocation: CLLocationCoordinate2D?
@@ -18,16 +20,18 @@ struct CollectedStamp: Codable, Identifiable, Equatable {
     // MARK: - Backward Compatibility
     
     enum CodingKeys: String, CodingKey {
-        case stampId, userId, collectedDate, userNotes, userImageNames, userImagePaths
+        case stampId, userId, collectedDate, userNotes, userImageNames, userImagePaths, likeCount, commentCount
     }
     
-    init(stampId: String, userId: String, collectedDate: Date, userNotes: String, userImageNames: [String], userImagePaths: [String]) {
+    init(stampId: String, userId: String, collectedDate: Date, userNotes: String, userImageNames: [String], userImagePaths: [String], likeCount: Int = 0, commentCount: Int = 0) {
         self.stampId = stampId
         self.userId = userId
         self.collectedDate = collectedDate
         self.userNotes = userNotes
         self.userImageNames = userImageNames
         self.userImagePaths = userImagePaths
+        self.likeCount = likeCount
+        self.commentCount = commentCount
     }
     
     init(from decoder: Decoder) throws {
@@ -39,6 +43,9 @@ struct CollectedStamp: Codable, Identifiable, Equatable {
         userImageNames = try container.decode([String].self, forKey: .userImageNames)
         // Decode userImagePaths with default empty array if not present (backward compatibility)
         userImagePaths = try container.decodeIfPresent([String].self, forKey: .userImagePaths) ?? []
+        // Decode social features with default 0 if not present (backward compatibility)
+        likeCount = try container.decodeIfPresent(Int.self, forKey: .likeCount) ?? 0
+        commentCount = try container.decodeIfPresent(Int.self, forKey: .commentCount) ?? 0
     }
 }
 

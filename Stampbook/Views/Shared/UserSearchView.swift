@@ -75,7 +75,7 @@ struct UserSearchView: View {
                     // Initial state - show prompt
                     Spacer()
                     VStack(spacing: 16) {
-                        Image(systemName: "person.crop.circle.badge.plus")
+                        Image(systemName: "person.fill.checkmark")
                             .font(.system(size: 60))
                             .foregroundColor(.gray)
                         
@@ -83,7 +83,7 @@ struct UserSearchView: View {
                             .font(.title3)
                             .fontWeight(.semibold)
                         
-                        Text("Search by username or display name")
+                        Text("Search by username")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
@@ -155,7 +155,7 @@ struct UserSearchView: View {
             }
             
             do {
-                let results = try await firebaseService.searchUsers(query: searchText, limit: 50)
+                let results = try await firebaseService.searchUsers(query: searchText, currentUserId: authManager.userId, limit: 50)
                 
                 await MainActor.run {
                     self.searchResults = results

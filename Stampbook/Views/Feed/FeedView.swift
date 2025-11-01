@@ -6,15 +6,19 @@ import MessageUI
 struct FeedView: View {
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var stampsManager: StampsManager
+    @EnvironmentObject var profileManager: ProfileManager
     @StateObject private var feedManager = FeedManager() // Persists across tab switches
+    @StateObject private var likeManager = LikeManager() // Manages likes
+    @StateObject private var commentManager = CommentManager() // Manages comments
     @Environment(\.colorScheme) var colorScheme
     @Binding var selectedTab: Int
+    @Binding var shouldResetStampsNavigation: Bool // Binding to reset StampsView navigation
     @State private var showNotifications = false
     @State private var selectedFeedTab: FeedTab = .all
     @State private var showUserSearch = false
     @State private var showSignOutConfirmation = false
-    @State private var showMailComposer = false
-    @State private var mailMessageType: MailComposeView.MessageType = .feedback
+    @State private var showFeedback = false
+    @State private var showProblemReport = false
     
     enum FeedTab: String, CaseIterable {
         case all = "All"
@@ -27,6 +31,12 @@ struct FeedView: View {
         // The feed will show the latest posts from Firebase
         guard let userId = authManager.userId else { return }
         await feedManager.refresh(userId: userId, stampsManager: stampsManager)
+        
+        // Fetch like status for all posts to sync with cached state
+        let postIds = feedManager.feedPosts.map { $0.id }
+        if !postIds.isEmpty {
+            await likeManager.fetchLikeStatus(postIds: postIds, userId: userId)
+        }
     }
     
     var body: some View {
@@ -93,15 +103,13 @@ struct FeedView: View {
                                 Divider()
                                 
                                 Button(action: {
-                                    mailMessageType = .problem
-                                    showMailComposer = true
+                                    showProblemReport = true
                                 }) {
-                                    Label("Report a problem", systemImage: "exclamationmark.bubble")
+                                    Label("Report a Problem", systemImage: "exclamationmark.bubble")
                                 }
                                 
                                 Button(action: {
-                                    mailMessageType = .feedback
-                                    showMailComposer = true
+                                    showFeedback = true
                                 }) {
                                     Label("Send Feedback", systemImage: "envelope")
                                 }
@@ -150,15 +158,13 @@ struct FeedView: View {
                             Divider()
                             
                             Button(action: {
-                                mailMessageType = .problem
-                                showMailComposer = true
+                                showProblemReport = true
                             }) {
-                                Label("Report a problem", systemImage: "exclamationmark.bubble")
+                                Label("Report a Problem", systemImage: "exclamationmark.bubble")
                             }
                             
                             Button(action: {
-                                mailMessageType = .feedback
-                                showMailComposer = true
+                                showFeedback = true
                             }) {
                                 Label("Send Feedback", systemImage: "envelope")
                             }
@@ -237,9 +243,9 @@ struct FeedView: View {
                                 
                                 // Content based on selected tab
                                 if selectedFeedTab == .all {
-                                    AllFeedContent(selectedTab: $selectedTab, feedManager: feedManager)
+                                    AllFeedContent(selectedTab: $selectedTab, shouldResetStampsNavigation: $shouldResetStampsNavigation, feedManager: feedManager, likeManager: likeManager, commentManager: commentManager)
                                 } else {
-                                    OnlyYouContent(selectedTab: $selectedTab, feedManager: feedManager)
+                                    OnlyYouContent(selectedTab: $selectedTab, shouldResetStampsNavigation: $shouldResetStampsNavigation, feedManager: feedManager, likeManager: likeManager, commentManager: commentManager)
                                 }
                             }
                         }
@@ -247,12 +253,6 @@ struct FeedView: View {
                 }
                 .refreshable {
                     await refreshFeedData()
-                }
-                .onAppear {
-                    // Smart refresh: Shows cached data immediately, refreshes in background if stale
-                    Task {
-                        await stampsManager.refreshIfNeeded()
-                    }
                 }
                 .toolbar(.hidden, for: .navigationBar)
                 .alert("Notifications", isPresented: $showNotifications) {
@@ -264,16 +264,13 @@ struct FeedView: View {
                     UserSearchView()
                         .environmentObject(authManager)
                 }
-                .sheet(isPresented: $showMailComposer) {
-                    if MFMailComposeViewController.canSendMail() {
-                        MailComposeView(
-                            recipient: "support@stampbook.app",
-                            subject: mailMessageType == .feedback ? "Stampbook Feedback" : "Stampbook Problem Report",
-                            messageType: mailMessageType
-                        )
-                    } else {
-                        MailFallbackView(messageType: mailMessageType)
-                    }
+                .sheet(isPresented: $showFeedback) {
+                    SimpleFeedbackView()
+                        .environmentObject(authManager)
+                }
+                .sheet(isPresented: $showProblemReport) {
+                    SimpleProblemReportView()
+                        .environmentObject(authManager)
                 }
                 .alert("Sign Out", isPresented: $showSignOutConfirmation) {
                     Button("Cancel", role: .cancel) {}
@@ -283,13 +280,31 @@ struct FeedView: View {
                 } message: {
                     Text("Are you sure you want to sign out?")
                 }
+                .overlay(alignment: .top) {
+                    // Toast for like errors
+                    if let errorMessage = likeManager.errorMessage {
+                        Text(errorMessage)
+                            .font(.subheadline)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .background(Color.black.opacity(0.8))
+                            .cornerRadius(8)
+                            .padding(.top, 8)
+                            .transition(.move(edge: .top).combined(with: .opacity))
+                            .animation(.spring(response: 0.3), value: errorMessage)
+                    }
+                }
             }
         }
     }
     
     struct AllFeedContent: View {
         @Binding var selectedTab: Int
+        @Binding var shouldResetStampsNavigation: Bool
         @ObservedObject var feedManager: FeedManager
+        @ObservedObject var likeManager: LikeManager
+        @ObservedObject var commentManager: CommentManager
         @EnvironmentObject var stampsManager: StampsManager
         @EnvironmentObject var authManager: AuthManager
         @State private var hasLoadedOnce = false
@@ -344,7 +359,10 @@ struct FeedView: View {
                             note: post.note,
                             likeCount: post.likeCount,
                             commentCount: post.commentCount,
-                            selectedTab: $selectedTab
+                            selectedTab: $selectedTab,
+                            shouldResetStampsNavigation: $shouldResetStampsNavigation,
+                            likeManager: likeManager,
+                            commentManager: commentManager
                         )
                         .transition(.opacity)
                         
@@ -370,15 +388,23 @@ struct FeedView: View {
         
         /// Load feed with smart caching
         private func loadFeedIfNeeded() {
+            print("🔍 [DEBUG] AllFeedContent.loadFeedIfNeeded called")
             guard let userId = authManager.userId else { return }
             guard authManager.isSignedIn else { return }
             
+            print("🔍 [DEBUG] AllFeedContent calling feedManager.loadFeed()")
             Task {
                 await feedManager.loadFeed(
                     userId: userId,
                     stampsManager: stampsManager,
                     forceRefresh: false
                 )
+                
+                // Fetch like status for all posts to sync with cached state
+                let postIds = feedManager.feedPosts.map { $0.id }
+                if !postIds.isEmpty {
+                    await likeManager.fetchLikeStatus(postIds: postIds, userId: userId)
+                }
                 
                 // Mark that we've attempted to load at least once
                 await MainActor.run {
@@ -390,7 +416,10 @@ struct FeedView: View {
     
     struct OnlyYouContent: View {
         @Binding var selectedTab: Int
+        @Binding var shouldResetStampsNavigation: Bool
         @ObservedObject var feedManager: FeedManager
+        @ObservedObject var likeManager: LikeManager
+        @ObservedObject var commentManager: CommentManager
         @EnvironmentObject var stampsManager: StampsManager
         @EnvironmentObject var authManager: AuthManager
         @State private var hasLoadedOnce = false
@@ -445,7 +474,10 @@ struct FeedView: View {
                             note: post.note,
                             likeCount: post.likeCount,
                             commentCount: post.commentCount,
-                            selectedTab: $selectedTab
+                            selectedTab: $selectedTab,
+                            shouldResetStampsNavigation: $shouldResetStampsNavigation,
+                            likeManager: likeManager,
+                            commentManager: commentManager
                         )
                         .transition(.opacity)
                         
@@ -471,9 +503,11 @@ struct FeedView: View {
         
         /// Load feed with smart caching (reuses data from All tab if available)
         private func loadFeedIfNeeded() {
+            print("🔍 [DEBUG] OnlyYouContent.loadFeedIfNeeded called")
             guard let userId = authManager.userId else { return }
             guard authManager.isSignedIn else { return }
             
+            print("🔍 [DEBUG] OnlyYouContent calling feedManager.loadFeed()")
             // If All tab already loaded, myPosts is instantly available (filtered from cache)
             // Otherwise, trigger feed load which will populate both All and Only Yours
             Task {
@@ -482,6 +516,12 @@ struct FeedView: View {
                     stampsManager: stampsManager,
                     forceRefresh: false
                 )
+                
+                // Fetch like status for all posts to sync with cached state
+                let postIds = feedManager.feedPosts.map { $0.id }
+                if !postIds.isEmpty {
+                    await likeManager.fetchLikeStatus(postIds: postIds, userId: userId)
+                }
                 
                 // Mark that we've attempted to load at least once
                 await MainActor.run {
@@ -506,14 +546,35 @@ struct FeedView: View {
         let likeCount: Int
         let commentCount: Int
         @Binding var selectedTab: Int
-        @State private var isLiked: Bool = false
+        @Binding var shouldResetStampsNavigation: Bool // Binding to reset StampsView navigation
+        @ObservedObject var likeManager: LikeManager
+        @ObservedObject var commentManager: CommentManager
         @State private var navigateToStampDetail: Bool = false
         @State private var showNotesEditor: Bool = false
+        @State private var showComments: Bool = false
         @State private var editingNotes: String = ""
         @State private var stamp: Stamp? // Lazy-loaded stamp
         @State private var isLoadingStamp = false
         @EnvironmentObject var stampsManager: StampsManager
         @EnvironmentObject var authManager: AuthManager
+        @EnvironmentObject var profileManager: ProfileManager
+        
+        // Computed properties for real-time updates
+        private var postId: String {
+            "\(userId)-\(stampId)"
+        }
+        
+        private var isLiked: Bool {
+            likeManager.isLiked(postId: postId)
+        }
+        
+        private var currentLikeCount: Int {
+            likeManager.getLikeCount(postId: postId)
+        }
+        
+        private var currentCommentCount: Int {
+            commentManager.getCommentCount(postId: postId)
+        }
         
         // Avatar URL comes from feed data (already fetched from Firebase)
         // No need for special handling - feed includes current user's profile with avatarUrl
@@ -534,6 +595,7 @@ struct FeedView: View {
                     if isCurrentUser {
                         // Current user - tapping should switch to Stamps tab
                         Button(action: {
+                            shouldResetStampsNavigation = true
                             selectedTab = 2
                         }) {
                             profileImage
@@ -549,47 +611,15 @@ struct FeedView: View {
                     
                     // Text content on the right (top-aligned)
                     VStack(alignment: .leading, spacing: 4) {
-                        // First line: "Hiroo collected Golden Gate Park" - wraps naturally
-                        ZStack(alignment: .topLeading) {
-                            // Visible text that wraps naturally
+                        // First line: "Hiroo collected Golden Gate Park" - tappable to view stamp
+                        Button(action: {
+                            loadStampAndNavigate()
+                        }) {
                             Text("\(Text(userName).fontWeight(.bold)) collected \(Text(stampName).fontWeight(.bold))")
                                 .font(.body)
                                 .foregroundColor(.primary)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                            
-                            // Invisible clickable overlay
-                            HStack(alignment: .top, spacing: 0) {
-                                // User name button
-                                Button(action: {
-                                    if isCurrentUser {
-                                        selectedTab = 2
-                                    }
-                                }) {
-                                    Text(userName)
-                                        .font(.body)
-                                        .fontWeight(.bold)
-                                        .opacity(0.001)
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                                
-                                Text(" collected ")
-                                    .font(.body)
-                                    .opacity(0.001)
-                                
-                                // Stamp name button
-                                Button(action: {
-                                    navigateToStampDetail = true
-                                }) {
-                                    Text(stampName)
-                                        .font(.body)
-                                        .fontWeight(.bold)
-                                        .opacity(0.001)
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                                
-                                Spacer(minLength: 0)
-                            }
                         }
+                        .buttonStyle(PlainButtonStyle())
                         
                         // Second line: Location
                         Text(location)
@@ -647,35 +677,55 @@ struct FeedView: View {
                 HStack(spacing: 16) {
                     // Like button
                     Button(action: {
-                        isLiked.toggle()
+                        guard let currentUserId = authManager.userId else { return }
+                        likeManager.toggleLike(
+                            postId: postId,
+                            stampId: stampId,
+                            userId: currentUserId,
+                            postOwnerId: userId
+                        )
                     }) {
                         HStack(spacing: 4) {
                             Image(systemName: isLiked ? "heart.fill" : "heart")
                                 .font(.system(size: 18))
                                 .foregroundColor(isLiked ? .red : .primary)
                             
-                            Text("\(isLiked ? likeCount + 1 : likeCount)")
+                            Text("\(currentLikeCount)")
                                 .font(.subheadline)
                                 .foregroundColor(.primary)
                         }
                     }
                     .buttonStyle(PlainButtonStyle())
                     
-                    // Comment (non-interactive for now)
-                    HStack(spacing: 4) {
-                        Image(systemName: "message")
-                            .font(.system(size: 18))
-                            .foregroundColor(.primary)
-                        
-                        Text("\(commentCount)")
-                            .font(.subheadline)
-                            .foregroundColor(.primary)
+                    // Comment button
+                    Button(action: {
+                        showComments = true
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "message")
+                                .font(.system(size: 18))
+                                .foregroundColor(.primary)
+                            
+                            Text("\(currentCommentCount)")
+                                .font(.subheadline)
+                                .foregroundColor(.primary)
+                        }
                     }
+                    .buttonStyle(PlainButtonStyle())
                     
                     Spacer()
                 }
             }
             .padding(.vertical, 8)
+            .onAppear {
+                // Initialize like and comment counts from feed data
+                likeManager.updateLikeCount(postId: postId, count: likeCount)
+                commentManager.updateCommentCount(postId: postId, count: commentCount)
+                
+                // PREFETCH: Load stamp data in background when post appears
+                // Makes navigation instant when user taps (Instagram pattern)
+                prefetchStampData()
+            }
             .navigationDestination(isPresented: $navigateToStampDetail) {
                 if let stamp = stamp {
                     StampDetailView(
@@ -690,10 +740,15 @@ struct FeedView: View {
                     stampsManager.userCollection.updateNotes(for: stampId, notes: savedNotes)
                 }
             }
-            .onAppear {
-                // PREFETCH: Load stamp data in background when post appears
-                // Makes navigation instant when user taps (Instagram pattern)
-                prefetchStampData()
+            .sheet(isPresented: $showComments) {
+                CommentView(
+                    postId: postId,
+                    postOwnerId: userId,
+                    stampId: stampId,
+                    commentManager: commentManager
+                )
+                .environmentObject(authManager)
+                .environmentObject(profileManager)
             }
         }
         
@@ -731,21 +786,63 @@ struct FeedView: View {
             // Skip if already loaded or loading
             guard stamp == nil, !isLoadingStamp else { return }
             
+            // FAST PATH: Check cache synchronously first (0.000s if cached)
+            // Avoids Task overhead and network delays when stamp is already in memory
+            if let cached = stampsManager.getCachedStamp(id: stampId) {
+                stamp = cached
+                print("⚡️ [PostView] Instant cache hit: \(stampId)")
+                return
+            }
+            
             isLoadingStamp = true
             
             Task {
                 let prefetchStart = CFAbsoluteTimeGetCurrent()
-                // PREFETCH: Load stamp in background when post appears (Instagram pattern)
-                let stamps = await stampsManager.fetchStamps(ids: [stampId])
-                let prefetchTime = CFAbsoluteTimeGetCurrent() - prefetchStart
-                print("⏱️ [PostView] Stamp prefetch: \(String(format: "%.3f", prefetchTime))s for \(stampId)")
                 
-                await MainActor.run {
-                    stamp = stamps.first
-                    isLoadingStamp = false
+                // OPTIMIZED: Shorter timeout now that cache check is separate
+                // If not cached + slow network (Xcode debug), fail fast
+                do {
+                    let stamps = try await withThrowingTaskGroup(of: [Stamp].self) { group in
+                        // Add prefetch task with 2 second timeout (shorter now that cache is instant)
+                        group.addTask {
+                            let stamps = await stampsManager.fetchStamps(ids: [stampId])
+                            return stamps
+                        }
+                        
+                        // Add timeout task - 2s for uncached fetches
+                        group.addTask {
+                            try await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
+                            throw TimeoutError()
+                        }
+                        
+                        // Return first result (either stamps or timeout)
+                        if let result = try await group.next() {
+                            group.cancelAll()
+                            return result
+                        }
+                        return []
+                    }
+                    
+                    let prefetchTime = CFAbsoluteTimeGetCurrent() - prefetchStart
+                    print("⏱️ [PostView] Stamp prefetch: \(String(format: "%.3f", prefetchTime))s for \(stampId)")
+                    
+                    await MainActor.run {
+                        stamp = stamps.first
+                        isLoadingStamp = false
+                    }
+                } catch {
+                    // Timeout or error - fail gracefully, stamp will load on tap
+                    let prefetchTime = CFAbsoluteTimeGetCurrent() - prefetchStart
+                    print("⏱️ [PostView] Stamp prefetch timeout: \(String(format: "%.3f", prefetchTime))s for \(stampId)")
+                    
+                    await MainActor.run {
+                        isLoadingStamp = false
+                    }
                 }
             }
         }
+        
+        private struct TimeoutError: Error {}
         
         private func loadStampAndNavigate() {
             // If stamp is already prefetched, navigate immediately

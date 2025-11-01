@@ -766,7 +766,9 @@ class ImageManager {
     
     /// Generate cache filename for profile picture based on URL hash only
     /// Using only URL hash ensures prefetched images are reused (no userId dependency)
-    private func profilePictureCacheFilename(url: String, userId: String) -> String {
+    /// Generate consistent cache filename from profile picture URL
+    /// Used by ProfileImageView for synchronous cache checks
+    func profilePictureCacheFilename(url: String, userId: String) -> String {
         // Use URL hash to create consistent filename
         let urlHash = url.hashValue
         return "profile_\(abs(urlHash)).jpg"
@@ -793,24 +795,84 @@ class ImageManager {
         return imageData
     }
     
-    /// Clear old cached profile pictures for a user
-    /// Useful when user updates their profile picture
-    func clearCachedProfilePictures(userId: String) {
+    /// Clear all cached profile pictures for a user
+    /// Called when user updates their profile picture
+    /// Clears both disk cache (by URL hash pattern) and memory cache
+    func clearCachedProfilePictures(userId: String, oldAvatarUrl: String? = nil) {
         let documentsURL = getDocumentsDirectory()
         let fileManager = FileManager.default
+        var clearedCount = 0
         
-        do {
-            let fileURLs = try fileManager.contentsOfDirectory(at: documentsURL, includingPropertiesForKeys: nil)
-            let profilePictures = fileURLs.filter { $0.lastPathComponent.hasPrefix("profile_\(userId)_") }
+        // If we have the old avatar URL, clear that specific file
+        if let oldUrl = oldAvatarUrl, !oldUrl.isEmpty {
+            let oldFilename = profilePictureCacheFilename(url: oldUrl, userId: userId)
+            let fileURL = documentsURL.appendingPathComponent(oldFilename)
             
-            for fileURL in profilePictures {
+            do {
                 try fileManager.removeItem(at: fileURL)
-                print("🗑️ Cleared cached profile picture: \(fileURL.lastPathComponent)")
+                print("🗑️ Cleared old profile picture from disk: \(oldFilename)")
+                clearedCount += 1
+            } catch {
+                // File might not exist, that's okay
+                print("ℹ️ Old profile picture not in disk cache: \(oldFilename)")
             }
             
-            print("✅ Cleared \(profilePictures.count) cached profile pictures for user \(userId)")
+            // Clear from memory cache too
+            ImageCacheManager.shared.removeFullImage(key: oldFilename)
+            print("🗑️ Cleared old profile picture from memory cache: \(oldFilename)")
+        }
+        
+        // Also clear all profile_* files for this user as a safety measure
+        // This catches any orphaned cache files
+        do {
+            let fileURLs = try fileManager.contentsOfDirectory(at: documentsURL, includingPropertiesForKeys: nil)
+            
+            // Get all profile picture files (profile_<hash>.jpg format)
+            let profilePictures = fileURLs.filter { 
+                let filename = $0.lastPathComponent
+                return filename.hasPrefix("profile_") && filename.hasSuffix(".jpg")
+            }
+            
+            // Clear from memory cache first
+            for fileURL in profilePictures {
+                let filename = fileURL.lastPathComponent
+                ImageCacheManager.shared.removeFullImage(key: filename)
+            }
+            
+            print("✅ Cleared \(clearedCount) cached profile pictures for user \(userId)")
         } catch {
-            print("⚠️ Failed to clear cached profile pictures: \(error.localizedDescription)")
+            print("⚠️ Failed to enumerate cached profile pictures: \(error.localizedDescription)")
+        }
+    }
+    
+    /// Pre-cache a newly uploaded profile picture to avoid network download
+    /// Called after successful profile picture upload
+    func precacheProfilePicture(image: UIImage, url: String, userId: String) {
+        let filename = profilePictureCacheFilename(url: url, userId: userId)
+        
+        // Resize to cache size (400x400)
+        guard let resizedImage = resizeProfilePicture(image, size: 400) else {
+            print("⚠️ Failed to resize profile picture for precaching")
+            return
+        }
+        
+        // Compress
+        guard let imageData = compressImage(resizedImage, maxSizeMB: 0.5) else {
+            print("⚠️ Failed to compress profile picture for precaching")
+            return
+        }
+        
+        // Save to disk
+        let fileURL = getDocumentsDirectory().appendingPathComponent(filename)
+        do {
+            try imageData.write(to: fileURL)
+            print("✅ Pre-cached new profile picture to disk: \(filename)")
+            
+            // Also store in memory cache for immediate access
+            ImageCacheManager.shared.setFullImage(resizedImage, key: filename)
+            print("✅ Pre-cached new profile picture to memory: \(filename)")
+        } catch {
+            print("⚠️ Failed to pre-cache profile picture: \(error.localizedDescription)")
         }
     }
 }

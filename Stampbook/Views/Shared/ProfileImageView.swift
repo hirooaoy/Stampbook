@@ -55,32 +55,50 @@ struct ProfileImageView: View {
         }
         .animation(.easeInOut(duration: 0.2), value: image != nil)
         .id("\(userId)-\(size)") // Stable identity prevents unnecessary recreation
-        .task(id: "\(userId)-\(avatarUrl ?? "")-\(loadAttempt)") {
+        .task {
             // Only load once per unique user/avatar combination
-            guard !hasAttemptedLoad || loadAttempt > 0 else { return }
+            guard !hasAttemptedLoad else { return }
             hasAttemptedLoad = true
+            
+            // OPTIMIZED: Check cache synchronously first (instant if cached)
+            // This prevents 9 ProfileImageViews from all calling async download
+            // when the image is already in memory/disk cache
+            if let cachedImage = checkCacheSync() {
+                await MainActor.run {
+                    self.image = cachedImage
+                }
+                return
+            }
+            
+            // OPTIMIZED: Small delay to let FeedManager prefetch complete first
+            // Reduces redundant download attempts from 10 → 1 for same user
+            try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
+            
             await loadProfilePicture()
         }
-        .onAppear {
-            // Only schedule retries if we have a valid avatar URL and haven't loaded yet
-            guard let url = avatarUrl, !url.isEmpty, image == nil else { return }
-            
-            // Retry loading after short delays if image still not loaded
-            // This handles the case where prefetch completes after initial render
-            Task {
-                // Try again after 300ms (prefetch should be done by then)
-                try? await Task.sleep(nanoseconds: 300_000_000)
-                if image == nil && avatarUrl != nil && !avatarUrl!.isEmpty {
-                    loadAttempt += 1
-                }
-                
-                // One more retry after 1s just in case
-                try? await Task.sleep(nanoseconds: 1_000_000_000)
-                if image == nil && avatarUrl != nil && !avatarUrl!.isEmpty {
-                    loadAttempt += 1
-                }
-            }
+    }
+    
+    /// Check cache synchronously before attempting async download
+    /// Returns image immediately if in memory or disk cache
+    private func checkCacheSync() -> UIImage? {
+        guard let avatarUrl = avatarUrl, !avatarUrl.isEmpty else {
+            return nil
         }
+        
+        // Generate cache filename (same logic as ImageManager)
+        let filename = ImageManager.shared.profilePictureCacheFilename(url: avatarUrl, userId: userId)
+        
+        // Check memory cache (instant)
+        if let cached = ImageCacheManager.shared.getFullImage(key: filename) {
+            return cached
+        }
+        
+        // Check disk cache (fast)
+        if let cached = ImageManager.shared.loadProfilePicture(named: filename) {
+            return cached
+        }
+        
+        return nil
     }
     
     /// Load profile picture from cache or download from Firebase

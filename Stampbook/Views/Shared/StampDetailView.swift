@@ -208,11 +208,10 @@ struct StampDetailView: View {
                                             .frame(maxWidth: .infinity, alignment: .leading)
                                     }
                                     
-                                    Spacer(minLength: 6)
-                                    
                                     Image(systemName: "chevron.right")
                                         .font(.body)
                                         .foregroundColor(.secondary)
+                                        .padding(.leading, 8)
                                 }
                                 .frame(minHeight: 44)              // Larger tap target
                                 .contentShape(Rectangle())         // Make entire frame tappable

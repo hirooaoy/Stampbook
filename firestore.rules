@@ -12,18 +12,34 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
     
+    // Helper function to check if userA has blocked userB
+    // NOTE: We can ONLY check if the current user (request.auth.uid) has blocked someone
+    // because only the owner can read their own blocked list.
+    // We CANNOT check if someone else has blocked the current user (privacy + permissions).
+    function hasBlocked(userA, userB) {
+      return exists(/databases/$(database)/documents/users/$(userA)/blocked/$(userB));
+    }
+    
     // Users can read anyone's collected stamps (for social feed)
     // But can only create/update/delete their own
+    // Cannot read stamps from users you have blocked
     match /users/{userId}/collected_stamps/{stampId} {
-      allow read: if isSignedIn();
+      allow read: if isSignedIn() && !hasBlocked(request.auth.uid, userId);
       allow create: if isOwner(userId) && request.resource.data.userId == userId;
       allow update: if isOwner(userId);
       allow delete: if isOwner(userId);
     }
     
     // User profile data
+    // Cannot read profiles of users you have blocked
     match /users/{userId} {
-      allow read: if isSignedIn(); // Anyone can read user profiles (for social features)
+      // Allow getting individual user documents (with blocking check)
+      allow get: if isSignedIn() && !hasBlocked(request.auth.uid, userId);
+      
+      // Allow querying/listing users for rank calculation and search
+      // Blocking is handled client-side for queries (can't check blocking on every doc in a list query)
+      allow list: if isSignedIn();
+      
       allow create, delete: if isOwner(userId); // Only owner can create/delete
       allow update: if isOwner(userId) || 
                        // Allow updating follower/following counts during follow operations
@@ -31,24 +47,33 @@ service cloud.firestore {
                         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followerCount', 'followingCount', 'lastActiveAt']));
     }
     
+    // Blocked users subcollection: users/{userId}/blocked/{blockedId}
+    // Only the user can read/write their blocked list
+    match /users/{userId}/blocked/{blockedId} {
+      allow read: if isOwner(userId);
+      allow create, delete: if isOwner(userId);
+      allow update: if false; // Block relationships are immutable once created
+    }
+    
     // Followers subcollection: users/{userId}/followers/{followerId}
-    // Anyone can read to see who follows a user
+    // Anyone can read to see who follows a user (unless you've blocked them)
     // Only the follower themselves can create/delete their follow relationship
     match /users/{userId}/followers/{followerId} {
-      allow read: if isSignedIn();
+      allow read: if isSignedIn() && !hasBlocked(request.auth.uid, userId);
       // The person following (followerId) can create/delete their own follow entry in someone else's followers list
       // This allows User A to write to users/B/followers/A when A follows B
-      allow create, delete: if isSignedIn() && request.auth.uid == followerId;
+      allow create, delete: if isSignedIn() && request.auth.uid == followerId && !hasBlocked(request.auth.uid, userId);
       allow update: if false; // Follow relationships are immutable once created
     }
     
     // Following subcollection: users/{userId}/following/{followingId}
-    // Anyone can read to see who a user follows
+    // Anyone can read to see who a user follows (unless you've blocked them)
     // Only the user themselves can create/delete their following entries
     match /users/{userId}/following/{followingId} {
-      allow read: if isSignedIn();
+      allow read: if isSignedIn() && !hasBlocked(request.auth.uid, userId);
       // User can only modify their own following list
-      allow create: if isOwner(userId);
+      // Cannot follow someone you've blocked
+      allow create: if isOwner(userId) && !hasBlocked(request.auth.uid, followingId);
       allow delete: if isOwner(userId);
       allow update: if false; // Follow relationships are immutable once created
     }
@@ -71,6 +96,34 @@ service cloud.firestore {
       allow create, update: if isSignedIn(); // Only authenticated users can update (when collecting)
       allow delete: if false; // Never allow deletion
     }
+    
+    // Likes collection: likes/{likeId}
+    // Simple social media pattern: users can only like/unlike as themselves
+    match /likes/{likeId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow update: if false; // Likes are immutable once created
+    }
+    
+    // Comments collection: comments/{commentId}
+    // Simple social media pattern: comment as yourself, delete your own or on your posts
+    match /comments/{commentId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow delete: if isSignedIn() && 
+                       (resource.data.userId == request.auth.uid || 
+                        resource.data.postOwnerId == request.auth.uid);
+      allow update: if false; // Comments are immutable once created
+    }
+    
+    // Feedback collection: feedback/{feedbackId}
+    // Users can only create their own feedback submissions
+    // Only admins can read/update/delete feedback (via Firebase Console)
+    match /feedback/{feedbackId} {
+      allow read: if false; // Only admins can read (via Firebase Console)
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if false; // Only admins can update/delete (via Firebase Console)
+    }
   }
 }
-

@@ -124,6 +124,7 @@ struct PhotoGalleryView: View {
                                 )
                                 .frame(width: 120, height: 120)
                                 .cornerRadius(12)
+                                .id(imageName) // 🔧 FIX: Force view recreation when imageName changes
                                 
                                 // Show loading spinner if this photo is uploading
                                 if uploadingPhotos.contains(imageName) {
@@ -318,8 +319,11 @@ struct AsyncThumbnailView: View {
     private func loadThumbnail() async {
         let loadStart = CFAbsoluteTimeGetCurrent()
         
+        // 🔧 FIX: Use thumbnail filename as key (consistent with ImageManager)
+        let thumbnailKey = imageName.replacingOccurrences(of: ".jpg", with: "_thumb.jpg")
+        
         // 🔧 FIX: Check memory cache first (fast!)
-        if let cachedThumbnail = ImageCacheManager.shared.getThumbnail(key: imageName) {
+        if let cachedThumbnail = ImageCacheManager.shared.getThumbnail(key: thumbnailKey) {
             let loadTime = CFAbsoluteTimeGetCurrent() - loadStart
             print("⏱️ [AsyncThumbnail] Memory cache hit: \(String(format: "%.3f", loadTime))s for \(imageName)")
             await MainActor.run {
@@ -334,8 +338,8 @@ struct AsyncThumbnailView: View {
             let loadTime = CFAbsoluteTimeGetCurrent() - loadStart
             print("⏱️ [AsyncThumbnail] Disk cache hit: \(String(format: "%.3f", loadTime))s for \(imageName)")
             
-            // Store in memory cache for faster access next time
-            ImageCacheManager.shared.setThumbnail(cachedThumbnail, key: imageName)
+            // Store in memory cache for faster access next time (use thumbnail key)
+            ImageCacheManager.shared.setThumbnail(cachedThumbnail, key: thumbnailKey)
             
             await MainActor.run {
                 self.thumbnail = cachedThumbnail
@@ -355,8 +359,9 @@ struct AsyncThumbnailView: View {
                 let loadTime = CFAbsoluteTimeGetCurrent() - loadStart
                 print("⏱️ [AsyncThumbnail] Firebase download: \(String(format: "%.3f", loadTime))s for \(imageName)")
                 
-                // Store in memory cache
-                ImageCacheManager.shared.setThumbnail(downloadedThumbnail, key: imageName)
+                // Store in memory cache (use thumbnail key for consistency)
+                let thumbnailKey = imageName.replacingOccurrences(of: ".jpg", with: "_thumb.jpg")
+                ImageCacheManager.shared.setThumbnail(downloadedThumbnail, key: thumbnailKey)
                 
                 await MainActor.run {
                     self.thumbnail = downloadedThumbnail

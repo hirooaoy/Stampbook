@@ -259,6 +259,13 @@ class StampsManager: ObservableObject {
         }
     }
     
+    /// Synchronously check if a stamp is in cache (for instant prefetch checks)
+    /// - Parameter id: The stamp ID to check
+    /// - Returns: The cached stamp if available, nil otherwise
+    func getCachedStamp(id: String) -> Stamp? {
+        return stampCache.get(id)
+    }
+    
     /// Clear stamp cache (for debugging or low memory situations)
     func clearCache() {
         stampCache.removeAll()

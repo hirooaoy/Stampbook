@@ -8,21 +8,30 @@ struct StampsView: View {
     @EnvironmentObject var profileManager: ProfileManager // Shared instance - no more loading!
     @EnvironmentObject var followManager: FollowManager
     @Environment(\.colorScheme) var colorScheme
+    @Binding var shouldResetNavigation: Bool // Binding to reset navigation when tab is selected
     @State private var selectedTab: StampTab = .all
     @State private var showEditProfile = false
-    @State private var showMailComposer = false
-    @State private var showMailError = false
-    @State private var showMailFallback = false
-    @State private var mailMessageType: MailComposeView.MessageType = .feedback
+    @State private var showFeedback = false
+    @State private var showProblemReport = false
     @State private var showSignOutConfirmation = false
+    @State private var showBlockedUsers = false // Navigation to blocked users list
+    @State private var navigationPath = NavigationPath() // Track navigation stack
+    @State private var hasAttemptedRankLoad = false // Prevent duplicate rank fetches
     
     enum StampTab: String, CaseIterable {
         case all = "All"
         case collections = "Collections"
     }
     
+    // Navigation destination types
+    struct FollowListDestination: Hashable {
+        let userId: String
+        let userDisplayName: String
+        let initialTab: FollowListView.FollowTab
+    }
+    
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navigationPath) {
             VStack(spacing: 0) {
                 // Top bar
                 HStack {
@@ -73,6 +82,14 @@ struct StampsView: View {
                                 Divider()
                                 
                                 Button(action: {
+                                    showBlockedUsers = true
+                                }) {
+                                    Label("Blocked Users", systemImage: "hand.raised.fill")
+                                }
+                                
+                                Divider()
+                                
+                                Button(action: {
                                     // TODO: Open business info
                                     print("For Local Business tapped")
                                 }) {
@@ -89,15 +106,13 @@ struct StampsView: View {
                                 Divider()
                                 
                                 Button(action: {
-                                    mailMessageType = .problem
-                                    showMailComposer = true
+                                    showProblemReport = true
                                 }) {
-                                    Label("Report a problem", systemImage: "exclamationmark.bubble")
+                                    Label("Report a Problem", systemImage: "exclamationmark.bubble")
                                 }
                                 
                                 Button(action: {
-                                    mailMessageType = .feedback
-                                    showMailComposer = true
+                                    showFeedback = true
                                 }) {
                                     Label("Send Feedback", systemImage: "envelope")
                                 }
@@ -146,15 +161,13 @@ struct StampsView: View {
                             Divider()
                             
                             Button(action: {
-                                mailMessageType = .problem
-                                showMailComposer = true
+                                showProblemReport = true
                             }) {
-                                Label("Report a problem", systemImage: "exclamationmark.bubble")
+                                Label("Report a Problem", systemImage: "exclamationmark.bubble")
                             }
                             
                             Button(action: {
-                                mailMessageType = .feedback
-                                showMailComposer = true
+                                showFeedback = true
                             }) {
                                 Label("Send Feedback", systemImage: "envelope")
                             }
@@ -300,11 +313,27 @@ struct StampsView: View {
                                 .cornerRadius(12)
                                 .onAppear {
                                     // Lazy load rank when card appears
+                                    print("🔍 [DEBUG] Rank card .onAppear triggered (hasAttemptedRankLoad: \(hasAttemptedRankLoad))")
+                                    
+                                    // Only fetch once per view lifecycle
+                                    guard !hasAttemptedRankLoad else {
+                                        print("✅ [StampsView] Rank load already attempted, skipping")
+                                        return
+                                    }
+                                    
+                                    print("🎯 [StampsView] Rank card appeared - userRank: \(profileManager.userRank?.description ?? "nil")")
                                     if profileManager.userRank == nil,
                                        let profile = profileManager.currentUserProfile {
+                                        print("🔄 [StampsView] Triggering rank fetch for \(profile.displayName)...")
+                                        hasAttemptedRankLoad = true
                                         Task {
                                             await profileManager.fetchUserRank(for: profile)
                                         }
+                                    } else if profileManager.userRank != nil {
+                                        print("✅ [StampsView] Rank already loaded: #\(profileManager.userRank!)")
+                                        hasAttemptedRankLoad = true
+                                    } else {
+                                        print("⚠️ [StampsView] Profile not loaded yet - cannot fetch rank")
                                     }
                                 }
                                 
@@ -336,7 +365,7 @@ struct StampsView: View {
                                 .cornerRadius(12)
                                 
                                 // Followers card
-                                NavigationLink(destination: FollowListView(
+                                NavigationLink(value: FollowListDestination(
                                     userId: authManager.userId ?? "",
                                     userDisplayName: profileManager.currentUserProfile?.displayName ?? "User",
                                     initialTab: .followers
@@ -371,7 +400,7 @@ struct StampsView: View {
                                 .buttonStyle(PlainButtonStyle())
                                 
                                 // Following card
-                                NavigationLink(destination: FollowListView(
+                                NavigationLink(value: FollowListDestination(
                                     userId: authManager.userId ?? "",
                                     userDisplayName: profileManager.currentUserProfile?.displayName ?? "User",
                                     initialTab: .following
@@ -476,15 +505,18 @@ struct StampsView: View {
                         }
                     }
                 }
-                .sheet(isPresented: $showMailComposer) {
-                    if MFMailComposeViewController.canSendMail() {
-                        MailComposeView(
-                            recipient: "support@stampbook.app",
-                            subject: mailMessageType == .feedback ? "Stampbook Feedback" : "Stampbook Problem Report",
-                            messageType: mailMessageType
-                        )
-                    } else {
-                        MailFallbackView(messageType: mailMessageType)
+                .sheet(isPresented: $showFeedback) {
+                    SimpleFeedbackView()
+                        .environmentObject(authManager)
+                }
+                .sheet(isPresented: $showProblemReport) {
+                    SimpleProblemReportView()
+                        .environmentObject(authManager)
+                }
+                .sheet(isPresented: $showBlockedUsers) {
+                    NavigationStack {
+                        BlockedUsersView()
+                            .environmentObject(authManager)
                     }
                 }
                 .alert("Sign Out", isPresented: $showSignOutConfirmation) {
@@ -494,6 +526,20 @@ struct StampsView: View {
                     }
                 } message: {
                     Text("Are you sure you want to sign out?")
+                }
+                .navigationDestination(for: FollowListDestination.self) { destination in
+                    FollowListView(
+                        userId: destination.userId,
+                        userDisplayName: destination.userDisplayName,
+                        initialTab: destination.initialTab
+                    )
+                }
+                .onChange(of: shouldResetNavigation) { _, newValue in
+                    // Reset navigation stack when flag is set
+                    if newValue {
+                        navigationPath = NavigationPath()
+                        shouldResetNavigation = false
+                    }
                 }
             }
         }

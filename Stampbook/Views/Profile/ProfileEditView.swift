@@ -328,8 +328,21 @@ struct ProfileEditView: View {
                     )
                     
                     // Clear old cached profile pictures for this user
-                    ImageManager.shared.clearCachedProfilePictures(userId: userId)
+                    ImageManager.shared.clearCachedProfilePictures(
+                        userId: userId,
+                        oldAvatarUrl: currentProfile.avatarUrl
+                    )
+                    
+                    // Pre-cache the new profile picture to avoid network download on next load
+                    if let avatarUrl = avatarUrl {
+                        ImageManager.shared.precacheProfilePicture(
+                            image: image,
+                            url: avatarUrl,
+                            userId: userId
+                        )
+                    }
                 }
+
                 
                 // Step 8: Update profile document in Firestore
                 try await FirebaseService.shared.updateUserProfile(
