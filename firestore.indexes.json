@@ -8,7 +8,8 @@
           "fieldPath": "totalStamps",
           "order": "ASCENDING"
         }
-      ]
+      ],
+      "_comment": "TODO: POST-MVP - This index was for rank calculation. Can be removed if rank feature stays disabled. See RANK_FEATURE_DISABLED.md"
     },
     {
       "collectionGroup": "stamps",

@@ -350,7 +350,10 @@ class StampsManager: ObservableObject {
         }
     }
     
-    /// Get the user's rank for a specific stamp
+    // TODO: POST-MVP - Per-Stamp Ranking System
+    // Disabled for MVP to reduce complexity and Firestore queries
+    // Consider implementing post-MVP with cached collector order
+    /*
     func getUserRankForStamp(stampId: String, userId: String) async -> Int? {
         do {
             return try await firebaseService.getUserRankForStamp(stampId: stampId, userId: userId)
@@ -359,6 +362,7 @@ class StampsManager: ObservableObject {
             return nil
         }
     }
+    */
     
     func isCollected(_ stamp: Stamp) -> Bool {
         userCollection.isCollected(stamp.id)

@@ -15,8 +15,9 @@ struct CommentView: View {
     @State private var commentToDelete: Comment?
     @FocusState private var isTextFieldFocused: Bool
     
+    // Changed to directly observe the published property to trigger view updates
     private var comments: [Comment] {
-        commentManager.getComments(postId: postId)
+        commentManager.comments[postId] ?? []
     }
     
     private var isLoading: Bool {

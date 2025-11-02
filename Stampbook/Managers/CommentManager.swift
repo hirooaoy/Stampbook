@@ -21,6 +21,8 @@ class CommentManager: ObservableObject {
             
             await MainActor.run {
                 comments[postId] = fetchedComments
+                // Always update count to match actual fetched comments
+                // This fixes desync between cached feed count and actual Firebase count
                 commentCounts[postId] = fetchedComments.count
                 isLoading[postId] = false
             }
@@ -117,6 +119,10 @@ class CommentManager: ObservableObject {
                 )
                 
                 print("✅ CommentManager: Comment deleted from Firebase: \(commentId)")
+                
+                // After successful deletion, refetch to ensure count is accurate
+                // This fixes any desync between cached count and actual Firebase count
+                await fetchComments(postId: postId)
             } catch {
                 print("❌ CommentManager: Failed to delete comment: \(error.localizedDescription)")
                 
@@ -143,11 +149,10 @@ class CommentManager: ObservableObject {
     }
     
     /// Update comment count for a specific post
-    /// Only updates if the post doesn't already have a count (preserves optimistic updates)
-    func updateCommentCount(postId: String, count: Int) {
-        // Don't overwrite existing count if it's already set
-        // This preserves optimistic updates and prevents stale feed data from overwriting
-        if commentCounts[postId] == nil {
+    /// When forceUpdate is true, always updates (used for feed refresh)
+    /// When false, only updates if count doesn't exist (preserves optimistic updates)
+    func updateCommentCount(postId: String, count: Int, forceUpdate: Bool = false) {
+        if forceUpdate || commentCounts[postId] == nil {
             commentCounts[postId] = count
         }
     }

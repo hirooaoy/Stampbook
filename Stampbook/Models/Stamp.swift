@@ -7,7 +7,8 @@ struct Stamp: Identifiable, Codable {
     let latitude: Double
     let longitude: Double
     let address: String
-    let imageName: String
+    let imageName: String  // DEPRECATED: Use imageUrl instead
+    let imageUrl: String?  // Firebase Storage URL for stamp image
     let collectionIds: [String]
     let about: String
     let notesFromOthers: [String]
@@ -41,18 +42,19 @@ struct Stamp: Identifiable, Codable {
     
     // For backward compatibility with JSON that uses collectionId
     enum CodingKeys: String, CodingKey {
-        case id, name, latitude, longitude, address, imageName, about, notesFromOthers, thingsToDoFromEditors, geohash
+        case id, name, latitude, longitude, address, imageName, imageUrl, about, notesFromOthers, thingsToDoFromEditors, geohash
         case collectionIds
         case collectionId
     }
     
-    init(id: String, name: String, latitude: Double, longitude: Double, address: String, imageName: String, collectionIds: [String], about: String, notesFromOthers: [String], thingsToDoFromEditors: [String] = [], geohash: String? = nil) {
+    init(id: String, name: String, latitude: Double, longitude: Double, address: String, imageName: String = "", imageUrl: String? = nil, collectionIds: [String], about: String, notesFromOthers: [String], thingsToDoFromEditors: [String] = [], geohash: String? = nil) {
         self.id = id
         self.name = name
         self.latitude = latitude
         self.longitude = longitude
         self.address = address
         self.imageName = imageName
+        self.imageUrl = imageUrl
         self.collectionIds = collectionIds
         self.about = about
         self.notesFromOthers = notesFromOthers
@@ -67,7 +69,8 @@ struct Stamp: Identifiable, Codable {
         latitude = try container.decode(Double.self, forKey: .latitude)
         longitude = try container.decode(Double.self, forKey: .longitude)
         address = try container.decode(String.self, forKey: .address)
-        imageName = try container.decode(String.self, forKey: .imageName)
+        imageName = try container.decodeIfPresent(String.self, forKey: .imageName) ?? ""  // Optional for backward compatibility
+        imageUrl = try container.decodeIfPresent(String.self, forKey: .imageUrl)
         about = try container.decode(String.self, forKey: .about)
         notesFromOthers = try container.decode([String].self, forKey: .notesFromOthers)
         thingsToDoFromEditors = try container.decodeIfPresent([String].self, forKey: .thingsToDoFromEditors) ?? []
@@ -91,6 +94,7 @@ struct Stamp: Identifiable, Codable {
         try container.encode(longitude, forKey: .longitude)
         try container.encode(address, forKey: .address)
         try container.encode(imageName, forKey: .imageName)
+        try container.encodeIfPresent(imageUrl, forKey: .imageUrl)
         try container.encode(collectionIds, forKey: .collectionIds)
         try container.encode(about, forKey: .about)
         try container.encode(notesFromOthers, forKey: .notesFromOthers)

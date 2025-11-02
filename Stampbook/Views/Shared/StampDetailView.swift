@@ -16,7 +16,7 @@ struct StampDetailView: View {
     @State private var showNotesEditor = false
     @State private var editingNotes = ""
     @State private var stampStats: StampStatistics?
-    @State private var userRank: Int?
+    // @State private var userRank: Int? // TODO: POST-MVP - Per-stamp rank disabled
     @State private var collectionProgress: [String: Int] = [:] // collectionId -> collected count
     
     private var isCollected: Bool {
@@ -56,18 +56,7 @@ struct StampDetailView: View {
                             .multilineTextAlignment(.center)
                             .fixedSize(horizontal: false, vertical: true)
                         
-                        // Show real collection count from Firebase
-                        if let stats = stampStats {
-                            let count = stats.totalCollectors
-                            Text(count == 1 ? "1 person has this stamp" : "\(count) people have this stamp")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                        } else {
-                            // Loading or no stats yet
-                            Text("Loading...")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                        }
+                        collectionCountView
                     }
                     .padding(.horizontal, 24)
                     .padding(.top, 8)
@@ -106,8 +95,12 @@ struct StampDetailView: View {
                                 .foregroundColor(.secondary)
                                 .padding(.bottom, 8)
                             
-                            // Rank and date cards
+                            // Date card only (rank disabled for MVP)
                             HStack(spacing: 12) {
+                                // TODO: POST-MVP - Per-Stamp Rank Card Disabled
+                                // This shows what number collector the user was for this stamp
+                                // Disabled for MVP to reduce complexity and Firestore queries
+                                /*
                                 // Rank card
                                 HStack(spacing: 12) {
                                     Image(systemName: "medal.fill")
@@ -144,6 +137,7 @@ struct StampDetailView: View {
                                 .frame(height: 70)
                                 .background(Color.gray.opacity(0.1))
                                 .cornerRadius(12)
+                                */
                                 
                                 // Date card
                                 HStack(spacing: 12) {
@@ -506,10 +500,10 @@ struct StampDetailView: View {
             Task {
                 stampStats = await stampsManager.fetchStampStatistics(stampId: stamp.id)
                 
-                // If user has collected this stamp, fetch their rank
-                if isCollected, let userId = authManager.userId {
-                    userRank = await stampsManager.getUserRankForStamp(stampId: stamp.id, userId: userId)
-                }
+                // TODO: POST-MVP - Per-stamp rank fetch disabled
+                // if isCollected, let userId = authManager.userId {
+                //     userRank = await stampsManager.getUserRankForStamp(stampId: stamp.id, userId: userId)
+                // }
                 
                 // Calculate collection progress for all collections this stamp belongs to
                 await calculateCollectionProgress()
@@ -525,30 +519,32 @@ struct StampDetailView: View {
                 Task {
                     stampStats = await stampsManager.fetchStampStatistics(stampId: stamp.id)
                     
-                    if let userId = authManager.userId {
-                        userRank = await stampsManager.getUserRankForStamp(stampId: stamp.id, userId: userId)
-                        
-                        // If rank is nil, retry after a short delay (Firebase transaction may not be complete yet)
-                        if userRank == nil {
-                            try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
-                            stampStats = await stampsManager.fetchStampStatistics(stampId: stamp.id)
-                            userRank = await stampsManager.getUserRankForStamp(stampId: stamp.id, userId: userId)
-                            
-                            // If still nil, try one more time
-                            if userRank == nil {
-                                try? await Task.sleep(nanoseconds: 1_500_000_000) // 1.5 seconds
-                                stampStats = await stampsManager.fetchStampStatistics(stampId: stamp.id)
-                                userRank = await stampsManager.getUserRankForStamp(stampId: stamp.id, userId: userId)
-                            }
-                        }
-                    }
+                    // TODO: POST-MVP - Per-stamp rank fetch disabled
+                    // if let userId = authManager.userId {
+                    //     userRank = await stampsManager.getUserRankForStamp(stampId: stamp.id, userId: userId)
+                    //     
+                    //     // If rank is nil, retry after a short delay (Firebase transaction may not be complete yet)
+                    //     if userRank == nil {
+                    //         try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+                    //         stampStats = await stampsManager.fetchStampStatistics(stampId: stamp.id)
+                    //         userRank = await stampsManager.getUserRankForStamp(stampId: stamp.id, userId: userId)
+                    //         
+                    //         // If still nil, try one more time
+                    //         if userRank == nil {
+                    //             try? await Task.sleep(nanoseconds: 1_500_000_000) // 1.5 seconds
+                    //             stampStats = await stampsManager.fetchStampStatistics(stampId: stamp.id)
+                    //             userRank = await stampsManager.getUserRankForStamp(stampId: stamp.id, userId: userId)
+                    //         }
+                    //     }
+                    // }
                     
                     // Recalculate collection progress when stamp is collected
                     await calculateCollectionProgress()
                 }
             } else {
                 showMemorySection = false
-                userRank = nil
+                // TODO: POST-MVP - Per-stamp rank disabled
+                // userRank = nil
             }
         }
         .fullScreenCover(isPresented: $showNotesEditor) {
@@ -677,6 +673,23 @@ struct StampDetailView: View {
         } else {
             // Fallback to web version if Google Maps app not installed
             UIApplication.shared.open(googleMapsWebURL)
+        }
+    }
+    
+    // Extracted to fix type-checking performance issue
+    @ViewBuilder
+    private var collectionCountView: some View {
+        // Show real collection count from Firebase
+        if let stats = stampStats {
+            let count = stats.totalCollectors
+            Text(count == 1 ? "1 person has this stamp" : "\(count) people have this stamp")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+        } else {
+            // Loading or no stats yet
+            Text("Loading...")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
         }
     }
 }

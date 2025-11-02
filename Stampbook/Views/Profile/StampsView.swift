@@ -16,7 +16,7 @@ struct StampsView: View {
     @State private var showSignOutConfirmation = false
     @State private var showBlockedUsers = false // Navigation to blocked users list
     @State private var navigationPath = NavigationPath() // Track navigation stack
-    @State private var hasAttemptedRankLoad = false // Prevent duplicate rank fetches
+    // @State private var hasAttemptedRankLoad = false // TODO: POST-MVP - Rank loading disabled
     
     enum StampTab: String, CaseIterable {
         case all = "All"
@@ -277,6 +277,10 @@ struct StampsView: View {
                         // Stats cards - horizontal scrollable
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 12) {
+                                // TODO: POST-MVP - Rank card disabled
+                                // Rank calculation requires expensive Firestore queries
+                                // Consider implementing with Cloud Functions for cached ranks
+                                /*
                                 // Rank card
                                 HStack(spacing: 12) {
                                     Image(systemName: "trophy.fill")
@@ -336,6 +340,7 @@ struct StampsView: View {
                                         print("⚠️ [StampsView] Profile not loaded yet - cannot fetch rank")
                                     }
                                 }
+                                */
                                 
                                 // Countries card
                                 HStack(spacing: 12) {

@@ -2,6 +2,11 @@ import Foundation
 import UIKit
 import FirebaseStorage
 
+// 💡 FUTURE OPTIMIZATION: Consider migrating to blob storage (Cloudflare R2, AWS S3) + CDN
+// for better cost (~90% cheaper), faster global delivery (edge caching), and image optimization.
+// Firebase Storage works well for MVP but can get expensive at scale.
+// See: https://www.cloudflare.com/products/r2/ (free egress, $0.015/GB storage)
+
 class ImageManager {
     static let shared = ImageManager()
     
@@ -148,6 +153,10 @@ class ImageManager {
     }
     
     // MARK: - Firebase Storage
+    
+    // 📊 COST NOTE: Firebase Storage = $0.026/GB storage + $0.12/GB egress (downloads)
+    // At scale, consider blob storage + CDN: Cloudflare R2 = $0.015/GB + FREE egress
+    // Migration: Store CDN URLs in Firestore instead of Firebase Storage paths
     
     /// Upload image to Firebase Storage
     /// Automatically resizes to max 2400px before upload
@@ -557,17 +566,18 @@ class ImageManager {
     // MARK: - Profile Picture Management
     
     /// Save profile picture locally
-    /// Resizes to 400x400px for efficient storage
+    /// Resizes to 200x200px for efficient storage and fast loading
     /// Returns filename if successful
     func saveProfilePicture(_ image: UIImage, userId: String) -> String? {
-        // Resize to 400x400px (square crop, aspect fill)
-        guard let resizedImage = resizeProfilePicture(image, size: 400) else {
+        // Resize to 200x200px (square crop, aspect fill) - optimized for MVP
+        // 200px = retina-ready + 4x faster downloads vs 400px
+        guard let resizedImage = resizeProfilePicture(image, size: 200) else {
             print("⚠️ Failed to resize profile picture")
             return nil
         }
         
-        // Compress image
-        guard let imageData = compressImage(resizedImage, maxSizeMB: 0.5) else {
+        // Compress image (200px should be ~20-30KB vs ~80KB for 400px)
+        guard let imageData = compressImage(resizedImage, maxSizeMB: 0.2) else {
             print("⚠️ Failed to compress profile picture")
             return nil
         }
@@ -627,6 +637,8 @@ class ImageManager {
     /// Download and cache profile picture from Firebase Storage URL
     /// Returns cached image if already exists (checks memory and disk)
     /// OPTIMIZED: Deduplicates concurrent requests for same URL
+    /// 
+    /// 🌐 NOTE: CDN would make this much faster globally via edge caching (e.g. Cloudflare CDN)
     func downloadAndCacheProfilePicture(url: String, userId: String) async throws -> UIImage {
         let downloadStart = CFAbsoluteTimeGetCurrent()
         
@@ -777,14 +789,14 @@ class ImageManager {
     /// Prepare profile picture for upload (resize and compress)
     /// Returns JPEG data ready for Firebase Storage
     func prepareProfilePictureForUpload(_ image: UIImage) -> Data? {
-        // Resize to 400x400px
-        guard let resizedImage = resizeProfilePicture(image, size: 400) else {
+        // Resize to 200x200px (optimized for MVP - 4x faster downloads)
+        guard let resizedImage = resizeProfilePicture(image, size: 200) else {
             print("⚠️ Failed to resize profile picture for upload")
             return nil
         }
         
-        // Compress to reasonable size (max 500KB)
-        guard let imageData = compressImage(resizedImage, maxSizeMB: 0.5) else {
+        // Compress to reasonable size (max 200KB for faster uploads)
+        guard let imageData = compressImage(resizedImage, maxSizeMB: 0.2) else {
             print("⚠️ Failed to compress profile picture for upload")
             return nil
         }
@@ -850,14 +862,14 @@ class ImageManager {
     func precacheProfilePicture(image: UIImage, url: String, userId: String) {
         let filename = profilePictureCacheFilename(url: url, userId: userId)
         
-        // Resize to cache size (400x400)
-        guard let resizedImage = resizeProfilePicture(image, size: 400) else {
+        // Resize to cache size (200x200) - optimized for MVP
+        guard let resizedImage = resizeProfilePicture(image, size: 200) else {
             print("⚠️ Failed to resize profile picture for precaching")
             return
         }
         
         // Compress
-        guard let imageData = compressImage(resizedImage, maxSizeMB: 0.5) else {
+        guard let imageData = compressImage(resizedImage, maxSizeMB: 0.2) else {
             print("⚠️ Failed to compress profile picture for precaching")
             return
         }

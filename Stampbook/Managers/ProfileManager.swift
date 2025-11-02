@@ -6,18 +6,29 @@ class ProfileManager: ObservableObject {
     @Published var currentUserProfile: UserProfile?
     @Published var isLoading = false
     @Published var error: String?
-    @Published var userRank: Int? // Global rank based on totalStamps
+    
+    // TODO: POST-MVP - User Ranking System
+    // Global rank calculation requires comparing all users (expensive Firestore query)
+    // Consider implementing with:
+    // - Periodic Cloud Function to update cached ranks
+    // - Leaderboard limited to top users
+    // - Approximate ranking for better performance
+    // @Published var userRank: Int? // Global rank based on totalStamps
     
     private let firebaseService = FirebaseService.shared
     
-    // Rank caching to avoid expensive queries
-    private var cachedRanks: [String: (rank: Int, timestamp: Date)] = [:]
-    // Extended cache from 5 minutes to 30 minutes to reduce query costs
-    private let rankCacheExpiration: TimeInterval = 1800 // 30 minutes
+    // TODO: POST-MVP - Rank caching (disabled until rank feature is implemented)
+    // private var cachedRanks: [String: (rank: Int, timestamp: Date)] = [:]
+    // private let rankCacheExpiration: TimeInterval = 1800 // 30 minutes
     
     /// Load the current user's profile from Firebase
-    /// Rank is loaded lazily in the view when needed
     func loadProfile(userId: String, loadRank: Bool = false) {
+        // Skip if already loaded for this user (avoid redundant loads)
+        if let currentProfile = currentUserProfile, currentProfile.id == userId, !isLoading {
+            print("✅ [ProfileManager] Profile already loaded for userId: \(userId)")
+            return
+        }
+        
         // Prevent duplicate loads
         if isLoading {
             print("⚠️ [ProfileManager] Already loading profile, skipping duplicate request")
@@ -38,10 +49,10 @@ class ProfileManager: ObservableObject {
                 }
                 print("✅ [ProfileManager] Loaded user profile: \(profile.displayName)")
                 
-                // Fetch rank only if requested (opt-in for better performance)
-                if loadRank {
-                    await fetchUserRank(for: profile)
-                }
+                // TODO: POST-MVP - Rank loading disabled
+                // if loadRank {
+                //     await fetchUserRank(for: profile)
+                // }
             } catch {
                 await MainActor.run {
                     self.error = error.localizedDescription
@@ -54,6 +65,7 @@ class ProfileManager: ObservableObject {
     
     /// Update the current user's profile
     func updateProfile(_ profile: UserProfile) {
+        print("🔄 [ProfileManager] Updating profile: @\(profile.username)")
         currentUserProfile = profile
     }
     
@@ -74,32 +86,20 @@ class ProfileManager: ObservableObject {
                 self.currentUserProfile = profile
             }
             
-            // Fetch updated rank (only if already had rank loaded)
-            if userRank != nil {
-                await fetchUserRank(for: profile)
-            }
+            // TODO: POST-MVP - Rank refresh disabled
+            // if userRank != nil {
+            //     await fetchUserRank(for: profile)
+            // }
         } catch {
             print("⚠️ Failed to refresh profile: \(error.localizedDescription)")
         }
     }
     
-    /// Refresh profile data without rank calculation (faster for pull-to-refresh)
-    func refreshWithoutRank() async {
-        guard let userId = currentUserProfile?.id else { return }
-        
-        do {
-            let profile = try await firebaseService.fetchUserProfile(userId: userId)
-            await MainActor.run {
-                self.currentUserProfile = profile
-            }
-        } catch {
-            print("⚠️ Failed to refresh profile: \(error.localizedDescription)")
-        }
-    }
-    
-    /// Fetch user's global rank based on total stamps
-    /// Called automatically after loading profile
-    /// Uses caching to avoid expensive Firestore queries
+    // TODO: POST-MVP - User Ranking System
+    // This function is disabled for MVP due to expensive Firestore queries
+    // Comparing all users requires fetching large datasets and complex caching
+    // Consider implementing post-MVP with Cloud Functions for periodic rank updates
+    /*
     func fetchUserRank(for profile: UserProfile) async {
         let startTime = Date()
         print("🔍 [ProfileManager] Fetching rank for \(profile.displayName) (userId: \(profile.id), totalStamps: \(profile.totalStamps))")
@@ -149,13 +149,15 @@ class ProfileManager: ObservableObject {
             // Don't set error - rank is optional/non-critical
         }
     }
+    */
     
     /// Clear profile data (on sign out)
     func clearProfile() {
+        print("🗑️ [ProfileManager] Clearing profile data")
         currentUserProfile = nil
-        userRank = nil
+        // userRank = nil // TODO: POST-MVP
         error = nil
-        cachedRanks.removeAll()
+        // cachedRanks.removeAll() // TODO: POST-MVP
     }
 }
 

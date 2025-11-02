@@ -40,7 +40,7 @@ async function uploadStamps() {
         latitude: stamp.latitude,
         longitude: stamp.longitude,
         address: stamp.address,
-        imageName: stamp.imageName,
+        imageUrl: stamp.imageUrl || '',  // Changed from imageName to imageUrl
         collectionIds: stamp.collectionIds,
         about: stamp.about,
         notesFromOthers: stamp.notesFromOthers || [],

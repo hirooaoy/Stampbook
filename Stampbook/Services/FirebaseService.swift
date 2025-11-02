@@ -15,8 +15,11 @@ class FirebaseService {
         settings.cacheSettings = PersistentCacheSettings()
         db.settings = settings
         
-        // Run connectivity diagnostics on initialization
-        Task {
+        // Run connectivity diagnostics in background (non-blocking)
+        // NOTE: This should NOT block app initialization
+        Task.detached(priority: .background) {
+            // Add delay to not block startup
+            try? await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
             await self.runConnectivityDiagnostics()
         }
     }
@@ -68,15 +71,45 @@ class FirebaseService {
     
     private func testFirestoreConnection() async {
         // Try to fetch a single stamp (lightweight query)
+        // NOTE: Use default source (cache first, then server if needed)
+        // This allows offline usage and doesn't block on slow connections
         do {
             let startTime = CFAbsoluteTimeGetCurrent()
-            let snapshot = try await db.collection("stamps")
-                .limit(to: 1)
-                .getDocuments(source: .server) // Force server fetch, not cache
+            
+            // Try with timeout using withThrowingTaskGroup
+            let snapshot = try await withThrowingTaskGroup(of: QuerySnapshot?.self) { group in
+                // Add fetch task
+                group.addTask {
+                    return try await self.db.collection("stamps")
+                        .limit(to: 1)
+                        .getDocuments() // Default source: cache + server (non-blocking)
+                }
+                
+                // Add timeout task
+                group.addTask {
+                    try await Task.sleep(nanoseconds: 5_000_000_000) // 5 seconds
+                    return nil // Timeout indicator
+                }
+                
+                // Wait for first result
+                if let result = try await group.next() {
+                    group.cancelAll()
+                    return result
+                }
+                throw NSError(domain: "FirebaseService", code: -1, userInfo: [NSLocalizedDescriptionKey: "No result"])
+            }
+            
             let duration = CFAbsoluteTimeGetCurrent() - startTime
             
-            print("✅ Firestore connection OK (\(String(format: "%.3f", duration))s, \(snapshot.documents.count) doc)")
-            print("   Project: stampbook-app")
+            if let snapshot = snapshot {
+                // Success
+                print("✅ Firestore connection OK (\(String(format: "%.3f", duration))s, \(snapshot.documents.count) doc)")
+                print("   Project: stampbook-app")
+            } else {
+                // Timeout occurred
+                print("⏱️ Firestore connection slow/timed out after \(String(format: "%.3f", duration))s")
+                print("   → Using offline cache if available")
+            }
         } catch let error as NSError {
             print("❌ Firestore connection FAILED (\(error.domain), code: \(error.code))")
             print("   Message: \(error.localizedDescription)")
@@ -85,7 +118,7 @@ class FirebaseService {
             if error.domain == "FIRFirestoreErrorDomain" {
                 switch error.code {
                 case 14: // UNAVAILABLE
-                    print("   → Backend unavailable. Check Firebase Console status.")
+                    print("   → Backend unavailable. Using offline cache.")
                 case 7: // PERMISSION_DENIED
                     print("   → Permission denied. Check Firestore security rules.")
                 case 16: // UNAUTHENTICATED
@@ -381,7 +414,13 @@ class FirebaseService {
         }
     }
     
-    /// Get the user's rank for a specific stamp (what number they were to collect it)
+    // TODO: POST-MVP - Per-Stamp Ranking System
+    // This function is disabled for MVP as it requires expensive queries
+    // Consider implementing post-MVP with:
+    // - Caching collector order in stamp statistics
+    // - Limiting rank display to first N collectors
+    // - Using Cloud Functions to maintain rank data
+    /*
     func getUserRankForStamp(stampId: String, userId: String) async throws -> Int? {
         let stats = try await fetchStampStatistics(stampId: stampId)
         
@@ -391,6 +430,7 @@ class FirebaseService {
         
         return nil
     }
+    */
     
     // MARK: - User Profile Management
     
@@ -502,21 +542,27 @@ class FirebaseService {
         return false
     }
     
-    // MARK: - User Ranking
+    // MARK: - User Ranking (POST-MVP)
     
+    // TODO: POST-MVP - Global User Ranking System
+    // Rank calculation is disabled for MVP due to:
+    // - Expensive Firestore queries comparing all users
+    // - Complex caching requirements (30-minute cache per user)
+    // - Performance concerns as user base scales
+    // - Need for Firestore indexes on totalStamps field
+    //
+    // Consider implementing post-MVP with:
+    // - Periodic Cloud Function to calculate and cache ranks
+    // - Store rank on user profile (updated daily/hourly)
+    // - Leaderboard limited to top 1000 users
+    // - Approximate ranking (±10 range) for better performance
+    // - Consider Redis/Firestore cache for real-time updates
+    
+    /*
     // Rank cache to avoid expensive queries
     private var rankCache: [String: (rank: Int, timestamp: Date)] = [:]
-    // Extended cache from 5 minutes to 30 minutes to reduce query costs
-    // Rank doesn't change frequently, so longer cache is acceptable
-    private let rankCacheExpiration: TimeInterval = 1800 // 30 minutes (was 5 minutes)
+    private let rankCacheExpiration: TimeInterval = 1800 // 30 minutes
     
-    /// Calculate user's global rank based on total stamps collected (with caching)
-    /// Rank = number of users with more stamps + 1
-    /// 
-    /// OPTIMIZATION NOTE: For large scale (10k+ users), consider:
-    /// - Caching rank on profile (update periodically via Cloud Function)
-    /// - Using approximate rank with ±10 range
-    /// - Limiting leaderboard to top 1000 + user's rank
     func calculateUserRankCached(userId: String, totalStamps: Int) async throws -> Int {
         let startTime = Date()
         print("🔍 [FirebaseService] calculateUserRankCached called for userId: \(userId), totalStamps: \(totalStamps)")
@@ -545,13 +591,6 @@ class FirebaseService {
         return rank
     }
     
-    /// Calculate user's global rank based on total stamps collected
-    /// Rank = number of users with more stamps + 1
-    /// 
-    /// OPTIMIZATION NOTE: For large scale (10k+ users), consider:
-    /// - Caching rank on profile (update periodically via Cloud Function)
-    /// - Using approximate rank with ±10 range
-    /// - Limiting leaderboard to top 1000 + user's rank
     func calculateUserRank(userId: String, totalStamps: Int) async throws -> Int {
         let startTime = Date()
         print("🔍 [FirebaseService] Starting calculateUserRank for userId: \(userId) with \(totalStamps) stamps...")
@@ -563,7 +602,7 @@ class FirebaseService {
             // Count aggregation can be slow or fail without proper indexes
             let snapshot = try await db.collection("users")
                 .whereField("totalStamps", isGreaterThan: totalStamps)
-                .getDocuments(source: .server)
+                .getDocuments() // Default source (cache + server) for offline support
             
             let queryTime = Date().timeIntervalSince(startTime)
             let usersAhead = snapshot.documents.count
@@ -600,10 +639,17 @@ class FirebaseService {
             throw error
         }
     }
+    */
     
     // MARK: - Photo Upload
     // NOTE: Limit to 5 photos per stamp to control Firebase Storage costs
     // Requires Blaze plan (pay-as-you-go) to use Storage
+    // 
+    // 💰 SCALE CONSIDERATION: For high-traffic apps, consider blob storage + CDN:
+    // • Cloudflare R2: $0.015/GB storage, FREE egress (vs Firebase $0.026/GB + $0.12/GB egress)
+    // • AWS S3 + CloudFront: Industry standard, more expensive but very reliable
+    // • Cloudinary: All-in-one with image transformations (resize on-the-fly, auto-format)
+    // Migration path: Store CDN URLs in Firestore, phase out Firebase Storage gradually
     
     /// Upload a profile photo to Firebase Storage
     /// 
@@ -645,6 +691,7 @@ class FirebaseService {
         let metadata = StorageMetadata()
         metadata.contentType = "image/jpeg"
         // Cache profile pictures for 7 days to reduce bandwidth costs
+        // 🌐 NOTE: CDN (Cloudflare/CloudFront) would cache at edge servers worldwide for faster access
         metadata.cacheControl = "public, max-age=604800"
         
         // Upload to Firebase Storage

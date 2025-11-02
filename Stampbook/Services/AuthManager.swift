@@ -13,6 +13,7 @@ class AuthManager: NSObject, ObservableObject {
     // For Apple Sign In with Firebase
     private var currentNonce: String?
     private let firebaseService = FirebaseService.shared
+    private let imageManager = ImageManager.shared
     
     override init() {
         super.init()
@@ -27,22 +28,47 @@ class AuthManager: NSObject, ObservableObject {
             userDisplayName = currentUser.displayName ?? "User"
             isSignedIn = true
             
+            print("✅ [AuthManager] User already signed in: \(currentUser.uid)")
+            
             // Load user profile from Firestore
             Task {
                 await loadUserProfile(userId: currentUser.uid)
             }
+        } else {
+            print("ℹ️ [AuthManager] No user signed in")
         }
     }
     
     /// Load user profile from Firestore
     @MainActor
     private func loadUserProfile(userId: String) async {
+        print("🔄 [AuthManager] Loading user profile for userId: \(userId)")
         do {
             userProfile = try await firebaseService.fetchUserProfile(userId: userId)
             userDisplayName = userProfile?.displayName ?? "User"
+            print("✅ [AuthManager] User profile loaded: \(userProfile?.displayName ?? "unknown")")
+            
+            // Prefetch own profile pic for instant display across app
+            prefetchOwnProfilePicture()
         } catch {
-            print("⚠️ Failed to load user profile: \(error.localizedDescription)")
+            print("⚠️ [AuthManager] Failed to load user profile: \(error.localizedDescription)")
             // Profile doesn't exist yet, will be created on next sign in
+        }
+    }
+    
+    /// Prefetch user's own profile pic on app launch (instant profile tab)
+    private func prefetchOwnProfilePicture() {
+        guard let avatarUrl = userProfile?.avatarUrl, !avatarUrl.isEmpty else { return }
+        guard let currentUserId = userId else { return }
+        
+        Task.detached { [weak self, currentUserId] in
+            guard let self = self else { return }
+            do {
+                try await self.imageManager.downloadAndCacheProfilePicture(url: avatarUrl, userId: currentUserId)
+                print("✅ [AuthManager] Prefetched own profile picture")
+            } catch {
+                print("⚠️ [AuthManager] Failed to prefetch profile picture: \(error.localizedDescription)")
+            }
         }
     }
     
@@ -127,11 +153,16 @@ extension AuthManager: ASAuthorizationControllerDelegate {
                 guard let self = self else { return }
                 
                 if let error = error {
-                    print("Firebase sign in error: \(error.localizedDescription)")
+                    print("❌ [AuthManager] Firebase sign in error: \(error.localizedDescription)")
                     return
                 }
                 
-                guard let user = authResult?.user else { return }
+                guard let user = authResult?.user else {
+                    print("❌ [AuthManager] No user returned from auth result")
+                    return
+                }
+                
+                print("✅ [AuthManager] Firebase sign in successful for user: \(user.uid)")
                 
                 let displayName = user.displayName ?? appleIDCredential.fullName?.givenName ?? "User"
                 
@@ -140,13 +171,15 @@ extension AuthManager: ASAuthorizationControllerDelegate {
                 self.userDisplayName = displayName
                 self.isSignedIn = true
                 
+                print("✅ [AuthManager] Updated auth state - userId: \(user.uid), isSignedIn: true")
+                
                 // Update Firebase Auth display name if this is first sign in
                 if user.displayName == nil, let fullName = appleIDCredential.fullName?.givenName {
                     let changeRequest = user.createProfileChangeRequest()
                     changeRequest.displayName = fullName
                     changeRequest.commitChanges { error in
                         if let error = error {
-                            print("Error updating display name: \(error.localizedDescription)")
+                            print("⚠️ [AuthManager] Error updating display name: \(error.localizedDescription)")
                         }
                     }
                 }
@@ -154,6 +187,11 @@ extension AuthManager: ASAuthorizationControllerDelegate {
                 // Create or update Firestore user profile
                 Task {
                     await self.createOrUpdateUserProfile(userId: user.uid, displayName: displayName)
+                    
+                    // Prefetch own profile pic after sign in
+                    await MainActor.run {
+                        self.prefetchOwnProfilePicture()
+                    }
                 }
             }
         }
@@ -162,17 +200,21 @@ extension AuthManager: ASAuthorizationControllerDelegate {
     /// Create or update user profile in Firestore
     @MainActor
     private func createOrUpdateUserProfile(userId: String, displayName: String) async {
+        print("🔄 [AuthManager] Creating/updating user profile for userId: \(userId)")
         do {
             // Try to fetch existing profile
             if let existingProfile = try? await firebaseService.fetchUserProfile(userId: userId) {
                 // Profile exists, update it
                 userProfile = existingProfile
                 
+                print("✅ [AuthManager] Found existing profile: @\(existingProfile.username)")
+                
                 // Save back to Firebase to ensure username is persisted (for legacy migrations)
                 try await firebaseService.saveUserProfile(existingProfile)
                 
-                print("✅ Updated user profile for \(displayName) (@\(existingProfile.username))")
+                print("✅ [AuthManager] Updated user profile for \(displayName) (@\(existingProfile.username))")
             } else {
+                print("🔄 [AuthManager] No existing profile found, creating new one")
                 // Profile doesn't exist, create it
                 // Generate initial username: firstname + random 5-digit number
                 let firstName = displayName.components(separatedBy: " ").first ?? "user"
@@ -183,12 +225,14 @@ extension AuthManager: ASAuthorizationControllerDelegate {
                 let randomNumber = Int.random(in: 10000...99999)
                 let initialUsername = cleanFirstName + "\(randomNumber)"
                 
+                print("🔄 [AuthManager] Creating profile with username: @\(initialUsername)")
+                
                 try await firebaseService.createUserProfile(userId: userId, username: initialUsername, displayName: displayName)
                 userProfile = try? await firebaseService.fetchUserProfile(userId: userId)
-                print("✅ Created new user profile for \(displayName) (@\(initialUsername))")
+                print("✅ [AuthManager] Created new user profile for \(displayName) (@\(initialUsername))")
             }
         } catch {
-            print("⚠️ Failed to create/update user profile: \(error.localizedDescription)")
+            print("❌ [AuthManager] Failed to create/update user profile: \(error.localizedDescription)")
         }
     }
     

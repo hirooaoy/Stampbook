@@ -20,7 +20,7 @@ struct UserProfileView: View {
     @State private var showBlockConfirmation = false
     @State private var showFeedback = false // Show feedback sheet for reporting
     @State private var userProfile: UserProfile?
-    @State private var userRank: Int? // Rank for the viewed user
+    // @State private var userRank: Int? // TODO: POST-MVP - Rank for the viewed user
     @State private var showFollowError = false
     @State private var userCollectedStamps: [CollectedStamp] = [] // Stamps for the viewed user
     @State private var isLoadingStamps = false
@@ -87,7 +87,7 @@ struct UserProfileView: View {
     private var statsSection: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 12) {
-                rankCard
+                // rankCard // TODO: POST-MVP - Rank display disabled
                 countriesCard
                 followersCard
                 followingCard
@@ -97,6 +97,10 @@ struct UserProfileView: View {
         .padding(.bottom, 20)
     }
     
+    // TODO: POST-MVP - Rank Card Disabled
+    // Rank calculation requires expensive Firestore queries comparing all users
+    // Consider implementing with Cloud Functions for cached ranks
+    /*
     private var rankCard: some View {
         HStack(spacing: 12) {
             Image(systemName: "trophy.fill")
@@ -146,6 +150,7 @@ struct UserProfileView: View {
             }
         }
     }
+    */
     
     private var countriesCard: some View {
         HStack(spacing: 12) {
@@ -326,8 +331,8 @@ struct UserProfileView: View {
             }
         }
         .refreshable {
-            // Pull-to-refresh to get latest profile data (without rank for speed)
-            await profileManager.refreshWithoutRank()
+            // Pull-to-refresh to get latest profile data
+            await profileManager.refresh()
             // Also refresh stamps
             loadUserStamps()
         }
@@ -391,12 +396,12 @@ struct UserProfileView: View {
             if let profile = profile {
                 followManager.updateFollowCounts(userId: userId, followerCount: profile.followerCount, followingCount: profile.followingCount)
                 
-                // Fetch rank now that profile is loaded
-                if userRank == nil {
-                    Task {
-                        await fetchUserRank(for: profile)
-                    }
-                }
+                // TODO: POST-MVP - Rank fetch disabled
+                // if userRank == nil {
+                //     Task {
+                //         await fetchUserRank(for: profile)
+                //     }
+                // }
             }
         }
         .onChange(of: followManager.error) { oldError, newError in
@@ -428,7 +433,10 @@ struct UserProfileView: View {
         }
     }
     
-    /// Fetch rank for the viewed user (with caching)
+    // TODO: POST-MVP - User Rank Fetching Disabled
+    // This function is disabled for MVP due to expensive Firestore queries
+    // Comparing all users requires fetching large datasets and complex caching
+    /*
     private func fetchUserRank(for profile: UserProfile) async {
         let startTime = Date()
         print("🔍 [UserProfileView] Fetching rank for \(profile.displayName) (userId: \(profile.id), totalStamps: \(profile.totalStamps))")
@@ -451,6 +459,7 @@ struct UserProfileView: View {
             }
         }
     }
+    */
     
     /// Handle blocking a user
     private func handleBlockUser() {

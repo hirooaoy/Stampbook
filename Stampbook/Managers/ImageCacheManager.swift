@@ -8,13 +8,13 @@ class ImageCacheManager {
     
     // MARK: - Configuration
     
-    /// Maximum number of full-resolution images to keep in memory (default: 10)
-    /// At ~2MB each, this is about 20MB of memory for full images
-    private let maxFullImageCount: Int = 10
+    /// Maximum number of full-resolution images to keep in memory
+    /// MVP optimized: 50 images at ~30KB each (200x200) = ~1.5MB total
+    private let maxFullImageCount: Int = 50
     
-    /// Maximum number of thumbnails to keep in memory (default: 50)
-    /// At ~50KB each, this is about 2.5MB of memory for thumbnails
-    private let maxThumbnailCount: Int = 50
+    /// Maximum number of thumbnails to keep in memory
+    /// MVP optimized: 200 thumbnails at ~5KB each = ~1MB total
+    private let maxThumbnailCount: Int = 200
     
     // MARK: - Cache Storage
     

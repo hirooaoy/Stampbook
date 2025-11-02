@@ -36,7 +36,8 @@ service cloud.firestore {
       // Allow getting individual user documents (with blocking check)
       allow get: if isSignedIn() && !hasBlocked(request.auth.uid, userId);
       
-      // Allow querying/listing users for rank calculation and search
+      // Allow querying/listing users for search functionality
+      // NOTE: Rank calculation was removed for MVP (see RANK_FEATURE_DISABLED.md)
       // Blocking is handled client-side for queries (can't check blocking on every doc in a list query)
       allow list: if isSignedIn();
       

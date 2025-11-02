@@ -585,26 +585,28 @@ struct FeedView: View {
         var body: some View {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(alignment: .top, spacing: 12) {
-                    // Create ProfileImageView once and reuse it
-                    let profileImage = ProfileImageView(
-                        avatarUrl: computedAvatarUrl,
-                        userId: userId,
-                        size: 40
-                    )
-                    
+                    // Profile Image - inline to prevent recreation
                     if isCurrentUser {
                         // Current user - tapping should switch to Stamps tab
                         Button(action: {
                             shouldResetStampsNavigation = true
                             selectedTab = 2
                         }) {
-                            profileImage
+                            ProfileImageView(
+                                avatarUrl: computedAvatarUrl,
+                                userId: userId,
+                                size: 40
+                            )
                         }
                         .buttonStyle(PlainButtonStyle())
                     } else {
                         // Other user - navigate to their profile
                         NavigationLink(destination: UserProfileView(userId: userId, username: "", displayName: userName)) {
-                            profileImage
+                            ProfileImageView(
+                                avatarUrl: computedAvatarUrl,
+                                userId: userId,
+                                size: 40
+                            )
                         }
                         .buttonStyle(PlainButtonStyle())
                     }

@@ -45,17 +45,37 @@ struct ContentView: View {
             
             // Load profile if already signed in on app launch
             if authManager.isSignedIn, let userId = authManager.userId {
+                print("🔄 [ContentView.onAppear] Loading profile for signed-in user: \(userId)")
                 profileManager.loadProfile(userId: userId)
             }
         }
+        .onChange(of: authManager.isSignedIn) { _, isSignedIn in
+            print("🔄 [ContentView] Auth state changed - isSignedIn: \(isSignedIn)")
+            
+            if isSignedIn {
+                // User signed in - load profile
+                if let userId = authManager.userId {
+                    print("🔄 [ContentView] User signed in, loading profile for userId: \(userId)")
+                    profileManager.loadProfile(userId: userId)
+                }
+            } else {
+                // User signed out - clear profile
+                print("🔄 [ContentView] User signed out, clearing profile")
+                profileManager.clearProfile()
+            }
+        }
         .onChange(of: authManager.userId) { _, newUserId in
+            print("🔄 [ContentView] UserId changed: \(newUserId ?? "nil")")
+            
             // Update stamps manager when user changes (sign in/out or switch user)
             stampsManager.setCurrentUser(newUserId)
             
             // Load or clear profile based on sign-in state
             if authManager.isSignedIn, let userId = newUserId {
+                print("🔄 [ContentView] Loading profile for new userId: \(userId)")
                 profileManager.loadProfile(userId: userId)
             } else {
+                print("🔄 [ContentView] Clearing profile (signed out or nil userId)")
                 profileManager.clearProfile()
             }
         }
