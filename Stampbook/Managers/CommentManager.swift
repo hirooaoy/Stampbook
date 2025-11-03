@@ -10,6 +10,9 @@ class CommentManager: ObservableObject {
     private let firebaseService = FirebaseService.shared
     private var cancellables = Set<AnyCancellable>()
     
+    // Callback to notify FeedManager when comment count changes
+    var onCommentCountChanged: ((String, Int) -> Void)?
+    
     /// Fetch comments for a post
     func fetchComments(postId: String) async {
         await MainActor.run {
@@ -25,6 +28,9 @@ class CommentManager: ObservableObject {
                 // This fixes desync between cached feed count and actual Firebase count
                 commentCounts[postId] = fetchedComments.count
                 isLoading[postId] = false
+                
+                // Notify FeedManager of the updated count
+                onCommentCountChanged?(postId, fetchedComments.count)
             }
             
             print("✅ Fetched \(fetchedComments.count) comments for post: \(postId)")
@@ -98,14 +104,14 @@ class CommentManager: ObservableObject {
     /// Delete a comment
     @MainActor
     func deleteComment(commentId: String, postId: String, postOwnerId: String, stampId: String) {
-        print("🗑️ CommentManager: Deleting comment \(commentId) from post \(postId)")
-        
         // Optimistic update
         let removedCount = comments[postId]?.count ?? 0
         comments[postId]?.removeAll(where: { $0.id == commentId })
         let newCount = comments[postId]?.count ?? 0
         
-        print("   Removed from UI: \(removedCount) -> \(newCount) comments")
+        if removedCount == newCount {
+            print("⚠️ Comment not found in cache: \(commentId)")
+        }
         
         commentCounts[postId, default: 1] = max(0, commentCounts[postId, default: 1] - 1)
         
@@ -118,16 +124,14 @@ class CommentManager: ObservableObject {
                     stampId: stampId
                 )
                 
-                print("✅ CommentManager: Comment deleted from Firebase: \(commentId)")
+                print("✅ Comment deleted from Firebase: \(commentId)")
                 
-                // After successful deletion, refetch to ensure count is accurate
-                // This fixes any desync between cached count and actual Firebase count
+                // Refetch to ensure accuracy
                 await fetchComments(postId: postId)
             } catch {
-                print("❌ CommentManager: Failed to delete comment: \(error.localizedDescription)")
+                print("❌ Failed to delete comment: \(error.localizedDescription)")
                 
-                // On error, refetch comments to get accurate state
-                print("   Refetching comments to restore accurate state...")
+                // On error, refetch to restore accurate state
                 await fetchComments(postId: postId)
             }
         }

@@ -414,13 +414,14 @@ class FirebaseService {
         }
     }
     
-    // TODO: POST-MVP - Per-Stamp Ranking System
-    // This function is disabled for MVP as it requires expensive queries
-    // Consider implementing post-MVP with:
-    // - Caching collector order in stamp statistics
-    // - Limiting rank display to first N collectors
-    // - Using Cloud Functions to maintain rank data
-    /*
+    /// Get user's rank for a specific stamp (what number collector they were)
+    /// 
+    /// How it works: Like signing a guestbook - if you're the 23rd person to collect a stamp,
+    /// you'll always be #23. Your rank never changes, just like your position in a concert line.
+    /// We just read the collector list and find your position - simple and fast!
+    /// 
+    /// Returns the user's position in the collector order (1 = first to collect, 2 = second, etc.)
+    /// This is efficient because it only reads one document and finds the index in an array
     func getUserRankForStamp(stampId: String, userId: String) async throws -> Int? {
         let stats = try await fetchStampStatistics(stampId: stampId)
         
@@ -430,19 +431,28 @@ class FirebaseService {
         
         return nil
     }
-    */
     
     // MARK: - User Profile Management
     
     /// Fetch user profile from Firestore
     /// Used when loading a user's profile data
     func fetchUserProfile(userId: String) async throws -> UserProfile {
+        let startTime = CFAbsoluteTimeGetCurrent()
+        print("🔍 [FirebaseService] fetchUserProfile(\(userId)) started")
+        
         let docRef = db.collection("users").document(userId)
+        
+        print("📡 [FirebaseService] Calling getDocument()...")
         let document = try await docRef.getDocument()
         
+        let fetchTime = CFAbsoluteTimeGetCurrent() - startTime
+        print("⏱️ [FirebaseService] User profile fetch: \(String(format: "%.3f", fetchTime))s")
+        
         if let profile = try? document.data(as: UserProfile.self) {
+            print("✅ [FirebaseService] Profile parsed successfully: @\(profile.username)")
             return profile
         } else {
+            print("❌ [FirebaseService] Profile document exists but failed to parse")
             throw NSError(domain: "FirebaseService", code: 404, userInfo: [NSLocalizedDescriptionKey: "User profile not found"])
         }
     }
@@ -694,7 +704,7 @@ class FirebaseService {
         // 🌐 NOTE: CDN (Cloudflare/CloudFront) would cache at edge servers worldwide for faster access
         metadata.cacheControl = "public, max-age=604800"
         
-        // Upload to Firebase Storage
+        // Upload to Firebase Storage and get download URL
         _ = try await storageRef.putDataAsync(imageData, metadata: metadata)
         let downloadURL = try await storageRef.downloadURL()
         
@@ -723,6 +733,7 @@ class FirebaseService {
         // Cache for 7 days to reduce bandwidth costs
         metadata.cacheControl = "public, max-age=604800"
         
+        // Upload to Firebase Storage and get download URL
         _ = try await storageRef.putDataAsync(imageData, metadata: metadata)
         let downloadURL = try await storageRef.downloadURL()
         
@@ -744,8 +755,8 @@ class FirebaseService {
     
     // MARK: - Follow/Unfollow System
     
-    /// Follow a user (bidirectional write: add to follower's following + add to followee's followers)
-    /// Uses Firestore transaction to ensure atomicity and idempotency
+    /// Follow a user (simple approach: just create the relationship document)
+    /// For MVP scale (<100 users), we count subcollections on-demand instead of maintaining denormalized counts
     /// Returns true if follow was created, false if already following
     @discardableResult
     func followUser(followerId: String, followeeId: String) async throws -> Bool {
@@ -753,135 +764,60 @@ class FirebaseService {
             throw NSError(domain: "FirebaseService", code: 400, userInfo: [NSLocalizedDescriptionKey: "Cannot follow yourself"])
         }
         
-        // Use transaction to ensure all writes succeed together
-        let didFollow = try await db.runTransaction { (transaction, errorPointer) -> Any? in
-            // References
-            let followerRef = self.db.collection("users").document(followerId)
-            let followeeRef = self.db.collection("users").document(followeeId)
-            let followingRef = followerRef.collection("following").document(followeeId)
-            let followerDocRef = followeeRef.collection("followers").document(followerId)
-            
-            // Read current state
-            let followerDoc: DocumentSnapshot
-            let followeeDoc: DocumentSnapshot
-            let followingDoc: DocumentSnapshot
-            
-            do {
-                followerDoc = try transaction.getDocument(followerRef)
-                followeeDoc = try transaction.getDocument(followeeRef)
-                followingDoc = try transaction.getDocument(followingRef)
-            } catch let error as NSError {
-                errorPointer?.pointee = error
-                return nil
-            }
-            
-            // Check if already following (idempotency)
-            if followingDoc.exists {
-                print("⚠️ Already following - skipping")
-                return false // Already following
-            }
-            
-            // Create follow documents
-            let followData: [String: Any] = [
-                "id": followeeId,
-                "createdAt": FieldValue.serverTimestamp()
-            ]
-            let followerData: [String: Any] = [
-                "id": followerId,
-                "createdAt": FieldValue.serverTimestamp()
-            ]
-            
-            // Write follow relationships
-            transaction.setData(followData, forDocument: followingRef)
-            transaction.setData(followerData, forDocument: followerDocRef)
-            
-            // Increment counts (denormalized for performance)
-            let currentFollowingCount = followerDoc.data()?["followingCount"] as? Int ?? 0
-            let currentFollowerCount = followeeDoc.data()?["followerCount"] as? Int ?? 0
-            
-            transaction.updateData([
-                "followingCount": currentFollowingCount + 1,
-                "lastActiveAt": FieldValue.serverTimestamp()
-            ], forDocument: followerRef)
-            
-            transaction.updateData([
-                "followerCount": currentFollowerCount + 1,
-                "lastActiveAt": FieldValue.serverTimestamp()
-            ], forDocument: followeeRef)
-            
-            return true // Successfully followed
-        } as? Bool ?? false
+        let followingRef = db
+            .collection("users")
+            .document(followerId)
+            .collection("following")
+            .document(followeeId)
         
-        if didFollow {
-            print("✅ User \(followerId) followed \(followeeId)")
-            // Invalidate following cache since list changed
-            invalidateFollowingCache(userId: followerId)
+        // Check if already following (idempotency)
+        let existingDoc = try await followingRef.getDocument()
+        if existingDoc.exists {
+            print("⚠️ Already following - skipping")
+            return false
         }
         
-        return didFollow
+        // Create follow relationship
+        let followData: [String: Any] = [
+            "id": followeeId,
+            "createdAt": FieldValue.serverTimestamp()
+        ]
+        
+        try await followingRef.setData(followData)
+        
+        print("✅ User \(followerId) followed \(followeeId)")
+        // Invalidate following cache since list changed
+        invalidateFollowingCache(userId: followerId)
+        
+        return true
     }
     
-    /// Unfollow a user (bidirectional delete: remove from following + remove from followers)
-    /// Uses Firestore transaction to ensure atomicity and idempotency
+    /// Unfollow a user (simple approach: just delete the relationship document)
+    /// For MVP scale (<100 users), we count subcollections on-demand instead of maintaining denormalized counts
     /// Returns true if unfollow was performed, false if wasn't following
     @discardableResult
     func unfollowUser(followerId: String, followeeId: String) async throws -> Bool {
-        // Use transaction to ensure all writes succeed together
-        let didUnfollow = try await db.runTransaction { (transaction, errorPointer) -> Any? in
-            // References
-            let followerRef = self.db.collection("users").document(followerId)
-            let followeeRef = self.db.collection("users").document(followeeId)
-            let followingRef = followerRef.collection("following").document(followeeId)
-            let followerDocRef = followeeRef.collection("followers").document(followerId)
-            
-            // Read current state
-            let followerDoc: DocumentSnapshot
-            let followeeDoc: DocumentSnapshot
-            let followingDoc: DocumentSnapshot
-            
-            do {
-                followerDoc = try transaction.getDocument(followerRef)
-                followeeDoc = try transaction.getDocument(followeeRef)
-                followingDoc = try transaction.getDocument(followingRef)
-            } catch let error as NSError {
-                errorPointer?.pointee = error
-                return nil
-            }
-            
-            // Check if actually following (idempotency)
-            if !followingDoc.exists {
-                print("⚠️ Not following - skipping")
-                return false // Not following
-            }
-            
-            // Delete follow relationships
-            transaction.deleteDocument(followingRef)
-            transaction.deleteDocument(followerDocRef)
-            
-            // Decrement counts (don't go below 0)
-            let currentFollowingCount = max(0, (followerDoc.data()?["followingCount"] as? Int ?? 0) - 1)
-            let currentFollowerCount = max(0, (followeeDoc.data()?["followerCount"] as? Int ?? 0) - 1)
-            
-            transaction.updateData([
-                "followingCount": currentFollowingCount,
-                "lastActiveAt": FieldValue.serverTimestamp()
-            ], forDocument: followerRef)
-            
-            transaction.updateData([
-                "followerCount": currentFollowerCount,
-                "lastActiveAt": FieldValue.serverTimestamp()
-            ], forDocument: followeeRef)
-            
-            return true // Successfully unfollowed
-        } as? Bool ?? false
+        let followingRef = db
+            .collection("users")
+            .document(followerId)
+            .collection("following")
+            .document(followeeId)
         
-        if didUnfollow {
-            print("✅ User \(followerId) unfollowed \(followeeId)")
-            // Invalidate following cache since list changed
-            invalidateFollowingCache(userId: followerId)
+        // Check if actually following (idempotency)
+        let existingDoc = try await followingRef.getDocument()
+        if !existingDoc.exists {
+            print("⚠️ Not following - skipping")
+            return false
         }
         
-        return didUnfollow
+        // Delete follow relationship
+        try await followingRef.delete()
+        
+        print("✅ User \(followerId) unfollowed \(followeeId)")
+        // Invalidate following cache since list changed
+        invalidateFollowingCache(userId: followerId)
+        
+        return true
     }
     
     /// Check if a user is following another user
@@ -896,52 +832,59 @@ class FirebaseService {
         return document.exists
     }
     
-    /// Fetch list of followers for a user
-    ///
-    /// **Current Implementation (Optimized):** Batch fetching with `in` operator
-    /// - 100 followers = 10 batched Firestore reads (~0.5s load)
-    /// - ✅ 10x cheaper than individual fetches (10 reads vs 100 reads)
-    /// - ✅ Still fast with parallel batch execution
-    ///
-    /// **Future Optimizations:**
-    /// - **Option C (Scale):** Denormalize profile data into follower docs (1 read total, instant load)
-    ///
-    /// See: PERFORMANCE_OPTIMIZATIONS.md for full analysis
-    func fetchFollowers(userId: String, limit: Int = 100) async throws -> [UserProfile] {
+    /// Count how many followers a user has (on-demand counting for MVP)
+    /// Queries all users' following subcollections to count how many follow this user
+    func fetchFollowerCount(userId: String) async throws -> Int {
+        // Query across all users who follow this user
+        // This is efficient for <100 users
+        let snapshot = try await db
+            .collectionGroup("following")
+            .whereField("id", isEqualTo: userId)
+            .getDocuments()
+        
+        return snapshot.documents.count
+    }
+    
+    /// Count how many users someone is following (on-demand counting for MVP)
+    func fetchFollowingCount(userId: String) async throws -> Int {
         let snapshot = try await db
             .collection("users")
             .document(userId)
-            .collection("followers")
-            .order(by: "createdAt", descending: true)
+            .collection("following")
+            .getDocuments()
+        
+        return snapshot.documents.count
+    }
+    
+    /// Fetch list of user IDs who follow this user (for displaying followers list)
+    /// Queries across all users' following subcollections
+    func fetchFollowers(userId: String, limit: Int = 100) async throws -> [UserProfile] {
+        // Query collection group to find all users who have this user in their following subcollection
+        let snapshot = try await db
+            .collectionGroup("following")
+            .whereField("id", isEqualTo: userId)
             .limit(to: limit)
             .getDocuments()
         
-        // Get the follower user IDs
-        let followerIds = snapshot.documents.compactMap { $0.documentID }
+        // Extract the user IDs who are following this user (from the document path)
+        let followerIds = snapshot.documents.compactMap { doc -> String? in
+            // Document path is: users/{followerId}/following/{followeeId}
+            let components = doc.reference.path.components(separatedBy: "/")
+            guard components.count >= 2, components[0] == "users" else { return nil }
+            return components[1] // The followerId
+        }
         
         guard !followerIds.isEmpty else {
             return []
         }
         
-        // Batch fetch profiles using `in` operator (max 10 IDs per query)
-        // This reduces 100 individual reads → 10 batched reads (90% cost reduction)
+        // Batch fetch profiles
         let profiles = try await fetchProfilesBatched(userIds: followerIds)
-        
         return profiles
     }
     
     /// Fetch list of users that a user is following
-    ///
-    /// **Current Implementation (Optimized):** Batch fetching with `in` operator + caching
-    /// - 100 following = 10 batched Firestore reads (~0.5s load) OR 0 reads (cache hit)
-    /// - ✅ 10x cheaper than individual fetches (10 reads vs 100 reads)
-    /// - ✅ Still fast with parallel batch execution
-    /// - ✅ Cached for 30 minutes to reduce costs
-    ///
-    /// **Future Optimizations:**
-    /// - **Option C (Scale):** Denormalize profile data into following docs (1 read total, instant load)
-    ///
-    /// See: PERFORMANCE_OPTIMIZATIONS.md for full analysis
+    /// Uses caching to reduce repeated queries (30 minute expiration)
     func fetchFollowing(userId: String, limit: Int = 100, useCache: Bool = true) async throws -> [UserProfile] {
         // Check cache first
         if useCache,
@@ -955,7 +898,6 @@ class FirebaseService {
             .collection("users")
             .document(userId)
             .collection("following")
-            .order(by: "createdAt", descending: true)
             .limit(to: limit)
             .getDocuments()
         
@@ -970,8 +912,7 @@ class FirebaseService {
             return []
         }
         
-        // Batch fetch profiles using `in` operator (max 10 IDs per query)
-        // This reduces 100 individual reads → 10 batched reads (90% cost reduction)
+        // Batch fetch profiles
         let profiles = try await fetchProfilesBatched(userIds: followingIds)
         
         // Cache the result
@@ -1024,183 +965,11 @@ class FirebaseService {
         return profiles
     }
     
-    /// Public version of fetchProfilesBatched for use in views
-    /// Used by BlockedUsersView to fetch blocked user profiles
-    func fetchProfilesBatch(userIds: [String]) async throws -> [UserProfile] {
-        guard !userIds.isEmpty else { return [] }
-        return try await fetchProfilesBatched(userIds: userIds)
-    }
-    
-    // MARK: - Blocking System
-    
-    /// Block a user
-    /// - Automatically unfollows both ways if following
-    /// - Removes from followers/following lists
-    /// - Returns true if block was created, false if already blocked
-    @discardableResult
-    func blockUser(blockerId: String, blockedId: String) async throws -> Bool {
-        guard blockerId != blockedId else {
-            throw NSError(domain: "FirebaseService", code: 400, userInfo: [NSLocalizedDescriptionKey: "Cannot block yourself"])
-        }
-        
-        // Use transaction to ensure all writes succeed together
-        let didBlock = try await db.runTransaction { (transaction, errorPointer) -> Any? in
-            // References
-            let blockerRef = self.db.collection("users").document(blockerId)
-            let blockedRef = self.db.collection("users").document(blockedId)
-            let blockRef = blockerRef.collection("blocked").document(blockedId)
-            
-            // Also need to handle follow relationships (if they exist)
-            let blockerFollowingRef = blockerRef.collection("following").document(blockedId)
-            let blockedFollowingRef = blockedRef.collection("following").document(blockerId)
-            let blockerFollowerRef = blockedRef.collection("followers").document(blockerId)
-            let blockedFollowerRef = blockerRef.collection("followers").document(blockedId)
-            
-            // Read current state
-            let blockDoc: DocumentSnapshot
-            let blockerDoc: DocumentSnapshot
-            let blockedDoc: DocumentSnapshot
-            let blockerFollowingDoc: DocumentSnapshot
-            let blockedFollowingDoc: DocumentSnapshot
-            
-            do {
-                blockDoc = try transaction.getDocument(blockRef)
-                blockerDoc = try transaction.getDocument(blockerRef)
-                blockedDoc = try transaction.getDocument(blockedRef)
-                blockerFollowingDoc = try transaction.getDocument(blockerFollowingRef)
-                blockedFollowingDoc = try transaction.getDocument(blockedFollowingRef)
-            } catch let error as NSError {
-                errorPointer?.pointee = error
-                return nil
-            }
-            
-            // Check if already blocked (idempotency)
-            if blockDoc.exists {
-                print("⚠️ Already blocked - skipping")
-                return false // Already blocked
-            }
-            
-            // Create block document
-            let blockData: [String: Any] = [
-                "id": blockedId,
-                "createdAt": FieldValue.serverTimestamp()
-            ]
-            transaction.setData(blockData, forDocument: blockRef)
-            
-            // Handle existing follow relationships
-            var blockerFollowingDecrement = 0
-            var blockerFollowerDecrement = 0
-            var blockedFollowingDecrement = 0
-            var blockedFollowerDecrement = 0
-            
-            // If blocker is following blocked user, unfollow
-            if blockerFollowingDoc.exists {
-                transaction.deleteDocument(blockerFollowingRef)
-                transaction.deleteDocument(blockerFollowerRef)
-                blockerFollowingDecrement = 1
-                blockedFollowerDecrement = 1
-            }
-            
-            // If blocked user is following blocker, remove that too
-            if blockedFollowingDoc.exists {
-                transaction.deleteDocument(blockedFollowingRef)
-                transaction.deleteDocument(blockedFollowerRef)
-                blockedFollowingDecrement = 1
-                blockerFollowerDecrement = 1
-            }
-            
-            // Update counts if needed
-            if blockerFollowingDecrement > 0 || blockerFollowerDecrement > 0 {
-                let currentFollowingCount = max(0, (blockerDoc.data()?["followingCount"] as? Int ?? 0) - blockerFollowingDecrement)
-                let currentFollowerCount = max(0, (blockerDoc.data()?["followerCount"] as? Int ?? 0) - blockerFollowerDecrement)
-                
-                transaction.updateData([
-                    "followingCount": currentFollowingCount,
-                    "followerCount": currentFollowerCount,
-                    "lastActiveAt": FieldValue.serverTimestamp()
-                ], forDocument: blockerRef)
-            }
-            
-            if blockedFollowingDecrement > 0 || blockedFollowerDecrement > 0 {
-                let currentFollowingCount = max(0, (blockedDoc.data()?["followingCount"] as? Int ?? 0) - blockedFollowingDecrement)
-                let currentFollowerCount = max(0, (blockedDoc.data()?["followerCount"] as? Int ?? 0) - blockedFollowerDecrement)
-                
-                transaction.updateData([
-                    "followingCount": currentFollowingCount,
-                    "followerCount": currentFollowerCount,
-                    "lastActiveAt": FieldValue.serverTimestamp()
-                ], forDocument: blockedRef)
-            }
-            
-            return true // Successfully blocked
-        } as? Bool ?? false
-        
-        if didBlock {
-            print("✅ User \(blockerId) blocked \(blockedId)")
-            // Invalidate caches since relationships changed
-            invalidateFollowingCache(userId: blockerId)
-            invalidateFollowingCache(userId: blockedId)
-        }
-        
-        return didBlock
-    }
-    
-    /// Unblock a user
-    /// Returns true if unblock was performed, false if wasn't blocked
-    @discardableResult
-    func unblockUser(blockerId: String, blockedId: String) async throws -> Bool {
-        let blockRef = db
-            .collection("users")
-            .document(blockerId)
-            .collection("blocked")
-            .document(blockedId)
-        
-        let document = try await blockRef.getDocument()
-        
-        // Check if actually blocked (idempotency)
-        if !document.exists {
-            print("⚠️ Not blocked - skipping")
-            return false
-        }
-        
-        // Delete block relationship
-        try await blockRef.delete()
-        
-        print("✅ User \(blockerId) unblocked \(blockedId)")
-        return true
-    }
-    
-    /// Check if a user has blocked another user
-    func isBlocking(blockerId: String, blockedId: String) async throws -> Bool {
-        let docRef = db
-            .collection("users")
-            .document(blockerId)
-            .collection("blocked")
-            .document(blockedId)
-        
-        let document = try await docRef.getDocument()
-        return document.exists
-    }
-    
-    /// Fetch list of blocked user IDs for a user
-    func fetchBlockedUserIds(userId: String, limit: Int = 1000) async throws -> [String] {
-        let snapshot = try await db
-            .collection("users")
-            .document(userId)
-            .collection("blocked")
-            .order(by: "createdAt", descending: true)
-            .limit(to: limit)
-            .getDocuments()
-        
-        return snapshot.documents.map { $0.documentID }
-    }
-    
     // MARK: - User Search
     
     /// Search for users by username or display name (for finding users to follow)
-    /// Filters out users that current user has blocked or is blocked by
     ///
-    /// MVP: Simple username prefix search with blocking support
+    /// MVP: Simple username prefix search
     /// 
     /// POST-MVP ENHANCEMENTS:
     /// - Add displayName search (requires composite index in Firestore)
@@ -1229,23 +998,8 @@ class FirebaseService {
             .limit(to: limit)
             .getDocuments()
         
-        var profiles = try usernameSnapshot.documents.compactMap { doc -> UserProfile? in
+        let profiles = try usernameSnapshot.documents.compactMap { doc -> UserProfile? in
             try doc.data(as: UserProfile.self)
-        }
-        
-        // Filter out blocked users if currentUserId is provided
-        if let userId = currentUserId {
-            // Fetch blocked user IDs (users that current user has blocked)
-            let blockedIds = try await fetchBlockedUserIds(userId: userId)
-            let blockedSet = Set(blockedIds)
-            
-            // Filter out users that current user has blocked
-            // Note: We don't check if other users have blocked the current user because:
-            // 1. It's a privacy violation to let users discover who blocked them
-            // 2. Firestore security rules correctly prevent reading other users' blocked lists
-            profiles = profiles.filter { profile in
-                !blockedSet.contains(profile.id)
-            }
         }
         
         return profiles
@@ -1255,7 +1009,6 @@ class FirebaseService {
     
     /// Fetch recent stamps from users that the current user is following
     /// Returns tuples of (userProfile, collectedStamp) for rendering in feed
-    /// Filters out blocked users automatically
     /// 
     /// PERFORMANCE NOTES:
     /// - Fetches up to 10 most recent stamps from each followed user (optimized for pagination)
@@ -1275,28 +1028,18 @@ class FirebaseService {
         let profileTime = CFAbsoluteTimeGetCurrent() - profileStart
         print("⏱️ [FirebaseService] User profile fetch: \(String(format: "%.3f", profileTime))s")
         
-        // 2. Get blocked user IDs to filter them out
-        let blockedStart = CFAbsoluteTimeGetCurrent()
-        let blockedIds = try await fetchBlockedUserIds(userId: userId)
-        let blockedSet = Set(blockedIds)
-        let blockedTime = CFAbsoluteTimeGetCurrent() - blockedStart
-        print("⏱️ [FirebaseService] Blocked users fetch: \(String(format: "%.3f", blockedTime))s (\(blockedIds.count) blocked)")
-        
-        // 3. Get list of users being followed (uses cache if available)
+        // 2. Get list of users being followed (uses cache if available)
         let followingStart = CFAbsoluteTimeGetCurrent()
-        var followingProfiles = try await fetchFollowing(userId: userId, useCache: true)
-        
-        // Filter out blocked users from following list
-        followingProfiles = followingProfiles.filter { !blockedSet.contains($0.id) }
+        let followingProfiles = try await fetchFollowing(userId: userId, useCache: true)
         
         let followingTime = CFAbsoluteTimeGetCurrent() - followingStart
-        print("⏱️ [FirebaseService] Following list fetch: \(String(format: "%.3f", followingTime))s (\(followingProfiles.count) users after blocking filter)")
+        print("⏱️ [FirebaseService] Following list fetch: \(String(format: "%.3f", followingTime))s (\(followingProfiles.count) users)")
         
-        // 4. Combine current user + followed users for feed
+        // 3. Combine current user + followed users for feed
         // This ensures "All" tab shows your posts + followed users' posts
         let allProfiles = [currentUserProfile] + followingProfiles
         
-        // 5. Use smaller initial batch for faster first load
+        // 4. Use smaller initial batch for faster first load
         // Fetch from first 15 users only (150 reads) instead of all 50+ (500+ reads)
         // This reduces initial load time from ~5s to ~1-2s
         // Note: Current user is ALWAYS included (not subject to batch limit)
@@ -1305,7 +1048,7 @@ class FirebaseService {
         
         print("📱 Fetching feed from \(batchSize) users (\(followingProfiles.count) followed + current user, fast initial load)...")
         
-        // 6. Fetch stamps from users in parallel for better performance
+        // 5. Fetch stamps from users in parallel for better performance
         var allFeedItems: [(profile: UserProfile, stamp: CollectedStamp)] = []
         
         let stampsStart = CFAbsoluteTimeGetCurrent()
@@ -1344,12 +1087,12 @@ class FirebaseService {
         let stampsTime = CFAbsoluteTimeGetCurrent() - stampsStart
         print("⏱️ [FirebaseService] All user stamps fetched in \(String(format: "%.3f", stampsTime))s")
         
-        // 7. Sort by collection date (most recent first)
+        // 6. Sort by collection date (most recent first)
         let sortStart = CFAbsoluteTimeGetCurrent()
         allFeedItems.sort { $0.stamp.collectedDate > $1.stamp.collectedDate }
         let sortTime = CFAbsoluteTimeGetCurrent() - sortStart
         
-        // 8. Limit total items returned (pagination support)
+        // 7. Limit total items returned (pagination support)
         if allFeedItems.count > limit {
             allFeedItems = Array(allFeedItems.prefix(limit))
         }
@@ -1487,7 +1230,31 @@ class FirebaseService {
             .getDocuments()
         
         let comments = snapshot.documents.compactMap { doc -> Comment? in
-            try? doc.data(as: Comment.self)
+            // NOTE: @DocumentID property wrapper doesn't reliably populate when using doc.data(as:)
+            // Workaround: manually decode and set the document ID
+            guard let comment = try? doc.data(as: Comment.self) else {
+                return nil
+            }
+            
+            // Manually set the document ID if it's nil (workaround for @DocumentID issue)
+            if comment.id == nil {
+                // Create a new Comment with the ID from Firestore
+                let commentWithId = Comment(
+                    id: doc.documentID,
+                    userId: comment.userId,
+                    postId: comment.postId,
+                    stampId: comment.stampId,
+                    postOwnerId: comment.postOwnerId,
+                    text: comment.text,
+                    userDisplayName: comment.userDisplayName,
+                    userUsername: comment.userUsername,
+                    userAvatarUrl: comment.userAvatarUrl,
+                    createdAt: comment.createdAt
+                )
+                return commentWithId
+            }
+            
+            return comment
         }
         
         return comments
@@ -1495,32 +1262,62 @@ class FirebaseService {
     
     /// Delete a comment (only by comment author or post owner)
     func deleteComment(commentId: String, postOwnerId: String, stampId: String) async throws {
-        print("🗑️ Attempting to delete comment: \(commentId) from post: \(postOwnerId)-\(stampId)")
+        print("🟣 [DELETE-15] FirebaseService.deleteComment called")
+        print("   commentId: \(commentId)")
+        print("   postOwnerId: \(postOwnerId)")
+        print("   stampId: \(stampId)")
         
         let commentRef = db.collection("comments").document(commentId)
+        let commentPath = "comments/\(commentId)"
+        print("🟣 [DELETE-16] Firebase path: \(commentPath)")
         
-        // First, delete the comment document
+        // First, check if comment exists (debugging)
+        do {
+            let snapshot = try await commentRef.getDocument()
+            if snapshot.exists {
+                let data = snapshot.data() ?? [:]
+                print("🟣 [DELETE-17] Comment found in Firebase:")
+                print("   Data keys: \(data.keys)")
+                print("   postId: \(data["postId"] ?? "nil")")
+                print("   userId: \(data["userId"] ?? "nil")")
+                print("   text: \(data["text"] ?? "nil")")
+            } else {
+                print("⚠️ [DELETE-17] WARNING: Comment does NOT exist in Firebase!")
+                print("   This could mean it was already deleted or never created")
+            }
+        } catch {
+            print("⚠️ [DELETE-17] ERROR checking if comment exists: \(error.localizedDescription)")
+        }
+        
+        // Delete the comment document
+        print("🟣 [DELETE-18] Attempting to delete comment document...")
         do {
             try await commentRef.delete()
-            print("✅ Successfully deleted comment document: \(commentId)")
+            print("✅ [DELETE-19] Successfully deleted comment document: \(commentId)")
         } catch {
-            print("❌ Failed to delete comment document: \(error.localizedDescription)")
+            print("❌ [DELETE-ERROR] Failed to delete comment document")
+            print("   Error: \(error.localizedDescription)")
+            print("   Error type: \(type(of: error))")
             throw error
         }
         
         // Then, decrement comment count on post
         let postRef = db.collection("users").document(postOwnerId).collection("collected_stamps").document(stampId)
+        let postPath = "users/\(postOwnerId)/collected_stamps/\(stampId)"
+        print("🟣 [DELETE-20] Decrementing comment count on post: \(postPath)")
+        
         do {
             try await postRef.updateData([
                 "commentCount": FieldValue.increment(Int64(-1))
             ])
-            print("✅ Successfully decremented comment count on post")
+            print("✅ [DELETE-21] Successfully decremented comment count on post")
         } catch {
-            print("⚠️ Failed to decrement comment count (comment was deleted but count may be off): \(error.localizedDescription)")
+            print("⚠️ [DELETE-ERROR] Failed to decrement comment count (comment was deleted but count may be off)")
+            print("   Error: \(error.localizedDescription)")
             // Don't throw here - comment deletion succeeded, count decrement is less critical
         }
         
-        print("✅ Completed comment deletion: \(commentId)")
+        print("✅ [DELETE-22] Completed comment deletion: \(commentId)")
     }
     
     /// Fetch comment count for a post

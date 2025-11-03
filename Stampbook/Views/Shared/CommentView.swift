@@ -167,14 +167,9 @@ struct CommentView: View {
     
     private func deleteComment(_ comment: Comment) {
         guard let commentId = comment.id else {
-            print("❌ Cannot delete comment - commentId is nil")
+            print("⚠️ Cannot delete comment - commentId is nil")
             return
         }
-        
-        print("🗑️ CommentView: Deleting comment \(commentId)")
-        print("   PostId: \(postId)")
-        print("   PostOwnerId: \(postOwnerId)")
-        print("   StampId: \(stampId)")
         
         commentManager.deleteComment(
             commentId: commentId,
@@ -191,6 +186,7 @@ struct CommentRow: View {
     let currentUserId: String?
     let postOwnerId: String
     let onDelete: () -> Void
+    @State private var selectedUserId: IdentifiableString?
     
     private var canDelete: Bool {
         // User can delete their own comments or comments on their own post
@@ -199,33 +195,24 @@ struct CommentRow: View {
     }
     
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            // Profile picture
-            ProfileImageView(
-                avatarUrl: comment.userAvatarUrl,
-                userId: comment.userId,
-                size: 36
-            )
+        HStack(alignment: .center, spacing: 12) {
+            // Profile picture - tappable to navigate to profile
+            Button(action: {
+                selectedUserId = IdentifiableString(value: comment.userId)
+            }) {
+                ProfileImageView(
+                    avatarUrl: comment.userAvatarUrl,
+                    userId: comment.userId,
+                    size: 36
+                )
+            }
+            .buttonStyle(PlainButtonStyle())
             
             // Comment content
             VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text(comment.userDisplayName)
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                    
-                    Spacer()
-                    
-                    // Delete button (only for comment owner or post owner)
-                    if canDelete {
-                        Button(action: onDelete) {
-                            Image(systemName: "trash")
-                                .font(.caption)
-                                .foregroundColor(.red)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    }
-                }
+                Text(comment.userDisplayName)
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
                 
                 Text(comment.text)
                     .font(.subheadline)
@@ -236,8 +223,31 @@ struct CommentRow: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
+            
+            Spacer()
+            
+            // Delete button (only for comment owner or post owner)
+            if canDelete {
+                Button(action: onDelete) {
+                    Image(systemName: "trash")
+                        .font(.system(size: 18))
+                        .foregroundColor(.gray)
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+        }
+        .sheet(item: $selectedUserId) { identifiableString in
+            UserProfileView(userId: identifiableString.value, username: comment.userUsername, displayName: comment.userDisplayName)
         }
     }
+}
+
+// MARK: - Helper Types
+
+/// Wrapper to make String identifiable for sheet presentation
+struct IdentifiableString: Identifiable {
+    let id = UUID()
+    let value: String
 }
 
 // MARK: - Date Extension for "time ago" display

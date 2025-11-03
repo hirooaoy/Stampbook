@@ -9,50 +9,94 @@ class AuthManager: NSObject, ObservableObject {
     @Published var userId: String?
     @Published var userDisplayName: String?
     @Published var userProfile: UserProfile?
+    @Published var isCheckingAuth = true  // Track if we're still checking auth state
     
     // For Apple Sign In with Firebase
     private var currentNonce: String?
     private let firebaseService = FirebaseService.shared
     private let imageManager = ImageManager.shared
     
+    // Reference to ProfileManager (set by ContentView after init)
+    weak var profileManager: ProfileManager?
+    
     override init() {
         super.init()
-        checkAuthState()
+        print("⏱️ [AuthManager] init() started")
+        
+        // Defer auth check to avoid blocking app launch
+        // Use regular Task (not detached) to maintain proper MainActor context
+        Task { [weak self] in
+            await self?.checkAuthState()
+        }
+        
+        print("⏱️ [AuthManager] init() completed (auth check deferred)")
     }
     
     /// Check if user is already signed in with Firebase
-    private func checkAuthState() {
-        if let currentUser = Auth.auth().currentUser {
-            // User is signed in with Firebase
-            userId = currentUser.uid
-            userDisplayName = currentUser.displayName ?? "User"
-            isSignedIn = true
-            
-            print("✅ [AuthManager] User already signed in: \(currentUser.uid)")
-            
-            // Load user profile from Firestore
-            Task {
-                await loadUserProfile(userId: currentUser.uid)
-            }
-        } else {
+    private func checkAuthState() async {
+        print("⏱️ [AuthManager] checkAuthState() started")
+        
+        guard let currentUser = Auth.auth().currentUser else {
             print("ℹ️ [AuthManager] No user signed in")
+            await MainActor.run {
+                self.isCheckingAuth = false
+            }
+            return
+        }
+        
+        // Update auth state on main thread
+        await MainActor.run {
+            // User is signed in with Firebase
+            self.userId = currentUser.uid
+            self.userDisplayName = currentUser.displayName ?? "User"
+            self.isSignedIn = true
+            self.isCheckingAuth = false
+            print("✅ [AuthManager] User already signed in: \(currentUser.uid)")
+            print("✅ [AuthManager] Set isCheckingAuth = false, isSignedIn = true")
+        }
+        
+        print("⏱️ [AuthManager] checkAuthState() completed")
+        print("⏱️ [AuthManager] Final state: isCheckingAuth=\(isCheckingAuth), isSignedIn=\(isSignedIn)")
+        
+        // Load user profile from Firestore (in background, non-blocking)
+        Task.detached(priority: .medium) { [weak self] in
+            await self?.loadUserProfile(userId: currentUser.uid)
         }
     }
     
     /// Load user profile from Firestore
-    @MainActor
     private func loadUserProfile(userId: String) async {
         print("🔄 [AuthManager] Loading user profile for userId: \(userId)")
+        
+        let fetchStart = Date()
         do {
-            userProfile = try await firebaseService.fetchUserProfile(userId: userId)
-            userDisplayName = userProfile?.displayName ?? "User"
-            print("✅ [AuthManager] User profile loaded: \(userProfile?.displayName ?? "unknown")")
+            // Fetch profile (no timeout wrapper - let Firebase SDK handle network timeouts)
+            let profile = try await firebaseService.fetchUserProfile(userId: userId)
+            let duration = Date().timeIntervalSince(fetchStart)
+            
+            // Update published properties on MainActor
+            await MainActor.run {
+                self.userProfile = profile
+                self.userDisplayName = profile.displayName
+            }
+            
+            print("✅ [AuthManager] User profile loaded in \(String(format: "%.2f", duration))s: \(profile.displayName)")
+            
+            // Sync profile to ProfileManager
+            await MainActor.run {
+                if let profile = self.userProfile {
+                    self.profileManager?.updateProfile(profile)
+                print("✅ [AuthManager] Synced profile to ProfileManager")
+                }
+            }
             
             // Prefetch own profile pic for instant display across app
             prefetchOwnProfilePicture()
         } catch {
-            print("⚠️ [AuthManager] Failed to load user profile: \(error.localizedDescription)")
+            let duration = Date().timeIntervalSince(fetchStart)
+            print("⚠️ [AuthManager] Failed to load user profile after \(String(format: "%.2f", duration))s: \(error.localizedDescription)")
             // Profile doesn't exist yet, will be created on next sign in
+            // App should still continue - profile is not critical for basic usage
         }
     }
     
@@ -64,7 +108,7 @@ class AuthManager: NSObject, ObservableObject {
         Task.detached { [weak self, currentUserId] in
             guard let self = self else { return }
             do {
-                try await self.imageManager.downloadAndCacheProfilePicture(url: avatarUrl, userId: currentUserId)
+                _ = try await self.imageManager.downloadAndCacheProfilePicture(url: avatarUrl, userId: currentUserId)
                 print("✅ [AuthManager] Prefetched own profile picture")
             } catch {
                 print("⚠️ [AuthManager] Failed to prefetch profile picture: \(error.localizedDescription)")
@@ -92,6 +136,7 @@ class AuthManager: NSObject, ObservableObject {
             userId = nil
             userDisplayName = nil
             userProfile = nil
+            // Don't set isCheckingAuth = true here - we know the state immediately
         } catch {
             print("Error signing out: \(error.localizedDescription)")
         }
@@ -209,6 +254,10 @@ extension AuthManager: ASAuthorizationControllerDelegate {
                 
                 print("✅ [AuthManager] Found existing profile: @\(existingProfile.username)")
                 
+                // Sync profile to ProfileManager
+                profileManager?.updateProfile(existingProfile)
+                print("✅ [AuthManager] Synced existing profile to ProfileManager")
+                
                 // Save back to Firebase to ensure username is persisted (for legacy migrations)
                 try await firebaseService.saveUserProfile(existingProfile)
                 
@@ -229,6 +278,13 @@ extension AuthManager: ASAuthorizationControllerDelegate {
                 
                 try await firebaseService.createUserProfile(userId: userId, username: initialUsername, displayName: displayName)
                 userProfile = try? await firebaseService.fetchUserProfile(userId: userId)
+                
+                // Sync new profile to ProfileManager
+                if let newProfile = userProfile {
+                    profileManager?.updateProfile(newProfile)
+                    print("✅ [AuthManager] Synced new profile to ProfileManager")
+                }
+                
                 print("✅ [AuthManager] Created new user profile for \(displayName) (@\(initialUsername))")
             }
         } catch {

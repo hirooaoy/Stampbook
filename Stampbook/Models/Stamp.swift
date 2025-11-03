@@ -19,6 +19,21 @@ struct Stamp: Identifiable, Codable {
         CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
     }
     
+    /// Extract storage path from Firebase Storage URL
+    /// Converts: https://firebasestorage.googleapis.com/v0/b/bucket/o/stamps%2Ffile.jpg?alt=media
+    /// To: stamps/file.jpg
+    var imageStoragePath: String? {
+        guard let imageUrl = imageUrl,
+              let url = URL(string: imageUrl),
+              let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+              let path = components.path.components(separatedBy: "/o/").last?.components(separatedBy: "?").first else {
+            return nil
+        }
+        
+        // URL decode the path (e.g., %2F -> /)
+        return path.removingPercentEncoding
+    }
+    
     // Parse city and country from address
     var cityCountry: String {
         let lines = address.components(separatedBy: "\n")

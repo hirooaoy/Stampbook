@@ -27,6 +27,7 @@ struct UserSearchView: View {
     @State private var searchResults: [UserProfile] = []
     @State private var isSearching = false
     @State private var hasSearched = false
+    @FocusState private var isSearchFieldFocused: Bool
     
     private let firebaseService = FirebaseService.shared
     
@@ -42,6 +43,7 @@ struct UserSearchView: View {
                         .textFieldStyle(.plain)
                         .autocorrectionDisabled()
                         .textInputAutocapitalization(.never)
+                        .focused($isSearchFieldFocused)
                         .onChange(of: searchText) { oldValue, newValue in
                             // Trigger search after user stops typing (debounced)
                             performSearch()
@@ -75,7 +77,7 @@ struct UserSearchView: View {
                     // Initial state - show prompt
                     Spacer()
                     VStack(spacing: 16) {
-                        Image(systemName: "person.fill.checkmark")
+                        Image(systemName: "person.2.fill")
                             .font(.system(size: 60))
                             .foregroundColor(.gray)
                         
@@ -126,10 +128,18 @@ struct UserSearchView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
+                    Button(action: {
                         dismiss()
+                    }) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.primary)
                     }
                 }
+            }
+            .onAppear {
+                // Automatically focus the search field when the view appears
+                isSearchFieldFocused = true
             }
         }
     }

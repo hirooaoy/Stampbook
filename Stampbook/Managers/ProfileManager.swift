@@ -22,6 +22,7 @@ class ProfileManager: ObservableObject {
     // private let rankCacheExpiration: TimeInterval = 1800 // 30 minutes
     
     /// Load the current user's profile from Firebase
+    /// Counts are fetched separately for MVP simplicity
     func loadProfile(userId: String, loadRank: Bool = false) {
         // Skip if already loaded for this user (avoid redundant loads)
         if let currentProfile = currentUserProfile, currentProfile.id == userId, !isLoading {
@@ -42,12 +43,21 @@ class ProfileManager: ObservableObject {
         
         Task {
             do {
-                let profile = try await firebaseService.fetchUserProfile(userId: userId)
+                var profile = try await firebaseService.fetchUserProfile(userId: userId)
+                
+                // Fetch counts on-demand for MVP scale (<100 users)
+                let followerCount = try await firebaseService.fetchFollowerCount(userId: userId)
+                let followingCount = try await firebaseService.fetchFollowingCount(userId: userId)
+                
+                // Update profile with actual counts from subcollections
+                profile.followerCount = followerCount
+                profile.followingCount = followingCount
+                
                 await MainActor.run {
                     self.currentUserProfile = profile
                     self.isLoading = false
                 }
-                print("✅ [ProfileManager] Loaded user profile: \(profile.displayName)")
+                print("✅ [ProfileManager] Loaded user profile: \(profile.displayName) (\(followerCount) followers, \(followingCount) following)")
                 
                 // TODO: POST-MVP - Rank loading disabled
                 // if loadRank {
@@ -77,11 +87,21 @@ class ProfileManager: ObservableObject {
     }
     
     /// Refresh profile data from server (pull-to-refresh)
+    /// Counts are fetched separately for MVP simplicity
     func refresh() async {
         guard let userId = currentUserProfile?.id else { return }
         
         do {
-            let profile = try await firebaseService.fetchUserProfile(userId: userId)
+            var profile = try await firebaseService.fetchUserProfile(userId: userId)
+            
+            // Fetch counts on-demand for MVP scale (<100 users)
+            let followerCount = try await firebaseService.fetchFollowerCount(userId: userId)
+            let followingCount = try await firebaseService.fetchFollowingCount(userId: userId)
+            
+            // Update profile with actual counts from subcollections
+            profile.followerCount = followerCount
+            profile.followingCount = followingCount
+            
             await MainActor.run {
                 self.currentUserProfile = profile
             }

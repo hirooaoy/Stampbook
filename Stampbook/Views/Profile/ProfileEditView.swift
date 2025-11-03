@@ -115,7 +115,7 @@ struct ProfileEditView: View {
                             .font(.caption)
                     } else if username != currentProfile.username && username.trimmingCharacters(in: .whitespaces).count >= 3 {
                         // Priority 2: Show helpful info when actively editing with valid length
-                        Text("Usernames can be changed once every 14 days")
+                        Text("Username can be changed once every 14 days")
                             .foregroundColor(.secondary)
                             .font(.caption)
                     } else if username.count >= 20 {

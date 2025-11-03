@@ -5,8 +5,9 @@
     "latitude": 37.7936,
     "longitude": -122.4837,
     "address": "1504 Pershing Dr\nSan Francisco, CA, USA 94129",
-    "imageName": "us-ca-sf-baker-beach",
-    "collectionIds": ["sf-must-visits"],
+    "collectionIds": [
+      "sf-must-visits"
+    ],
     "about": "A public beach with stunning Golden Gate Bridge views.",
     "notesFromOthers": [
       "Great spot for photos of the Golden Gate Bridge!",
@@ -15,7 +16,8 @@
     "thingsToDoFromEditors": [
       "Bring a wide-angle lens for Golden Gate Bridge photos from the north end",
       "Walk the Battery Chamberlin Trail above the beach for fort ruins and bridge views"
-    ]
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.appspot.com/o/stamps%2Fus-ca-sf-baker-beach.jpg?alt=media"
   },
   {
     "id": "us-ca-sf-dolores-park",
@@ -23,8 +25,9 @@
     "latitude": 37.7596,
     "longitude": -122.4269,
     "address": "Dolores St & 19th St\nSan Francisco, CA, USA 94114",
-    "imageName": "us-ca-sf-dolores-park",
-    "collectionIds": ["sf-must-visits"],
+    "collectionIds": [
+      "sf-must-visits"
+    ],
     "about": "Local favorite park with wide open grassy areas perfect for dogs and people watching.",
     "notesFromOthers": [
       "The off-leash area is so fun to watch! Bring your pup",
@@ -33,7 +36,8 @@
     "thingsToDoFromEditors": [
       "Grab takeout from Bi-Rite Market across the street for a picnic on the upper lawn",
       "Visit the southwest corner at sunset for unobstructed downtown skyline views"
-    ]
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.appspot.com/o/stamps%2Fus-ca-sf-dolores-park.jpg?alt=media"
   },
   {
     "id": "us-ca-sf-pier-39",
@@ -41,8 +45,9 @@
     "latitude": 37.80880641161464,
     "longitude": -122.40983037355116,
     "address": "Beach St & The Embarcadero\nSan Francisco, CA, USA 94133",
-    "imageName": "us-ca-sf-pier-39",
-    "collectionIds": ["sf-must-visits"],
+    "collectionIds": [
+      "sf-must-visits"
+    ],
     "about": "Popular waterfront marketplace famous for resident sea lions, shops, and stunning bay views.",
     "notesFromOthers": [
       "The sea lions are absolutely adorable - must see!",
@@ -51,7 +56,8 @@
     "thingsToDoFromEditors": [
       "Visit K-Dock on the west side to see the famous barking sea lions up close",
       "Walk to the end of the pier for Alcatraz and Golden Gate Bridge photo ops"
-    ]
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.appspot.com/o/stamps%2Fus-ca-sf-pier-39.jpg?alt=media"
   },
   {
     "id": "us-ca-sf-ferry-building",
@@ -59,8 +65,9 @@
     "latitude": 37.79559083624951,
     "longitude": -122.393699433948,
     "address": "1 Ferry Building\nSan Francisco, CA, USA 94111",
-    "imageName": "us-ca-sf-ferry-building",
-    "collectionIds": ["sf-must-visits"],
+    "collectionIds": [
+      "sf-must-visits"
+    ],
     "about": "Historic terminal and marketplace with artisan food vendors and iconic clock tower.",
     "notesFromOthers": [
       "Saturday farmers market is incredible - best produce!",
@@ -70,7 +77,8 @@
     "thingsToDoFromEditors": [
       "Browse the Saturday farmers market (8am-2pm) for California's best local produce",
       "Sample oysters at Hog Island Oyster Co. with bay views through the windows"
-    ]
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.appspot.com/o/stamps%2Fus-ca-sf-ferry-building.jpg?alt=media"
   },
   {
     "id": "us-ca-sf-oracle-park",
@@ -78,8 +86,9 @@
     "latitude": 37.7786,
     "longitude": -122.3893,
     "address": "24 Willie Mays Plaza\nSan Francisco, CA, USA 94107",
-    "imageName": "empty",
-    "collectionIds": ["sf-must-visits"],
+    "collectionIds": [
+      "sf-must-visits"
+    ],
     "about": "Home of the San Francisco Giants and one of baseball's most beautiful ballparks.",
     "notesFromOthers": [
       "Even non-baseball fans love this place!",
@@ -89,7 +98,8 @@
     "thingsToDoFromEditors": [
       "Order garlic fries and crab sandwich - two ballpark food legends",
       "Walk along McCovey Cove outside the park to watch boats during games"
-    ]
+    ],
+    "imageUrl": ""
   },
   {
     "id": "us-ca-sf-twin-peaks",
@@ -97,8 +107,9 @@
     "latitude": 37.7544,
     "longitude": -122.4477,
     "address": "501 Twin Peaks Blvd\nSan Francisco, CA, USA 94114",
-    "imageName": "empty",
-    "collectionIds": ["sf-must-visits"],
+    "collectionIds": [
+      "sf-must-visits"
+    ],
     "about": "One of the highest points in the city with 360-degree panoramic views.",
     "notesFromOthers": [
       "Best sunrise/sunset spot in SF - absolutely stunning",
@@ -108,7 +119,8 @@
     "thingsToDoFromEditors": [
       "Arrive 30 minutes before sunset and bring layers - it gets windy and cold",
       "Walk the full loop around both peaks for 360-degree city views"
-    ]
+    ],
+    "imageUrl": ""
   },
   {
     "id": "us-ca-sf-japantown",
@@ -116,8 +128,9 @@
     "latitude": 37.7852,
     "longitude": -122.4302,
     "address": "1610 Geary Blvd\nSan Francisco, CA, USA 94115",
-    "imageName": "empty",
-    "collectionIds": ["sf-must-visits"],
+    "collectionIds": [
+      "sf-must-visits"
+    ],
     "about": "One of the oldest Japanese communities in the US with authentic restaurants and shops.",
     "notesFromOthers": [
       "Amazing ramen and Japanese curry here!",
@@ -127,7 +140,8 @@
     "thingsToDoFromEditors": [
       "Try authentic ramen at Nojo Ramen or Japanese curry at Curry House CoCo Ichibanya",
       "Browse Japanese stationery and snacks at Kinokuniya bookstore in the mall"
-    ]
+    ],
+    "imageUrl": ""
   },
   {
     "id": "us-ca-sf-powell-hyde-cable-car",
@@ -135,8 +149,9 @@
     "latitude": 37.7847,
     "longitude": -122.4082,
     "address": "Powell St & Market St\nSan Francisco, CA, USA 94102",
-    "imageName": "empty",
-    "collectionIds": ["sf-must-visits"],
+    "collectionIds": [
+      "sf-must-visits"
+    ],
     "about": "One of San Francisco's most scenic cable car routes with stunning bay views.",
     "notesFromOthers": [
       "Ride the outside running board for the full experience!",
@@ -146,7 +161,8 @@
     "thingsToDoFromEditors": [
       "Board at Powell & Market early morning to avoid 2-hour waits",
       "Stand on the outer running board going down Hyde Street for thrilling bay views"
-    ]
+    ],
+    "imageUrl": ""
   },
   {
     "id": "us-ca-sf-palace-of-fine-arts",
@@ -154,8 +170,9 @@
     "latitude": 37.8021,
     "longitude": -122.4487,
     "address": "3601 Lyon St\nSan Francisco, CA, USA 94123",
-    "imageName": "empty",
-    "collectionIds": ["sf-must-visits"],
+    "collectionIds": [
+      "sf-must-visits"
+    ],
     "about": "Stunning Greco-Roman monument with a rotunda and lagoon built for the 1915 Exposition.",
     "notesFromOthers": [
       "Feels like you're in ancient Greece!",
@@ -165,16 +182,18 @@
     "thingsToDoFromEditors": [
       "Visit at golden hour for stunning light on the rotunda reflected in the lagoon",
       "Walk around the entire lagoon to find different angles of the columns"
-    ]
+    ],
+    "imageUrl": ""
   },
   {
     "id": "us-ca-sf-painted-ladies",
     "name": "Painted Ladies",
     "latitude": 37.7762,
-    "longitude": -122.4330,
+    "longitude": -122.433,
     "address": "710-720 Steiner St\nSan Francisco, CA, USA 94117",
-    "imageName": "empty",
-    "collectionIds": ["sf-must-visits"],
+    "collectionIds": [
+      "sf-must-visits"
+    ],
     "about": "Iconic row of Victorian houses at Alamo Square, famous from Full House.",
     "notesFromOthers": [
       "The Full House houses! Perfect photo op",
@@ -184,7 +203,8 @@
     "thingsToDoFromEditors": [
       "Shoot from the Alamo Square lawn in late afternoon when the houses glow golden",
       "Bring a picnic blanket and snacks to enjoy the view from the park"
-    ]
+    ],
+    "imageUrl": ""
   },
   {
     "id": "us-ca-sf-golden-gate-viewpoint",
@@ -192,8 +212,9 @@
     "latitude": 37.8295,
     "longitude": -122.4861,
     "address": "Old Conzelman Rd\nMill Valley, CA, USA 94941",
-    "imageName": "empty",
-    "collectionIds": ["sf-must-visits"],
+    "collectionIds": [
+      "sf-must-visits"
+    ],
     "about": "Breathtaking elevated views of the Golden Gate Bridge from the Marin Headlands.",
     "notesFromOthers": [
       "Worth the drive - totally different perspective!",
@@ -203,7 +224,8 @@
     "thingsToDoFromEditors": [
       "Drive up Conzelman Road to Battery Spencer for the most dramatic bridge angle",
       "Arrive at sunset when the bridge glows orange against the Pacific"
-    ]
+    ],
+    "imageUrl": ""
   },
   {
     "id": "us-ca-sf-equator-coffee",
@@ -211,8 +233,9 @@
     "latitude": 37.7989,
     "longitude": -122.4662,
     "address": "986 Lombard St\nSan Francisco, CA, USA 94133",
-    "imageName": "us-ca-sf-equator-coffee",
-    "collectionIds": ["sf-coffee"],
+    "collectionIds": [
+      "sf-coffee"
+    ],
     "about": "Specialty coffee roaster known for sustainability and direct trade relationships.",
     "notesFromOthers": [
       "Their single-origin pour-over is phenomenal!",
@@ -221,16 +244,18 @@
     "thingsToDoFromEditors": [
       "Order the single-origin pour-over to taste their roasting expertise",
       "Stop here on your way to the Golden Gate Bridge - it's perfectly located"
-    ]
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.appspot.com/o/stamps%2Fus-ca-sf-equator-coffee.jpg?alt=media"
   },
   {
     "id": "us-ca-sf-coffee-movement",
     "name": "The Coffee Movement",
-    "latitude": 37.7640,
+    "latitude": 37.764,
     "longitude": -122.4661,
     "address": "1399 9th Ave\nSan Francisco, CA, USA 94122",
-    "imageName": "empty",
-    "collectionIds": ["sf-coffee"],
+    "collectionIds": [
+      "sf-coffee"
+    ],
     "about": "Inner Sunset neighborhood favorite serving carefully sourced coffee.",
     "notesFromOthers": [
       "The oat milk latte with house blend is *chef's kiss*",
@@ -239,16 +264,18 @@
     "thingsToDoFromEditors": [
       "Grab coffee here before exploring Golden Gate Park two blocks north",
       "Try their oat milk latte with pastries from Arizmendi across the street"
-    ]
+    ],
+    "imageUrl": ""
   },
   {
     "id": "us-ca-sf-andytown",
     "name": "Andytown Coffee Roasters",
     "latitude": 37.7607,
-    "longitude": -122.5100,
+    "longitude": -122.51,
     "address": "3655 Lawton St\nSan Francisco, CA, USA 94122",
-    "imageName": "empty",
-    "collectionIds": ["sf-coffee"],
+    "collectionIds": [
+      "sf-coffee"
+    ],
     "about": "Coffee roasters near Ocean Beach famous for the Snowy Plover affogato.",
     "notesFromOthers": [
       "Snowy Plover is a MUST - best affogato in the city",
@@ -257,16 +284,18 @@
     "thingsToDoFromEditors": [
       "Order the Snowy Plover (brown sugar ice cream + espresso) - their signature drink",
       "Take your drink to Ocean Beach two blocks away for sunset"
-    ]
+    ],
+    "imageUrl": ""
   },
   {
     "id": "us-ca-sf-neighbor",
     "name": "Neighbor Bakehouse",
-    "latitude": 37.7580,
-    "longitude": -122.4100,
+    "latitude": 37.758,
+    "longitude": -122.41,
     "address": "2343 3rd St\nSan Francisco, CA, USA 94107",
-    "imageName": "empty",
-    "collectionIds": ["sf-coffee"],
+    "collectionIds": [
+      "sf-coffee"
+    ],
     "about": "Dogpatch bakehouse combining excellent coffee with fresh-baked pastries.",
     "notesFromOthers": [
       "Butter croissant is perfection - get there early!",
@@ -275,7 +304,8 @@
     "thingsToDoFromEditors": [
       "Arrive early for warm croissants - they sell out by noon",
       "Walk to the Dogpatch waterfront along 3rd Street after your coffee"
-    ]
+    ],
+    "imageUrl": ""
   },
   {
     "id": "us-ca-sf-the-mill",
@@ -283,8 +313,9 @@
     "latitude": 37.7764,
     "longitude": -122.4373,
     "address": "736 Divisadero St\nSan Francisco, CA, USA 94117",
-    "imageName": "empty",
-    "collectionIds": ["sf-coffee"],
+    "collectionIds": [
+      "sf-coffee"
+    ],
     "about": "Famous for Four Barrel coffee and house-made artisan toast.",
     "notesFromOthers": [
       "Avocado toast on Josey Baker bread is legendary",
@@ -293,7 +324,8 @@
     "thingsToDoFromEditors": [
       "Order the cinnamon sugar toast - their iconic signature item",
       "Walk to Alamo Square and the Painted Ladies 10 minutes away"
-    ]
+    ],
+    "imageUrl": ""
   },
   {
     "id": "us-ca-sf-saint-frank",
@@ -301,8 +333,9 @@
     "latitude": 37.8008,
     "longitude": -122.4214,
     "address": "2340 Polk St\nSan Francisco, CA, USA 94109",
-    "imageName": "empty",
-    "collectionIds": ["sf-coffee"],
+    "collectionIds": [
+      "sf-coffee"
+    ],
     "about": "Bright, minimalist Russian Hill café serving meticulously sourced coffee.",
     "notesFromOthers": [
       "Their rotating single-origin espresso is incredible",
@@ -311,7 +344,8 @@
     "thingsToDoFromEditors": [
       "Ask baristas about their rotating single-origin espresso - they love sharing details",
       "Try the cortado to experience their roasting at its purest"
-    ]
+    ],
+    "imageUrl": ""
   },
   {
     "id": "us-ca-sf-sightglass",
@@ -319,8 +353,9 @@
     "latitude": 37.7754,
     "longitude": -122.4094,
     "address": "270 7th St\nSan Francisco, CA, USA 94103",
-    "imageName": "empty",
-    "collectionIds": ["sf-coffee"],
+    "collectionIds": [
+      "sf-coffee"
+    ],
     "about": "Spacious SoMa warehouse café where they roast their own beans on-site.",
     "notesFromOthers": [
       "Watching them roast through the windows is so cool",
@@ -329,7 +364,8 @@
     "thingsToDoFromEditors": [
       "Watch them roast coffee through the glass-walled roasting room",
       "Try the espresso tonic on warm days - refreshing and caffeinated"
-    ]
+    ],
+    "imageUrl": ""
   },
   {
     "id": "us-ca-sf-four-barrel",
@@ -337,8 +373,9 @@
     "latitude": 37.7651,
     "longitude": -122.4214,
     "address": "375 Valencia St\nSan Francisco, CA, USA 94103",
-    "imageName": "us-ca-sf-four-barrel",
-    "collectionIds": ["sf-coffee"],
+    "collectionIds": [
+      "sf-coffee"
+    ],
     "about": "Beloved Mission District roaster known for quality and direct trade.",
     "notesFromOthers": [
       "Classic drip coffee showcases their roasting mastery",
@@ -347,7 +384,8 @@
     "thingsToDoFromEditors": [
       "Order classic drip coffee to taste their legendary roasting",
       "Explore Clarion Alley's murals one block away at Valencia & 17th"
-    ]
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.appspot.com/o/stamps%2Fus-ca-sf-four-barrel.jpg?alt=media"
   },
   {
     "id": "us-ca-sf-pinhole",
@@ -355,8 +393,9 @@
     "latitude": 37.7745,
     "longitude": -122.4242,
     "address": "231 Fillmore St\nSan Francisco, CA, USA 94117",
-    "imageName": "empty",
-    "collectionIds": ["sf-coffee"],
+    "collectionIds": [
+      "sf-coffee"
+    ],
     "about": "Cozy, intimate Lower Haight café for specialty coffee.",
     "notesFromOthers": [
       "Flat white here is meticulously crafted - so smooth",
@@ -365,7 +404,8 @@
     "thingsToDoFromEditors": [
       "Sip their perfectly crafted flat white at the window bar",
       "Browse vintage shops on Haight Street a few blocks east"
-    ]
+    ],
+    "imageUrl": ""
   },
   {
     "id": "us-ca-sf-ballast",
@@ -373,8 +413,9 @@
     "latitude": 37.7629,
     "longitude": -122.4095,
     "address": "798 Florida St\nSan Francisco, CA, USA 94110",
-    "imageName": "empty",
-    "collectionIds": ["sf-coffee"],
+    "collectionIds": [
+      "sf-coffee"
+    ],
     "about": "Mission café serving thoughtfully sourced coffee in a minimalist space.",
     "notesFromOthers": [
       "Great vibe for working remotely - good wifi!",
@@ -383,7 +424,8 @@
     "thingsToDoFromEditors": [
       "Grab coffee here then walk to Tartine Bakery for morning buns",
       "Bring your laptop - the wifi is solid and the vibe is calm"
-    ]
+    ],
+    "imageUrl": ""
   },
   {
     "id": "us-ca-sf-ggp-japanese-tea-garden",
@@ -391,8 +433,9 @@
     "latitude": 37.7701,
     "longitude": -122.4707,
     "address": "75 Hagiwara Tea Garden Dr\nSan Francisco, CA, USA 94118",
-    "imageName": "empty",
-    "collectionIds": ["sf-golden-gate-park"],
+    "collectionIds": [
+      "sf-golden-gate-park"
+    ],
     "about": "The oldest public Japanese garden in the US with pagodas, koi ponds, and tea house.",
     "notesFromOthers": [
       "Visit early morning for peaceful moments before crowds",
@@ -402,7 +445,8 @@
     "thingsToDoFromEditors": [
       "Arrive right at opening (9am) for serene photos before crowds",
       "Stop at the tea house for traditional tea and fortune cookies"
-    ]
+    ],
+    "imageUrl": ""
   },
   {
     "id": "us-ca-sf-ggp-three-gems",
@@ -410,8 +454,9 @@
     "latitude": 37.7715,
     "longitude": -122.4686,
     "address": "50 Hagiwara Tea Garden Dr\nSan Francisco, CA, USA 94118",
-    "imageName": "empty",
-    "collectionIds": ["sf-golden-gate-park"],
+    "collectionIds": [
+      "sf-golden-gate-park"
+    ],
     "about": "Hidden James Turrell skyspace installation inside the de Young Museum.",
     "notesFromOthers": [
       "Most people miss this - it's tucked in the museum!",
@@ -421,7 +466,8 @@
     "thingsToDoFromEditors": [
       "Free admission before 10am on Saturdays - perfect for experiencing Three Gems",
       "Lie on the benches and watch the sky change through the skyspace opening"
-    ]
+    ],
+    "imageUrl": ""
   },
   {
     "id": "us-ca-sf-ggp-portals-of-the-past",
@@ -429,8 +475,9 @@
     "latitude": 37.7729,
     "longitude": -122.474,
     "address": "John F. Kennedy Dr & 6th Ave\nSan Francisco, CA, USA 94118",
-    "imageName": "empty",
-    "collectionIds": ["sf-golden-gate-park"],
+    "collectionIds": [
+      "sf-golden-gate-park"
+    ],
     "about": "Marble columns from a Nob Hill mansion destroyed in the 1906 earthquake.",
     "notesFromOthers": [
       "So eerie and beautiful - feels like ancient ruins",
@@ -440,7 +487,8 @@
     "thingsToDoFromEditors": [
       "Photograph the columns reflected in Lloyd Lake at sunrise",
       "Walk around the lake to see the columns from different perspectives"
-    ]
+    ],
+    "imageUrl": ""
   },
   {
     "id": "us-ca-sf-ggp-conservatory-of-flowers",
@@ -448,8 +496,10 @@
     "latitude": 37.7726,
     "longitude": -122.4606,
     "address": "100 John F. Kennedy Dr\nSan Francisco, CA, USA 94118",
-    "imageName": "empty",
-    "collectionIds": ["sf-golden-gate-park", "sf-must-visits"],
+    "collectionIds": [
+      "sf-golden-gate-park",
+      "sf-must-visits"
+    ],
     "about": "Victorian greenhouse and oldest building in Golden Gate Park with rare tropical plants.",
     "notesFromOthers": [
       "The building itself is a work of art!",
@@ -459,7 +509,8 @@
     "thingsToDoFromEditors": [
       "Visit the Aquatic Plants room to see giant water lilies and carnivorous plants",
       "Come during holiday season for spectacular light displays on the building"
-    ]
+    ],
+    "imageUrl": ""
   },
   {
     "id": "us-ca-sf-ggp-bison-paddock",
@@ -467,8 +518,9 @@
     "latitude": 37.7691,
     "longitude": -122.495,
     "address": "John F. Kennedy Dr & Chain of Lakes Dr\nSan Francisco, CA, USA 94121",
-    "imageName": "empty",
-    "collectionIds": ["sf-golden-gate-park"],
+    "collectionIds": [
+      "sf-golden-gate-park"
+    ],
     "about": "Home to a herd of American bison since 1891 in Golden Gate Park.",
     "notesFromOthers": [
       "Can't believe there are actual buffalo in SF!",
@@ -478,7 +530,8 @@
     "thingsToDoFromEditors": [
       "Visit early morning (7-9am) when bison are most active and near the fence",
       "Bring binoculars if they're grazing in the back of the paddock"
-    ]
+    ],
+    "imageUrl": ""
   },
   {
     "id": "us-ca-sf-fort-mason-garden",
@@ -486,8 +539,9 @@
     "latitude": 37.8054,
     "longitude": -122.4316,
     "address": "2 Marina Blvd\nSan Francisco, CA, USA 94123",
-    "imageName": "empty",
-    "collectionIds": ["sf-community-gardens"],
+    "collectionIds": [
+      "sf-community-gardens"
+    ],
     "about": "Terraced community garden at Fort Mason with stunning waterfront views.",
     "notesFromOthers": [
       "The bay views from here are incredible!",
@@ -497,7 +551,8 @@
     "thingsToDoFromEditors": [
       "Walk through the terraced gardens then continue to Fort Mason waterfront",
       "Visit in spring/summer to see the gardens at their most lush"
-    ]
+    ],
+    "imageUrl": ""
   },
   {
     "id": "us-ca-sf-bernal-heights-garden",
@@ -505,8 +560,9 @@
     "latitude": 37.7416,
     "longitude": -122.4166,
     "address": "Folsom St & Ellsworth St\nSan Francisco, CA, USA 94110",
-    "imageName": "empty",
-    "collectionIds": ["sf-community-gardens"],
+    "collectionIds": [
+      "sf-community-gardens"
+    ],
     "about": "Vibrant neighborhood garden with organic plots and fruit trees.",
     "notesFromOthers": [
       "The neighborhood vibe here is amazing",
@@ -516,7 +572,8 @@
     "thingsToDoFromEditors": [
       "Check the bulletin board for free gardening workshops and events",
       "Hike up Bernal Hill right after for 360-degree city views"
-    ]
+    ],
+    "imageUrl": ""
   },
   {
     "id": "us-ca-sf-garden-for-environment",
@@ -524,8 +581,9 @@
     "latitude": 37.7476,
     "longitude": -122.4678,
     "address": "7th Ave & Lawton St\nSan Francisco, CA, USA 94122",
-    "imageName": "empty",
-    "collectionIds": ["sf-community-gardens"],
+    "collectionIds": [
+      "sf-community-gardens"
+    ],
     "about": "Educational garden teaching sustainable practices with workshops and native plants.",
     "notesFromOthers": [
       "The workshops here are fantastic!",
@@ -535,7 +593,8 @@
     "thingsToDoFromEditors": [
       "Sign up for a free weekend workshop on composting or native plants",
       "Explore the native plant section for California gardening ideas"
-    ]
+    ],
+    "imageUrl": ""
   },
   {
     "id": "us-ca-sf-clipper-terrace-garden",
@@ -543,8 +602,9 @@
     "latitude": 37.7355,
     "longitude": -122.4395,
     "address": "Clipper St & Douglass St\nSan Francisco, CA, USA 94114",
-    "imageName": "empty",
-    "collectionIds": ["sf-community-gardens"],
+    "collectionIds": [
+      "sf-community-gardens"
+    ],
     "about": "Hillside terraced garden with panoramic city views and colorful flowers.",
     "notesFromOthers": [
       "The city views while gardening are unbeatable",
@@ -554,7 +614,8 @@
     "thingsToDoFromEditors": [
       "Walk the terraced paths for unique city views between the garden plots",
       "Visit in peak summer for the most colorful flower displays"
-    ]
+    ],
+    "imageUrl": ""
   },
   {
     "id": "us-ca-sf-potrero-hill-garden",
@@ -562,8 +623,9 @@
     "latitude": 37.7545,
     "longitude": -122.4009,
     "address": "Utah St & 20th St\nSan Francisco, CA, USA 94107",
-    "imageName": "empty",
-    "collectionIds": ["sf-community-gardens"],
+    "collectionIds": [
+      "sf-community-gardens"
+    ],
     "about": "One of San Francisco's oldest community gardens, established in the 1970s.",
     "notesFromOthers": [
       "Historic garden with so much character",
@@ -573,7 +635,8 @@
     "thingsToDoFromEditors": [
       "Explore the garden then grab lunch at nearby Chez Maman on 18th",
       "Visit during monthly open houses to meet gardeners and learn tips"
-    ]
+    ],
+    "imageUrl": ""
   },
   {
     "id": "us-ca-sf-alemany-farm",
@@ -581,8 +644,9 @@
     "latitude": 37.7135,
     "longitude": -122.4264,
     "address": "700 Alemany Blvd\nSan Francisco, CA, USA 94110",
-    "imageName": "empty",
-    "collectionIds": ["sf-community-gardens"],
+    "collectionIds": [
+      "sf-community-gardens"
+    ],
     "about": "San Francisco's largest urban farm spanning 3.5 acres with stunning views.",
     "notesFromOthers": [
       "Amazing that this exists in the city!",
@@ -592,7 +656,8 @@
     "thingsToDoFromEditors": [
       "Join Saturday volunteer mornings (10am) to help with planting and harvesting",
       "Take in the sweeping city views from this hilltop farm"
-    ]
+    ],
+    "imageUrl": ""
   },
   {
     "id": "us-ca-sf-howard-langton-garden",
@@ -600,8 +665,9 @@
     "latitude": 37.7792,
     "longitude": -122.4083,
     "address": "Howard St & Langton St\nSan Francisco, CA, USA 94103",
-    "imageName": "empty",
-    "collectionIds": ["sf-community-gardens"],
+    "collectionIds": [
+      "sf-community-gardens"
+    ],
     "about": "Hidden SoMa garden known for creative vertical space and container gardening.",
     "notesFromOthers": [
       "A secret garden in the heart of SoMa!",
@@ -611,7 +677,8 @@
     "thingsToDoFromEditors": [
       "Study their vertical gardening techniques for small-space inspiration",
       "Peek through the fence even when closed to see creative container gardens"
-    ]
+    ],
+    "imageUrl": ""
   },
   {
     "id": "us-me-acadia-bubble-rock",
@@ -619,8 +686,9 @@
     "latitude": 44.33935709878886,
     "longitude": -68.25340104731045,
     "address": "Bubble Rock Trail\nBar Harbor, ME, USA 04609",
-    "imageName": "empty",
-    "collectionIds": ["acadia-must-visits"],
+    "collectionIds": [
+      "acadia-must-visits"
+    ],
     "about": "Massive 50-ton glacial boulder perched on South Bubble Mountain.",
     "notesFromOthers": [
       "The hike up is moderate and totally worth it!",
@@ -630,7 +698,8 @@
     "thingsToDoFromEditors": [
       "Take the classic 'pushing the rock' optical illusion photo",
       "Continue to South Bubble summit for panoramic Jordan Pond views"
-    ]
+    ],
+    "imageUrl": ""
   },
   {
     "id": "us-me-acadia-beehive-trail",
@@ -638,8 +707,9 @@
     "latitude": 44.335420181862744,
     "longitude": -68.1910357769886,
     "address": "Beehive Trail\nBar Harbor, ME, USA 04609",
-    "imageName": "empty",
-    "collectionIds": ["acadia-must-visits"],
+    "collectionIds": [
+      "acadia-must-visits"
+    ],
     "about": "Thrilling hike featuring iron rungs and ladders on exposed cliff faces.",
     "notesFromOthers": [
       "Not for those afraid of heights - exhilarating climb!",
@@ -649,7 +719,8 @@
     "thingsToDoFromEditors": [
       "Arrive before 7am to avoid waiting at the iron rungs sections",
       "Wear gloves for better grip on the metal rungs and ladders"
-    ]
+    ],
+    "imageUrl": ""
   },
   {
     "id": "us-me-acadia-beals-lobster-pier",
@@ -657,8 +728,9 @@
     "latitude": 44.27582873952332,
     "longitude": -68.31262860701447,
     "address": "182 Clark Point Rd\nSouthwest Harbor, ME, USA 04679",
-    "imageName": "empty",
-    "collectionIds": ["acadia-must-visits"],
+    "collectionIds": [
+      "acadia-must-visits"
+    ],
     "about": "Classic Maine seafood shack serving fresh lobster rolls with harbor views since 1985.",
     "notesFromOthers": [
       "Best lobster roll in Maine - get the warm butter version!",
@@ -668,7 +740,8 @@
     "thingsToDoFromEditors": [
       "Order the warm buttered lobster roll over cold mayo version",
       "Bring cash - they don't take cards but have an ATM nearby"
-    ]
+    ],
+    "imageUrl": ""
   },
   {
     "id": "us-me-bar-harbor-mckays-public-house",
@@ -676,8 +749,9 @@
     "latitude": 44.385989414466714,
     "longitude": -68.20437601454792,
     "address": "231 Main St\nBar Harbor, ME, USA 04609",
-    "imageName": "empty",
-    "collectionIds": ["acadia-must-visits"],
+    "collectionIds": [
+      "acadia-must-visits"
+    ],
     "about": "Beloved Irish-style pub known for cozy atmosphere and craft beers.",
     "notesFromOthers": [
       "The fish and chips are outstanding!",
@@ -687,6 +761,7 @@
     "thingsToDoFromEditors": [
       "Order fish & chips with a local Maine beer like Allagash or Shipyard",
       "Check their schedule for live music nights on weekends"
-    ]
+    ],
+    "imageUrl": ""
   }
 ]

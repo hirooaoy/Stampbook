@@ -14,9 +14,14 @@ class LikeManager: ObservableObject {
     private var pendingLikes: Set<String> = [] // Posts being liked (optimistic)
     private var pendingUnlikes: Set<String> = [] // Posts being unliked (optimistic)
     
+    private var isCacheLoaded = false
+    
     init() {
-        // Load cached likes from UserDefaults
+        print("⏱️ [LikeManager] init() started")
+        // Load cache synchronously during init (safe timing, before any views render)
         loadCachedLikes()
+        isCacheLoaded = true
+        print("⏱️ [LikeManager] init() completed with \(likedPosts.count) cached likes")
     }
     
     /// Toggle like on a post with optimistic UI update

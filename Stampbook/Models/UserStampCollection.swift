@@ -204,6 +204,10 @@ class UserStampCollection: ObservableObject {
     }
     
     /// Update the storage path for an existing image (called after Firebase upload completes)
+    /// 
+    /// ⚠️ DEPRECATED (Nov 3, 2025): No longer used after photo upload optimization.
+    /// Now we add images with storage path in one step via addImage() to avoid double Firestore writes.
+    /// Kept for backwards compatibility only.
     func updateImagePath(for stampId: String, imageName: String, storagePath: String) {
         // Update in allStamps
         if let allIndex = allStamps.firstIndex(where: { $0.stampId == stampId }),

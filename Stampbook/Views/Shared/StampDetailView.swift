@@ -11,12 +11,12 @@ struct StampDetailView: View {
     let stamp: Stamp
     let userLocation: CLLocation?
     let showBackButton: Bool
-    @State private var showMapOptions = false
+    // @State private var showMapOptions = false  // HIDDEN: Using Menu instead of bottom sheet for consistency
     @State private var showMemorySection = false
     @State private var showNotesEditor = false
     @State private var editingNotes = ""
     @State private var stampStats: StampStatistics?
-    // @State private var userRank: Int? // TODO: POST-MVP - Per-stamp rank disabled
+    @State private var userRank: Int? // User's rank for this stamp (1st, 2nd, 3rd collector, etc.)
     @State private var collectionProgress: [String: Int] = [:] // collectionId -> collected count
     
     private var isCollected: Bool {
@@ -66,12 +66,48 @@ struct StampDetailView: View {
                     ZStack {
                         if isCollected {
                             // Show stamp image when collected
-                            Image(stamp.imageName)
-                                .resizable()
-                                .renderingMode(.original)
-                                .scaledToFit()
-                                .frame(width: 240, height: 240)
-                                .transition(.scale.combined(with: .opacity))
+                            if let imageUrl = stamp.imageUrl, !imageUrl.isEmpty {
+                                // Load from Firebase Storage
+                                AsyncImage(url: URL(string: imageUrl)) { phase in
+                                    switch phase {
+                                    case .success(let image):
+                                        image
+                                            .resizable()
+                                            .renderingMode(.original)
+                                            .scaledToFit()
+                                            .frame(width: 240, height: 240)
+                                            .transition(.scale.combined(with: .opacity))
+                                    case .failure:
+                                        // Fallback to placeholder on error
+                                        Image("empty")
+                                            .resizable()
+                                            .renderingMode(.original)
+                                            .scaledToFit()
+                                            .frame(width: 240, height: 240)
+                                    case .empty:
+                                        // Show loading spinner
+                                        ProgressView()
+                                            .frame(width: 240, height: 240)
+                                    @unknown default:
+                                        EmptyView()
+                                    }
+                                }
+                            } else if !stamp.imageName.isEmpty {
+                                // Fallback to bundled image for backward compatibility
+                                Image(stamp.imageName)
+                                    .resizable()
+                                    .renderingMode(.original)
+                                    .scaledToFit()
+                                    .frame(width: 240, height: 240)
+                                    .transition(.scale.combined(with: .opacity))
+                            } else {
+                                // No image available - show placeholder
+                                Image("empty")
+                                    .resizable()
+                                    .renderingMode(.original)
+                                    .scaledToFit()
+                                    .frame(width: 240, height: 240)
+                            }
                         } else {
                             // Show lock icon when not collected
                             RoundedRectangle(cornerRadius: 16)
@@ -95,13 +131,9 @@ struct StampDetailView: View {
                                 .foregroundColor(.secondary)
                                 .padding(.bottom, 8)
                             
-                            // Date card only (rank disabled for MVP)
+                            // Memory cards showing rank and date
                             HStack(spacing: 12) {
-                                // TODO: POST-MVP - Per-Stamp Rank Card Disabled
-                                // This shows what number collector the user was for this stamp
-                                // Disabled for MVP to reduce complexity and Firestore queries
-                                /*
-                                // Rank card
+                                // Rank card - shows what number collector the user was (like being #23 in line - permanent!)
                                 HStack(spacing: 12) {
                                     Image(systemName: "medal.fill")
                                         .font(.system(size: 24))
@@ -120,7 +152,7 @@ struct StampDetailView: View {
                                                 .lineLimit(1)
                                                 .minimumScaleFactor(0.5)
                                         } else {
-                                            Text("Calculating...")
+                                            Text("...")
                                                 .font(.body)
                                                 .fontWeight(.semibold)
                                                 .foregroundColor(.secondary)
@@ -137,7 +169,6 @@ struct StampDetailView: View {
                                 .frame(height: 70)
                                 .background(Color.gray.opacity(0.1))
                                 .cornerRadius(12)
-                                */
                                 
                                 // Date card
                                 HStack(spacing: 12) {
@@ -250,19 +281,30 @@ struct StampDetailView: View {
                             .foregroundColor(.secondary)
                         
                         HStack(spacing: 12) {
-                            Button(action: {
-                                showMapOptions = true
-                            }) {
-                                Text(stamp.address)
-                                    .font(.body)
-                                    .foregroundColor(.primary)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                            }
-                            .buttonStyle(PlainButtonStyle())
+                            Text(stamp.address)
+                                .font(.body)
+                                .foregroundColor(.primary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
                             
-                            Button(action: {
-                                showMapOptions = true
-                            }) {
+                            Menu {
+                                Button(action: {
+                                    openInGoogleMaps()
+                                }) {
+                                    Label("Open in Google Maps", systemImage: "map")
+                                }
+                                
+                                Button(action: {
+                                    openInAppleMaps()
+                                }) {
+                                    Label("Open in Apple Maps", systemImage: "map.fill")
+                                }
+                                
+                                Button(action: {
+                                    UIPasteboard.general.string = stamp.address
+                                }) {
+                                    Label("Copy address", systemImage: "doc.on.doc")
+                                }
+                            } label: {
                                 Image(systemName: "arrow.triangle.turn.up.right.circle.fill")
                                     .font(.system(size: 32))
                                     .foregroundColor(.blue)
@@ -500,10 +542,11 @@ struct StampDetailView: View {
             Task {
                 stampStats = await stampsManager.fetchStampStatistics(stampId: stamp.id)
                 
-                // TODO: POST-MVP - Per-stamp rank fetch disabled
-                // if isCollected, let userId = authManager.userId {
-                //     userRank = await stampsManager.getUserRankForStamp(stampId: stamp.id, userId: userId)
-                // }
+                // Fetch user's rank for this stamp if they've collected it
+                // Rank = position in collector list (1st, 2nd, 3rd...) - never changes!
+                if isCollected, let userId = authManager.userId {
+                    userRank = await stampsManager.getUserRankForStamp(stampId: stamp.id, userId: userId)
+                }
                 
                 // Calculate collection progress for all collections this stamp belongs to
                 await calculateCollectionProgress()
@@ -552,6 +595,8 @@ struct StampDetailView: View {
                 stampsManager.userCollection.updateNotes(for: stamp.id, notes: savedNotes)
             }
         }
+        
+        /* HIDDEN: Bottom sheet implementation - now using Menu for consistency with FeedView triple dot pattern
         .sheet(isPresented: $showMapOptions) {
             VStack(spacing: 0) {
                 VStack(spacing: 12) {
@@ -618,6 +663,7 @@ struct StampDetailView: View {
             .presentationDetents([.height(280)])
             .presentationDragIndicator(.visible)
         }
+        */
     }
     
     private func calculateCollectionProgress() async {

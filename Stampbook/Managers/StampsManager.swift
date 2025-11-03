@@ -31,12 +31,13 @@ class StampsManager: ObservableObject {
     private let firebaseService = FirebaseService.shared
     
     init() {
-        // DON'T eagerly load all stamps - let views lazy-load what they need
-        // loadData() // ← Removed: 7+ second blocking load of all stamps
+        print("⏱️ [StampsManager] init() started")
         
-        // But DO load collections (fast, only ~5 documents, 0.1s load time)
+        // Load collections in background
         Task {
+            print("⏱️ [StampsManager] Starting async collection load...")
             await loadCollections()
+            print("✅ [StampsManager] Async collection load completed")
         }
         
         // Forward changes from userCollection to this manager
@@ -45,17 +46,28 @@ class StampsManager: ObservableObject {
                 self?.objectWillChange.send()
             }
             .store(in: &cancellables)
+        
+        print("✅ [StampsManager] init() completed (collection load is async)")
     }
     
     /// Load just collections (fast - only ~5 documents)
-    @MainActor
     private func loadCollections() async {
+        let fetchStart = Date()
+        print("🔄 [StampsManager] loadCollections() - about to fetch from Firebase")
         do {
+            // Fetch collections (no timeout wrapper - let Firebase SDK handle network timeouts)
             let fetchedCollections = try await firebaseService.fetchCollections()
+            let duration = Date().timeIntervalSince(fetchStart)
+            
+            // Update published property on MainActor
+            await MainActor.run {
             self.collections = fetchedCollections
-            print("✅ [StampsManager] Loaded \(fetchedCollections.count) collections")
+            }
+            print("✅ [StampsManager] Loaded \(fetchedCollections.count) collections in \(String(format: "%.2f", duration))s")
         } catch {
-            print("❌ [StampsManager] Failed to load collections: \(error.localizedDescription)")
+            let duration = Date().timeIntervalSince(fetchStart)
+            print("❌ [StampsManager] Failed to load collections after \(String(format: "%.2f", duration))s: \(error.localizedDescription)")
+            // Continue anyway - collections are not critical for app startup
         }
     }
     
@@ -122,7 +134,7 @@ class StampsManager: ObservableObject {
     /// Shows cached data immediately, refreshes in background if needed
     func refreshIfNeeded() async {
         let shouldRefresh = lastRefreshTime == nil || 
-                           Date().timeIntervalSince(lastRefreshTime!) > refreshInterval
+                           Date().timeIntervalSince(lastRefreshTime ?? Date.distantPast) > refreshInterval
         
         if shouldRefresh {
             await refresh()
@@ -350,10 +362,8 @@ class StampsManager: ObservableObject {
         }
     }
     
-    // TODO: POST-MVP - Per-Stamp Ranking System
-    // Disabled for MVP to reduce complexity and Firestore queries
-    // Consider implementing post-MVP with cached collector order
-    /*
+    /// Get user's rank for a specific stamp (what number collector they were)
+    /// Example: If you're the 23rd person to collect Baker Beach, you'll always be #23!
     func getUserRankForStamp(stampId: String, userId: String) async -> Int? {
         do {
             return try await firebaseService.getUserRankForStamp(stampId: stampId, userId: userId)
@@ -362,7 +372,6 @@ class StampsManager: ObservableObject {
             return nil
         }
     }
-    */
     
     func isCollected(_ stamp: Stamp) -> Bool {
         userCollection.isCollected(stamp.id)

@@ -29,9 +29,10 @@ struct Comment: Codable, Identifiable {
         case userAvatarUrl
     }
     
-    init(userId: String, postId: String, stampId: String, postOwnerId: String, text: String, 
+    init(id: String? = nil, userId: String, postId: String, stampId: String, postOwnerId: String, text: String, 
          userDisplayName: String, userUsername: String, userAvatarUrl: String?, 
          createdAt: Date = Date()) {
+        self.id = id
         self.userId = userId
         self.postId = postId
         self.stampId = stampId

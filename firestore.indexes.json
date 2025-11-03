@@ -52,6 +52,17 @@
           "order": "ASCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "following",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "id",
+          "order": "ASCENDING"
+        }
+      ],
+      "_comment": "For fetching followers via collection group query (MVP on-demand counting)"
     }
   ],
   "fieldOverrides": []

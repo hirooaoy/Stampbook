@@ -41,7 +41,8 @@ class FollowManager: ObservableObject {
     
     // MARK: - Follow/Unfollow Actions
     
-    /// Follow a user (with optimistic UI update and state synchronization)
+    /// Follow a user (with optimistic UI update)
+    /// Counts are fetched separately on-demand, so we don't manage them here
     func followUser(currentUserId: String, targetUserId: String, profileManager: ProfileManager? = nil, onSuccess: ((UserProfile?) -> Void)? = nil) {
         // Set processing state
         isProcessingFollow[targetUserId] = true
@@ -49,87 +50,33 @@ class FollowManager: ObservableObject {
         // Optimistic update
         isFollowing[targetUserId] = true
         
-        // Optimistically increment counts
-        if let counts = followCounts[currentUserId] {
-            followCounts[currentUserId] = (counts.followers, counts.following + 1)
-        }
-        if let counts = followCounts[targetUserId] {
-            followCounts[targetUserId] = (counts.followers + 1, counts.following)
-        }
-        
-        // BEST PRACTICE: Also optimistically update ProfileManager if provided
-        if let profileManager = profileManager, 
-           var currentProfile = profileManager.currentUserProfile,
-           currentProfile.id == currentUserId {
-            currentProfile.followingCount += 1
-            profileManager.updateProfile(currentProfile)
-        }
-        
         Task {
             do {
                 let didFollow = try await firebaseService.followUser(followerId: currentUserId, followeeId: targetUserId)
                 
-                if didFollow {
-                    // Fetch updated profile to get accurate counts
-                    let targetProfile = try? await firebaseService.fetchUserProfile(userId: targetUserId)
-                    let currentProfile = try? await firebaseService.fetchUserProfile(userId: currentUserId)
+                await MainActor.run {
+                    self.isProcessingFollow[targetUserId] = false
                     
-                    await MainActor.run {
-                        // Update cached counts with real values
-                        if let profile = targetProfile {
-                            self.followCounts[targetUserId] = (profile.followerCount, profile.followingCount)
-                            
-                            // SMART UPDATE: Add to following list if we're currently viewing it
-                            // (only if not already in the list)
-                            if !self.following.contains(where: { $0.id == targetUserId }) {
-                                self.following.append(profile)
+                    // Add to following list if we're currently viewing it
+                    if didFollow {
+                        // Try to fetch the target user's profile to add to list
+                        Task {
+                            if let profile = try? await firebaseService.fetchUserProfile(userId: targetUserId) {
+                                await MainActor.run {
+                                    if !self.following.contains(where: { $0.id == targetUserId }) {
+                                        self.following.append(profile)
+                                    }
+                                }
+                                onSuccess?(profile)
                             }
                         }
-                        if let profile = currentProfile {
-                            self.followCounts[currentUserId] = (profile.followerCount, profile.followingCount)
-                            
-                            // BEST PRACTICE: Sync ProfileManager with latest counts from Firebase
-                            if let profileManager = profileManager, profile.id == currentUserId {
-                                profileManager.updateProfile(profile)
-                            }
-                        }
-                        
-                        self.isProcessingFollow[targetUserId] = false
-                        onSuccess?(targetProfile)
                     }
-                    print("✅ Followed user \(targetUserId)")
-                } else {
-                    // Already following - sync state
-                    await MainActor.run {
-                        self.isFollowing[targetUserId] = true
-                        self.isProcessingFollow[targetUserId] = false
-                    }
-                    print("ℹ️ Already following user \(targetUserId)")
                 }
+                print("✅ Followed user \(targetUserId)")
             } catch {
                 // Rollback on error
                 await MainActor.run {
                     self.isFollowing[targetUserId] = false
-                    
-                    // Rollback count changes
-                    if let counts = self.followCounts[currentUserId] {
-                        self.followCounts[currentUserId] = (counts.followers, max(0, counts.following - 1))
-                    }
-                    if let counts = self.followCounts[targetUserId] {
-                        self.followCounts[targetUserId] = (max(0, counts.followers - 1), counts.following)
-                    }
-                    
-                    // BEST PRACTICE: Rollback ProfileManager too
-                    if let profileManager = profileManager,
-                       var currentProfile = profileManager.currentUserProfile,
-                       currentProfile.id == currentUserId {
-                        currentProfile.followingCount = max(0, currentProfile.followingCount - 1)
-                        profileManager.updateProfile(currentProfile)
-                    }
-                    
-                    // Remove from following list if it was added
-                    self.following.removeAll { $0.id == targetUserId }
-                    
                     self.isProcessingFollow[targetUserId] = false
                     self.error = error.localizedDescription
                 }
@@ -138,7 +85,8 @@ class FollowManager: ObservableObject {
         }
     }
     
-    /// Unfollow a user (with optimistic UI update and state synchronization)
+    /// Unfollow a user (with optimistic UI update)
+    /// Counts are fetched separately on-demand, so we don't manage them here
     func unfollowUser(currentUserId: String, targetUserId: String, profileManager: ProfileManager? = nil, onSuccess: ((UserProfile?) -> Void)? = nil) {
         // Set processing state
         isProcessingFollow[targetUserId] = true
@@ -146,80 +94,25 @@ class FollowManager: ObservableObject {
         // Optimistic update
         isFollowing[targetUserId] = false
         
-        // Optimistically decrement counts
-        if let counts = followCounts[currentUserId] {
-            followCounts[currentUserId] = (counts.followers, max(0, counts.following - 1))
-        }
-        if let counts = followCounts[targetUserId] {
-            followCounts[targetUserId] = (max(0, counts.followers - 1), counts.following)
-        }
-        
-        // BEST PRACTICE: Also optimistically update ProfileManager if provided
-        if let profileManager = profileManager,
-           var currentProfile = profileManager.currentUserProfile,
-           currentProfile.id == currentUserId {
-            currentProfile.followingCount = max(0, currentProfile.followingCount - 1)
-            profileManager.updateProfile(currentProfile)
-        }
-        
-        // SMART UPDATE: Remove from following list immediately (optimistic)
+        // Remove from following list immediately (optimistic)
         following.removeAll { $0.id == targetUserId }
         
         Task {
             do {
                 let didUnfollow = try await firebaseService.unfollowUser(followerId: currentUserId, followeeId: targetUserId)
                 
+                await MainActor.run {
+                    self.isProcessingFollow[targetUserId] = false
+                }
+                
                 if didUnfollow {
-                    // Fetch updated profile to get accurate counts
-                    let targetProfile = try? await firebaseService.fetchUserProfile(userId: targetUserId)
-                    let currentProfile = try? await firebaseService.fetchUserProfile(userId: currentUserId)
-                    
-                    await MainActor.run {
-                        // Update cached counts with real values
-                        if let profile = targetProfile {
-                            self.followCounts[targetUserId] = (profile.followerCount, profile.followingCount)
-                        }
-                        if let profile = currentProfile {
-                            self.followCounts[currentUserId] = (profile.followerCount, profile.followingCount)
-                            
-                            // BEST PRACTICE: Sync ProfileManager with latest counts from Firebase
-                            if let profileManager = profileManager, profile.id == currentUserId {
-                                profileManager.updateProfile(profile)
-                            }
-                        }
-                        
-                        self.isProcessingFollow[targetUserId] = false
-                        onSuccess?(targetProfile)
-                    }
                     print("✅ Unfollowed user \(targetUserId)")
-                } else {
-                    // Wasn't following - sync state
-                    await MainActor.run {
-                        self.isFollowing[targetUserId] = false
-                        self.isProcessingFollow[targetUserId] = false
-                    }
-                    print("ℹ️ Wasn't following user \(targetUserId)")
+                    onSuccess?(nil)
                 }
             } catch {
                 // Rollback on error - re-add to following list
                 await MainActor.run {
                     self.isFollowing[targetUserId] = true
-                    
-                    // Rollback count changes
-                    if let counts = self.followCounts[currentUserId] {
-                        self.followCounts[currentUserId] = (counts.followers, counts.following + 1)
-                    }
-                    if let counts = self.followCounts[targetUserId] {
-                        self.followCounts[targetUserId] = (counts.followers + 1, counts.following)
-                    }
-                    
-                    // BEST PRACTICE: Rollback ProfileManager too
-                    if let profileManager = profileManager,
-                       var currentProfile = profileManager.currentUserProfile,
-                       currentProfile.id == currentUserId {
-                        currentProfile.followingCount += 1
-                        profileManager.updateProfile(currentProfile)
-                    }
                     
                     // Re-fetch following list to restore state
                     self.fetchFollowing(userId: currentUserId)
@@ -291,20 +184,22 @@ class FollowManager: ObservableObject {
         }
     }
     
-    // MARK: - Count Management
+    // MARK: - Count Management (Deprecated - counts are fetched on-demand now)
     
-    /// Update cached follow counts for a user
+    /// Legacy method - kept for backwards compatibility
+    /// For MVP scale, fetch counts directly using FirebaseService.fetchFollowerCount/fetchFollowingCount
     func updateFollowCounts(userId: String, followerCount: Int, followingCount: Int) {
         followCounts[userId] = (followerCount, followingCount)
     }
     
-    /// Fetch and cache follow counts for a user
+    /// Fetch and cache follow counts for a user (on-demand from subcollections)
     func refreshFollowCounts(userId: String) {
         Task {
             do {
-                let profile = try await firebaseService.fetchUserProfile(userId: userId)
+                let followerCount = try await firebaseService.fetchFollowerCount(userId: userId)
+                let followingCount = try await firebaseService.fetchFollowingCount(userId: userId)
                 await MainActor.run {
-                    self.followCounts[userId] = (profile.followerCount, profile.followingCount)
+                    self.followCounts[userId] = (followerCount, followingCount)
                 }
             } catch {
                 print("❌ Failed to refresh follow counts: \(error.localizedDescription)")

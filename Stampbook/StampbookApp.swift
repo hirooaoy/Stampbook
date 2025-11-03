@@ -5,8 +5,12 @@ import FirebaseCore
 class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication,
                     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
+        print("⏱️ [AppDelegate] didFinishLaunching started")
+        
         // Configure Firebase
         FirebaseApp.configure()
+        
+        print("⏱️ [AppDelegate] Firebase configured")
         return true
     }
 }
@@ -17,11 +21,39 @@ struct StampbookApp: App {
     // Register app delegate for Firebase setup
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     
-    @StateObject private var authManager = AuthManager()
-    @StateObject private var networkMonitor = NetworkMonitor()
-    @StateObject private var followManager = FollowManager() // Shared instance across the app
-    @StateObject private var blockManager = BlockManager() // Shared instance for blocking across the app
-    @StateObject private var profileManager = ProfileManager() // Shared profile cache across the app
+    // Track startup time for watchdog debugging
+    init() {
+        print("⏱️ [StampbookApp] App init() started")
+        print("⏱️ [StampbookApp] About to create @StateObject managers...")
+    }
+    
+    @StateObject private var authManager: AuthManager = {
+        print("⏱️ [StampbookApp] Creating AuthManager...")
+        let manager = AuthManager()
+        print("✅ [StampbookApp] AuthManager created")
+        return manager
+    }()
+    
+    @StateObject private var networkMonitor: NetworkMonitor = {
+        print("⏱️ [StampbookApp] Creating NetworkMonitor...")
+        let monitor = NetworkMonitor()
+        print("✅ [StampbookApp] NetworkMonitor created")
+        return monitor
+    }()
+    
+    @StateObject private var followManager: FollowManager = {
+        print("⏱️ [StampbookApp] Creating FollowManager...")
+        let manager = FollowManager()
+        print("✅ [StampbookApp] FollowManager created")
+        return manager
+    }()
+    
+    @StateObject private var profileManager: ProfileManager = {
+        print("⏱️ [StampbookApp] Creating ProfileManager...")
+        let manager = ProfileManager()
+        print("✅ [StampbookApp] ProfileManager created")
+        return manager
+    }()
     
     @Environment(\.scenePhase) private var scenePhase
     
@@ -31,7 +63,6 @@ struct StampbookApp: App {
                 .environmentObject(authManager)
                 .environmentObject(networkMonitor)
                 .environmentObject(followManager)
-                .environmentObject(blockManager)
                 .environmentObject(profileManager)
         }
         .onChange(of: scenePhase) { oldPhase, newPhase in
@@ -46,16 +77,11 @@ struct StampbookApp: App {
     
     /// Handle authentication state changes
     private func handleAuthStateChange(isSignedIn: Bool) {
+        // Currently no specific actions needed on auth state change
         if isSignedIn {
-            // User signed in - load blocked users
-            if let userId = authManager.userId {
-                blockManager.loadBlockedUsers(currentUserId: userId)
-                print("✅ [AppLifecycle] User signed in, loaded blocked users")
-            }
+            print("✅ [AppLifecycle] User signed in")
         } else {
-            // User signed out - clear blocked users
-            blockManager.clearBlockData()
-            print("✅ [AppLifecycle] User signed out, cleared block data")
+            print("✅ [AppLifecycle] User signed out")
         }
     }
     

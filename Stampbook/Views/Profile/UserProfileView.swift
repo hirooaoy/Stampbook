@@ -11,14 +11,12 @@ struct UserProfileView: View {
     @EnvironmentObject var stampsManager: StampsManager
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var followManager: FollowManager // Shared instance
-    @EnvironmentObject var blockManager: BlockManager // Shared instance for blocking
     @EnvironmentObject var currentUserProfileManager: ProfileManager // BEST PRACTICE: Global ProfileManager for current user counts
     @StateObject private var profileManager = ProfileManager() // Local ProfileManager for viewing this user's profile
+    @Environment(\.dismiss) var dismiss
     
-    @State private var selectedTab: StampTab = .all
     @State private var showMoreMenu = false
-    @State private var showBlockConfirmation = false
-    @State private var showFeedback = false // Show feedback sheet for reporting
+    @State private var showUserReport = false // Show user report sheet
     @State private var userProfile: UserProfile?
     // @State private var userRank: Int? // TODO: POST-MVP - Rank for the viewed user
     @State private var showFollowError = false
@@ -31,11 +29,6 @@ struct UserProfileView: View {
     
     var isFollowing: Bool {
         followManager.isFollowing[userId] ?? false
-    }
-    
-    enum StampTab: String, CaseIterable {
-        case all = "All"
-        case collections = "Collections"
     }
     
     // MARK: - View Components
@@ -143,8 +136,8 @@ struct UserProfileView: View {
                 Task {
                     await fetchUserRank(for: profile)
                 }
-            } else if userRank != nil {
-                print("✅ [UserProfileView] Rank already loaded: #\(userRank!)")
+            } else if let rank = userRank {
+                print("✅ [UserProfileView] Rank already loaded: #\(rank)")
             } else {
                 print("⚠️ [UserProfileView] Profile not loaded yet - cannot fetch rank")
             }
@@ -295,46 +288,24 @@ struct UserProfileView: View {
         }
     }
     
-    private var tabPickerSection: some View {
-        // Native segmented control
-        Picker("View", selection: $selectedTab) {
-            ForEach(StampTab.allCases, id: \.self) { tab in
-                Text(tab.rawValue)
-                    .font(.system(size: 24, weight: .medium))
-                    .tag(tab)
-            }
-        }
-        .pickerStyle(.segmented)
-        .controlSize(.large)
-        .padding(.horizontal, 20)
-        .padding(.bottom, 20)
-    }
-    
-    @ViewBuilder
-    private var tabContentSection: some View {
-        // Content based on selected tab
-        if selectedTab == .all {
-            AllStampsContent(userCollectedStamps: userCollectedStamps, isLoadingStamps: isLoadingStamps)
-        } else {
-            CollectionsContent(userCollectedStamps: userCollectedStamps)
-        }
-    }
     
     var body: some View {
-        ScrollView {
-            VStack(spacing: 0) {
-                profileSection
-                statsSection
-                followButtonSection
-                tabPickerSection
-                tabContentSection
+        Group {
+            // Profile content
+            ScrollView {
+                VStack(spacing: 0) {
+                    profileSection
+                    statsSection
+                    followButtonSection
+                    AllStampsContent(userCollectedStamps: userCollectedStamps, isLoadingStamps: isLoadingStamps)
+                }
             }
-        }
-        .refreshable {
-            // Pull-to-refresh to get latest profile data
-            await profileManager.refresh()
-            // Also refresh stamps
-            loadUserStamps()
+            .refreshable {
+                // Pull-to-refresh to get latest profile data
+                await profileManager.refresh()
+                // Also refresh stamps
+                loadUserStamps()
+            }
         }
         .navigationBarTitleDisplayMode(.inline)
         .alert("Error", isPresented: $showFollowError) {
@@ -351,27 +322,14 @@ struct UserProfileView: View {
             }
             
             Button("Report User", role: .destructive) {
-                // Show feedback view for reporting this user
-                showFeedback = true
-            }
-            
-            Button("Block", role: .destructive) {
-                // Show block confirmation
-                showBlockConfirmation = true
+                // Show user report view
+                showUserReport = true
             }
             
             Button("Cancel", role: .cancel) {}
         }
-        .sheet(isPresented: $showFeedback) {
-            SimpleFeedbackView()
-        }
-        .alert("Block \(userProfile?.displayName ?? displayName)?", isPresented: $showBlockConfirmation) {
-            Button("Block", role: .destructive) {
-                handleBlockUser()
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("They won't be able to search for your profile and see your stamps and activity. They won't be notified that you blocked them.")
+        .sheet(isPresented: $showUserReport) {
+            SimpleUserReportView(reportedUserId: userId, reportedUsername: username)
         }
         .onAppear {
             // Load user profile
@@ -460,17 +418,6 @@ struct UserProfileView: View {
         }
     }
     */
-    
-    /// Handle blocking a user
-    private func handleBlockUser() {
-        guard let currentUserId = authManager.userId else { return }
-        
-        blockManager.blockUser(currentUserId: currentUserId, targetUserId: userId) {
-            // On success, navigate back
-            // The blocked user's profile should not be accessible anymore
-            print("✅ Successfully blocked user \(userId)")
-        }
-    }
     
     struct AllStampsContent: View {
         let userCollectedStamps: [CollectedStamp]
@@ -568,8 +515,11 @@ struct UserProfileView: View {
             .onAppear {
                 loadUserStamps()
             }
-            .onChange(of: userCollectedStamps) { _, _ in
-                loadUserStamps()
+            .onChange(of: userCollectedStamps.count) { oldCount, newCount in
+                // Only reload if the count actually changed
+                if oldCount != newCount {
+                    loadUserStamps()
+                }
             }
         }
         
@@ -605,11 +555,42 @@ struct UserProfileView: View {
         var body: some View {
             VStack(spacing: 12) {
                 // Stamp image
-                Image(stamp.imageName)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(height: 160)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                if let imageUrl = stamp.imageUrl, !imageUrl.isEmpty {
+                    // Load from Firebase Storage
+                    AsyncImage(url: URL(string: imageUrl)) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(height: 160)
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                        case .failure, .empty:
+                            // Fallback to placeholder
+                            Image("empty")
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(height: 160)
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                        @unknown default:
+                            EmptyView()
+                        }
+                    }
+                } else if !stamp.imageName.isEmpty {
+                    // Fallback to bundled image for backward compatibility
+                    Image(stamp.imageName)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(height: 160)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                } else {
+                    // No image - show placeholder
+                    Image("empty")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(height: 160)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
                 
                 // Stamp name (centered, fixed height for 2 lines)
                 Text(stamp.name)
@@ -618,91 +599,6 @@ struct UserProfileView: View {
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
                     .frame(maxWidth: .infinity, minHeight: 40, maxHeight: 40, alignment: .top)
-            }
-        }
-    }
-    
-    struct CollectionsContent: View {
-        let userCollectedStamps: [CollectedStamp]
-        
-        @EnvironmentObject var stampsManager: StampsManager
-        @State private var userStamps: [Stamp] = [] // Lazy-loaded stamps
-        @State private var isLoading = false
-        @State private var loadedStampIds: Set<String> = [] // Track what we've loaded
-        
-        var body: some View {
-            if isLoading && userStamps.isEmpty {
-                // Loading state
-                VStack {
-                    Spacer()
-                    ProgressView()
-                        .scaleEffect(1.5)
-                    Spacer()
-                }
-                .frame(height: 300)
-            } else {
-                // Always show collections, even if user has 0 stamps collected
-                VStack(spacing: 20) {
-                    ForEach(stampsManager.collections) { collection in
-                        NavigationLink(destination: CollectionDetailView(collection: collection)) {
-                            // Calculate collected count for this user's stamps
-                            let collectedCount = userCollectedStamps.filter { collected in
-                                userStamps.first(where: { $0.id == collected.stampId })?.collectionIds.contains(collection.id) ?? false
-                            }.count
-                            
-                            // Use the hard-coded totalStamps from the collection (same as current user's profile)
-                            let totalCount = collection.totalStamps
-                            let percentage = totalCount > 0 ? Double(collectedCount) / Double(totalCount) : 0.0
-                            
-                            CollectionCardView(
-                                name: collection.name,
-                                collectedCount: collectedCount,
-                                totalCount: totalCount,
-                                completionPercentage: percentage
-                            )
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    }
-                }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 32)
-                .onAppear {
-                    loadUserStamps()
-                }
-                .onChange(of: userCollectedStamps.count) { _, _ in
-                    // Only reload if the stamp IDs have actually changed
-                    let currentStampIds = Set(userCollectedStamps.map { $0.stampId })
-                    if currentStampIds != loadedStampIds {
-                        loadUserStamps()
-                    }
-                }
-            }
-        }
-        
-        private func loadUserStamps() {
-            guard !isLoading else { return }
-            
-            let collectedStampIds = userCollectedStamps.map { $0.stampId }
-            
-            // Don't reload if we already have these stamps
-            let currentStampIds = Set(collectedStampIds)
-            if currentStampIds == loadedStampIds && !userStamps.isEmpty {
-                return
-            }
-            
-            isLoading = true
-            
-            Task {
-                // LAZY LOADING: Fetch ONLY stamps this user has collected
-                print("🎯 [UserProfileView.Collections] Fetching \(collectedStampIds.count) user stamps")
-                
-                let stamps = await stampsManager.fetchStamps(ids: collectedStampIds)
-                
-                await MainActor.run {
-                    userStamps = stamps
-                    loadedStampIds = currentStampIds
-                    isLoading = false
-                }
             }
         }
     }

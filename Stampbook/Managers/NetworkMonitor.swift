@@ -15,6 +15,7 @@ class NetworkMonitor: ObservableObject {
     private let pathStatusSubject = PassthroughSubject<NWPath.Status, Never>()
     
     init() {
+        print("⏱️ [NetworkMonitor] init() started")
         // Set up Combine pipeline with debounce
         pathStatusSubject
             .map { $0 == .satisfied }
@@ -27,6 +28,7 @@ class NetworkMonitor: ObservableObject {
             self?.pathStatusSubject.send(path.status)
         }
         monitor.start(queue: queue)
+        print("✅ [NetworkMonitor] init() completed")
     }
     
     deinit {

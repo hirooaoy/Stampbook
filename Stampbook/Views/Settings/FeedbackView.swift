@@ -200,6 +200,115 @@ struct SimpleProblemReportView: View {
     }
 }
 
+/// Simple user report view - For reporting users (spam, inappropriate content, etc.)
+struct SimpleUserReportView: View {
+    let reportedUserId: String
+    let reportedUsername: String
+    
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject var authManager: AuthManager
+    @State private var reportText = ""
+    @State private var isSending = false
+    @State private var showSuccessAlert = false
+    @State private var showErrorAlert = false
+    @State private var errorMessage = ""
+    
+    var body: some View {
+        NavigationStack {
+            ZStack(alignment: .topLeading) {
+                TextEditor(text: $reportText)
+                    .font(.body)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 8)
+                    .scrollContentBackground(.hidden)
+                    .background(Color(.systemBackground))
+                
+                // Placeholder
+                if reportText.isEmpty {
+                    Text("Tell us what's wrong (this is a spam account, inappropriate content, etc.).\n\nWe are actively working on blocking features.")
+                        .font(.body)
+                        .foregroundColor(.gray.opacity(0.5))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 16)
+                        .allowsHitTesting(false)
+                }
+            }
+            .navigationTitle("Report User")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                    .disabled(isSending)
+                }
+                
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(action: sendUserReport) {
+                        if isSending {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle())
+                        } else {
+                            Text("Send")
+                                .fontWeight(.semibold)
+                        }
+                    }
+                    .disabled(reportText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSending)
+                }
+            }
+            .alert("Success!", isPresented: $showSuccessAlert) {
+                Button("OK") {
+                    dismiss()
+                }
+            } message: {
+                Text("Thank you for your report!")
+            }
+            .alert("Error", isPresented: $showErrorAlert) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(errorMessage)
+            }
+        }
+    }
+    
+    private func sendUserReport() {
+        let trimmedText = reportText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedText.isEmpty else { return }
+        
+        isSending = true
+        
+        Task {
+            do {
+                // Submit to Firebase with reported user info
+                let userId = authManager.userId ?? "anonymous"
+                let reportMessage = """
+                Reported User: @\(reportedUsername) (ID: \(reportedUserId))
+                
+                Report:
+                \(trimmedText)
+                """
+                
+                try await FirebaseService.shared.submitFeedback(
+                    userId: userId,
+                    type: "User Report",
+                    message: reportMessage
+                )
+                
+                await MainActor.run {
+                    isSending = false
+                    showSuccessAlert = true
+                }
+            } catch {
+                await MainActor.run {
+                    isSending = false
+                    errorMessage = error.localizedDescription
+                    showErrorAlert = true
+                }
+            }
+        }
+    }
+}
+
 #Preview("Feedback") {
     SimpleFeedbackView()
         .environmentObject(AuthManager())
@@ -207,6 +316,11 @@ struct SimpleProblemReportView: View {
 
 #Preview("Problem Report") {
     SimpleProblemReportView()
+        .environmentObject(AuthManager())
+}
+
+#Preview("User Report") {
+    SimpleUserReportView(reportedUserId: "testUserId", reportedUsername: "testuser")
         .environmentObject(AuthManager())
 }
 

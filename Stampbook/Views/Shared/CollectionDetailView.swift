@@ -114,11 +114,42 @@ struct CollectionStampItem: View {
         VStack(spacing: 12) {
             if isCollected {
                 // Show the stamp image if collected
-                Image(stamp.imageName)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(height: 160)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                if let imageUrl = stamp.imageUrl, !imageUrl.isEmpty {
+                    // Load from Firebase Storage
+                    AsyncImage(url: URL(string: imageUrl)) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(height: 160)
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                        case .failure, .empty:
+                            // Fallback to placeholder
+                            Image("empty")
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(height: 160)
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                        @unknown default:
+                            EmptyView()
+                        }
+                    }
+                } else if !stamp.imageName.isEmpty {
+                    // Fallback to bundled image for backward compatibility
+                    Image(stamp.imageName)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(height: 160)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                } else {
+                    // No image - show placeholder
+                    Image("empty")
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(height: 160)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
             } else {
                 // Show gray box with lock icon if not collected
                 ZStack {

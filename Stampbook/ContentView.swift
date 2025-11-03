@@ -3,18 +3,33 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var profileManager: ProfileManager // Shared profile manager
-    @StateObject private var stampsManager = StampsManager()
+    @StateObject private var stampsManager: StampsManager = {
+        print("⏱️ [ContentView] Creating StampsManager...")
+        let manager = StampsManager()
+        print("✅ [ContentView] StampsManager created")
+        return manager
+    }()
     @State private var selectedTab = 0
     @State private var previousTab = 0 // Track previous tab
     @State private var shouldResetStampsNavigation = false // Flag to reset StampsView navigation
     
     var body: some View {
-        // TODO: Add loading/error state UI overlay
-        // - Show ProgressView when stampsManager.isLoading is true
-        // - Show error message with retry button when stampsManager.loadError is not nil
-        // - Blur/disable main content during loading/error states
+        let _ = print("⏱️ [ContentView] body evaluation started")
         
-        TabView(selection: $selectedTab) {
+        // Show splash while checking auth state
+        if authManager.isCheckingAuth {
+            ZStack {
+                Color(UIColor.systemBackground)
+                    .ignoresSafeArea()
+                Image("AppLogo")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 120, height: 120)
+                    .cornerRadius(24)
+            }
+        } else {
+            // Auth check complete - show main app
+            TabView(selection: $selectedTab) {
             FeedView(selectedTab: $selectedTab, shouldResetStampsNavigation: $shouldResetStampsNavigation)
                 .tabItem {
                     Label("Feed", systemImage: "person.2.fill")
@@ -27,7 +42,7 @@ struct ContentView: View {
             .tabItem {
                 Label("Map", systemImage: "map.fill")
             }
-            .tag(1)
+                .tag(1)
             
             StampsView(shouldResetNavigation: $shouldResetStampsNavigation)
                 .tabItem {
@@ -40,29 +55,23 @@ struct ContentView: View {
             previousTab = oldValue
         }
         .onAppear {
+            print("⏱️ [ContentView] onAppear started")
             // Set current user on initial load
             stampsManager.setCurrentUser(authManager.userId)
             
-            // Load profile if already signed in on app launch
-            if authManager.isSignedIn, let userId = authManager.userId {
-                print("🔄 [ContentView.onAppear] Loading profile for signed-in user: \(userId)")
-                profileManager.loadProfile(userId: userId)
-            }
+            // Link AuthManager to ProfileManager
+            authManager.profileManager = profileManager
+            print("✅ [ContentView] onAppear completed")
         }
         .onChange(of: authManager.isSignedIn) { _, isSignedIn in
             print("🔄 [ContentView] Auth state changed - isSignedIn: \(isSignedIn)")
             
-            if isSignedIn {
-                // User signed in - load profile
-                if let userId = authManager.userId {
-                    print("🔄 [ContentView] User signed in, loading profile for userId: \(userId)")
-                    profileManager.loadProfile(userId: userId)
-                }
-            } else {
+            if !isSignedIn {
                 // User signed out - clear profile
                 print("🔄 [ContentView] User signed out, clearing profile")
                 profileManager.clearProfile()
             }
+            // Note: AuthManager handles profile loading on sign-in
         }
         .onChange(of: authManager.userId) { _, newUserId in
             print("🔄 [ContentView] UserId changed: \(newUserId ?? "nil")")
@@ -70,14 +79,12 @@ struct ContentView: View {
             // Update stamps manager when user changes (sign in/out or switch user)
             stampsManager.setCurrentUser(newUserId)
             
-            // Load or clear profile based on sign-in state
-            if authManager.isSignedIn, let userId = newUserId {
-                print("🔄 [ContentView] Loading profile for new userId: \(userId)")
-                profileManager.loadProfile(userId: userId)
-            } else {
-                print("🔄 [ContentView] Clearing profile (signed out or nil userId)")
+            // Clear profile if signed out
+            if !authManager.isSignedIn {
+                print("🔄 [ContentView] Clearing profile (signed out)")
                 profileManager.clearProfile()
             }
+            // Note: AuthManager handles profile loading
         }
         .onChange(of: profileManager.currentUserProfile) { _, newProfile in
             // Sync ProfileManager updates back to AuthManager for consistency
@@ -86,10 +93,6 @@ struct ContentView: View {
                 authManager.userDisplayName = profile.displayName
             }
         }
+        }
     }
 }
-
-#Preview {
-    ContentView()
-}
-

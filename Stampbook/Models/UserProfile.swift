@@ -10,8 +10,8 @@ struct UserProfile: Codable, Identifiable, Equatable, Sendable {
     var avatarUrl: String?
     var totalStamps: Int
     var uniqueCountriesVisited: Int // Count of unique countries from collected stamps
-    var followerCount: Int // Denormalized count for fast reads
-    var followingCount: Int // Denormalized count for fast reads
+    var followerCount: Int // Count fetched on-demand from subcollections (MVP scale)
+    var followingCount: Int // Count fetched on-demand from subcollections (MVP scale)
     var createdAt: Date
     var lastActiveAt: Date
     var usernameLastChanged: Date? // Tracks when username was last changed - enforces 14-day cooldown between changes

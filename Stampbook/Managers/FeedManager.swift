@@ -91,7 +91,7 @@ class FeedManager: ObservableObject {
         
         // STEP 4: Show disk cache immediately (Instagram trick)
         if feedPosts.isEmpty && !forceRefresh {
-            loadDiskCache()
+            await loadDiskCache()
         }
         
         // STEP 5: Fetch fresh data from Firebase
@@ -181,7 +181,7 @@ class FeedManager: ObservableObject {
                     displayName: profile.displayName,
                     avatarUrl: profile.avatarUrl,
                     stampName: stamp.name,
-                    stampImageName: stamp.imageName,
+                    stampImageName: stamp.imageUrl ?? "", // Use Firebase URL instead of deprecated imageName
                     location: stamp.cityCountry,
                     date: collectedStamp.collectedDate.formattedMedium(),
                     actualDate: collectedStamp.collectedDate,
@@ -229,6 +229,33 @@ class FeedManager: ObservableObject {
         await fetchFeedAndPrefetch(userId: userId, stampsManager: stampsManager, isInitialLoad: true)
     }
     
+    /// Update comment count for a specific post (called after comment deletion/addition)
+    func updatePostCommentCount(postId: String, newCount: Int) {
+        if let index = feedPosts.firstIndex(where: { $0.id == postId }) {
+            let updatedPost = feedPosts[index]
+            // Use reflection to update the immutable struct
+            feedPosts[index] = FeedPost(
+                id: updatedPost.id,
+                userId: updatedPost.userId,
+                userName: updatedPost.userName,
+                displayName: updatedPost.displayName,
+                avatarUrl: updatedPost.avatarUrl,
+                stampName: updatedPost.stampName,
+                stampImageName: updatedPost.stampImageName,
+                location: updatedPost.location,
+                date: updatedPost.date,
+                actualDate: updatedPost.actualDate,
+                isCurrentUser: updatedPost.isCurrentUser,
+                stampId: updatedPost.stampId,
+                userPhotos: updatedPost.userPhotos,
+                note: updatedPost.note,
+                likeCount: updatedPost.likeCount,
+                commentCount: newCount // Update only the comment count
+            )
+            print("✅ [FeedManager] Updated comment count for post \(postId): \(newCount)")
+        }
+    }
+    
     /// Clear cached feed data
     func clearCache() {
         feedPosts = []
@@ -241,7 +268,7 @@ class FeedManager: ObservableObject {
     
     /// Load feed from disk cache (instant, even if stale)
     /// This is the "Instagram trick" - always show something on cold start
-    private func loadDiskCache() {
+    private func loadDiskCache() async {
         guard FileManager.default.fileExists(atPath: diskCacheURL.path) else {
             return
         }
@@ -252,8 +279,14 @@ class FeedManager: ObservableObject {
             decoder.dateDecodingStrategy = .iso8601
             let cachedPosts = try decoder.decode([FeedPost].self, from: data)
             
-            // Show cached posts immediately (even if stale)
-            feedPosts = cachedPosts
+            // ⚡ CRITICAL FIX: Force next run loop to avoid "Publishing changes during view update"
+            // Without this, disk cache loads SO FAST that state updates in same cycle as view render
+            await Task.yield()
+            
+            // Show cached posts immediately (even if stale) - use MainActor to avoid publishing during view update
+            await MainActor.run {
+                self.feedPosts = cachedPosts
+            }
         } catch {
             // Silently fail - will load fresh data
         }

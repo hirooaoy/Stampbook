@@ -14,7 +14,6 @@ struct StampsView: View {
     @State private var showFeedback = false
     @State private var showProblemReport = false
     @State private var showSignOutConfirmation = false
-    @State private var showBlockedUsers = false // Navigation to blocked users list
     @State private var navigationPath = NavigationPath() // Track navigation stack
     // @State private var hasAttemptedRankLoad = false // TODO: POST-MVP - Rank loading disabled
     
@@ -77,14 +76,6 @@ struct StampsView: View {
                                     print("About Stampbook tapped")
                                 }) {
                                     Label("About Stampbook", systemImage: "info.circle")
-                                }
-                                
-                                Divider()
-                                
-                                Button(action: {
-                                    showBlockedUsers = true
-                                }) {
-                                    Label("Blocked Users", systemImage: "hand.raised.fill")
                                 }
                                 
                                 Divider()
@@ -333,8 +324,8 @@ struct StampsView: View {
                                         Task {
                                             await profileManager.fetchUserRank(for: profile)
                                         }
-                                    } else if profileManager.userRank != nil {
-                                        print("✅ [StampsView] Rank already loaded: #\(profileManager.userRank!)")
+                                    } else if let rank = profileManager.userRank {
+                                        print("✅ [StampsView] Rank already loaded: #\(rank)")
                                         hasAttemptedRankLoad = true
                                     } else {
                                         print("⚠️ [StampsView] Profile not loaded yet - cannot fetch rank")
@@ -518,12 +509,6 @@ struct StampsView: View {
                     SimpleProblemReportView()
                         .environmentObject(authManager)
                 }
-                .sheet(isPresented: $showBlockedUsers) {
-                    NavigationStack {
-                        BlockedUsersView()
-                            .environmentObject(authManager)
-                    }
-                }
                 .alert("Sign Out", isPresented: $showSignOutConfirmation) {
                     Button("Cancel", role: .cancel) {}
                     Button("Sign Out", role: .destructive) {
@@ -693,12 +678,32 @@ struct StampsView: View {
         
         var body: some View {
             VStack(spacing: 12) {
-                // Stamp image
-                Image(stamp.imageName)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
+                // Stamp image - use CachedImageView for proper caching and instant display
+                if let imageUrl = stamp.imageUrl, !imageUrl.isEmpty {
+                    // Load from Firebase Storage with caching
+                    CachedImageView.stampPhoto(
+                        imageName: stamp.imageName.isEmpty ? nil : stamp.imageName,
+                        storagePath: stamp.imageStoragePath,
+                        stampId: stamp.id,
+                        size: CGSize(width: 160, height: 160),
+                        cornerRadius: 12
+                    )
                     .frame(height: 160)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                } else if !stamp.imageName.isEmpty {
+                    // Fallback to bundled image for backward compatibility
+                    Image(stamp.imageName)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(height: 160)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                } else {
+                    // No image - show placeholder
+                    Image("empty")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(height: 160)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
                 
                 // Stamp name (centered, fixed height for 2 lines)
                 Text(stamp.name)

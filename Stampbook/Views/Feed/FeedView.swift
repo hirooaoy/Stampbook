@@ -25,12 +25,57 @@ struct FeedView: View {
         case onlyYou = "Only Yours"
     }
     
+    /// Build the common menu items shared between signed-in and signed-out states
+    @ViewBuilder
+    private var menuContent: some View {
+        Button(action: {
+            // TODO: Open about (will include Privacy Policy and Terms of Service inside)
+            print("About Stampbook tapped")
+        }) {
+            Label("About Stampbook", systemImage: "info.circle")
+        }
+        
+        Divider()
+        
+        Button(action: {
+            // TODO: Open business info
+            print("For Local Business tapped")
+        }) {
+            Label("For Local Business", systemImage: "storefront")
+        }
+        
+        Button(action: {
+            // TODO: Open creator info
+            print("For Creators tapped")
+        }) {
+            Label("For Creators", systemImage: "sparkles")
+        }
+        
+        Divider()
+        
+        Button(action: {
+            showProblemReport = true
+        }) {
+            Label("Report a Problem", systemImage: "exclamationmark.bubble")
+        }
+        
+        Button(action: {
+            showFeedback = true
+        }) {
+            Label("Send Feedback", systemImage: "envelope")
+        }
+    }
+    
     /// Refresh feed data without clearing cached statistics
     private func refreshFeedData() async {
         // Just refresh the feed - no need to sync user's collected stamps
         // The feed will show the latest posts from Firebase
         guard let userId = authManager.userId else { return }
         await feedManager.refresh(userId: userId, stampsManager: stampsManager)
+        
+        // Initialize like counts from feed data (bulk operation, no race condition)
+        let likeCounts = Dictionary(uniqueKeysWithValues: feedManager.feedPosts.map { ($0.id, $0.likeCount) })
+        likeManager.setLikeCounts(likeCounts)
         
         // Fetch like status for all posts to sync with cached state
         let postIds = feedManager.feedPosts.map { $0.id }
@@ -41,19 +86,29 @@ struct FeedView: View {
     
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                // Top bar with logo and icons
-                HStack {
-                    // Logo on the left (app icon)
-                    Image("AppLogo")
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 32, height: 32)
-                        .cornerRadius(6)
-                    
+            // Don't render content while auth is still being checked
+            if authManager.isCheckingAuth {
+                // Show minimal loading state during auth check
+                VStack {
                     Spacer()
-                    
-                    if authManager.isSignedIn {
+                    ProgressView()
+                        .scaleEffect(1.5)
+                    Spacer()
+                }
+            } else {
+                VStack(spacing: 0) {
+                    // Top bar with logo and icons
+                    HStack {
+                        // Logo on the left (app icon)
+                        Image("AppLogo")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 32, height: 32)
+                            .cornerRadius(6)
+                        
+                        Spacer()
+                        
+                        if authManager.isSignedIn {
                         // Signed-in menu: Search, notification, and ellipses
                         HStack(spacing: 8) {
                             Button(action: {
@@ -66,53 +121,19 @@ struct FeedView: View {
                                     .contentShape(Rectangle())     // Make entire frame tappable
                             }
                             
-                            Button(action: {
-                                showNotifications = true
-                            }) {
-                                Image(systemName: "bell")
-                                    .font(.system(size: 24))
-                                    .foregroundColor(.primary)
-                                    .frame(width: 44, height: 44)  // Larger tap target
-                                    .contentShape(Rectangle())     // Make entire frame tappable
-                            }
+                            // TODO: Implement notification system later
+                            // Button(action: {
+                            //     showNotifications = true
+                            // }) {
+                            //     Image(systemName: "bell")
+                            //         .font(.system(size: 24))
+                            //         .foregroundColor(.primary)
+                            //         .frame(width: 44, height: 44)  // Larger tap target
+                            //         .contentShape(Rectangle())     // Make entire frame tappable
+                            // }
                             
                             Menu {
-                                Button(action: {
-                                    // TODO: Open about (will include Privacy Policy and Terms of Service inside)
-                                    print("About Stampbook tapped")
-                                }) {
-                                    Label("About Stampbook", systemImage: "info.circle")
-                                }
-                                
-                                Divider()
-                                
-                                Button(action: {
-                                    // TODO: Open business info
-                                    print("For Local Business tapped")
-                                }) {
-                                    Label("For Local Business", systemImage: "storefront")
-                                }
-                                
-                                Button(action: {
-                                    // TODO: Open creator info
-                                    print("For Creators tapped")
-                                }) {
-                                    Label("For Creators", systemImage: "sparkles")
-                                }
-                                
-                                Divider()
-                                
-                                Button(action: {
-                                    showProblemReport = true
-                                }) {
-                                    Label("Report a Problem", systemImage: "exclamationmark.bubble")
-                                }
-                                
-                                Button(action: {
-                                    showFeedback = true
-                                }) {
-                                    Label("Send Feedback", systemImage: "envelope")
-                                }
+                                menuContent
                                 
                                 Divider()
                                 
@@ -132,42 +153,7 @@ struct FeedView: View {
                     } else {
                         // Signed-out menu: Just ellipsis with Menu
                         Menu {
-                            Button(action: {
-                                // TODO: Open about (will include Privacy Policy and Terms of Service inside)
-                                print("About Stampbook tapped")
-                            }) {
-                                Label("About Stampbook", systemImage: "info.circle")
-                            }
-                            
-                            Divider()
-                            
-                            Button(action: {
-                                // TODO: Open business info
-                                print("For Local Business tapped")
-                            }) {
-                                Label("For Local Business", systemImage: "storefront")
-                            }
-                            
-                            Button(action: {
-                                // TODO: Open creator info
-                                print("For Creators tapped")
-                            }) {
-                                Label("For Creators", systemImage: "sparkles")
-                            }
-                            
-                            Divider()
-                            
-                            Button(action: {
-                                showProblemReport = true
-                            }) {
-                                Label("Report a Problem", systemImage: "exclamationmark.bubble")
-                            }
-                            
-                            Button(action: {
-                                showFeedback = true
-                            }) {
-                                Label("Send Feedback", systemImage: "envelope")
-                            }
+                            menuContent
                         } label: {
                             Image(systemName: "ellipsis")
                                 .font(.system(size: 24))
@@ -218,7 +204,6 @@ struct FeedView: View {
                                         .signInWithAppleButtonStyle(colorScheme == .dark ? .white : .black)
                                         .frame(height: 50)
                                         .cornerRadius(8)
-                                        .allowsHitTesting(false)
                                 }
                                 .padding(.horizontal, 32)
                                 .padding(.top, 8)
@@ -295,6 +280,7 @@ struct FeedView: View {
                             .animation(.spring(response: 0.3), value: errorMessage)
                     }
                 }
+            }
             }
         }
     }
@@ -399,6 +385,10 @@ struct FeedView: View {
                     stampsManager: stampsManager,
                     forceRefresh: false
                 )
+                
+                // Initialize like counts from feed data (bulk operation, no race condition)
+                let likeCounts = Dictionary(uniqueKeysWithValues: feedManager.feedPosts.map { ($0.id, $0.likeCount) })
+                likeManager.setLikeCounts(likeCounts)
                 
                 // Fetch like status for all posts to sync with cached state
                 let postIds = feedManager.feedPosts.map { $0.id }
@@ -516,6 +506,10 @@ struct FeedView: View {
                     stampsManager: stampsManager,
                     forceRefresh: false
                 )
+                
+                // Initialize like counts from feed data (bulk operation, no race condition)
+                let likeCounts = Dictionary(uniqueKeysWithValues: feedManager.feedPosts.map { ($0.id, $0.likeCount) })
+                likeManager.setLikeCounts(likeCounts)
                 
                 // Fetch like status for all posts to sync with cached state
                 let postIds = feedManager.feedPosts.map { $0.id }
@@ -641,7 +635,7 @@ struct FeedView: View {
                 PhotoGalleryView(
                     stampId: stampId,
                     maxPhotos: 5,
-                    showStampImage: !stampImageName.isEmpty,
+                    showStampImage: true,  // Always show stamp image section on feed (shows placeholder if empty)
                     stampImageName: stampImageName,
                     onStampImageTap: {
                         loadStampAndNavigate()
@@ -720,9 +714,9 @@ struct FeedView: View {
             }
             .padding(.vertical, 8)
             .onAppear {
-                // Initialize like and comment counts from feed data
-                likeManager.updateLikeCount(postId: postId, count: likeCount)
-                commentManager.updateCommentCount(postId: postId, count: commentCount)
+                // Initialize comment count from feed data
+                // (Like counts are initialized in bulk after feed load to prevent race conditions)
+                commentManager.updateCommentCount(postId: postId, count: commentCount, forceUpdate: true)
                 
                 // PREFETCH: Load stamp data in background when post appears
                 // Makes navigation instant when user taps (Instagram pattern)
@@ -752,36 +746,6 @@ struct FeedView: View {
                 .environmentObject(authManager)
                 .environmentObject(profileManager)
             }
-        }
-        
-        private func buildCollectionText() -> AttributedString {
-            var result = AttributedString()
-            
-            // Bold user name
-            var userNameAttr = AttributedString(userName)
-            userNameAttr.font = .body.bold()
-            result += userNameAttr
-            
-            // Regular "collected"
-            result += AttributedString(" collected ")
-            
-            // Bold stamp name (make it interactive-looking)
-            var stampNameAttr = AttributedString(stampName)
-            stampNameAttr.font = .body.bold()
-            result += stampNameAttr
-            
-            return result
-        }
-        
-        private func buildCollectionTextButton() -> some View {
-            Button(action: {
-                loadStampAndNavigate()
-            }) {
-                Text(buildCollectionText())
-                    .font(.body)
-                    .foregroundColor(.primary)
-            }
-            .buttonStyle(PlainButtonStyle())
         }
         
         private func prefetchStampData() {
