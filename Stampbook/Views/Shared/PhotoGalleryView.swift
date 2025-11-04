@@ -4,6 +4,7 @@ import PhotosUI
 struct PhotoGalleryView: View {
     @EnvironmentObject var stampsManager: StampsManager
     @EnvironmentObject var authManager: AuthManager
+    @StateObject private var imageManager = ImageManager.shared
     
     let stampId: String
     let maxPhotos: Int
@@ -64,7 +65,7 @@ struct PhotoGalleryView: View {
                     Image(systemName: "photo")
                         .font(.body)
                         .foregroundColor(.primary)
-                        .frame(width: 20, height: 20, alignment: .center)
+                        .frame(width: 18, height: 18, alignment: .center)
                     Text("Add Photos")
                         .font(.body)
                         .fontWeight(.semibold)
@@ -81,13 +82,31 @@ struct PhotoGalleryView: View {
                     await handlePhotoSelection(newItems)
                 }
             }
-            .fullScreenCover(item: $selectedPhotoIndex) { photoIndex in
+            .sheet(item: $selectedPhotoIndex) { photoIndex in
                 FullScreenPhotoView(
                     stampId: stampId,
                     imageNames: imageNames,
                     startIndex: photoIndex.index
                 )
                 .environmentObject(stampsManager)
+                .presentationBackground(.black)
+                .presentationDragIndicator(.hidden)
+                .edgesIgnoringSafeArea(.all)
+            }
+            .overlay(alignment: .top) {
+                // Toast for photo upload errors
+                if let errorMessage = imageManager.errorMessage {
+                    Text(errorMessage)
+                        .font(.subheadline)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .background(Color.black.opacity(0.8))
+                        .cornerRadius(8)
+                        .padding(.top, 8)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                        .animation(.spring(response: 0.3), value: errorMessage)
+                }
             }
         } else {
             // Show horizontal scroll gallery
@@ -116,6 +135,7 @@ struct PhotoGalleryView: View {
                                 // Load from local assets (backward compatibility)
                                 Image(stampImageName)
                                     .resizable()
+                                    .renderingMode(.original)
                                     .aspectRatio(contentMode: .fill)
                                     .frame(width: 120, height: 120)
                                     .clipped()
@@ -125,6 +145,7 @@ struct PhotoGalleryView: View {
                             // No stamp image available - show "empty" placeholder (same as StampsView)
                             Image("empty")
                                 .resizable()
+                                .renderingMode(.original)
                                 .aspectRatio(contentMode: .fill)
                                 .frame(width: 120, height: 120)
                                 .clipped()
@@ -201,13 +222,31 @@ struct PhotoGalleryView: View {
                     }
                 }
             }
-            .fullScreenCover(item: $selectedPhotoIndex) { photoIndex in
+            .sheet(item: $selectedPhotoIndex) { photoIndex in
                 FullScreenPhotoView(
                     stampId: stampId,
                     imageNames: imageNames,
                     startIndex: photoIndex.index
                 )
                 .environmentObject(stampsManager)
+                .presentationBackground(.black)
+                .presentationDragIndicator(.hidden)
+                .edgesIgnoringSafeArea(.all)
+            }
+            .overlay(alignment: .top) {
+                // Toast for photo upload errors
+                if let errorMessage = imageManager.errorMessage {
+                    Text(errorMessage)
+                        .font(.subheadline)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .background(Color.black.opacity(0.8))
+                        .cornerRadius(8)
+                        .padding(.top, 8)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                        .animation(.spring(response: 0.3), value: errorMessage)
+                }
             }
         }
     }

@@ -131,6 +131,21 @@ struct CommentView: View {
             } message: {
                 Text("Are you sure you want to delete this comment?")
             }
+            .overlay(alignment: .top) {
+                // Toast for comment errors
+                if let errorMessage = commentManager.errorMessage {
+                    Text(errorMessage)
+                        .font(.subheadline)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .background(Color.black.opacity(0.8))
+                        .cornerRadius(8)
+                        .padding(.top, 8)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                        .animation(.spring(response: 0.3), value: errorMessage)
+                }
+            }
         }
     }
     
@@ -161,6 +176,21 @@ struct CommentView: View {
                 }
             } catch {
                 print("⚠️ Failed to fetch user profile for comment: \(error.localizedDescription)")
+                
+                // Show user-friendly error message
+                await MainActor.run {
+                    commentManager.errorMessage = "Couldn't post comment. Try again."
+                    
+                    // Clear message after 3 seconds
+                    Task {
+                        try? await Task.sleep(nanoseconds: 3_000_000_000)
+                        await MainActor.run {
+                            if commentManager.errorMessage == "Couldn't post comment. Try again." {
+                                commentManager.errorMessage = nil
+                            }
+                        }
+                    }
+                }
             }
         }
     }

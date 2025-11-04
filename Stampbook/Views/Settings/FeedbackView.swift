@@ -92,7 +92,7 @@ struct SimpleFeedbackView: View {
             } catch {
                 await MainActor.run {
                     isSending = false
-                    errorMessage = error.localizedDescription
+                    errorMessage = "Couldn't send feedback. Please try again."
                     showErrorAlert = true
                 }
             }
@@ -192,7 +192,7 @@ struct SimpleProblemReportView: View {
             } catch {
                 await MainActor.run {
                     isSending = false
-                    errorMessage = error.localizedDescription
+                    errorMessage = "Couldn't send report. Please try again."
                     showErrorAlert = true
                 }
             }
@@ -225,7 +225,7 @@ struct SimpleUserReportView: View {
                 
                 // Placeholder
                 if reportText.isEmpty {
-                    Text("Tell us what's wrong (this is a spam account, inappropriate content, etc.).\n\nWe are actively working on blocking features.")
+                    Text("Tell us what's wrong (this is a spam account, inappropriate content, etc.).")
                         .font(.body)
                         .foregroundColor(.gray.opacity(0.5))
                         .padding(.horizontal, 12)
@@ -301,7 +301,116 @@ struct SimpleUserReportView: View {
             } catch {
                 await MainActor.run {
                     isSending = false
-                    errorMessage = error.localizedDescription
+                    errorMessage = "Couldn't send report. Please try again."
+                    showErrorAlert = true
+                }
+            }
+        }
+    }
+}
+
+/// Suggest edit view - For suggesting edits to stamp information
+struct SuggestEditView: View {
+    let stampId: String
+    let stampName: String
+    
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject var authManager: AuthManager
+    @State private var editText = ""
+    @State private var isSending = false
+    @State private var showSuccessAlert = false
+    @State private var showErrorAlert = false
+    @State private var errorMessage = ""
+    
+    var body: some View {
+        NavigationStack {
+            ZStack(alignment: .topLeading) {
+                TextEditor(text: $editText)
+                    .font(.body)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 8)
+                    .scrollContentBackground(.hidden)
+                    .background(Color(.systemBackground))
+                
+                // Placeholder
+                if editText.isEmpty {
+                    Text(authManager.isSignedIn ? "Suggest improvements to stamp details (address, description, things to do, etc.)..." : "Suggest improvements to stamp details (address, description, things to do, etc.)...\n(Submitted anonymously)")
+                        .font(.body)
+                        .foregroundColor(.gray.opacity(0.5))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 16)
+                        .allowsHitTesting(false)
+                }
+            }
+            .navigationTitle("Suggest an Edit")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                    .disabled(isSending)
+                }
+                
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(action: sendSuggestEdit) {
+                        if isSending {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle())
+                        } else {
+                            Text("Send")
+                                .fontWeight(.semibold)
+                        }
+                    }
+                    .disabled(editText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSending)
+                }
+            }
+            .alert("Success!", isPresented: $showSuccessAlert) {
+                Button("OK") {
+                    dismiss()
+                }
+            } message: {
+                Text("Thank you for your suggestion!")
+            }
+            .alert("Error", isPresented: $showErrorAlert) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(errorMessage)
+            }
+        }
+    }
+    
+    private func sendSuggestEdit() {
+        let trimmedText = editText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedText.isEmpty else { return }
+        
+        isSending = true
+        
+        Task {
+            do {
+                // Submit to Firebase with stamp info
+                let userId = authManager.userId ?? "anonymous"
+                let editMessage = """
+                Stamp: \(stampName) (ID: \(stampId))
+                
+                Suggested Edit:
+                \(trimmedText)
+                """
+                
+                try await FirebaseService.shared.submitFeedback(
+                    userId: userId,
+                    type: "Stamp Edit Suggestion",
+                    message: editMessage
+                )
+                
+                await MainActor.run {
+                    isSending = false
+                    showSuccessAlert = true
+                }
+            } catch {
+                await MainActor.run {
+                    isSending = false
+                    errorMessage = "Couldn't send suggestion. Please try again."
                     showErrorAlert = true
                 }
             }
@@ -321,6 +430,11 @@ struct SimpleUserReportView: View {
 
 #Preview("User Report") {
     SimpleUserReportView(reportedUserId: "testUserId", reportedUsername: "testuser")
+        .environmentObject(AuthManager())
+}
+
+#Preview("Suggest Edit") {
+    SuggestEditView(stampId: "test_stamp_id", stampName: "Mt. Fuji")
         .environmentObject(AuthManager())
 }
 

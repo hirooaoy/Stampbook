@@ -11,13 +11,14 @@ struct StampDetailView: View {
     let stamp: Stamp
     let userLocation: CLLocation?
     let showBackButton: Bool
-    // @State private var showMapOptions = false  // HIDDEN: Using Menu instead of bottom sheet for consistency
     @State private var showMemorySection = false
     @State private var showNotesEditor = false
     @State private var editingNotes = ""
     @State private var stampStats: StampStatistics?
     @State private var userRank: Int? // User's rank for this stamp (1st, 2nd, 3rd collector, etc.)
     @State private var collectionProgress: [String: Int] = [:] // collectionId -> collected count
+    @State private var showSuggestEdit = false
+    @State private var showAddressOptions = false
     
     private var isCollected: Bool {
         stampsManager.isCollected(stamp)
@@ -67,38 +68,25 @@ struct StampDetailView: View {
                         if isCollected {
                             // Show stamp image when collected
                             if let imageUrl = stamp.imageUrl, !imageUrl.isEmpty {
-                                // Load from Firebase Storage
-                                AsyncImage(url: URL(string: imageUrl)) { phase in
-                                    switch phase {
-                                    case .success(let image):
-                                        image
-                                            .resizable()
-                                            .renderingMode(.original)
-                                            .scaledToFit()
-                                            .frame(width: 240, height: 240)
-                                            .transition(.scale.combined(with: .opacity))
-                                    case .failure:
-                                        // Fallback to placeholder on error
-                                        Image("empty")
-                                            .resizable()
-                                            .renderingMode(.original)
-                                            .scaledToFit()
-                                            .frame(width: 240, height: 240)
-                                    case .empty:
-                                        // Show loading spinner
-                                        ProgressView()
-                                            .frame(width: 240, height: 240)
-                                    @unknown default:
-                                        EmptyView()
-                                    }
-                                }
+                                // Use CachedImageView with FULL RESOLUTION for detail view (crisp quality)
+                                // Progressive loading: shows thumbnail instantly, then upgrades to full-res
+                                CachedImageView.stampPhoto(
+                                    imageName: stamp.imageName.isEmpty ? nil : stamp.imageName,
+                                    storagePath: stamp.imageStoragePath,
+                                    stampId: stamp.id,
+                                    size: CGSize(width: 300, height: 300),
+                                    cornerRadius: 16,
+                                    useFullResolution: true
+                                )
+                                .transition(.scale.combined(with: .opacity))
                             } else if !stamp.imageName.isEmpty {
                                 // Fallback to bundled image for backward compatibility
                                 Image(stamp.imageName)
                                     .resizable()
                                     .renderingMode(.original)
+                                    .interpolation(.high)
                                     .scaledToFit()
-                                    .frame(width: 240, height: 240)
+                                    .frame(width: 300, height: 300)
                                     .transition(.scale.combined(with: .opacity))
                             } else {
                                 // No image available - show placeholder
@@ -106,13 +94,13 @@ struct StampDetailView: View {
                                     .resizable()
                                     .renderingMode(.original)
                                     .scaledToFit()
-                                    .frame(width: 240, height: 240)
+                                    .frame(width: 300, height: 300)
                             }
                         } else {
                             // Show lock icon when not collected
                             RoundedRectangle(cornerRadius: 16)
                                 .fill(Color.gray.opacity(0.1))
-                                .frame(width: 240, height: 240)
+                                .frame(width: 300, height: 300)
                             
                             Image(systemName: "lock.fill")
                                 .font(.system(size: 80))
@@ -213,30 +201,29 @@ struct StampDetailView: View {
                                 editingNotes = userNotes
                                 showNotesEditor = true
                             }) {
-                                HStack(alignment: .top, spacing: 8) {
+                                HStack(spacing: 8) {
                                     Image(systemName: "note.text")
                                         .font(.body)
                                         .foregroundColor(.primary)
-                                        .frame(width: 20, height: 20, alignment: .center)
+                                        .frame(width: 18, height: 18, alignment: .center)
                                     
                                     if userNotes.isEmpty {
                                         Text("Add Notes")
                                             .font(.body)
                                             .fontWeight(.semibold)
                                             .foregroundColor(.primary)
-                                            .frame(maxWidth: .infinity, alignment: .leading)
                                     } else {
                                         Text(userNotes)
                                             .font(.body)
                                             .foregroundColor(.primary)
                                             .multilineTextAlignment(.leading)
-                                            .frame(maxWidth: .infinity, alignment: .leading)
                                     }
+                                    
+                                    Spacer(minLength: 6)
                                     
                                     Image(systemName: "chevron.right")
                                         .font(.body)
                                         .foregroundColor(.secondary)
-                                        .padding(.leading, 8)
                                 }
                                 .frame(minHeight: 44)              // Larger tap target
                                 .contentShape(Rectangle())         // Make entire frame tappable
@@ -280,36 +267,22 @@ struct StampDetailView: View {
                             .font(.headline)
                             .foregroundColor(.secondary)
                         
-                        HStack(spacing: 12) {
-                            Text(stamp.address)
-                                .font(.body)
-                                .foregroundColor(.primary)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                            
-                            Menu {
-                                Button(action: {
-                                    openInGoogleMaps()
-                                }) {
-                                    Label("Open in Google Maps", systemImage: "map")
-                                }
+                        Button(action: {
+                            showAddressOptions = true
+                        }) {
+                            HStack(spacing: 12) {
+                                Text(stamp.address)
+                                    .font(.body)
+                                    .foregroundColor(.primary)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .multilineTextAlignment(.leading)
                                 
-                                Button(action: {
-                                    openInAppleMaps()
-                                }) {
-                                    Label("Open in Apple Maps", systemImage: "map.fill")
-                                }
-                                
-                                Button(action: {
-                                    UIPasteboard.general.string = stamp.address
-                                }) {
-                                    Label("Copy address", systemImage: "doc.on.doc")
-                                }
-                            } label: {
                                 Image(systemName: "arrow.triangle.turn.up.right.circle.fill")
                                     .font(.system(size: 32))
                                     .foregroundColor(.blue)
                             }
                         }
+                        .buttonStyle(PlainButtonStyle())
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 24)
@@ -516,6 +489,23 @@ struct StampDetailView: View {
             }
         }
         .toolbar {
+            // Triple dot menu - always shown
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu {
+                    Button(action: {
+                        showSuggestEdit = true
+                    }) {
+                        Label("Suggest an Edit", systemImage: "pencil")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .font(.title3)
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            
+            // X button - only shown in sheet mode (no back button)
             if !showBackButton {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(action: {
@@ -542,10 +532,17 @@ struct StampDetailView: View {
             Task {
                 stampStats = await stampsManager.fetchStampStatistics(stampId: stamp.id)
                 
-                // Fetch user's rank for this stamp if they've collected it
+                // Load user's rank from cached CollectedStamp first (instant!)
                 // Rank = position in collector list (1st, 2nd, 3rd...) - never changes!
                 if isCollected, let userId = authManager.userId {
-                    userRank = await stampsManager.getUserRankForStamp(stampId: stamp.id, userId: userId)
+                    // FAST PATH: Try cached rank first
+                    if let collectedStamp = stampsManager.userCollection.collectedStamps.first(where: { $0.stampId == stamp.id }),
+                       let cachedRank = collectedStamp.userRank {
+                        userRank = cachedRank
+                    } else {
+                        // FALLBACK: Fetch from Firebase (for old stamps collected before caching was added)
+                        userRank = await stampsManager.getUserRankForStamp(stampId: stamp.id, userId: userId)
+                    }
                 }
                 
                 // Calculate collection progress for all collections this stamp belongs to
@@ -562,37 +559,45 @@ struct StampDetailView: View {
                 Task {
                     stampStats = await stampsManager.fetchStampStatistics(stampId: stamp.id)
                     
-                    // TODO: POST-MVP - Per-stamp rank fetch disabled
-                    // if let userId = authManager.userId {
-                    //     userRank = await stampsManager.getUserRankForStamp(stampId: stamp.id, userId: userId)
-                    //     
-                    //     // If rank is nil, retry after a short delay (Firebase transaction may not be complete yet)
-                    //     if userRank == nil {
-                    //         try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
-                    //         stampStats = await stampsManager.fetchStampStatistics(stampId: stamp.id)
-                    //         userRank = await stampsManager.getUserRankForStamp(stampId: stamp.id, userId: userId)
-                    //         
-                    //         // If still nil, try one more time
-                    //         if userRank == nil {
-                    //             try? await Task.sleep(nanoseconds: 1_500_000_000) // 1.5 seconds
-                    //             stampStats = await stampsManager.fetchStampStatistics(stampId: stamp.id)
-                    //             userRank = await stampsManager.getUserRankForStamp(stampId: stamp.id, userId: userId)
-                    //         }
-                    //     }
-                    // }
+                    // Rank is now set when stamp is collected (cached in CollectedStamp)
+                    // Load it from cache immediately
+                    if let collectedStamp = stampsManager.userCollection.collectedStamps.first(where: { $0.stampId == stamp.id }),
+                       let cachedRank = collectedStamp.userRank {
+                        userRank = cachedRank
+                    }
                     
                     // Recalculate collection progress when stamp is collected
                     await calculateCollectionProgress()
                 }
             } else {
                 showMemorySection = false
-                // TODO: POST-MVP - Per-stamp rank disabled
-                // userRank = nil
+                userRank = nil
             }
         }
         .fullScreenCover(isPresented: $showNotesEditor) {
             NotesEditorView(notes: $editingNotes) { savedNotes in
                 stampsManager.userCollection.updateNotes(for: stamp.id, notes: savedNotes)
+            }
+        }
+        .sheet(isPresented: $showSuggestEdit) {
+            SuggestEditView(stampId: stamp.id, stampName: stamp.name)
+                .environmentObject(authManager)
+        }
+        .confirmationDialog("Choose an option", isPresented: $showAddressOptions, titleVisibility: .hidden) {
+            Button("Open in Google Maps") {
+                openInGoogleMaps()
+            }
+            
+            Button("Open in Apple Maps") {
+                openInAppleMaps()
+            }
+            
+            Button("Copy address") {
+                UIPasteboard.general.string = stamp.address
+            }
+            
+            Button("Cancel", role: .cancel) {
+                // Dialog will dismiss automatically
             }
         }
         

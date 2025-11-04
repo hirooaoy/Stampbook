@@ -14,6 +14,9 @@ struct StampsView: View {
     @State private var showFeedback = false
     @State private var showProblemReport = false
     @State private var showSignOutConfirmation = false
+    @State private var showAboutStampbook = false
+    @State private var showForLocalBusiness = false
+    @State private var showForCreators = false
     @State private var navigationPath = NavigationPath() // Track navigation stack
     // @State private var hasAttemptedRankLoad = false // TODO: POST-MVP - Rank loading disabled
     
@@ -72,8 +75,7 @@ struct StampsView: View {
                             // More Options Menu
                             Menu {
                                 Button(action: {
-                                    // TODO: Open about (will include Privacy Policy and Terms of Service inside)
-                                    print("About Stampbook tapped")
+                                    showAboutStampbook = true
                                 }) {
                                     Label("About Stampbook", systemImage: "info.circle")
                                 }
@@ -81,15 +83,13 @@ struct StampsView: View {
                                 Divider()
                                 
                                 Button(action: {
-                                    // TODO: Open business info
-                                    print("For Local Business tapped")
+                                    showForLocalBusiness = true
                                 }) {
                                     Label("For Local Business", systemImage: "storefront")
                                 }
                                 
                                 Button(action: {
-                                    // TODO: Open creator info
-                                    print("For Creators tapped")
+                                    showForCreators = true
                                 }) {
                                     Label("For Creators", systemImage: "sparkles")
                                 }
@@ -127,8 +127,7 @@ struct StampsView: View {
                         // Signed-out menu: Just ellipsis with Menu
                         Menu {
                             Button(action: {
-                                // TODO: Open about (will include Privacy Policy and Terms of Service inside)
-                                print("About Stampbook tapped")
+                                showAboutStampbook = true
                             }) {
                                 Label("About Stampbook", systemImage: "info.circle")
                             }
@@ -136,15 +135,13 @@ struct StampsView: View {
                             Divider()
                             
                             Button(action: {
-                                // TODO: Open business info
-                                print("For Local Business tapped")
+                                showForLocalBusiness = true
                             }) {
                                 Label("For Local Business", systemImage: "storefront")
                             }
                             
                             Button(action: {
-                                // TODO: Open creator info
-                                print("For Creators tapped")
+                                showForCreators = true
                             }) {
                                 Label("For Creators", systemImage: "sparkles")
                             }
@@ -514,6 +511,15 @@ struct StampsView: View {
                     SimpleProblemReportView()
                         .environmentObject(authManager)
                 }
+                .sheet(isPresented: $showAboutStampbook) {
+                    ContentPageView(contentPageId: "about-stampbook")
+                }
+                .sheet(isPresented: $showForLocalBusiness) {
+                    ContentPageView(contentPageId: "partner-with-stampbook")
+                }
+                .sheet(isPresented: $showForCreators) {
+                    ContentPageView(contentPageId: "become-a-creator")
+                }
                 .alert("Sign Out", isPresented: $showSignOutConfirmation) {
                     Button("Cancel", role: .cancel) {}
                     Button("Sign Out", role: .destructive) {
@@ -698,6 +704,7 @@ struct StampsView: View {
                     // Fallback to bundled image for backward compatibility
                     Image(stamp.imageName)
                         .resizable()
+                        .renderingMode(.original)
                         .aspectRatio(contentMode: .fit)
                         .frame(height: 160)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -705,6 +712,7 @@ struct StampsView: View {
                     // No image - show placeholder
                     Image("empty")
                         .resizable()
+                        .renderingMode(.original)
                         .aspectRatio(contentMode: .fit)
                         .frame(height: 160)
                         .clipShape(RoundedRectangle(cornerRadius: 12))

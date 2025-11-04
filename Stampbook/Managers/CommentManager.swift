@@ -6,6 +6,7 @@ class CommentManager: ObservableObject {
     @Published private(set) var comments: [String: [Comment]] = [:] // postId -> comments
     @Published private(set) var commentCounts: [String: Int] = [:] // postId -> comment count
     @Published var isLoading: [String: Bool] = [:] // postId -> loading state
+    @Published var errorMessage: String? // Error message to display to user
     
     private let firebaseService = FirebaseService.shared
     private var cancellables = Set<AnyCancellable>()
@@ -38,6 +39,19 @@ class CommentManager: ObservableObject {
             print("⚠️ Failed to fetch comments: \(error.localizedDescription)")
             await MainActor.run {
                 isLoading[postId] = false
+                
+                // Show user-friendly error message
+                errorMessage = "Couldn't load comments. Pull to refresh."
+                
+                // Clear message after 3 seconds
+                Task {
+                    try? await Task.sleep(nanoseconds: 3_000_000_000)
+                    await MainActor.run {
+                        if errorMessage == "Couldn't load comments. Pull to refresh." {
+                            errorMessage = nil
+                        }
+                    }
+                }
             }
         }
     }
@@ -96,6 +110,19 @@ class CommentManager: ObservableObject {
                         $0.createdAt == optimisticComment.createdAt && $0.userId == userId 
                     })
                     commentCounts[postId, default: 1] = max(0, commentCounts[postId, default: 1] - 1)
+                    
+                    // Show user-friendly error message
+                    errorMessage = "Couldn't post comment. Check your connection."
+                    
+                    // Clear message after 3 seconds
+                    Task {
+                        try? await Task.sleep(nanoseconds: 3_000_000_000)
+                        await MainActor.run {
+                            if errorMessage == "Couldn't post comment. Check your connection." {
+                                errorMessage = nil
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -133,6 +160,21 @@ class CommentManager: ObservableObject {
                 
                 // On error, refetch to restore accurate state
                 await fetchComments(postId: postId)
+                
+                // Show user-friendly error message
+                await MainActor.run {
+                    errorMessage = "Couldn't delete comment. Try again."
+                    
+                    // Clear message after 3 seconds
+                    Task {
+                        try? await Task.sleep(nanoseconds: 3_000_000_000)
+                        await MainActor.run {
+                            if errorMessage == "Couldn't delete comment. Try again." {
+                                errorMessage = nil
+                            }
+                        }
+                    }
+                }
             }
         }
     }

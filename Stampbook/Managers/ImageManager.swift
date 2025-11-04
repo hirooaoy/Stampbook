@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 import UIKit
 import FirebaseStorage
 
@@ -13,8 +14,10 @@ import FirebaseStorage
 // 3. Coordinated with PhotoGalleryView to avoid double Firestore writes (50% cost reduction)
 // See PHOTO_UPLOAD_OPTIMIZATIONS.md for detailed analysis
 
-class ImageManager {
+class ImageManager: ObservableObject {
     static let shared = ImageManager()
+    
+    @Published var errorMessage: String? // Error message to display to user
     
     private let storage = Storage.storage()
     
@@ -64,6 +67,7 @@ class ImageManager {
             print("✅ Image saved locally: \(filename)")
             
             // Generate and save thumbnail (320x320 for crisp retina display)
+            // Note: User photos are saved as JPEG (no transparency needed)
             if let thumbnail = generateThumbnail(resizedImage, size: CGSize(width: 320, height: 320)) {
                 let thumbnailFilename = "\(stampId)_\(Int(timestamp))_\(uuid)_thumb.jpg"
                 let thumbnailURL = getDocumentsDirectory().appendingPathComponent(thumbnailFilename)
@@ -105,20 +109,41 @@ class ImageManager {
     /// Load thumbnail image from local documents directory
     /// Checks in-memory cache first for 5-10x speedup
     /// Falls back to full-res if thumbnail doesn't exist
+    /// Supports both PNG (stamp images) and JPEG (user photos) thumbnails
     func loadThumbnail(named filename: String) -> UIImage? {
-        // Check memory cache first (fastest)
-        let thumbnailFilename = filename.replacingOccurrences(of: ".jpg", with: "_thumb.jpg")
-        if let cached = ImageCacheManager.shared.getThumbnail(key: thumbnailFilename) {
+        // Try PNG thumbnail first (stamp images with transparency)
+        let pngThumbnailFilename = filename.replacingOccurrences(of: ".jpg", with: "_thumb.png")
+            .replacingOccurrences(of: ".png", with: "_thumb.png")
+        
+        // Check memory cache first (fastest) - try PNG
+        if let cached = ImageCacheManager.shared.getThumbnail(key: pngThumbnailFilename) {
             return cached
         }
         
-        // Try loading thumbnail from disk
-        let thumbnailURL = getDocumentsDirectory().appendingPathComponent(thumbnailFilename)
-        
-        if let thumbnailData = try? Data(contentsOf: thumbnailURL),
+        // Try loading PNG thumbnail from disk
+        let pngThumbnailURL = getDocumentsDirectory().appendingPathComponent(pngThumbnailFilename)
+        if let thumbnailData = try? Data(contentsOf: pngThumbnailURL),
            let thumbnail = UIImage(data: thumbnailData) {
             // Store in cache for next time
-            ImageCacheManager.shared.setThumbnail(thumbnail, key: thumbnailFilename)
+            ImageCacheManager.shared.setThumbnail(thumbnail, key: pngThumbnailFilename)
+            return thumbnail
+        }
+        
+        // Fallback to JPEG thumbnail (user photos, legacy images)
+        let jpegThumbnailFilename = filename.replacingOccurrences(of: ".jpg", with: "_thumb.jpg")
+            .replacingOccurrences(of: ".png", with: "_thumb.jpg")
+        
+        // Check memory cache for JPEG
+        if let cached = ImageCacheManager.shared.getThumbnail(key: jpegThumbnailFilename) {
+            return cached
+        }
+        
+        // Try loading JPEG thumbnail from disk
+        let jpegThumbnailURL = getDocumentsDirectory().appendingPathComponent(jpegThumbnailFilename)
+        if let thumbnailData = try? Data(contentsOf: jpegThumbnailURL),
+           let thumbnail = UIImage(data: thumbnailData) {
+            // Store in cache for next time
+            ImageCacheManager.shared.setThumbnail(thumbnail, key: jpegThumbnailFilename)
             return thumbnail
         }
         
@@ -204,6 +229,11 @@ class ImageManager {
     
     /// Download image from Firebase Storage and cache locally
     /// Returns cached image if already exists (checks memory and disk)
+    /// 
+    /// ⚠️ CACHE INVALIDATION TODO: Currently no TTL or version checking on cached images.
+    /// If stamp images are updated server-side, users will see old cached versions indefinitely.
+    /// For MVP with <100 users and rare image updates, this is acceptable (users can reinstall).
+    /// Future options if needed: Add TTL (e.g. 30 days), version numbers in stamps.json, or pull-to-refresh.
     func downloadAndCacheImage(storagePath: String, stampId: String) async throws -> UIImage {
         // Extract filename from path (e.g., "users/123/stamps/abc/photo.jpg" → "photo.jpg")
         let filename = (storagePath as NSString).lastPathComponent
@@ -241,13 +271,32 @@ class ImageManager {
             ImageCacheManager.shared.setFullImage(image, key: filename)
             
             // Also generate and cache thumbnail
+            // Use PNG for stamp images to preserve transparency, JPEG for user photos
             if let thumbnail = generateThumbnail(image, size: CGSize(width: 320, height: 320)) {
-                let thumbnailFilename = filename.replacingOccurrences(of: ".jpg", with: "_thumb.jpg")
-                let thumbnailURL = getDocumentsDirectory().appendingPathComponent(thumbnailFilename)
+                // Detect if this is a stamp image (from stamps/ path) vs user photo (from users/ path)
+                // Stamp images stored at: stamps/us-ca-sf-dolores-park.png
+                // User photos stored at: users/{userId}/stamps/{stampId}/photo.jpg
+                let isStampImage = storagePath.contains("/stamps/") || filename.hasSuffix(".png")
                 
-                if let thumbnailData = thumbnail.jpegData(compressionQuality: 0.8) {
+                let thumbnailFilename: String
+                let thumbnailData: Data?
+                
+                if isStampImage {
+                    // Stamp images: use PNG to preserve transparency
+                    thumbnailFilename = filename.replacingOccurrences(of: ".jpg", with: "_thumb.png")
+                        .replacingOccurrences(of: ".png", with: "_thumb.png")
+                    thumbnailData = thumbnail.pngData()
+                } else {
+                    // User photos: use JPEG for smaller file size
+                    thumbnailFilename = filename.replacingOccurrences(of: ".jpg", with: "_thumb.jpg")
+                        .replacingOccurrences(of: ".png", with: "_thumb.jpg")
+                    thumbnailData = thumbnail.jpegData(compressionQuality: 0.8)
+                }
+                
+                if let thumbnailData = thumbnailData {
+                    let thumbnailURL = getDocumentsDirectory().appendingPathComponent(thumbnailFilename)
                     try thumbnailData.write(to: thumbnailURL)
-                    print("✅ Thumbnail cached: \(thumbnailFilename)")
+                    print("✅ Thumbnail cached: \(thumbnailFilename) (\(isStampImage ? "PNG" : "JPEG"))")
                     // Store thumbnail in memory cache
                     ImageCacheManager.shared.setThumbnail(thumbnail, key: thumbnailFilename)
                 }
@@ -437,12 +486,17 @@ class ImageManager {
     
     /// Resize image to target size
     /// Forces scale = 1.0 so that points = pixels (no retina scaling)
+    /// Preserves alpha channel for transparent images (like PNG stamps)
     private func resizeImage(_ image: UIImage, to targetSize: CGSize) -> UIImage? {
         let format = UIGraphicsImageRendererFormat()
         format.scale = 1.0  // Force 1x scale to get actual pixel dimensions
+        format.opaque = false  // Support transparency (for PNG stamps)
+        format.preferredRange = .standard  // Use standard color range
         
         let renderer = UIGraphicsImageRenderer(size: targetSize, format: format)
-        return renderer.image { _ in
+        return renderer.image { context in
+            // Clear the context to ensure transparency is preserved
+            context.cgContext.clear(CGRect(origin: .zero, size: targetSize))
             image.draw(in: CGRect(origin: .zero, size: targetSize))
         }
     }
@@ -468,9 +522,12 @@ class ImageManager {
     /// Uses aspectFill to crop (not squish) the image to fill the square
     /// Forces scale = 1.0 so that points = pixels (no retina scaling)
     /// Default 320x320 provides crisp quality on 2x retina displays
+    /// Preserves alpha channel for transparent images (like PNG stamps)
     func generateThumbnail(_ image: UIImage, size: CGSize = CGSize(width: 320, height: 320)) -> UIImage? {
         let format = UIGraphicsImageRendererFormat()
         format.scale = 1.0  // Force 1x scale to get actual pixel dimensions
+        format.opaque = false  // Support transparency (for PNG stamps)
+        format.preferredRange = .standard  // Use standard color range
         
         // Calculate aspect fill rect (crop to fill square, maintaining aspect ratio)
         let imageAspect = image.size.width / image.size.height
@@ -493,6 +550,8 @@ class ImageManager {
         
         let renderer = UIGraphicsImageRenderer(size: size, format: format)
         return renderer.image { context in
+            // Clear the context to ensure transparency is preserved
+            context.cgContext.clear(CGRect(origin: .zero, size: size))
             // Clip to bounds so we only see the center portion
             UIRectClip(CGRect(origin: .zero, size: size))
             image.draw(in: drawRect)
@@ -568,6 +627,24 @@ class ImageManager {
                         return (photo.filename, storagePath)
                     } catch {
                         print("⚠️ Failed to upload \(photo.filename) to Firebase: \(error.localizedDescription)")
+                        
+                        // Show user-friendly error message (only once for batch)
+                        await MainActor.run {
+                            if self.errorMessage == nil {
+                                self.errorMessage = "Some photos couldn't upload. They're saved locally."
+                                
+                                // Clear message after 4 seconds
+                                Task {
+                                    try? await Task.sleep(nanoseconds: 4_000_000_000)
+                                    await MainActor.run {
+                                        if self.errorMessage == "Some photos couldn't upload. They're saved locally." {
+                                            self.errorMessage = nil
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
                         // Photo is still saved locally, just return without storage path
                         return (photo.filename, nil)
                     }

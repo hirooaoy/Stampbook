@@ -1,5 +1,6 @@
 import SwiftUI
 import FirebaseCore
+import FirebaseCrashlytics
 
 // MARK: - App Delegate
 class AppDelegate: NSObject, UIApplicationDelegate {
@@ -10,7 +11,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         // Configure Firebase
         FirebaseApp.configure()
         
-        print("⏱️ [AppDelegate] Firebase configured")
+        // Configure Crashlytics
+        Crashlytics.crashlytics().setCrashlyticsCollectionEnabled(true)
+        
+        print("⏱️ [AppDelegate] Firebase & Crashlytics configured")
         return true
     }
 }

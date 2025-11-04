@@ -296,32 +296,11 @@ class FirebaseService {
         return allStamps
     }
     
-    /// Fetch stamps in a geographic region (for map view)
-    /// - Parameters:
-    ///   - minGeohash: Minimum geohash for range query
-    ///   - maxGeohash: Maximum geohash for range query
-    ///   - limit: Maximum number of stamps to return (default 200)
-    /// - Returns: Array of stamps in the region
-    ///
-    /// **USAGE:**
-    /// ```swift
-    /// let (min, max) = Geohash.bounds(for: mapRegion, precision: 5)
-    /// let stamps = try await fetchStampsInRegion(minGeohash: min, maxGeohash: max)
-    /// ```
-    func fetchStampsInRegion(minGeohash: String, maxGeohash: String, limit: Int = 200) async throws -> [Stamp] {
-        let snapshot = try await db
-            .collection("stamps")
-            .whereField("geohash", isGreaterThanOrEqualTo: minGeohash)
-            .whereField("geohash", isLessThan: maxGeohash)
-            .limit(to: limit)
-            .getDocuments()
-        
-        let stamps = snapshot.documents.compactMap { doc -> Stamp? in
-            try? doc.data(as: Stamp.self)
-        }
-        
-        return stamps
-    }
+    // ==================== FUTURE OPTIMIZATION ====================
+    // Region-based stamp fetching removed for MVP
+    // Restore from git history when stamp count exceeds 2000
+    // See StampsManager.swift for full documentation
+    // ==================== FUTURE OPTIMIZATION ====================
     
     /// Fetch stamps in a specific collection
     /// - Parameter collectionId: The collection ID

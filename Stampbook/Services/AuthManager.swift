@@ -13,6 +13,7 @@ class AuthManager: NSObject, ObservableObject {
     
     // For Apple Sign In with Firebase
     private var currentNonce: String?
+    private var authController: ASAuthorizationController? // Keep controller alive during authorization
     private let firebaseService = FirebaseService.shared
     private let imageManager = ImageManager.shared
     
@@ -126,6 +127,10 @@ class AuthManager: NSObject, ObservableObject {
         
         let controller = ASAuthorizationController(authorizationRequests: [request])
         controller.delegate = self
+        controller.presentationContextProvider = self
+        
+        // Store controller to prevent deallocation before authorization completes
+        self.authController = controller
         controller.performRequests()
     }
     
@@ -136,6 +141,7 @@ class AuthManager: NSObject, ObservableObject {
             userId = nil
             userDisplayName = nil
             userProfile = nil
+            profileManager?.clearProfile() // Clear ProfileManager state on sign out
             // Don't set isCheckingAuth = true here - we know the state immediately
         } catch {
             print("Error signing out: \(error.localizedDescription)")
@@ -294,5 +300,17 @@ extension AuthManager: ASAuthorizationControllerDelegate {
     
     func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: Error) {
         print("Apple Sign In failed: \(error.localizedDescription)")
+    }
+}
+
+// MARK: - ASAuthorizationControllerPresentationContextProviding
+extension AuthManager: ASAuthorizationControllerPresentationContextProviding {
+    func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
+        // Return the key window for presenting the authorization UI
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let window = windowScene.windows.first else {
+            fatalError("No window available for presentation")
+        }
+        return window
     }
 }

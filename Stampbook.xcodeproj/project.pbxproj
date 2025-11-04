@@ -7,7 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		2B6227442EBA94EE00FA4B1F /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = 2B6227432EBA94EE00FA4B1F /* FirebaseCrashlytics */; };
 		2B7296D62EB3FF4A0041E715 /* PhotosUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B7296D52EB3FF4A0041E715 /* PhotosUI.framework */; };
+		2B9999982FFFFF0000000000 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 2B9999992FFFFF0000000000 /* GoogleService-Info.plist */; };
 		2BFBBEE82EA9BF9A00124BD5 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 2BFBBEE72EA9BF9A00124BD5 /* FirebaseAuth */; };
 		2BFBBEEA2EA9BF9A00124BD5 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 2BFBBEE92EA9BF9A00124BD5 /* FirebaseFirestore */; };
 		2BFBBEEC2EA9BF9A00124BD5 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 2BFBBEEB2EA9BF9A00124BD5 /* FirebaseStorage */; };
@@ -32,6 +34,7 @@
 
 /* Begin PBXFileReference section */
 		2B7296D52EB3FF4A0041E715 /* PhotosUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = PhotosUI.framework; path = System/Library/Frameworks/PhotosUI.framework; sourceTree = SDKROOT; };
+		2B9999992FFFFF0000000000 /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "Stampbook/GoogleService-Info.plist"; sourceTree = "<group>"; };
 		2BB670D62EA2C2020089DBAB /* Stampbook.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Stampbook.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		2BB670E32EA2C2050089DBAB /* StampbookTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = StampbookTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		2BB670ED2EA2C2050089DBAB /* StampbookUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = StampbookUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -52,6 +55,7 @@
 			files = (
 				2BFBBEE82EA9BF9A00124BD5 /* FirebaseAuth in Frameworks */,
 				2B7296D62EB3FF4A0041E715 /* PhotosUI.framework in Frameworks */,
+				2B6227442EBA94EE00FA4B1F /* FirebaseCrashlytics in Frameworks */,
 				2BFBBEEA2EA9BF9A00124BD5 /* FirebaseFirestore in Frameworks */,
 				2BFBBEEC2EA9BF9A00124BD5 /* FirebaseStorage in Frameworks */,
 			);
@@ -86,6 +90,7 @@
 			isa = PBXGroup;
 			children = (
 				2BB670D82EA2C2020089DBAB /* Stampbook */,
+				2B9999992FFFFF0000000000 /* GoogleService-Info.plist */,
 				2B7296D42EB3FF4A0041E715 /* Frameworks */,
 				2BB670D72EA2C2020089DBAB /* Products */,
 			);
@@ -109,6 +114,7 @@
 			buildConfigurationList = 2BB670F72EA2C2050089DBAB /* Build configuration list for PBXNativeTarget "Stampbook" */;
 			buildPhases = (
 				2BB670D22EA2C2020089DBAB /* Sources */,
+				2B6227452EBA94FE00FA4B1F /* Upload Crashlytics Symbols */,
 				2BB670D32EA2C2020089DBAB /* Frameworks */,
 				2BB670D42EA2C2020089DBAB /* Resources */,
 			);
@@ -124,6 +130,7 @@
 				2BFBBEE72EA9BF9A00124BD5 /* FirebaseAuth */,
 				2BFBBEE92EA9BF9A00124BD5 /* FirebaseFirestore */,
 				2BFBBEEB2EA9BF9A00124BD5 /* FirebaseStorage */,
+				2B6227432EBA94EE00FA4B1F /* FirebaseCrashlytics */,
 			);
 			productName = Stampbook;
 			productReference = 2BB670D62EA2C2020089DBAB /* Stampbook.app */;
@@ -221,6 +228,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2B9999982FFFFF0000000000 /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -239,6 +247,30 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		2B6227452EBA94FE00FA4B1F /* Upload Crashlytics Symbols */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}/Contents/Resources/DWARF/${TARGET_NAME}",
+				"$(SRCROOT)/$(BUILT_PRODUCTS_DIR)/$(INFOPLIST_PATH)",
+			);
+			name = "Upload Crashlytics Symbols";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Crashlytics-upload.timestamp",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${BUILD_DIR%/Build/*}/SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/run\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		2BB670D22EA2C2020089DBAB /* Sources */ = {
@@ -614,6 +646,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		2B6227432EBA94EE00FA4B1F /* FirebaseCrashlytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2BFBBEE62EA9BF9A00124BD5 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCrashlytics;
+		};
 		2BFBBEE72EA9BF9A00124BD5 /* FirebaseAuth */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 2BFBBEE62EA9BF9A00124BD5 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;

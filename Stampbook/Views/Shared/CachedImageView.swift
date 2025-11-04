@@ -16,6 +16,7 @@ struct CachedImageView: View {
     let imageType: ImageType
     let shape: Shape
     let size: CGSize
+    let useFullResolution: Bool // If true, loads full-res image for stamp photos (detail view)
     
     @State private var image: UIImage?
     @State private var isLoading = false
@@ -39,6 +40,8 @@ struct CachedImageView: View {
     private func renderImage(_ uiImage: UIImage) -> some View {
         let imageView = Image(uiImage: uiImage)
             .resizable()
+            .renderingMode(.original)
+            .interpolation(.high)
             .aspectRatio(contentMode: .fill)
             .frame(width: size.width, height: size.height)
             .clipped()
@@ -109,6 +112,11 @@ struct CachedImageView: View {
             await MainActor.run {
                 self.image = cachedImage
             }
+            
+            // If full resolution is needed, continue to load full-res in background
+            if useFullResolution, let storagePath = storagePath {
+                await loadFullResolution(storagePath: storagePath, stampId: stampId)
+            }
             return
         }
         
@@ -121,18 +129,65 @@ struct CachedImageView: View {
             isLoading = true
         }
         
+        // Progressive loading: Load thumbnail first, then full-res if needed
+        if useFullResolution {
+            // Load thumbnail first (fast)
+            do {
+                let thumbnail = try await ImageManager.shared.downloadAndCacheThumbnail(
+                    storagePath: storagePath,
+                    stampId: stampId
+                )
+                
+                await MainActor.run {
+                    self.image = thumbnail
+                    // Keep loading indicator while full-res loads
+                }
+                
+                // Then load full-res (upgrade)
+                await loadFullResolution(storagePath: storagePath, stampId: stampId)
+            } catch {
+                print("⚠️ Failed to download thumbnail: \(error.localizedDescription)")
+                await MainActor.run {
+                    isLoading = false
+                }
+            }
+        } else {
+            // Just load thumbnail
+            do {
+                let downloadedImage = try await ImageManager.shared.downloadAndCacheThumbnail(
+                    storagePath: storagePath,
+                    stampId: stampId
+                )
+                
+                await MainActor.run {
+                    self.image = downloadedImage
+                    isLoading = false
+                }
+            } catch {
+                print("⚠️ Failed to download image: \(error.localizedDescription)")
+                await MainActor.run {
+                    isLoading = false
+                }
+            }
+        }
+    }
+    
+    private func loadFullResolution(storagePath: String, stampId: String) async {
         do {
-            let downloadedImage = try await ImageManager.shared.downloadAndCacheThumbnail(
+            let fullResImage = try await ImageManager.shared.downloadAndCacheImage(
                 storagePath: storagePath,
                 stampId: stampId
             )
             
             await MainActor.run {
-                self.image = downloadedImage
-                isLoading = false
+                // Smoothly transition to full-res
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    self.image = fullResImage
+                    self.isLoading = false
+                }
             }
         } catch {
-            print("⚠️ Failed to download image: \(error.localizedDescription)")
+            print("⚠️ Failed to download full-res image: \(error.localizedDescription)")
             await MainActor.run {
                 isLoading = false
             }
@@ -185,12 +240,14 @@ extension CachedImageView {
         storagePath: String?,
         stampId: String,
         size: CGSize,
-        cornerRadius: CGFloat
+        cornerRadius: CGFloat,
+        useFullResolution: Bool = false
     ) -> CachedImageView {
         CachedImageView(
             imageType: .stampPhoto(imageName: imageName, storagePath: storagePath, stampId: stampId),
             shape: .rectangle(cornerRadius: cornerRadius),
-            size: size
+            size: size,
+            useFullResolution: useFullResolution
         )
     }
     
@@ -203,7 +260,8 @@ extension CachedImageView {
         CachedImageView(
             imageType: .profilePicture(avatarUrl: avatarUrl, userId: userId),
             shape: .circle,
-            size: CGSize(width: size, height: size)
+            size: CGSize(width: size, height: size),
+            useFullResolution: false
         )
     }
 }

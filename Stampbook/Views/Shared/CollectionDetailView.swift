@@ -121,6 +121,7 @@ struct CollectionStampItem: View {
                         case .success(let image):
                             image
                                 .resizable()
+                                .renderingMode(.original)
                                 .aspectRatio(contentMode: .fill)
                                 .frame(height: 160)
                                 .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -128,6 +129,7 @@ struct CollectionStampItem: View {
                             // Fallback to placeholder
                             Image("empty")
                                 .resizable()
+                                .renderingMode(.original)
                                 .aspectRatio(contentMode: .fill)
                                 .frame(height: 160)
                                 .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -139,6 +141,7 @@ struct CollectionStampItem: View {
                     // Fallback to bundled image for backward compatibility
                     Image(stamp.imageName)
                         .resizable()
+                        .renderingMode(.original)
                         .aspectRatio(contentMode: .fill)
                         .frame(height: 160)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -146,6 +149,7 @@ struct CollectionStampItem: View {
                     // No image - show placeholder
                     Image("empty")
                         .resizable()
+                        .renderingMode(.original)
                         .aspectRatio(contentMode: .fill)
                         .frame(height: 160)
                         .clipShape(RoundedRectangle(cornerRadius: 12))

@@ -22,6 +22,56 @@ admin.initializeApp({
 
 const db = admin.firestore();
 
+/**
+ * Encode coordinates to geohash string
+ * @param {number} latitude 
+ * @param {number} longitude 
+ * @param {number} precision 
+ * @returns {string} geohash
+ */
+function encodeGeohash(latitude, longitude, precision = 8) {
+  const base32 = '0123456789bcdefghjkmnpqrstuvwxyz';
+  let latRange = [-90.0, 90.0];
+  let lonRange = [-180.0, 180.0];
+  let hash = '';
+  let bits = 0;
+  let bit = 0;
+  let even = true;
+  
+  while (hash.length < precision) {
+    if (even) {
+      // Longitude
+      const mid = (lonRange[0] + lonRange[1]) / 2;
+      if (longitude > mid) {
+        bit |= (1 << (4 - bits));
+        lonRange[0] = mid;
+      } else {
+        lonRange[1] = mid;
+      }
+    } else {
+      // Latitude
+      const mid = (latRange[0] + latRange[1]) / 2;
+      if (latitude > mid) {
+        bit |= (1 << (4 - bits));
+        latRange[0] = mid;
+      } else {
+        latRange[1] = mid;
+      }
+    }
+    
+    even = !even;
+    bits++;
+    
+    if (bits === 5) {
+      hash += base32[bit];
+      bits = 0;
+      bit = 0;
+    }
+  }
+  
+  return hash;
+}
+
 async function uploadStamps() {
   console.log('📚 Reading stamps.json...');
   const stampsPath = path.join(__dirname, 'Stampbook', 'Data', 'stamps.json');
@@ -29,11 +79,14 @@ async function uploadStamps() {
   
   console.log(`✅ Found ${stampsData.length} stamps\n`);
   
-  console.log('📤 Uploading stamps to Firestore...');
+  console.log('📤 Uploading stamps to Firestore (with auto-generated geohashes)...');
   let uploadedCount = 0;
   
   for (const stamp of stampsData) {
     try {
+      // Auto-generate geohash from coordinates
+      const geohash = encodeGeohash(stamp.latitude, stamp.longitude, 8);
+      
       await db.collection('stamps').doc(stamp.id).set({
         id: stamp.id,
         name: stamp.name,
@@ -44,11 +97,13 @@ async function uploadStamps() {
         collectionIds: stamp.collectionIds,
         about: stamp.about,
         notesFromOthers: stamp.notesFromOthers || [],
-        thingsToDoFromEditors: stamp.thingsToDoFromEditors || []
+        thingsToDoFromEditors: stamp.thingsToDoFromEditors || [],
+        geohash: geohash  // Auto-generated for map queries
       });
       
       uploadedCount++;
       console.log(`  ✓ Uploaded: ${stamp.name} (${stamp.id})`);
+      console.log(`    Geohash: ${geohash}`);
     } catch (error) {
       console.error(`  ✗ Failed to upload ${stamp.id}:`, error.message);
     }
@@ -95,10 +150,11 @@ async function main() {
     await uploadCollections();
     
     console.log('🎉 Upload complete! Your app will now load stamps from Firestore.\n');
+    console.log('✅ Geohashes automatically generated for all stamps!\n');
     console.log('💡 To add new stamps in the future:');
     console.log('   1. Add to stamps.json locally');
-    console.log('   2. Run this script again');
-    console.log('   OR add directly via Firebase Console\n');
+    console.log('   2. Run this script again (geohashes will be auto-generated)');
+    console.log('   OR add directly via Firebase Console (and run add_geohash_to_stamps.js)\n');
     
   } catch (error) {
     console.error('❌ Upload failed:', error.message);

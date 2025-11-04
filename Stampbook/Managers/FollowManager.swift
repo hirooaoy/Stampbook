@@ -119,7 +119,7 @@ class FollowManager: ObservableObject {
                 await MainActor.run {
                     self.isFollowing[targetUserId] = false
                     self.isProcessingFollow[targetUserId] = false
-                    self.error = error.localizedDescription
+                    self.error = "Couldn't follow user. Check your connection."
                     
                     // Rollback count changes
                     if var currentCounts = self.followCounts[currentUserId] {
@@ -228,7 +228,7 @@ class FollowManager: ObservableObject {
                     }
                     
                     self.isProcessingFollow[targetUserId] = false
-                    self.error = error.localizedDescription
+                    self.error = "Couldn't unfollow user. Check your connection."
                 }
             }
         }

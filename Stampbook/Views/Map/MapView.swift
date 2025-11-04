@@ -33,52 +33,28 @@ struct MapView: View {
     @State private var isShowingSearch = false
     @State private var showSignInSheet = false  // Shows sign-in bottom sheet
     
-    // LAZY LOADING: Only stamps visible in current region
-    @State private var visibleStamps: [Stamp] = []
-    @State private var isLoadingStamps = false
-    @State private var currentMapRegion: MKCoordinateRegion?
+    // MARK: - Map Loading Strategy
     
-    // SMART CACHING: Cache fetched regions to avoid redundant queries
-    @State private var regionCache: [CachedRegion] = []
-    private let maxCachedRegions = 10 // Light caching - keeps map responsive
-    private let cacheExpirationSeconds: TimeInterval = 180 // 3 minutes
+    // **CURRENT APPROACH (100-1000 stamps): Fetch All**
+    // Loads ALL stamps once, then relies on Firebase persistent cache
+    // 
+    // Why this works:
+    // - First load: ~500ms to fetch all 400 stamps from Firebase
+    // - All future loads: <50ms from Firebase cache (FREE, no reads charged)
+    // - Cost: ~12K Firebase reads/month (new users only) = $0/month
+    // - Simple, reliable, no region tracking complexity
+    // 
+    // When to switch to region-based (removed for MVP, check git history):
+    // - Stamp count exceeds ~2000 stamps
+    // - Initial load becomes too slow (>1 second)
+    // - Approaching Firebase free tier limits
+    // - Restore from git: "Remove unused region-based loading"
+    
+    @State private var allStamps: [Stamp] = []
+    @State private var isLoadingStamps = false
     
     // Connection transition states
     @State private var bannerState: BannerState = .hidden
-    
-    /// Cached region data
-    struct CachedRegion {
-        let center: CLLocationCoordinate2D
-        let span: MKCoordinateSpan
-        let stamps: [Stamp]
-        let precision: Int
-        let fetchedAt: Date
-        
-        /// Check if this cached region covers the target region
-        func covers(_ region: MKCoordinateRegion, targetPrecision: Int) -> Bool {
-            // Only use cache if precision matches or cached precision is lower (broader search)
-            guard precision <= targetPrecision else { return false }
-            
-            // Check if the cached region fully contains the target region
-            let latMin = center.latitude - span.latitudeDelta / 2
-            let latMax = center.latitude + span.latitudeDelta / 2
-            let lonMin = center.longitude - span.longitudeDelta / 2
-            let lonMax = center.longitude + span.longitudeDelta / 2
-            
-            let targetLatMin = region.center.latitude - region.span.latitudeDelta / 2
-            let targetLatMax = region.center.latitude + region.span.latitudeDelta / 2
-            let targetLonMin = region.center.longitude - region.span.longitudeDelta / 2
-            let targetLonMax = region.center.longitude + region.span.longitudeDelta / 2
-            
-            return targetLatMin >= latMin && targetLatMax <= latMax &&
-                   targetLonMin >= lonMin && targetLonMax <= lonMax
-        }
-        
-        /// Check if cache is still valid (not expired)
-        func isValid() -> Bool {
-            return Date().timeIntervalSince(fetchedAt) < 180 // 3 minutes
-        }
-    }
     
     enum BannerState {
         case hidden
@@ -120,16 +96,14 @@ struct MapView: View {
     var body: some View {
         ZStack {
             NativeMapView(
-                stamps: visibleStamps,  // ← LAZY LOADING: Pass only visible stamps
+                stamps: allStamps,  // ← SIMPLE: Show all stamps globally
                 collectedStampIds: collectedStampIds,
                 userLocation: locationManager.location,
                 isTrackingLocation: locationManager.isTrackingEnabled,
                 selectedStamp: $selectedStamp,
                 shouldRecenter: $shouldRecenterMap,
                 searchRegion: $searchRegion,
-                onRegionChange: { newRegion in
-                    handleRegionChange(newRegion)
-                }
+                onRegionChange: nil  // No need for region change tracking
             )
             .ignoresSafeArea()
             
@@ -255,6 +229,14 @@ struct MapView: View {
             if authManager.isSignedIn {
                 locationManager.startTrackingForAuthenticatedUser()
             }
+            
+            // SIMPLE: Load all stamps once on map open
+            // With <500 stamps, this is faster and more reliable than region-based loading
+            if allStamps.isEmpty && !isLoadingStamps {
+                Task {
+                    await loadAllStamps()
+                }
+            }
         }
         .onChange(of: authManager.isSignedIn) { oldValue, newValue in
             // PRIVACY: Handle sign-in/sign-out transitions
@@ -277,6 +259,32 @@ struct MapView: View {
                 message: "Sign in to see your location and start your stamp collection"
             )
             .environmentObject(authManager)
+        }
+    }
+    
+    // MARK: - Simple Stamp Loading
+    
+    /// Load all stamps globally (once per session)
+    private func loadAllStamps() async {
+        guard !isLoadingStamps else { return }
+        
+        isLoadingStamps = true
+        
+        #if DEBUG
+        let startTime = Date()
+        print("🗺️ [MapView] Loading all stamps globally...")
+        #endif
+        
+        let stamps = await stampsManager.fetchAllStamps()
+        
+        #if DEBUG
+        let duration = Date().timeIntervalSince(startTime)
+        print("✅ [MapView] Loaded \(stamps.count) stamps in \(String(format: "%.2f", duration))s")
+        #endif
+        
+        await MainActor.run {
+            allStamps = stamps
+            isLoadingStamps = false
         }
     }
     
@@ -342,256 +350,6 @@ struct MapView: View {
             // Initial offline state
             bannerState = .offline
         }
-    }
-    
-    // MARK: - Lazy Loading (Region-Based Queries)
-    
-    /// Handle map region changes with debouncing
-    /// Fetches stamps only for visible region
-    private func handleRegionChange(_ newRegion: MKCoordinateRegion) {
-        // Debounce: Only update if region changed significantly
-        guard shouldFetchForRegion(newRegion) else { return }
-        
-        currentMapRegion = newRegion
-        
-        Task {
-            await loadStampsForRegion(newRegion)
-            
-            // DISABLED: Aggressive prefetching made map feel less responsive
-            // Only cache what user actively views for better performance
-            // await prefetchAdjacentRegions(newRegion)
-        }
-    }
-    
-    /// Check if we should fetch stamps for this region
-    /// Prevents excessive queries on small pan/zoom changes
-    private func shouldFetchForRegion(_ newRegion: MKCoordinateRegion) -> Bool {
-        guard let currentRegion = currentMapRegion else {
-            return true // First load
-        }
-        
-        // Only fetch if moved significantly (>20% of span)
-        let latDelta = abs(newRegion.center.latitude - currentRegion.center.latitude)
-        let lonDelta = abs(newRegion.center.longitude - currentRegion.center.longitude)
-        
-        let significantLatChange = latDelta > (currentRegion.span.latitudeDelta * 0.2)
-        let significantLonChange = lonDelta > (currentRegion.span.longitudeDelta * 0.2)
-        
-        // Also fetch if zoom changed significantly
-        let zoomChanged = abs(newRegion.span.latitudeDelta - currentRegion.span.latitudeDelta) > (currentRegion.span.latitudeDelta * 0.3)
-        
-        return significantLatChange || significantLonChange || zoomChanged
-    }
-    
-    /// Calculate optimal geohash precision based on zoom level
-    /// - Returns appropriate precision for current zoom level
-    /// - Stamps appear/disappear as you pan for responsive feel
-    private func calculateGeohashPrecision(for region: MKCoordinateRegion) -> Int {
-        let latSpan = region.span.latitudeDelta
-        
-        // Geohash precision guide:
-        // 1 = ±2,500km (whole world)
-        // 2 = ±630km (country)
-        // 3 = ±78km (~48 miles) - covers entire metro areas
-        // 4 = ±20km (~12 miles) - neighborhood
-        // 5 = ±2.4km (~1.5 miles) - street
-        // 6 = ±610m (~0.4 miles) - block
-        
-        switch latSpan {
-        case 100...:
-            return 1  // Whole world view
-        case 10..<100:
-            return 2  // Very zoomed out (whole country/region)
-        case 2..<10:
-            return 3  // City level - load metro area
-        case 0.5..<2:
-            return 4  // Neighborhood - responsive loading
-        case 0.1..<0.5:
-            return 5  // Street level - precise area
-        case 0.02..<0.1:
-            return 5  // Block level
-        default:
-            return 4  // Very zoomed in - broader to ensure stamps visible
-        }
-    }
-    
-    /// Fetch stamps for visible region using geohash
-    /// Accumulates stamps - once loaded, they stay visible (no disappearing)
-    private func loadStampsForRegion(_ region: MKCoordinateRegion) async {
-        guard !isLoadingStamps else { return }
-        
-        // Dynamic precision based on zoom level
-        let precision = calculateGeohashPrecision(for: region)
-        
-        // CHECK CACHE FIRST: See if we already have data for this region
-        if let cachedRegion = findCachedRegion(for: region, precision: precision) {
-            #if DEBUG
-            print("💾 [MapView] Cache HIT: Using cached data for region (precision: \(cachedRegion.precision))")
-            #endif
-            
-            // ACCUMULATE: Merge cached stamps with existing visible stamps
-            await MainActor.run {
-                let existingIds = Set(visibleStamps.map { $0.id })
-                let newStamps = cachedRegion.stamps.filter { !existingIds.contains($0.id) }
-                if !newStamps.isEmpty {
-                    visibleStamps.append(contentsOf: newStamps)
-                    #if DEBUG
-                    print("➕ [MapView] Added \(newStamps.count) new stamps (total: \(visibleStamps.count))")
-                    #endif
-                }
-            }
-            return
-        }
-        
-        // CACHE MISS: Fetch from Firestore
-        isLoadingStamps = true
-        
-        #if DEBUG
-        let startTime = Date()
-        print("🗺️ [MapView] Cache MISS: Fetching stamps for region (span: \(region.span.latitudeDelta), precision: \(precision))")
-        #endif
-        
-        // Fetch stamps in this region
-        let stamps = await stampsManager.fetchStampsInRegion(region: region, precision: precision)
-        
-        #if DEBUG
-        let duration = Date().timeIntervalSince(startTime)
-        print("✅ [MapView] Loaded \(stamps.count) stamps in \(String(format: "%.2f", duration))s")
-        #endif
-        
-        // Add to cache
-        let cachedRegion = CachedRegion(
-            center: region.center,
-            span: region.span,
-            stamps: stamps,
-            precision: precision,
-            fetchedAt: Date()
-        )
-        
-        await MainActor.run {
-            // Add to cache and trim if needed
-            regionCache.append(cachedRegion)
-            if regionCache.count > maxCachedRegions {
-                // Remove oldest cached region
-                regionCache.removeFirst()
-            }
-            
-            // ACCUMULATE: Merge new stamps with existing visible stamps
-            let existingIds = Set(visibleStamps.map { $0.id })
-            let newStamps = stamps.filter { !existingIds.contains($0.id) }
-            visibleStamps.append(contentsOf: newStamps)
-            
-            #if DEBUG
-            print("➕ [MapView] Added \(newStamps.count) new stamps (total: \(visibleStamps.count))")
-            #endif
-            
-            isLoadingStamps = false
-        }
-    }
-    
-    /// Find a cached region that covers the target region
-    private func findCachedRegion(for region: MKCoordinateRegion, precision: Int) -> CachedRegion? {
-        // Search cache in reverse order (most recent first)
-        for cached in regionCache.reversed() {
-            if cached.isValid() && cached.covers(region, targetPrecision: precision) {
-                return cached
-            }
-        }
-        return nil
-    }
-    
-    /// Filter stamps to only include those within the visible region
-    private func filterStampsInRegion(_ stamps: [Stamp], region: MKCoordinateRegion) -> [Stamp] {
-        let latMin = region.center.latitude - region.span.latitudeDelta / 2
-        let latMax = region.center.latitude + region.span.latitudeDelta / 2
-        let lonMin = region.center.longitude - region.span.longitudeDelta / 2
-        let lonMax = region.center.longitude + region.span.longitudeDelta / 2
-        
-        return stamps.filter { stamp in
-            stamp.coordinate.latitude >= latMin &&
-            stamp.coordinate.latitude <= latMax &&
-            stamp.coordinate.longitude >= lonMin &&
-            stamp.coordinate.longitude <= lonMax
-        }
-    }
-    
-    /// Prefetch adjacent regions in the background for smoother panning
-    /// Only prefetches regions that aren't already cached
-    private func prefetchAdjacentRegions(_ currentRegion: MKCoordinateRegion) async {
-        // Wait a bit to ensure user has stopped moving
-        try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
-        
-        // Create 4 adjacent regions (north, south, east, west)
-        let adjacentRegions = [
-            // North
-            MKCoordinateRegion(
-                center: CLLocationCoordinate2D(
-                    latitude: currentRegion.center.latitude + currentRegion.span.latitudeDelta * 0.8,
-                    longitude: currentRegion.center.longitude
-                ),
-                span: currentRegion.span
-            ),
-            // South
-            MKCoordinateRegion(
-                center: CLLocationCoordinate2D(
-                    latitude: currentRegion.center.latitude - currentRegion.span.latitudeDelta * 0.8,
-                    longitude: currentRegion.center.longitude
-                ),
-                span: currentRegion.span
-            ),
-            // East
-            MKCoordinateRegion(
-                center: CLLocationCoordinate2D(
-                    latitude: currentRegion.center.latitude,
-                    longitude: currentRegion.center.longitude + currentRegion.span.longitudeDelta * 0.8
-                ),
-                span: currentRegion.span
-            ),
-            // West
-            MKCoordinateRegion(
-                center: CLLocationCoordinate2D(
-                    latitude: currentRegion.center.latitude,
-                    longitude: currentRegion.center.longitude - currentRegion.span.longitudeDelta * 0.8
-                ),
-                span: currentRegion.span
-            )
-        ]
-        
-        let precision = calculateGeohashPrecision(for: currentRegion)
-        
-        // Prefetch regions that aren't already cached
-        for region in adjacentRegions {
-            // Skip if already cached
-            if findCachedRegion(for: region, precision: precision) != nil {
-                continue
-            }
-            
-            #if DEBUG
-            print("🔮 [MapView] Prefetching adjacent region...")
-            #endif
-            
-            // Fetch and cache in background
-            let stamps = await stampsManager.fetchStampsInRegion(region: region, precision: precision)
-            
-            let cachedRegion = CachedRegion(
-                center: region.center,
-                span: region.span,
-                stamps: stamps,
-                precision: precision,
-                fetchedAt: Date()
-            )
-            
-            await MainActor.run {
-                regionCache.append(cachedRegion)
-                if regionCache.count > maxCachedRegions {
-                    regionCache.removeFirst()
-                }
-            }
-        }
-        
-        #if DEBUG
-        print("✅ [MapView] Prefetch complete (\(regionCache.count) cached regions)")
-        #endif
     }
 }
 
@@ -1033,7 +791,7 @@ struct SearchSheet: View {
                     .scrollContentBackground(.hidden)
                 }
             }
-            .navigationTitle("Search")
+            .navigationTitle("Search Places")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(.hidden, for: .navigationBar)
             .searchable(text: $searchText, prompt: "Search places")

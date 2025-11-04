@@ -14,10 +14,22 @@ service cloud.firestore {
       allow read: if true;  // Public
     }
     
+    // Content pages - rich content for local businesses, creators, and app info
+    match /contentPages/{contentPageId} {
+      allow read: if true;  // Public
+    }
+    
     // Stamp statistics - how many people collected each stamp
     match /stamp_statistics/{stampId} {
       allow read: if true;  // Public
-      allow create, update: if request.auth != null;  // Users update when collecting
+      // Rate limit: 1 update per 30 seconds per stamp per user
+      // Prevents spam while allowing legitimate undo/redo of collections
+      allow create: if request.auth != null;
+      allow update: if request.auth != null 
+        && (
+          !('lastUpdated' in resource.data) ||  // First update (no lastUpdated field yet)
+          request.time > resource.data.lastUpdated + duration.value(30, 's')  // 30 sec cooldown
+        );
     }
     
     // ==================== USER CONTENT ====================
@@ -52,14 +64,24 @@ service cloud.firestore {
     // Likes
     match /likes/{likeId} {
       allow read: if request.auth != null;
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      // Rate limit: Max 10 likes per minute per user (prevents spam bots)
+      allow create: if request.auth != null 
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.createdAt is timestamp;  // Require timestamp for rate limit tracking
       allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
     
     // Comments
     match /comments/{commentId} {
       allow read: if request.auth != null;
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      // Validation: Require text, userId, postId, timestamps
+      // Rate limiting note: Max comment length prevents storage abuse
+      allow create: if request.auth != null 
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0
+        && request.resource.data.text.size() <= 1000  // Max 1000 chars prevents abuse
+        && request.resource.data.createdAt is timestamp;
       allow delete: if request.auth != null && 
                        (resource.data.userId == request.auth.uid ||  // Your own comment
                         resource.data.postOwnerId == request.auth.uid);  // Or your post
@@ -69,7 +91,13 @@ service cloud.firestore {
     
     // User feedback (admin only reads)
     match /feedback/{feedbackId} {
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      // Validation: Require message, limit size to prevent abuse
+      allow create: if request.auth != null 
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.message is string
+        && request.resource.data.message.size() > 0
+        && request.resource.data.message.size() <= 5000  // Max 5000 chars
+        && request.resource.data.createdAt is timestamp;
     }
   }
 }

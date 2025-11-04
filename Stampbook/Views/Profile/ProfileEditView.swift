@@ -369,7 +369,7 @@ struct ProfileEditView: View {
                 // Handle any errors during the save process
                 await MainActor.run {
                     isLoading = false
-                    errorMessage = error.localizedDescription
+                    errorMessage = "Couldn't save profile. Please try again."
                     showError = true
                 }
                 print("❌ Failed to update profile: \(error.localizedDescription)")

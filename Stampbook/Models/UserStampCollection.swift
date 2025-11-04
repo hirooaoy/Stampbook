@@ -12,6 +12,7 @@ struct CollectedStamp: Codable, Identifiable, Equatable {
     var userImagePaths: [String] // Firebase Storage paths for cloud images
     var likeCount: Int // Number of likes on this post
     var commentCount: Int // Number of comments on this post
+    var userRank: Int? // What number collector you were (e.g., 23 = 23rd person to collect)
     
     // Future fields:
     // var collectionLocation: CLLocationCoordinate2D?
@@ -20,10 +21,10 @@ struct CollectedStamp: Codable, Identifiable, Equatable {
     // MARK: - Backward Compatibility
     
     enum CodingKeys: String, CodingKey {
-        case stampId, userId, collectedDate, userNotes, userImageNames, userImagePaths, likeCount, commentCount
+        case stampId, userId, collectedDate, userNotes, userImageNames, userImagePaths, likeCount, commentCount, userRank
     }
     
-    init(stampId: String, userId: String, collectedDate: Date, userNotes: String, userImageNames: [String], userImagePaths: [String], likeCount: Int = 0, commentCount: Int = 0) {
+    init(stampId: String, userId: String, collectedDate: Date, userNotes: String, userImageNames: [String], userImagePaths: [String], likeCount: Int = 0, commentCount: Int = 0, userRank: Int? = nil) {
         self.stampId = stampId
         self.userId = userId
         self.collectedDate = collectedDate
@@ -32,6 +33,7 @@ struct CollectedStamp: Codable, Identifiable, Equatable {
         self.userImagePaths = userImagePaths
         self.likeCount = likeCount
         self.commentCount = commentCount
+        self.userRank = userRank
     }
     
     init(from decoder: Decoder) throws {
@@ -46,6 +48,8 @@ struct CollectedStamp: Codable, Identifiable, Equatable {
         // Decode social features with default 0 if not present (backward compatibility)
         likeCount = try container.decodeIfPresent(Int.self, forKey: .likeCount) ?? 0
         commentCount = try container.decodeIfPresent(Int.self, forKey: .commentCount) ?? 0
+        // Decode userRank with default nil if not present (backward compatibility for old collected stamps)
+        userRank = try container.decodeIfPresent(Int.self, forKey: .userRank)
     }
 }
 
@@ -120,7 +124,7 @@ class UserStampCollection: ObservableObject {
         collectedStamps.contains { $0.stampId == stampId }
     }
     
-    func collectStamp(_ stampId: String, userId: String) {
+    func collectStamp(_ stampId: String, userId: String, userRank: Int? = nil) {
         guard !isCollected(stampId) else { return }
         
         let newCollection = CollectedStamp(
@@ -129,7 +133,8 @@ class UserStampCollection: ObservableObject {
             collectedDate: Date(),
             userNotes: "",
             userImageNames: [],
-            userImagePaths: []
+            userImagePaths: [],
+            userRank: userRank
         )
         
         // Optimistic update: Save locally first (instant UX)

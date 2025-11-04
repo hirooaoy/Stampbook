@@ -3,6 +3,8 @@ import Combine
 import MapKit
 
 class StampsManager: ObservableObject {
+    // Debug flag - set to true to enable debug logging
+    private let DEBUG_STAMPS = false
     // DEPRECATED: For backward compatibility during migration
     // Views should use lazy loading methods (fetchStamps, fetchStampsInRegion, etc.)
     @Published var stamps: [Stamp] = []
@@ -18,11 +20,6 @@ class StampsManager: ObservableObject {
     // LRU cache for stamp data (max 300 stamps in memory)
     private let stampCache = LRUCache<String, Stamp>(capacity: 300)
     
-    // In-flight request deduplication: Track pending fetches by stamp ID
-    // Prevents duplicate concurrent requests for the same stamp
-    // Uses actor for thread-safe async access
-    private let fetchCoordinator = FetchCoordinator()
-    
     // Smart refresh tracking
     @Published var lastRefreshTime: Date?
     private let refreshInterval: TimeInterval = 300 // 5 minutes
@@ -31,13 +28,19 @@ class StampsManager: ObservableObject {
     private let firebaseService = FirebaseService.shared
     
     init() {
-        print("⏱️ [StampsManager] init() started")
+        if DEBUG_STAMPS {
+            print("⏱️ [StampsManager] init() started")
+        }
         
         // Load collections in background
         Task {
-            print("⏱️ [StampsManager] Starting async collection load...")
+            if DEBUG_STAMPS {
+                print("⏱️ [StampsManager] Starting async collection load...")
+            }
             await loadCollections()
-            print("✅ [StampsManager] Async collection load completed")
+            if DEBUG_STAMPS {
+                print("✅ [StampsManager] Async collection load completed")
+            }
         }
         
         // Forward changes from userCollection to this manager
@@ -47,26 +50,29 @@ class StampsManager: ObservableObject {
             }
             .store(in: &cancellables)
         
-        print("✅ [StampsManager] init() completed (collection load is async)")
+        if DEBUG_STAMPS {
+            print("✅ [StampsManager] init() completed (collection load is async)")
+        }
     }
     
     /// Load just collections (fast - only ~5 documents)
     private func loadCollections() async {
-        let fetchStart = Date()
-        print("🔄 [StampsManager] loadCollections() - about to fetch from Firebase")
+        if DEBUG_STAMPS {
+            print("🔄 [StampsManager] loadCollections() - about to fetch from Firebase")
+        }
         do {
             // Fetch collections (no timeout wrapper - let Firebase SDK handle network timeouts)
             let fetchedCollections = try await firebaseService.fetchCollections()
-            let duration = Date().timeIntervalSince(fetchStart)
             
             // Update published property on MainActor
             await MainActor.run {
             self.collections = fetchedCollections
             }
-            print("✅ [StampsManager] Loaded \(fetchedCollections.count) collections in \(String(format: "%.2f", duration))s")
+            if DEBUG_STAMPS {
+                print("✅ [StampsManager] Loaded \(fetchedCollections.count) collections")
+            }
         } catch {
-            let duration = Date().timeIntervalSince(fetchStart)
-            print("❌ [StampsManager] Failed to load collections after \(String(format: "%.2f", duration))s: \(error.localizedDescription)")
+            print("❌ [StampsManager] Failed to load collections: \(error.localizedDescription)")
             // Continue anyway - collections are not critical for app startup
         }
     }
@@ -144,116 +150,117 @@ class StampsManager: ObservableObject {
     // MARK: - Lazy Loading Methods (NEW ARCHITECTURE)
     
     /// Fetch specific stamps by IDs (for feed, profiles)
-    /// Uses LRU cache for instant repeat access + in-flight request deduplication
+    /// Uses LRU cache for instant repeat access
     /// - Parameter ids: Array of stamp IDs to fetch
     /// - Returns: Array of stamps matching the IDs
     func fetchStamps(ids: [String]) async -> [Stamp] {
-        let fetchStart = CFAbsoluteTimeGetCurrent()
-        
         var results: [Stamp] = []
         var uncachedIds: [String] = []
-        var pendingTasks: [Task<[Stamp], Never>] = []
         
-        // Check cache and in-flight requests
+        // Check cache first
         for id in ids {
             if let cached = stampCache.get(id) {
                 results.append(cached)
-                print("💾 [StampsManager] Cache HIT: \(id)")
-            } else if let existingTask = await fetchCoordinator.getTask(for: id) {
-                // Another request is already fetching this stamp - wait for it
-                pendingTasks.append(existingTask)
-                print("⏳ [StampsManager] Waiting for in-flight fetch: \(id)")
+                if DEBUG_STAMPS {
+                    print("💾 [StampsManager] Cache HIT: \(id)")
+                }
             } else {
                 uncachedIds.append(id)
             }
         }
         
-        // Wait for any pending tasks
-        for task in pendingTasks {
-            let stamps = await task.value
-            results.append(contentsOf: stamps)
-        }
-        
         // Fetch uncached stamps from Firebase
         if !uncachedIds.isEmpty {
-            let firebaseStart = CFAbsoluteTimeGetCurrent()
-            print("🌐 [StampsManager] Fetching \(uncachedIds.count) uncached stamps: [\(uncachedIds.joined(separator: ", "))]")
-            
-            // Create a task for this fetch and store it
-            let fetchTask = Task<[Stamp], Never> {
-                do {
-                    let fetchStart = CFAbsoluteTimeGetCurrent()
-                    let fetched = try await self.firebaseService.fetchStampsByIds(uncachedIds)
-                    let totalFetchTime = CFAbsoluteTimeGetCurrent() - fetchStart
-                    
-                    // Add to cache
-                    let cacheStart = CFAbsoluteTimeGetCurrent()
-                    for stamp in fetched {
-                        self.stampCache.set(stamp.id, stamp)
-                    }
-                    let cacheTime = CFAbsoluteTimeGetCurrent() - cacheStart
-                    
-                    print("⏱️ [StampsManager] Firebase fetch: \(String(format: "%.3f", totalFetchTime))s (\(fetched.count) stamps) - cache: \(String(format: "%.3f", cacheTime))s")
-                    return fetched
-                } catch {
-                    let errorTime = CFAbsoluteTimeGetCurrent() - firebaseStart
-                    print("❌ [StampsManager] Failed to fetch stamps after \(String(format: "%.3f", errorTime))s: \(error.localizedDescription)")
-                    return []
-                }
+            if DEBUG_STAMPS {
+                print("🌐 [StampsManager] Fetching \(uncachedIds.count) uncached stamps: [\(uncachedIds.joined(separator: ", "))]")
             }
             
-            // Register the task for each ID being fetched
-            await fetchCoordinator.registerTask(fetchTask, for: uncachedIds)
-            
-            // Wait for fetch to complete
-            let fetched = await fetchTask.value
-            results.append(contentsOf: fetched)
-            
-            // Clean up completed tasks
-            await fetchCoordinator.removeTask(for: uncachedIds)
+            do {
+                let fetched = try await firebaseService.fetchStampsByIds(uncachedIds)
+                
+                // Add to cache
+                for stamp in fetched {
+                    stampCache.set(stamp.id, stamp)
+                }
+                
+                results.append(contentsOf: fetched)
+                
+                if DEBUG_STAMPS {
+                    print("✅ [StampsManager] Fetched \(fetched.count) stamps from Firebase")
+                }
+            } catch {
+                print("❌ [StampsManager] Failed to fetch stamps: \(error.localizedDescription)")
+            }
         }
         
-        let totalTime = CFAbsoluteTimeGetCurrent() - fetchStart
-        print("⏱️ [StampsManager] Total fetchStamps: \(String(format: "%.3f", totalTime))s (\(results.count)/\(ids.count) stamps)")
+        if DEBUG_STAMPS {
+            print("✅ [StampsManager] fetchStamps complete: \(results.count)/\(ids.count) stamps")
+        }
         
         return results
     }
     
-    /// Fetch stamps in a geographic region (for map view)
-    /// Uses geohash for efficient spatial queries
-    /// - Parameter region: The visible map region
-    /// - Parameter precision: Geohash precision (default 5 = ~5km)
-    /// - Returns: Array of stamps in the region
-    func fetchStampsInRegion(region: MKCoordinateRegion, precision: Int = 5) async -> [Stamp] {
-        let (minGeohash, maxGeohash) = Geohash.bounds(for: region, precision: precision)
-        
-        print("🗺️ [StampsManager] Fetching stamps in region: \(minGeohash) to \(maxGeohash)")
+    /// Fetch all stamps globally (for map view)
+    /// 
+    /// **CURRENT STRATEGY (MVP with 100-1000 stamps):**
+    /// Simple "fetch all" approach works perfectly because:
+    /// - Firebase persistent cache makes subsequent loads instant (FREE)
+    /// - First load: ~500ms for 400 stamps
+    /// - All future loads: <50ms from cache (no Firebase reads)
+    /// - Cost: ~12K reads/month for new users only = $0/month (under 1.5M free tier)
+    /// 
+    /// **WHEN TO SWITCH to fetchStampsInRegion():**
+    /// - Stamp count exceeds ~1000 stamps
+    /// - First load becomes too slow (>1 second)
+    /// - Approaching Firebase free tier limits
+    /// - See fetchStampsInRegion() below for region-based alternative
+    /// 
+    /// - Returns: Array of all stamps
+    func fetchAllStamps() async -> [Stamp] {
+        if DEBUG_STAMPS {
+            print("🗺️ [StampsManager] Fetching all stamps globally...")
+        }
         
         do {
-            let fetched = try await firebaseService.fetchStampsInRegion(
-                minGeohash: minGeohash,
-                maxGeohash: maxGeohash,
-                limit: 500  // Generous limit for complete metro area coverage
-            )
+            let fetched = try await firebaseService.fetchStamps()
             
             // Add to cache for future use
             for stamp in fetched {
                 stampCache.set(stamp.id, stamp)
             }
             
-            print("✅ [StampsManager] Fetched \(fetched.count) stamps in region")
+            if DEBUG_STAMPS {
+                print("✅ [StampsManager] Fetched \(fetched.count) stamps globally")
+            }
             return fetched
         } catch {
-            print("❌ [StampsManager] Failed to fetch stamps in region: \(error.localizedDescription)")
+            print("❌ [StampsManager] Failed to fetch stamps: \(error.localizedDescription)")
             return []
         }
     }
+    
+    // ==================== FUTURE OPTIMIZATION ====================
+    // Region-based stamp loading removed for MVP (stamp count: 1000)
+    // 
+    // This optimization becomes necessary when stamp count exceeds 2000.
+    // To restore: Check git history for commit "Remove unused region-based loading"
+    // 
+    // When needed:
+    // - Restores Geohash.swift utility
+    // - Enables fetchStampsInRegion() in StampsManager
+    // - Enables fetchStampsInRegion() in FirebaseService
+    // - Updates MapView to call region-based loading
+    // 
+    // Benefits at scale: Only loads ~300 visible stamps instead of all 2000+
+    // ==================== FUTURE OPTIMIZATION ====================
     
     /// Fetch stamps in a specific collection
     /// - Parameter collectionId: The collection ID
     /// - Returns: Array of stamps in the collection
     func fetchStampsInCollection(collectionId: String) async -> [Stamp] {
-        print("📚 [StampsManager] Fetching stamps in collection: \(collectionId)")
+        if DEBUG_STAMPS {
+            print("📚 [StampsManager] Fetching stamps in collection: \(collectionId)")
+        }
         
         do {
             let fetched = try await firebaseService.fetchStampsInCollection(collectionId: collectionId)
@@ -263,7 +270,9 @@ class StampsManager: ObservableObject {
                 stampCache.set(stamp.id, stamp)
             }
             
-            print("✅ [StampsManager] Fetched \(fetched.count) stamps in collection")
+            if DEBUG_STAMPS {
+                print("✅ [StampsManager] Fetched \(fetched.count) stamps in collection")
+            }
             return fetched
         } catch {
             print("❌ [StampsManager] Failed to fetch stamps in collection: \(error.localizedDescription)")
@@ -281,7 +290,9 @@ class StampsManager: ObservableObject {
     /// Clear stamp cache (for debugging or low memory situations)
     func clearCache() {
         stampCache.removeAll()
-        print("🗑️ [StampsManager] Cleared stamp cache")
+        if DEBUG_STAMPS {
+            print("🗑️ [StampsManager] Cleared stamp cache")
+        }
     }
     
     // MARK: - Data Loading
@@ -400,15 +411,21 @@ class StampsManager: ObservableObject {
     ///
     /// **FUTURE UPGRADE:** When scaling, migrate to Cloud Functions (see reconcileUserStats comment)
     func collectStamp(_ stamp: Stamp, userId: String) {
-        // Collect the stamp locally first (optimistic update)
-        userCollection.collectStamp(stamp.id, userId: userId)
-        
-        // Update Firebase statistics in the background
+        // Fetch the user's rank BEFORE incrementing collectors (to get correct position)
         Task {
+            // Get rank before incrementing (user will be the NEXT collector)
+            let userRank = await getUserRankForStamp(stampId: stamp.id, userId: userId)
+            
+            // Collect the stamp locally with rank (optimistic update)
+            await MainActor.run {
+                userCollection.collectStamp(stamp.id, userId: userId, userRank: userRank)
+            }
+            
+            // Update Firebase statistics in the background
             do {
                 // Calculate new stats (async)
-                let totalStamps = userCollection.collectedStamps.count
-                let collectedStampIds = userCollection.collectedStamps.map { $0.stampId }
+                let totalStamps = await MainActor.run { userCollection.collectedStamps.count }
+                let collectedStampIds = await MainActor.run { userCollection.collectedStamps.map { $0.stampId } }
                 let uniqueCountries = await calculateUniqueCountries(from: collectedStampIds)
                 
                 // Update stamp statistics (collectors count)
@@ -427,7 +444,7 @@ class StampsManager: ObservableObject {
                     stampStatistics[stamp.id] = updatedStats
                 }
                 
-                print("✅ Updated stamp statistics for \(stamp.id): \(updatedStats.totalCollectors) collectors")
+                print("✅ Updated stamp statistics for \(stamp.id): \(updatedStats.totalCollectors) collectors (user rank: \(userRank ?? -1))")
                 print("✅ Updated user stats: \(totalStamps) stamps, \(uniqueCountries) countries")
             } catch {
                 print("⚠️ Failed to update statistics: \(error.localizedDescription)")
@@ -565,33 +582,6 @@ class StampsManager: ObservableObject {
         })
         
         return countries.count
-    }
-}
-
-// MARK: - Fetch Coordinator Actor
-
-/// Thread-safe coordinator for in-flight fetch requests
-/// Prevents duplicate concurrent fetches of the same stamp
-actor FetchCoordinator {
-    private var inFlightFetches: [String: Task<[Stamp], Never>] = [:]
-    
-    /// Get existing task for stamp ID, if any
-    func getTask(for id: String) -> Task<[Stamp], Never>? {
-        return inFlightFetches[id]
-    }
-    
-    /// Register a new fetch task for stamp IDs
-    func registerTask(_ task: Task<[Stamp], Never>, for ids: [String]) {
-        for id in ids {
-            inFlightFetches[id] = task
-        }
-    }
-    
-    /// Remove completed tasks for stamp IDs
-    func removeTask(for ids: [String]) {
-        for id in ids {
-            inFlightFetches.removeValue(forKey: id)
-        }
     }
 }
 

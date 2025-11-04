@@ -209,7 +209,7 @@ struct FullScreenPhotoView: View {
             
             await MainActor.run {
                 isDeleting = false
-                deleteErrorMessage = "Failed to delete photo from cloud storage. Please check your internet connection and try again.\n\nError: \(error.localizedDescription)"
+                deleteErrorMessage = "Couldn't delete photo. Check your connection and try again."
                 showDeleteError = true
             }
         }

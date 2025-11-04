@@ -99,13 +99,13 @@ class LikeManager: ObservableObject {
                     saveCachedLikes()
                     
                     // Show user-friendly error message
-                    errorMessage = "Check your connection"
+                    errorMessage = "Couldn't sync like. Check your connection."
                     
                     // Clear message after 3 seconds
                     Task {
                         try? await Task.sleep(nanoseconds: 3_000_000_000)
                         await MainActor.run {
-                            if errorMessage == "Check your connection" {
+                            if errorMessage == "Couldn't sync like. Check your connection." {
                                 errorMessage = nil
                             }
                         }

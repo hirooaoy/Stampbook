@@ -15,7 +15,6 @@ struct UserProfileView: View {
     @StateObject private var profileManager = ProfileManager() // Local ProfileManager for viewing this user's profile
     @Environment(\.dismiss) var dismiss
     
-    @State private var showMoreMenu = false
     @State private var showUserReport = false // Show user report sheet
     @State private var userProfile: UserProfile?
     // @State private var userRank: Int? // TODO: POST-MVP - Rank for the viewed user
@@ -239,10 +238,11 @@ struct UserProfileView: View {
     
     @ViewBuilder
     private var followButtonSection: some View {
-        // Follow/Following button with triple dot menu (full width)
+        // Follow and Share buttons (equal width)
         // Don't show for current user
         if !isCurrentUser {
             HStack(spacing: 8) {
+                // Follow button
                 Button(action: {
                     guard let currentUserId = authManager.userId else { return }
                     // BEST PRACTICE: Pass current user's ProfileManager to keep counts synced
@@ -271,16 +271,23 @@ struct UserProfileView: View {
                 }
                 .disabled(followManager.isProcessingFollow[userId] == true)
                 
-                // Square button with triple dot
+                // Share button (equal width to Follow button)
                 Button(action: {
-                    showMoreMenu = true
+                    // TODO: Implement share functionality
+                    print("Share profile tapped")
                 }) {
-                    Image(systemName: "ellipsis")
-                        .font(.system(size: 18))
-                        .foregroundColor(.primary)
-                        .frame(width: 44, height: 44)
-                        .background(Color.gray.opacity(0.1))
-                        .cornerRadius(10)
+                    HStack(spacing: 8) {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 16))
+                        Text("Share")
+                    }
+                    .font(.footnote)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 44)
+                    .background(Color.gray.opacity(0.1))
+                    .cornerRadius(10)
                 }
             }
             .padding(.horizontal, 20)
@@ -308,25 +315,32 @@ struct UserProfileView: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            // Triple dot menu in top right (only for other users)
+            if !isCurrentUser {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Menu {
+                        Button(role: .destructive, action: {
+                            showUserReport = true
+                        }) {
+                            Label("Report User", systemImage: "exclamationmark.bubble")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis")
+                            .font(.system(size: 24))
+                            .foregroundColor(.primary)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
+                    }
+                }
+            }
+        }
         .alert("Error", isPresented: $showFollowError) {
             Button("OK", role: .cancel) {
                 followManager.error = nil
             }
         } message: {
-            Text(followManager.error ?? "Failed to update follow status. Please try again.")
-        }
-        .alert("More Options", isPresented: $showMoreMenu) {
-            Button("Share Profile") {
-                // Handle share action
-                // TODO: Implement share functionality
-            }
-            
-            Button("Report User", role: .destructive) {
-                // Show user report view
-                showUserReport = true
-            }
-            
-            Button("Cancel", role: .cancel) {}
+            Text(followManager.error ?? "Couldn't update follow status. Try again.")
         }
         .sheet(isPresented: $showUserReport) {
             SimpleUserReportView(reportedUserId: userId, reportedUsername: username)
@@ -566,6 +580,7 @@ struct UserProfileView: View {
                         case .success(let image):
                             image
                                 .resizable()
+                                .renderingMode(.original)
                                 .aspectRatio(contentMode: .fit)
                                 .frame(height: 160)
                                 .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -573,6 +588,7 @@ struct UserProfileView: View {
                             // Fallback to placeholder
                             Image("empty")
                                 .resizable()
+                                .renderingMode(.original)
                                 .aspectRatio(contentMode: .fit)
                                 .frame(height: 160)
                                 .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -584,6 +600,7 @@ struct UserProfileView: View {
                     // Fallback to bundled image for backward compatibility
                     Image(stamp.imageName)
                         .resizable()
+                        .renderingMode(.original)
                         .aspectRatio(contentMode: .fit)
                         .frame(height: 160)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -591,6 +608,7 @@ struct UserProfileView: View {
                     // No image - show placeholder
                     Image("empty")
                         .resizable()
+                        .renderingMode(.original)
                         .aspectRatio(contentMode: .fit)
                         .frame(height: 160)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
