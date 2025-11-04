@@ -100,36 +100,18 @@ struct PhotoGalleryView: View {
                         }) {
                         // Check if we have an actual stamp image URL
                         if let stampImageName = stampImageName, !stampImageName.isEmpty {
-                            // We have a real stamp image - load from Firebase URL
+                            // We have a real stamp image - load optimized thumbnail
                             if stampImageName.starts(with: "http") {
-                                // Load from Firebase URL
-                                AsyncImage(url: URL(string: stampImageName)) { phase in
-                                    switch phase {
-                                    case .empty:
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .fill(Color.gray.opacity(0.3))
-                                            .overlay(
-                                                ProgressView()
-                                                    .tint(.gray)
-                                            )
-                                    case .success(let image):
-                                        image
-                                            .resizable()
-                                            .aspectRatio(contentMode: .fill)
-                                    case .failure:
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .fill(Color.gray.opacity(0.3))
-                                            .overlay(
-                                                Image(systemName: "photo")
-                                                    .foregroundColor(.gray)
-                                            )
-                                    @unknown default:
-                                        EmptyView()
-                                    }
-                                }
-                                .frame(width: 120, height: 120)
-                                .clipped()
-                                .cornerRadius(12)
+                                // Extract storage path from Firebase URL and use cached thumbnail
+                                let storagePath = extractStoragePath(from: stampImageName)
+                                
+                                CachedImageView.stampPhoto(
+                                    imageName: nil, // Don't have imageName in feed, will fetch from Firebase
+                                    storagePath: storagePath,
+                                    stampId: stampId,
+                                    size: CGSize(width: 120, height: 120),
+                                    cornerRadius: 12
+                                )
                             } else {
                                 // Load from local assets (backward compatibility)
                                 Image(stampImageName)
@@ -321,6 +303,20 @@ struct PhotoGalleryView: View {
         
         let path = collectedStamp.userImagePaths[index]
         return path.isEmpty ? nil : path
+    }
+    
+    /// Extract storage path from Firebase Storage URL
+    /// Converts: https://firebasestorage.googleapis.com/v0/b/bucket/o/stamps%2Ffile.jpg?alt=media
+    /// To: stamps/file.jpg
+    private func extractStoragePath(from firebaseUrl: String) -> String? {
+        guard let url = URL(string: firebaseUrl),
+              let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+              let path = components.path.components(separatedBy: "/o/").last?.components(separatedBy: "?").first else {
+            return nil
+        }
+        
+        // URL decode the path (e.g., %2F -> /)
+        return path.removingPercentEncoding
     }
 }
 

@@ -43,6 +43,12 @@ service cloud.firestore {
       allow create, delete: if request.auth.uid == userId;  // Users can only manage their own following list
     }
     
+    // IMPORTANT: Allow collectionGroup queries for follower list
+    // This enables fetchFollowers() to search across all users' following subcollections
+    match /{path=**}/following/{followingId} {
+      allow read: if request.auth != null;
+    }
+    
     // Likes
     match /likes/{likeId} {
       allow read: if request.auth != null;

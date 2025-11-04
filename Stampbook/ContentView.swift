@@ -57,7 +57,7 @@ struct ContentView: View {
         .onAppear {
             print("⏱️ [ContentView] onAppear started")
             // Set current user on initial load
-            stampsManager.setCurrentUser(authManager.userId)
+            stampsManager.setCurrentUser(authManager.userId, profileManager: profileManager)
             
             // Link AuthManager to ProfileManager
             authManager.profileManager = profileManager
@@ -77,7 +77,7 @@ struct ContentView: View {
             print("🔄 [ContentView] UserId changed: \(newUserId ?? "nil")")
             
             // Update stamps manager when user changes (sign in/out or switch user)
-            stampsManager.setCurrentUser(newUserId)
+            stampsManager.setCurrentUser(newUserId, profileManager: profileManager)
             
             // Clear profile if signed out
             if !authManager.isSignedIn {

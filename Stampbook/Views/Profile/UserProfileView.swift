@@ -333,6 +333,7 @@ struct UserProfileView: View {
         }
         .onAppear {
             // Load user profile
+            print("👤 [UserProfileView] onAppear for userId: \(userId)")
             profileManager.loadProfile(userId: userId)
             
             // Load user's collected stamps
@@ -340,6 +341,7 @@ struct UserProfileView: View {
             
             // Cache initial counts in FollowManager
             if let profile = userProfile {
+                print("📊 [UserProfileView] Caching initial counts: followers=\(profile.followerCount), following=\(profile.followingCount)")
                 followManager.updateFollowCounts(userId: userId, followerCount: profile.followerCount, followingCount: profile.followingCount)
             }
             
@@ -352,6 +354,8 @@ struct UserProfileView: View {
             // Update local state when profile loads
             userProfile = profile
             if let profile = profile {
+                print("📊 [UserProfileView] Profile loaded: \(profile.username)")
+                print("📊 [UserProfileView] Counts: followers=\(profile.followerCount), following=\(profile.followingCount)")
                 followManager.updateFollowCounts(userId: userId, followerCount: profile.followerCount, followingCount: profile.followingCount)
                 
                 // TODO: POST-MVP - Rank fetch disabled

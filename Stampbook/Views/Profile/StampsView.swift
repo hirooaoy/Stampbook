@@ -468,12 +468,17 @@ struct StampsView: View {
                 // Initialize cache when profile loads
                 .onAppear {
                     if let profile = profileManager.currentUserProfile, let userId = authManager.userId {
+                        print("📊 [StampsView] Caching follow counts on appear: userId=\(userId)")
+                        print("📊 [StampsView] Profile counts: followers=\(profile.followerCount), following=\(profile.followingCount)")
                         followManager.updateFollowCounts(userId: userId, followerCount: profile.followerCount, followingCount: profile.followingCount)
                     }
                 }
                 // Update cache when profile changes
                 .onChange(of: profileManager.currentUserProfile) { oldProfile, newProfile in
                     if let profile = newProfile, let userId = authManager.userId {
+                        print("📊 [StampsView] Profile changed - updating follow counts cache")
+                        print("📊 [StampsView] Old: followers=\(oldProfile?.followerCount ?? 0), following=\(oldProfile?.followingCount ?? 0)")
+                        print("📊 [StampsView] New: followers=\(profile.followerCount), following=\(profile.followingCount)")
                         followManager.updateFollowCounts(userId: userId, followerCount: profile.followerCount, followingCount: profile.followingCount)
                     }
                 }

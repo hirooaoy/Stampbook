@@ -63,8 +63,8 @@ class ImageManager {
             try imageData.write(to: fileURL)
             print("✅ Image saved locally: \(filename)")
             
-            // Generate and save thumbnail (160x160 @2x for retina)
-            if let thumbnail = generateThumbnail(resizedImage, size: CGSize(width: 160, height: 160)) {
+            // Generate and save thumbnail (320x320 for crisp retina display)
+            if let thumbnail = generateThumbnail(resizedImage, size: CGSize(width: 320, height: 320)) {
                 let thumbnailFilename = "\(stampId)_\(Int(timestamp))_\(uuid)_thumb.jpg"
                 let thumbnailURL = getDocumentsDirectory().appendingPathComponent(thumbnailFilename)
                 
@@ -241,7 +241,7 @@ class ImageManager {
             ImageCacheManager.shared.setFullImage(image, key: filename)
             
             // Also generate and cache thumbnail
-            if let thumbnail = generateThumbnail(image, size: CGSize(width: 160, height: 160)) {
+            if let thumbnail = generateThumbnail(image, size: CGSize(width: 320, height: 320)) {
                 let thumbnailFilename = filename.replacingOccurrences(of: ".jpg", with: "_thumb.jpg")
                 let thumbnailURL = getDocumentsDirectory().appendingPathComponent(thumbnailFilename)
                 
@@ -467,7 +467,8 @@ class ImageManager {
     /// Generate thumbnail for feed display
     /// Uses aspectFill to crop (not squish) the image to fill the square
     /// Forces scale = 1.0 so that points = pixels (no retina scaling)
-    func generateThumbnail(_ image: UIImage, size: CGSize = CGSize(width: 160, height: 160)) -> UIImage? {
+    /// Default 320x320 provides crisp quality on 2x retina displays
+    func generateThumbnail(_ image: UIImage, size: CGSize = CGSize(width: 320, height: 320)) -> UIImage? {
         let format = UIGraphicsImageRendererFormat()
         format.scale = 1.0  // Force 1x scale to get actual pixel dimensions
         

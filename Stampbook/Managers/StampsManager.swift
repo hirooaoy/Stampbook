@@ -100,14 +100,14 @@ class StampsManager: ObservableObject {
     }
     
     /// Refresh data from server (pull-to-refresh)
-    func refresh() async {
+    func refresh(profileManager: ProfileManager? = nil) async {
         guard let userId = userCollection.currentUserId else { return }
         
         // Refresh user's collected stamps from Firestore
         await userCollection.refresh(userId: userId)
         
         // Reconcile user stats to ensure they're correct
-        await reconcileUserStats(userId: userId)
+        await reconcileUserStats(userId: userId, profileManager: profileManager)
         
         // Clear cached statistics so they refetch fresh data
         await MainActor.run {
@@ -378,13 +378,13 @@ class StampsManager: ObservableObject {
     }
     
     /// Set the current user - filters collected stamps to show only this user's stamps
-    func setCurrentUser(_ userId: String?) {
+    func setCurrentUser(_ userId: String?, profileManager: ProfileManager? = nil) {
         userCollection.setCurrentUser(userId)
         
         // Reconcile user stats when user changes (signs in/out)
         if let userId = userId {
             Task {
-                await reconcileUserStats(userId: userId)
+                await reconcileUserStats(userId: userId, profileManager: profileManager)
             }
         }
     }
@@ -484,7 +484,7 @@ class StampsManager: ObservableObject {
     /// - Cost: ~$0 until 100K+ users (2M free invocations/month)
     ///
     /// For now, client-side reconciliation is perfect for your scale.
-    func reconcileUserStats(userId: String) async {
+    func reconcileUserStats(userId: String, profileManager: ProfileManager? = nil) async {
         do {
             // Fetch actual collected stamps count from Firestore
             let collectedStamps = try await firebaseService.fetchCollectedStamps(for: userId)
@@ -510,6 +510,15 @@ class StampsManager: ObservableObject {
                 )
                 
                 print("✅ User stats reconciled successfully")
+                
+                // CRITICAL FIX: Refresh ProfileManager to show updated counts
+                // Without this, UI still shows old stats even though Firebase is updated
+                if let profileManager = profileManager {
+                    await MainActor.run {
+                        profileManager.refreshProfile()
+                    }
+                    print("✅ ProfileManager refreshed with updated stats")
+                }
             } else {
                 print("✅ User stats already correct (\(actualTotal) stamps, \(actualUniqueCountries) countries)")
             }
