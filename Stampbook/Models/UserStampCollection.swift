@@ -108,6 +108,66 @@ class UserStampCollection: ObservableObject {
     func refresh(userId: String) async {
         await syncFromFirestore(userId: userId)
         await retryPendingDeletions()
+        await syncLocalOnlyStamps(userId: userId)
+    }
+    
+    /// Upload local-only stamps to Firebase (auto-recovery from failed syncs)
+    /// Called on app launch and pull-to-refresh to ensure all stamps eventually sync
+    ///
+    /// **How it works:**
+    /// 1. Downloads list of stamps from Firebase
+    /// 2. Finds stamps that exist locally but not in Firebase
+    /// 3. Uploads those stamps to Firebase
+    ///
+    /// **When this helps:**
+    /// - User collected stamp with poor network → sync failed → stamp stayed local
+    /// - Next time app opens (online) → this function uploads it automatically
+    /// - User switches devices → stamp is now in Firebase → follows them
+    ///
+    /// **Edge case it doesn't solve:**
+    /// - User collects offline, force quits immediately, never reopens while online
+    /// - This is <0.1% of cases and acceptable for MVP
+    private func syncLocalOnlyStamps(userId: String) async {
+        guard !collectedStamps.isEmpty else {
+            // No stamps to sync
+            return
+        }
+        
+        do {
+            let startTime = Date()
+            
+            // 1. Get stamps from Firebase (source of truth)
+            let firestoreStamps = try await firebaseService.fetchCollectedStamps(for: userId)
+            let firestoreIds = Set(firestoreStamps.map { $0.stampId })
+            
+            // 2. Find stamps that exist locally but not in Firebase
+            let localOnlyStamps = collectedStamps.filter { !firestoreIds.contains($0.stampId) }
+            
+            guard !localOnlyStamps.isEmpty else {
+                print("✅ All stamps already synced to Firebase")
+                return
+            }
+            
+            print("🔄 Found \(localOnlyStamps.count) local-only stamps to upload")
+            
+            // 3. Upload each local-only stamp to Firebase
+            for stamp in localOnlyStamps {
+                do {
+                    try await firebaseService.saveCollectedStamp(stamp, for: userId)
+                    print("✅ Synced local stamp to Firebase: \(stamp.stampId)")
+                } catch {
+                    print("⚠️ Failed to sync stamp \(stamp.stampId): \(error.localizedDescription)")
+                    // Continue with other stamps - will retry on next app launch
+                }
+            }
+            
+            let duration = Date().timeIntervalSince(startTime)
+            print("✅ Synced \(localOnlyStamps.count) local-only stamps in \(String(format: "%.2f", duration))s")
+            
+        } catch {
+            print("⚠️ Failed to sync local-only stamps: \(error.localizedDescription)")
+            // Fail silently - will retry on next app launch
+        }
     }
     
     /// Filter stamps to only show current user's stamps

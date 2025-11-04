@@ -448,7 +448,8 @@ class StampsManager: ObservableObject {
                 print("✅ Updated user stats: \(totalStamps) stamps, \(uniqueCountries) countries")
             } catch {
                 print("⚠️ Failed to update statistics: \(error.localizedDescription)")
-                // Don't revert local collection - sync will retry later
+                // Don't revert local collection - stamp is saved locally and will auto-sync
+                // on next app launch via UserStampCollection.syncLocalOnlyStamps()
                 // Invalidate cache so it will be refetched next time
                 await MainActor.run {
                     _ = stampStatistics.removeValue(forKey: stamp.id)
