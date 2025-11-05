@@ -45,7 +45,7 @@
 ### 3. Stamp Collection
 - [ ] **Welcome Stamp** (First Time)
   - [ ] Visible from anywhere (no location required)
-  - [ ] "Collect Stamp" button enabled
+  - [ ] Tap "Collect Stamp" in product for StampDetailView
   - [ ] Collection triggers welcome animation
   - [ ] Stats update: 1 stamp, 1 country
 - [ ] **Location-Based Stamps**
