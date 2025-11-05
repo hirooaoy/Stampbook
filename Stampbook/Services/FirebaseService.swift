@@ -247,7 +247,9 @@ class FirebaseService {
     func fetchStampsByIds(_ ids: [String]) async throws -> [Stamp] {
         guard !ids.isEmpty else { return [] }
         
+        #if DEBUG
         let overallStart = CFAbsoluteTimeGetCurrent()
+        #endif
         
         // Firestore 'in' queries support max 10 items
         // Batch into chunks of 10
@@ -256,14 +258,18 @@ class FirebaseService {
             Array(ids[$0..<min($0 + batchSize, ids.count)])
         }
         
+        #if DEBUG
         print("🔄 [FirebaseService] Fetching \(ids.count) stamps in \(batches.count) parallel batches...")
+        #endif
         
         // Execute all batches in PARALLEL for better performance
         let allStamps = try await withThrowingTaskGroup(of: [Stamp].self, returning: [Stamp].self) { group in
             for (index, batchIds) in batches.enumerated() {
                 group.addTask {
+                    #if DEBUG
                     let batchStart = CFAbsoluteTimeGetCurrent()
                     print("📦 [FirebaseService] Batch \(index + 1)/\(batches.count): Fetching \(batchIds.count) stamps...")
+                    #endif
                     
                     let snapshot = try await self.db
                         .collection("stamps")
@@ -276,8 +282,10 @@ class FirebaseService {
                         }
                     }
                     
+                    #if DEBUG
                     let batchTime = CFAbsoluteTimeGetCurrent() - batchStart
                     print("✅ [FirebaseService] Batch \(index + 1)/\(batches.count): Completed in \(String(format: "%.3f", batchTime))s (\(stamps.count) stamps)")
+                    #endif
                     
                     return stamps
                 }
@@ -290,8 +298,10 @@ class FirebaseService {
             return allStamps
         }
         
+        #if DEBUG
         let overallTime = CFAbsoluteTimeGetCurrent() - overallStart
         print("⏱️ [FirebaseService] Total fetchStampsByIds: \(String(format: "%.3f", overallTime))s (\(allStamps.count)/\(ids.count) stamps)")
+        #endif
         
         return allStamps
     }
@@ -416,19 +426,28 @@ class FirebaseService {
     /// Fetch user profile from Firestore
     /// Used when loading a user's profile data
     func fetchUserProfile(userId: String) async throws -> UserProfile {
+        #if DEBUG
         let startTime = CFAbsoluteTimeGetCurrent()
         print("🔍 [FirebaseService] fetchUserProfile(\(userId)) started")
+        #endif
         
         let docRef = db.collection("users").document(userId)
         
+        #if DEBUG
         print("📡 [FirebaseService] Calling getDocument()...")
+        #endif
+        
         let document = try await docRef.getDocument()
         
+        #if DEBUG
         let fetchTime = CFAbsoluteTimeGetCurrent() - startTime
         print("⏱️ [FirebaseService] User profile fetch: \(String(format: "%.3f", fetchTime))s")
+        #endif
         
         if let profile = try? document.data(as: UserProfile.self) {
+            #if DEBUG
             print("✅ [FirebaseService] Profile parsed successfully: @\(profile.username)")
+            #endif
             return profile
         } else {
             print("❌ [FirebaseService] Profile document exists but failed to parse")
@@ -639,6 +658,7 @@ class FirebaseService {
     // • AWS S3 + CloudFront: Industry standard, more expensive but very reliable
     // • Cloudinary: All-in-one with image transformations (resize on-the-fly, auto-format)
     // Migration path: Store CDN URLs in Firestore, phase out Firebase Storage gradually
+    // 🎯 ACTION TRIGGER: Migrate to CDN when image bandwidth > 100GB/month OR 500+ users
     
     /// Upload a profile photo to Firebase Storage
     /// 
@@ -813,6 +833,7 @@ class FirebaseService {
     
     /// Count how many followers a user has (on-demand counting for MVP)
     /// Queries all users' following subcollections to count how many follow this user
+    /// 🎯 POST-MVP: Denormalize to user.followersCount field when > 500 users (saves N reads per profile view)
     func fetchFollowerCount(userId: String) async throws -> Int {
         // Query across all users who follow this user
         // This is efficient for <100 users
@@ -999,20 +1020,33 @@ class FirebaseService {
     /// Collection: users/{userId}/collected_stamps
     /// Fields: userId (Ascending), collectedDate (Descending)
     func fetchFollowingFeed(userId: String, limit: Int = 50, stampsPerUser: Int = 10, initialBatchSize: Int = 15) async throws -> [(profile: UserProfile, stamp: CollectedStamp)] {
+        #if DEBUG
         let overallStart = CFAbsoluteTimeGetCurrent()
+        #endif
         
         // 1. Get current user's profile (for including in feed)
+        #if DEBUG
         let profileStart = CFAbsoluteTimeGetCurrent()
+        #endif
+        
         let currentUserProfile = try await fetchUserProfile(userId: userId)
+        
+        #if DEBUG
         let profileTime = CFAbsoluteTimeGetCurrent() - profileStart
         print("⏱️ [FirebaseService] User profile fetch: \(String(format: "%.3f", profileTime))s")
+        #endif
         
         // 2. Get list of users being followed (uses cache if available)
+        #if DEBUG
         let followingStart = CFAbsoluteTimeGetCurrent()
+        #endif
+        
         let followingProfiles = try await fetchFollowing(userId: userId, useCache: true)
         
+        #if DEBUG
         let followingTime = CFAbsoluteTimeGetCurrent() - followingStart
         print("⏱️ [FirebaseService] Following list fetch: \(String(format: "%.3f", followingTime))s (\(followingProfiles.count) users)")
+        #endif
         
         // 3. Combine current user + followed users for feed
         // This ensures "All" tab shows your posts + followed users' posts
@@ -1030,54 +1064,85 @@ class FirebaseService {
         // 5. Fetch stamps from users in parallel for better performance
         var allFeedItems: [(profile: UserProfile, stamp: CollectedStamp)] = []
         
+        #if DEBUG
         let stampsStart = CFAbsoluteTimeGetCurrent()
         print("🔄 [FirebaseService] Fetching collected stamps from \(profilesToFetch.count) users in parallel...")
+        #endif
         
         // Use TaskGroup for parallel fetching
         await withTaskGroup(of: (UserProfile, [CollectedStamp]).self) { group in
             for (index, profile) in profilesToFetch.enumerated() {
                 group.addTask {
+                    #if DEBUG
                     let userStart = CFAbsoluteTimeGetCurrent()
+                    #endif
+                    
                     do {
                         // Fetch recent stamps for this user (10 per user for balanced feed)
                         let stamps = try await self.fetchCollectedStamps(for: profile.id, limit: stampsPerUser)
+                        
+                        #if DEBUG
                         let userTime = CFAbsoluteTimeGetCurrent() - userStart
                         print("✅ [FirebaseService] User \(index + 1)/\(profilesToFetch.count) (@\(profile.username)): \(stamps.count) stamps in \(String(format: "%.3f", userTime))s")
+                        #endif
+                        
                         return (profile, stamps)
                     } catch {
+                        #if DEBUG
                         let userTime = CFAbsoluteTimeGetCurrent() - userStart
                         print("⚠️ [FirebaseService] User \(index + 1)/\(profilesToFetch.count) (@\(profile.username)): Failed after \(String(format: "%.3f", userTime))s - \(error.localizedDescription)")
+                        #endif
+                        
                         return (profile, [])
                     }
                 }
             }
             
             // Collect results
+            #if DEBUG
             var completed = 0
+            #endif
+            
             for await (profile, stamps) in group {
+                #if DEBUG
                 completed += 1
+                #endif
+                
                 for stamp in stamps {
                     allFeedItems.append((profile: profile, stamp: stamp))
                 }
+                
+                #if DEBUG
                 print("📊 [FirebaseService] Progress: \(completed)/\(profilesToFetch.count) users completed")
+                #endif
             }
         }
         
+        #if DEBUG
         let stampsTime = CFAbsoluteTimeGetCurrent() - stampsStart
         print("⏱️ [FirebaseService] All user stamps fetched in \(String(format: "%.3f", stampsTime))s")
+        #endif
         
         // 6. Sort by collection date (most recent first)
+        #if DEBUG
         let sortStart = CFAbsoluteTimeGetCurrent()
+        #endif
+        
         allFeedItems.sort { $0.stamp.collectedDate > $1.stamp.collectedDate }
+        
+        #if DEBUG
         let sortTime = CFAbsoluteTimeGetCurrent() - sortStart
+        #endif
         
         // 7. Limit total items returned (pagination support)
         if allFeedItems.count > limit {
             allFeedItems = Array(allFeedItems.prefix(limit))
         }
         
+        #if DEBUG
         let overallTime = CFAbsoluteTimeGetCurrent() - overallStart
         print("✅ Fetched \(allFeedItems.count) feed items from \(batchSize) users in \(String(format: "%.3f", overallTime))s (sort: \(String(format: "%.3f", sortTime))s)")
+        #endif
         
         return allFeedItems
     }
@@ -1241,62 +1306,24 @@ class FirebaseService {
     
     /// Delete a comment (only by comment author or post owner)
     func deleteComment(commentId: String, postOwnerId: String, stampId: String) async throws {
-        print("🟣 [DELETE-15] FirebaseService.deleteComment called")
-        print("   commentId: \(commentId)")
-        print("   postOwnerId: \(postOwnerId)")
-        print("   stampId: \(stampId)")
-        
         let commentRef = db.collection("comments").document(commentId)
-        let commentPath = "comments/\(commentId)"
-        print("🟣 [DELETE-16] Firebase path: \(commentPath)")
-        
-        // First, check if comment exists (debugging)
-        do {
-            let snapshot = try await commentRef.getDocument()
-            if snapshot.exists {
-                let data = snapshot.data() ?? [:]
-                print("🟣 [DELETE-17] Comment found in Firebase:")
-                print("   Data keys: \(data.keys)")
-                print("   postId: \(data["postId"] ?? "nil")")
-                print("   userId: \(data["userId"] ?? "nil")")
-                print("   text: \(data["text"] ?? "nil")")
-            } else {
-                print("⚠️ [DELETE-17] WARNING: Comment does NOT exist in Firebase!")
-                print("   This could mean it was already deleted or never created")
-            }
-        } catch {
-            print("⚠️ [DELETE-17] ERROR checking if comment exists: \(error.localizedDescription)")
-        }
         
         // Delete the comment document
-        print("🟣 [DELETE-18] Attempting to delete comment document...")
-        do {
-            try await commentRef.delete()
-            print("✅ [DELETE-19] Successfully deleted comment document: \(commentId)")
-        } catch {
-            print("❌ [DELETE-ERROR] Failed to delete comment document")
-            print("   Error: \(error.localizedDescription)")
-            print("   Error type: \(type(of: error))")
-            throw error
-        }
+        try await commentRef.delete()
         
         // Then, decrement comment count on post
         let postRef = db.collection("users").document(postOwnerId).collection("collected_stamps").document(stampId)
-        let postPath = "users/\(postOwnerId)/collected_stamps/\(stampId)"
-        print("🟣 [DELETE-20] Decrementing comment count on post: \(postPath)")
         
         do {
             try await postRef.updateData([
                 "commentCount": FieldValue.increment(Int64(-1))
             ])
-            print("✅ [DELETE-21] Successfully decremented comment count on post")
         } catch {
-            print("⚠️ [DELETE-ERROR] Failed to decrement comment count (comment was deleted but count may be off)")
-            print("   Error: \(error.localizedDescription)")
+            print("⚠️ Failed to decrement comment count (comment was deleted but count may be off): \(error.localizedDescription)")
             // Don't throw here - comment deletion succeeded, count decrement is less critical
         }
         
-        print("✅ [DELETE-22] Completed comment deletion: \(commentId)")
+        print("✅ Deleted comment: \(commentId)")
     }
     
     /// Fetch comment count for a post

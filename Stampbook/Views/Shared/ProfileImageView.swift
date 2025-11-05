@@ -104,15 +104,21 @@ struct ProfileImageView: View {
     /// Load profile picture from cache or download from Firebase
     /// OPTIMIZED: Prioritizes cache hits, fails silently
     private func loadProfilePicture() async {
+        #if DEBUG
         let loadStart = CFAbsoluteTimeGetCurrent()
+        #endif
         
         guard let avatarUrl = avatarUrl, !avatarUrl.isEmpty else {
             // No avatar URL - show placeholder (already visible)
+            #if DEBUG
             print("🖼️ [ProfileImageView] No avatar URL for userId: \(userId)")
+            #endif
             return
         }
         
+        #if DEBUG
         print("🖼️ [ProfileImageView] Loading profile picture for userId: \(userId), attempt: \(loadAttempt)")
+        #endif
         
         // Don't block UI - load in background
         isLoadingImage = true
@@ -125,15 +131,19 @@ struct ProfileImageView: View {
                 userId: userId
             )
             
+            #if DEBUG
             let loadTime = CFAbsoluteTimeGetCurrent() - loadStart
             print("⏱️ [ProfileImageView] Profile picture loaded: \(String(format: "%.3f", loadTime))s for userId: \(userId)")
+            #endif
             
             await MainActor.run {
                 self.image = downloadedImage
                 self.isLoadingImage = false
             }
         } catch {
+            #if DEBUG
             let loadTime = CFAbsoluteTimeGetCurrent() - loadStart
+            #endif
             // Fail silently - placeholder already showing
             // Don't spam console - prefetch failures are expected
             await MainActor.run {

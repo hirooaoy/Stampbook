@@ -188,6 +188,7 @@ class ImageManager: ObservableObject {
     // 📊 COST NOTE: Firebase Storage = $0.026/GB storage + $0.12/GB egress (downloads)
     // At scale, consider blob storage + CDN: Cloudflare R2 = $0.015/GB + FREE egress
     // Migration: Store CDN URLs in Firestore instead of Firebase Storage paths
+    // 🎯 ACTION TRIGGER: Migrate to R2 when Firebase bill > $10/month OR 500+ users
     
     /// Upload image to Firebase Storage
     /// Automatically resizes to max 2400px before upload
@@ -737,22 +738,28 @@ class ImageManager: ObservableObject {
     /// 
     /// 🌐 NOTE: CDN would make this much faster globally via edge caching (e.g. Cloudflare CDN)
     func downloadAndCacheProfilePicture(url: String, userId: String) async throws -> UIImage {
+        #if DEBUG
         let downloadStart = CFAbsoluteTimeGetCurrent()
+        #endif
         
         // Generate cache filename from URL hash
         let filename = profilePictureCacheFilename(url: url, userId: userId)
         
         // Check memory cache first (fastest)
         if let cachedImage = ImageCacheManager.shared.getFullImage(key: filename) {
+            #if DEBUG
             let cacheTime = CFAbsoluteTimeGetCurrent() - downloadStart
             print("⏱️ [ImageManager] Profile pic memory cache: \(String(format: "%.3f", cacheTime))s")
+            #endif
             return cachedImage
         }
         
         // Check if already cached on disk
         if let cachedImage = loadProfilePicture(named: filename) {
+            #if DEBUG
             let cacheTime = CFAbsoluteTimeGetCurrent() - downloadStart
             print("⏱️ [ImageManager] Profile pic disk cache: \(String(format: "%.3f", cacheTime))s")
+            #endif
             return cachedImage
         }
         
@@ -761,48 +768,68 @@ class ImageManager: ObservableObject {
         let downloadTask: Task<UIImage, Error> = profilePictureQueue.sync {
             // Check if there's already a download in progress
             if let existingTask = inFlightProfilePictures[url] {
+                #if DEBUG
                 print("⏱️ [ImageManager] Waiting for in-flight profile pic download")
+                #endif
                 return existingTask
             }
             
             // Create and store new task atomically
             let newTask = Task<UIImage, Error> {
                 // Download from URL
+                #if DEBUG
                 let networkStart = CFAbsoluteTimeGetCurrent()
                 print("⬇️ [ImageManager] Downloading profile picture from: \(url)")
+                #endif
+                
                 guard let imageUrl = URL(string: url) else {
                     throw ImageError.invalidImageData
                 }
                 
                 // Start network request
+                #if DEBUG
                 print("🌐 [ImageManager] Starting URLSession request...")
                 let requestStart = CFAbsoluteTimeGetCurrent()
-                let (data, response) = try await URLSession.shared.data(from: imageUrl)
-                let requestTime = CFAbsoluteTimeGetCurrent() - requestStart
+                #endif
                 
+                let (data, response) = try await URLSession.shared.data(from: imageUrl)
+                
+                #if DEBUG
+                let requestTime = CFAbsoluteTimeGetCurrent() - requestStart
                 // Log response details
                 if let httpResponse = response as? HTTPURLResponse {
                     print("📡 [ImageManager] HTTP \(httpResponse.statusCode) - \(data.count) bytes in \(String(format: "%.3f", requestTime))s")
                 }
-                
                 let networkTime = CFAbsoluteTimeGetCurrent() - networkStart
                 print("⏱️ [ImageManager] Profile pic network download: \(String(format: "%.3f", networkTime))s")
+                #endif
                 
                 // Decode image
+                #if DEBUG
                 let decodeStart = CFAbsoluteTimeGetCurrent()
+                #endif
+                
                 guard let image = UIImage(data: data) else {
                     throw ImageError.invalidImageData
                 }
+                
+                #if DEBUG
                 let decodeTime = CFAbsoluteTimeGetCurrent() - decodeStart
                 print("🖼️ [ImageManager] Image decoded in \(String(format: "%.3f", decodeTime))s")
+                #endif
                 
                 // Cache to disk for future use
+                #if DEBUG
                 let cacheStart = CFAbsoluteTimeGetCurrent()
+                #endif
+                
                 let fileURL = self.getDocumentsDirectory().appendingPathComponent(filename)
                 do {
                     try data.write(to: fileURL)
+                    #if DEBUG
                     let cacheTime = CFAbsoluteTimeGetCurrent() - cacheStart
                     print("✅ Profile picture cached locally: \(filename) in \(String(format: "%.3f", cacheTime))s")
+                    #endif
                     // Also store in memory cache
                     ImageCacheManager.shared.setFullImage(image, key: filename)
                 } catch {
@@ -826,8 +853,10 @@ class ImageManager: ObservableObject {
                 inFlightProfilePictures.removeValue(forKey: url)
             }
             
+            #if DEBUG
             let totalTime = CFAbsoluteTimeGetCurrent() - downloadStart
             print("⏱️ [ImageManager] Total profile pic load: \(String(format: "%.3f", totalTime))s")
+            #endif
             
             return image
         } catch {

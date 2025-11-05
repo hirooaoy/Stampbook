@@ -68,14 +68,18 @@ class FeedManager: ObservableObject {
     /// 
     /// User perceives: <100ms "instant" load
     func loadFeed(userId: String, stampsManager: StampsManager, forceRefresh: Bool = false) async {
+        #if DEBUG
         print("🔍 [DEBUG] FeedManager.loadFeed called (forceRefresh: \(forceRefresh), hasPosts: \(!feedPosts.isEmpty))")
+        #endif
         
         // STEP 1: Check if memory cache is fresh
         if !forceRefresh,
            !feedPosts.isEmpty,
            let lastRefresh = lastRefreshTime,
            Date().timeIntervalSince(lastRefresh) < refreshInterval {
+            #if DEBUG
             print("🔍 [DEBUG] FeedManager using cached data (age: \(Date().timeIntervalSince(lastRefresh))s)")
+            #endif
             return
         }
         
@@ -128,9 +132,16 @@ class FeedManager: ObservableObject {
     /// KEY DIFFERENCE FROM OLD CODE:
     /// - Old: UI waits for each image to load individually
     /// - New: Start prefetching ALL images immediately, UI doesn't wait
+    /// 
+    /// 🎯 POST-MVP OPTIMIZATION: Denormalize feed to separate collection when hitting 1K users
+    /// - Create feed/{userId}/posts/{postId} collection via Cloud Function
+    /// - Reduces reads from 150 to 20 per feed load (87% savings)
+    /// - ACTION TRIGGER: Feed load time > 3s consistently OR 1000+ users
     private func fetchFeedAndPrefetch(userId: String, stampsManager: StampsManager, isInitialLoad: Bool) async {
+        #if DEBUG
         let overallStart = CFAbsoluteTimeGetCurrent()
         print("⏱️ [FeedManager] Starting feed fetch...")
+        #endif
         
         await MainActor.run {
             if isInitialLoad {
@@ -143,25 +154,37 @@ class FeedManager: ObservableObject {
         
         do {
             // Fetch feed data from Firebase
+            #if DEBUG
             let fetchStart = CFAbsoluteTimeGetCurrent()
             print("📡 [FeedManager] Fetching feed from Firebase...")
+            #endif
+            
             let feedItems = try await firebaseService.fetchFollowingFeed(
                 userId: userId,
-                limit: 50,
-                stampsPerUser: 10
+                limit: 20,  // ✅ Reduced from 50 - cuts Firestore reads by 50%, faster load
+                stampsPerUser: 5  // ✅ Reduced from 10 - still plenty of content per user
             )
+            
+            #if DEBUG
             let fetchTime = CFAbsoluteTimeGetCurrent() - fetchStart
             print("⏱️ [FeedManager] Firebase feed fetch: \(String(format: "%.3f", fetchTime))s (\(feedItems.count) items)")
             print("📊 [FeedManager] Breakdown: User profiles + collected stamps fetch completed")
+            #endif
             
             // Extract unique stamp IDs
             let uniqueStampIds = Array(Set(feedItems.map { $0.1.stampId }))
             
             // Fetch only the stamps needed for this feed
+            #if DEBUG
             let stampsStart = CFAbsoluteTimeGetCurrent()
+            #endif
+            
             let stamps = await stampsManager.fetchStamps(ids: uniqueStampIds)
+            
+            #if DEBUG
             let stampsTime = CFAbsoluteTimeGetCurrent() - stampsStart
             print("⏱️ [FeedManager] Stamps fetch: \(String(format: "%.3f", stampsTime))s (\(stamps.count) stamps)")
+            #endif
             
             // Create stamp lookup dictionary
             let stampLookup = Dictionary(uniqueKeysWithValues: stamps.map { ($0.id, $0) })
@@ -195,8 +218,10 @@ class FeedManager: ObservableObject {
                 posts.append(post)
             }
             
+            #if DEBUG
             let processingTime = CFAbsoluteTimeGetCurrent() - overallStart
             print("⏱️ [FeedManager] Total processing time: \(String(format: "%.3f", processingTime))s")
+            #endif
             
             // Update UI immediately
             await MainActor.run {
@@ -206,7 +231,10 @@ class FeedManager: ObservableObject {
                 self.isLoadingMore = false
                 self.hasMorePosts = posts.count >= 50
             }
+            
+            #if DEBUG
             print("⏱️ [FeedManager] UI updated with \(posts.count) posts")
+            #endif
             
             // Prefetch images in background (non-blocking)
             Task {
@@ -321,7 +349,9 @@ class FeedManager: ObservableObject {
     /// - Start downloading ALL images as soon as feed data arrives
     /// - UI renders immediately with placeholders, images fade in as ready
     private func prefetchFeedImages(posts: [FeedPost]) async {
+        #if DEBUG
         let prefetchStart = CFAbsoluteTimeGetCurrent()
+        #endif
         
         // Collect all unique profile picture URLs
         var profileUrls: Set<String> = []
@@ -332,34 +362,47 @@ class FeedManager: ObservableObject {
         }
         
         guard !profileUrls.isEmpty else {
+            #if DEBUG
             print("⏱️ [FeedManager] No profile pictures to prefetch")
+            #endif
             return
         }
         
+        #if DEBUG
         print("⏱️ [FeedManager] Starting prefetch of \(profileUrls.count) profile pictures...")
+        #endif
         
         // Prefetch all profile pics in parallel
         await withTaskGroup(of: Void.self) { group in
             for url in profileUrls {
                 group.addTask {
+                    #if DEBUG
                     let imageStart = CFAbsoluteTimeGetCurrent()
+                    #endif
+                    
                     do {
                         _ = try await self.imageManager.downloadAndCacheProfilePicture(
                             url: url,
                             userId: "prefetch"
                         )
+                        #if DEBUG
                         let imageTime = CFAbsoluteTimeGetCurrent() - imageStart
                         print("⏱️ [FeedManager] Profile pic prefetch: \(String(format: "%.3f", imageTime))s")
+                        #endif
                     } catch {
                         // Silently fail - UI will show placeholder
+                        #if DEBUG
                         print("⏱️ [FeedManager] Profile pic prefetch failed: \(error.localizedDescription)")
+                        #endif
                     }
                 }
             }
         }
         
+        #if DEBUG
         let totalPrefetchTime = CFAbsoluteTimeGetCurrent() - prefetchStart
         print("⏱️ [FeedManager] Total profile pic prefetch: \(String(format: "%.3f", totalPrefetchTime))s")
+        #endif
     }
 }
 

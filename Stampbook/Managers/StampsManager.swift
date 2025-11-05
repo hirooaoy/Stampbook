@@ -502,6 +502,7 @@ class StampsManager: ObservableObject {
     /// - Cost: ~$0 until 100K+ users (2M free invocations/month)
     ///
     /// For now, client-side reconciliation is perfect for your scale.
+    /// 🎯 ACTION TRIGGER: Migrate to Cloud Functions when adding Android app OR 500+ users
     func reconcileUserStats(userId: String, profileManager: ProfileManager? = nil) async {
         do {
             // Fetch actual collected stamps count from Firestore
