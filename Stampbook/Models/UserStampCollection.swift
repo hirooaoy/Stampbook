@@ -238,6 +238,19 @@ class UserStampCollection: ObservableObject {
         }
     }
     
+    func updateUserRank(for stampId: String, rank: Int) {
+        // Update in allStamps
+        if let allIndex = allStamps.firstIndex(where: { $0.stampId == stampId }) {
+            allStamps[allIndex].userRank = rank
+        }
+        // Update in filtered collectedStamps
+        if let index = collectedStamps.firstIndex(where: { $0.stampId == stampId }) {
+            collectedStamps[index].userRank = rank
+        }
+        saveCollectedStamps()
+        print("🏅 Updated local cache: User rank #\(rank) for stamp \(stampId)")
+    }
+    
     func addImage(for stampId: String, imageName: String, storagePath: String? = nil) {
         // Update in allStamps
         if let allIndex = allStamps.firstIndex(where: { $0.stampId == stampId }) {

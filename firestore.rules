@@ -47,6 +47,12 @@ service cloud.firestore {
       allow write: if request.auth.uid == userId;
     }
     
+    // IMPORTANT: Allow collectionGroup queries for Instagram-style feed
+    // This enables fetchFollowingFeed() to search across all users' collected_stamps chronologically
+    match /{path=**}/collected_stamps/{stampId} {
+      allow read: if request.auth != null;
+    }
+    
     // ==================== SOCIAL FEATURES ====================
     
     // Following: who this user follows (only need this one subcollection)
@@ -92,8 +98,13 @@ service cloud.firestore {
     // User feedback (admin only reads)
     match /feedback/{feedbackId} {
       // Validation: Require message, limit size to prevent abuse
-      allow create: if request.auth != null 
-        && request.resource.data.userId == request.auth.uid
+      // Allow both authenticated users and anonymous submissions
+      allow create: if (
+        // For authenticated users, verify userId matches
+        (request.auth != null && request.resource.data.userId == request.auth.uid) ||
+        // For anonymous users, allow if userId is "anonymous"
+        (request.resource.data.userId == "anonymous")
+      )
         && request.resource.data.message is string
         && request.resource.data.message.size() > 0
         && request.resource.data.message.size() <= 5000  // Max 5000 chars

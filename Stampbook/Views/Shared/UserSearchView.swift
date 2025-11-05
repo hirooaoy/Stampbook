@@ -39,7 +39,7 @@ struct UserSearchView: View {
                     Image(systemName: "magnifyingglass")
                         .foregroundColor(.gray)
                     
-                    TextField("Search users", text: $searchText)
+                    TextField("Search usernames", text: $searchText)
                         .textFieldStyle(.plain)
                         .autocorrectionDisabled()
                         .textInputAutocapitalization(.never)
@@ -81,7 +81,7 @@ struct UserSearchView: View {
                             .font(.system(size: 60))
                             .foregroundColor(.gray)
                         
-                        Text("Find People to Follow")
+                        Text("Find people to follow")
                             .font(.title3)
                             .fontWeight(.semibold)
                         
@@ -124,7 +124,7 @@ struct UserSearchView: View {
                     }
                 }
             }
-            .navigationTitle("Search")
+            .navigationTitle("Search people")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {

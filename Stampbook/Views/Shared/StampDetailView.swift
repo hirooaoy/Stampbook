@@ -8,6 +8,7 @@ struct StampDetailView: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var stampsManager: StampsManager
     @EnvironmentObject var authManager: AuthManager
+    @EnvironmentObject var mapCoordinator: MapCoordinator
     let stamp: Stamp
     let userLocation: CLLocation?
     let showBackButton: Bool
@@ -25,6 +26,11 @@ struct StampDetailView: View {
     }
     
     private var isWithinRange: Bool {
+        // Welcome stamp can be claimed from anywhere
+        if stamp.isWelcomeStamp {
+            return true
+        }
+        
         guard let userLocation = userLocation else { return false }
         let stampLocation = CLLocation(latitude: stamp.coordinate.latitude, longitude: stamp.coordinate.longitude)
         let distance = userLocation.distance(from: stampLocation)
@@ -185,7 +191,7 @@ struct StampDetailView: View {
                                 .background(Color.gray.opacity(0.1))
                                 .cornerRadius(12)
                             }
-                            .padding(.bottom, 16)
+                            .padding(.bottom, 24)
                             
                             // Photo section
                             if stampsManager.userCollection.collectedStamps.first(where: { $0.stampId == stamp.id }) != nil {
@@ -201,7 +207,7 @@ struct StampDetailView: View {
                                 editingNotes = userNotes
                                 showNotesEditor = true
                             }) {
-                                HStack(spacing: 8) {
+                                HStack(alignment: .firstTextBaseline, spacing: 8) {
                                     Image(systemName: "note.text")
                                         .font(.body)
                                         .foregroundColor(.primary)
@@ -256,37 +262,41 @@ struct StampDetailView: View {
                     .padding(.horizontal, 24)
                     .padding(.bottom, 36)
                     
-                    // Divider
-                    Divider()
+                    // Divider - only show if location section is visible
+                    if !stamp.isWelcomeStamp {
+                        Divider()
+                            .padding(.horizontal, 24)
+                            .padding(.bottom, 36)
+                    }
+                    
+                    // Location section - hide for welcome stamp
+                    if !stamp.isWelcomeStamp {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Location")
+                                .font(.headline)
+                                .foregroundColor(.secondary)
+                            
+                            Button(action: {
+                                showAddressOptions = true
+                            }) {
+                                HStack(spacing: 12) {
+                                    Text(stamp.address)
+                                        .font(.body)
+                                        .foregroundColor(.primary)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .multilineTextAlignment(.leading)
+                                    
+                                    Image(systemName: "arrow.triangle.turn.up.right.circle.fill")
+                                        .font(.system(size: 32))
+                                        .foregroundColor(.blue)
+                                }
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 24)
                         .padding(.bottom, 36)
-                    
-                    // Location section
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Location")
-                            .font(.headline)
-                            .foregroundColor(.secondary)
-                        
-                        Button(action: {
-                            showAddressOptions = true
-                        }) {
-                            HStack(spacing: 12) {
-                                Text(stamp.address)
-                                    .font(.body)
-                                    .foregroundColor(.primary)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .multilineTextAlignment(.leading)
-                                
-                                Image(systemName: "arrow.triangle.turn.up.right.circle.fill")
-                                    .font(.system(size: 32))
-                                    .foregroundColor(.blue)
-                            }
-                        }
-                        .buttonStyle(PlainButtonStyle())
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 36)
                     
                     // Things to do section
                     if !stamp.thingsToDoFromEditors.isEmpty {
@@ -489,19 +499,21 @@ struct StampDetailView: View {
             }
         }
         .toolbar {
-            // Triple dot menu - always shown
-            ToolbarItem(placement: .topBarTrailing) {
-                Menu {
-                    Button(action: {
-                        showSuggestEdit = true
-                    }) {
-                        Label("Suggest an Edit", systemImage: "pencil")
+            // Triple dot menu - hide for welcome stamp
+            if !stamp.isWelcomeStamp {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Menu {
+                        Button(action: {
+                            showSuggestEdit = true
+                        }) {
+                            Label("Suggest an edit", systemImage: "pencil")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis")
+                            .font(.title3)
+                            .symbolRenderingMode(.hierarchical)
+                            .foregroundStyle(.secondary)
                     }
-                } label: {
-                    Image(systemName: "ellipsis")
-                        .font(.title3)
-                        .symbolRenderingMode(.hierarchical)
-                        .foregroundStyle(.secondary)
                 }
             }
             
@@ -583,31 +595,12 @@ struct StampDetailView: View {
             SuggestEditView(stampId: stamp.id, stampName: stamp.name)
                 .environmentObject(authManager)
         }
-        .confirmationDialog("Choose an option", isPresented: $showAddressOptions, titleVisibility: .hidden) {
-            Button("Open in Google Maps") {
-                openInGoogleMaps()
-            }
-            
-            Button("Open in Apple Maps") {
-                openInAppleMaps()
-            }
-            
-            Button("Copy address") {
-                UIPasteboard.general.string = stamp.address
-            }
-            
-            Button("Cancel", role: .cancel) {
-                // Dialog will dismiss automatically
-            }
-        }
-        
-        /* HIDDEN: Bottom sheet implementation - now using Menu for consistency with FeedView triple dot pattern
-        .sheet(isPresented: $showMapOptions) {
+        .sheet(isPresented: $showAddressOptions) {
             VStack(spacing: 0) {
                 VStack(spacing: 12) {
                     // Google Maps button
                     Button(action: {
-                        showMapOptions = false
+                        showAddressOptions = false
                         openInGoogleMaps()
                     }) {
                         Text("Open in Google Maps")
@@ -622,7 +615,7 @@ struct StampDetailView: View {
                     
                     // Apple Maps button
                     Button(action: {
-                        showMapOptions = false
+                        showAddressOptions = false
                         openInAppleMaps()
                     }) {
                         Text("Open in Apple Maps")
@@ -635,10 +628,25 @@ struct StampDetailView: View {
                             .cornerRadius(12)
                     }
                     
+                    // Stampbook Maps button
+                    Button(action: {
+                        showAddressOptions = false
+                        openInStampbookMaps()
+                    }) {
+                        Text("Open in Stampbook Maps")
+                            .font(.body)
+                            .fontWeight(.semibold)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(Color.gray.opacity(0.1))
+                            .foregroundColor(.primary)
+                            .cornerRadius(12)
+                    }
+                    
                     // Copy address button
                     Button(action: {
                         UIPasteboard.general.string = stamp.address
-                        showMapOptions = false
+                        showAddressOptions = false
                     }) {
                         Text("Copy address")
                             .font(.body)
@@ -652,7 +660,7 @@ struct StampDetailView: View {
                     
                     // Cancel button (no background)
                     Button(action: {
-                        showMapOptions = false
+                        showAddressOptions = false
                     }) {
                         Text("Cancel")
                             .font(.body)
@@ -665,10 +673,26 @@ struct StampDetailView: View {
                 .padding(.horizontal, 20)
             }
             .padding(.top, 32)
-            .presentationDetents([.height(280)])
+            .presentationDetents([.height(340)])
             .presentationDragIndicator(.visible)
         }
-        */
+    }
+    
+    private func openInStampbookMaps() {
+        #if DEBUG
+        print("🗺️ [StampDetailView] openInStampbookMaps called for: \(stamp.name)")
+        #endif
+        
+        // Request the map to center on this stamp
+        mapCoordinator.centerOnStamp(stamp, switchTab: true)
+        
+        // Dismiss the current sheet first if we're in a sheet context
+        if !showBackButton {
+            #if DEBUG
+            print("🗺️ [StampDetailView] Dismissing sheet")
+            #endif
+            dismiss()
+        }
     }
     
     private func calculateCollectionProgress() async {

@@ -13,11 +13,15 @@ struct StampsView: View {
     @State private var showEditProfile = false
     @State private var showFeedback = false
     @State private var showProblemReport = false
+    @State private var showAccountDeletion = false
+    @State private var showDataDownload = false
     @State private var showSignOutConfirmation = false
     @State private var showAboutStampbook = false
     @State private var showForLocalBusiness = false
     @State private var showForCreators = false
+    @State private var showAppStoreUrlCopied = false // Show confirmation when App Store URL is copied
     @State private var navigationPath = NavigationPath() // Track navigation stack
+    @State private var welcomeStamp: Stamp? // Store the fetched welcome stamp (nil = sheet closed, non-nil = sheet open)
     // @State private var hasAttemptedRankLoad = false // TODO: POST-MVP - Rank loading disabled
     
     enum StampTab: String, CaseIterable {
@@ -62,6 +66,26 @@ struct StampsView: View {
                     if authManager.isSignedIn {
                         // Signed-in menu
                         HStack(spacing: 8) {
+                            // Gift icon - only show if user hasn't claimed welcome stamp
+                            if !stampsManager.hasClaimedWelcomeStamp() {
+                                Button(action: {
+                                    // Fetch welcome stamp and show it
+                                    Task {
+                                        let stamps = await stampsManager.fetchStamps(ids: ["your-first-stamp"])
+                                        await MainActor.run {
+                                            // Setting welcomeStamp automatically opens the sheet
+                                            welcomeStamp = stamps.first
+                                        }
+                                    }
+                                }) {
+                                    Image(systemName: "gift.fill")
+                                        .font(.system(size: 24))
+                                        .foregroundColor(.red)
+                                        .frame(width: 44, height: 44)  // Larger tap target
+                                        .contentShape(Rectangle())     // Make entire frame tappable
+                                }
+                            }
+                            
                             // Edit Profile Button - Opens ProfileEditView sheet
                             Button(action: {
                                 showEditProfile = true
@@ -69,6 +93,8 @@ struct StampsView: View {
                                 Image(systemName: "pencil.circle")
                                     .font(.system(size: 24))
                                     .foregroundColor(.primary)
+                                    .frame(width: 44, height: 44)  // Larger tap target
+                                    .contentShape(Rectangle())     // Make entire frame tappable
                             }
                             .disabled(profileManager.currentUserProfile == nil)
                             
@@ -80,18 +106,24 @@ struct StampsView: View {
                                     Label("About Stampbook", systemImage: "info.circle")
                                 }
                                 
+                                Button(action: {
+                                    copyAppStoreUrl()
+                                }) {
+                                    Label("Share app", systemImage: "square.and.arrow.up")
+                                }
+                                
                                 Divider()
                                 
                                 Button(action: {
                                     showForLocalBusiness = true
                                 }) {
-                                    Label("For Local Business", systemImage: "storefront")
+                                    Label("For local business", systemImage: "storefront")
                                 }
                                 
                                 Button(action: {
                                     showForCreators = true
                                 }) {
-                                    Label("For Creators", systemImage: "sparkles")
+                                    Label("For creators", systemImage: "sparkles")
                                 }
                                 
                                 Divider()
@@ -99,13 +131,27 @@ struct StampsView: View {
                                 Button(action: {
                                     showProblemReport = true
                                 }) {
-                                    Label("Report a Problem", systemImage: "exclamationmark.bubble")
+                                    Label("Report a problem", systemImage: "exclamationmark.bubble")
                                 }
                                 
                                 Button(action: {
                                     showFeedback = true
                                 }) {
-                                    Label("Send Feedback", systemImage: "envelope")
+                                    Label("Send feedback", systemImage: "envelope")
+                                }
+                                
+                                Divider()
+                                
+                                Button(action: {
+                                    showDataDownload = true
+                                }) {
+                                    Label("Download my data", systemImage: "square.and.arrow.down")
+                                }
+                                
+                                Button(action: {
+                                    showAccountDeletion = true
+                                }) {
+                                    Label("Delete account", systemImage: "trash")
                                 }
                                 
                                 Divider()
@@ -113,7 +159,7 @@ struct StampsView: View {
                                 Button(role: .destructive, action: {
                                     showSignOutConfirmation = true
                                 }) {
-                                    Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
+                                    Label("Sign out", systemImage: "rectangle.portrait.and.arrow.right")
                                 }
                             } label: {
                                 Image(systemName: "ellipsis")
@@ -132,18 +178,24 @@ struct StampsView: View {
                                 Label("About Stampbook", systemImage: "info.circle")
                             }
                             
+                            Button(action: {
+                                copyAppStoreUrl()
+                            }) {
+                                Label("Share app", systemImage: "square.and.arrow.up")
+                            }
+                            
                             Divider()
                             
                             Button(action: {
                                 showForLocalBusiness = true
                             }) {
-                                Label("For Local Business", systemImage: "storefront")
+                                Label("For local business", systemImage: "storefront")
                             }
                             
                             Button(action: {
                                 showForCreators = true
                             }) {
-                                Label("For Creators", systemImage: "sparkles")
+                                Label("For creators", systemImage: "sparkles")
                             }
                             
                             Divider()
@@ -151,13 +203,13 @@ struct StampsView: View {
                             Button(action: {
                                 showProblemReport = true
                             }) {
-                                Label("Report a Problem", systemImage: "exclamationmark.bubble")
+                                Label("Report a problem", systemImage: "exclamationmark.bubble")
                             }
                             
                             Button(action: {
                                 showFeedback = true
                             }) {
-                                Label("Send Feedback", systemImage: "envelope")
+                                Label("Send feedback", systemImage: "envelope")
                             }
                         } label: {
                             Image(systemName: "ellipsis")
@@ -511,14 +563,35 @@ struct StampsView: View {
                     SimpleProblemReportView()
                         .environmentObject(authManager)
                 }
+                .sheet(isPresented: $showAccountDeletion) {
+                    AccountDeletionRequestView()
+                        .environmentObject(authManager)
+                }
+                .sheet(isPresented: $showDataDownload) {
+                    DataDownloadRequestView()
+                        .environmentObject(authManager)
+                }
                 .sheet(isPresented: $showAboutStampbook) {
-                    ContentPageView(contentPageId: "about-stampbook")
+                    AboutStampbookView()
                 }
                 .sheet(isPresented: $showForLocalBusiness) {
-                    ContentPageView(contentPageId: "partner-with-stampbook")
+                    ForLocalBusinessView()
                 }
                 .sheet(isPresented: $showForCreators) {
-                    ContentPageView(contentPageId: "become-a-creator")
+                    ForCreatorsView()
+                }
+                .sheet(item: $welcomeStamp) { stamp in
+                    // Sheet opens when welcomeStamp is set, closes when set to nil
+                    NavigationStack {
+                        StampDetailView(
+                            stamp: stamp,
+                            userLocation: nil,
+                            showBackButton: false
+                        )
+                        .environmentObject(stampsManager)
+                        .environmentObject(authManager)
+                        .environmentObject(MapCoordinator())
+                    }
                 }
                 .alert("Sign Out", isPresented: $showSignOutConfirmation) {
                     Button("Cancel", role: .cancel) {}
@@ -527,6 +600,11 @@ struct StampsView: View {
                     }
                 } message: {
                     Text("Are you sure you want to sign out?")
+                }
+                .alert("App Store Link Copied", isPresented: $showAppStoreUrlCopied) {
+                    Button("OK", role: .cancel) {}
+                } message: {
+                    Text("The App Store link has been copied to your clipboard.")
                 }
                 .navigationDestination(for: FollowListDestination.self) { destination in
                     FollowListView(
@@ -544,6 +622,18 @@ struct StampsView: View {
                 }
             }
         }
+    }
+    
+    // MARK: - Helper Functions
+    
+    /// Copies the App Store URL to clipboard and shows confirmation
+    /// TODO: Update URL once app is published to App Store
+    private func copyAppStoreUrl() {
+        // TODO: Replace with actual App Store URL after app is published
+        // Format: https://apps.apple.com/app/stampbook/idXXXXXXXXX
+        let appStoreUrl = "https://apps.apple.com/app/stampbook/id123456789"
+        UIPasteboard.general.string = appStoreUrl
+        showAppStoreUrlCopied = true
     }
     
     struct AllStampsContent: View {
@@ -650,7 +740,13 @@ struct StampsView: View {
         }
         
         private func loadUserStamps() {
-            guard !isLoadingStamps else { return }
+            guard !isLoadingStamps else {
+                print("⚠️ [AllStampsContent] Already loading stamps, skipping")
+                return
+            }
+            
+            print("🔄 [AllStampsContent] loadUserStamps() called")
+            print("📊 [AllStampsContent] Current collectedStamps count: \(stampsManager.userCollection.collectedStamps.count)")
             
             isLoadingStamps = true
             showSkeleton = true
@@ -659,12 +755,18 @@ struct StampsView: View {
                 // LAZY LOADING: Fetch ONLY stamps the user has collected
                 let collectedStampIds = stampsManager.userCollection.collectedStamps.map { $0.stampId }
                 print("🎯 [AllStampsContent] Fetching \(collectedStampIds.count) user stamps")
+                print("🎯 [AllStampsContent] Stamp IDs: \(collectedStampIds)")
                 
                 let stamps = await stampsManager.fetchStamps(ids: collectedStampIds)
+                
+                print("✅ [AllStampsContent] Fetched \(stamps.count) stamps")
                 
                 await MainActor.run {
                     userStamps = stamps
                     isLoadingStamps = false
+                    
+                    print("📊 [AllStampsContent] userStamps count after update: \(userStamps.count)")
+                    print("📊 [AllStampsContent] sortedCollectedStamps count: \(sortedCollectedStamps.count)")
                     
                     // Add minimum display time for smooth transition
                     Task {

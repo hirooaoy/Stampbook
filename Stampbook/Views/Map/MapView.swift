@@ -26,6 +26,7 @@ struct MapView: View {
     @StateObject private var searchCompleter = LocationSearchCompleter()
     @EnvironmentObject var stampsManager: StampsManager
     @EnvironmentObject var authManager: AuthManager
+    @EnvironmentObject var mapCoordinator: MapCoordinator
     @State private var selectedStamp: Stamp?
     @State private var shouldRecenterMap = false
     @State private var searchText = ""
@@ -54,13 +55,7 @@ struct MapView: View {
     @State private var isLoadingStamps = false
     
     // Connection transition states
-    @State private var bannerState: BannerState = .hidden
-    
-    enum BannerState {
-        case hidden
-        case offline
-        case reconnecting
-    }
+    @State private var bannerState: ConnectionBanner.BannerState = .hidden
     
     private var collectedStampIds: Set<String> {
         Set(stampsManager.userCollection.collectedStamps.map { $0.stampId })
@@ -109,43 +104,7 @@ struct MapView: View {
             
             // Connection status banner at top
             VStack {
-                if bannerState != .hidden {
-                    HStack(alignment: .center, spacing: 10) {
-                        // Icon on left (vertically centered)
-                        bannerIcon
-                            .font(.title3)
-                            .foregroundColor(bannerIconColor)
-                        
-                        // Content on right (left-aligned)
-                        VStack(alignment: .leading, spacing: 2) {
-                            // Title
-                            Text(bannerState == .offline ? "Offline" : "Reconnecting...")
-                                .font(.subheadline)
-                                .fontWeight(.semibold)
-                                .foregroundColor(.primary)
-                            
-                            // Subtitle (only shows when offline)
-                            if bannerState == .offline {
-                                Text("You can still collect stamps")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .background(.ultraThinMaterial)
-                    .background(bannerBackgroundColor)
-                    .clipShape(Capsule())
-                    .shadow(
-                        color: .black.opacity(0.15),
-                        radius: 8,
-                        x: 0,
-                        y: 4
-                    )
-                    .padding(.top, 12)
-                    .transition(.move(edge: .top).combined(with: .opacity))
-                }
+                ConnectionBanner(state: bannerState, context: .map)
                 
                 Spacer()
             }
@@ -237,6 +196,22 @@ struct MapView: View {
                     await loadAllStamps()
                 }
             }
+            
+            // Check if there's a pending stamp to center on (set before this view appeared)
+            if let stamp = mapCoordinator.stampToCenter {
+                #if DEBUG
+                print("🗺️ [MapView] onAppear: Found pending stamp to center: \(stamp.name)")
+                #endif
+                // Use Task to let the map finish initializing before centering
+                Task { @MainActor in
+                    // Small delay to ensure native map is ready
+                    try? await Task.sleep(nanoseconds: 100_000_000) // 0.1s
+                    let coordinate = stamp.coordinate
+                    let span = MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
+                    searchRegion = MKCoordinateRegion(center: coordinate, span: span)
+                    mapCoordinator.clearRequest()
+                }
+            }
         }
         .onChange(of: authManager.isSignedIn) { oldValue, newValue in
             // PRIVACY: Handle sign-in/sign-out transitions
@@ -252,6 +227,24 @@ struct MapView: View {
         }
         .onChange(of: networkMonitor.isConnected) { oldValue, newValue in
             handleConnectionChange(wasConnected: oldValue, isConnected: newValue)
+        }
+        .onChange(of: mapCoordinator.stampToCenter) { _, stamp in
+            // When a stamp is requested to be centered, create a region around it
+            if let stamp = stamp {
+                #if DEBUG
+                print("🗺️ [MapView] onChange triggered for stamp: \(stamp.name)")
+                #endif
+                let coordinate = stamp.coordinate
+                let span = MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01) // Close zoom
+                searchRegion = MKCoordinateRegion(center: coordinate, span: span)
+                
+                #if DEBUG
+                print("🗺️ [MapView] Set searchRegion to: \(coordinate.latitude), \(coordinate.longitude)")
+                #endif
+                
+                // Clear the request after handling it
+                mapCoordinator.clearRequest()
+            }
         }
         .sheet(isPresented: $showSignInSheet) {
             SignInSheet(
@@ -289,50 +282,6 @@ struct MapView: View {
     }
     
     // MARK: - Banner Helpers
-    
-    private var bannerIcon: Image {
-        switch bannerState {
-        case .offline:
-            return Image(systemName: "wifi.slash")
-        case .reconnecting:
-            return Image(systemName: "wifi")
-        case .hidden:
-            return Image(systemName: "wifi")
-        }
-    }
-    
-    private var bannerIconColor: Color {
-        switch bannerState {
-        case .offline:
-            return .orange
-        case .reconnecting:
-            return .green
-        case .hidden:
-            return .primary
-        }
-    }
-    
-    private var bannerText: String {
-        switch bannerState {
-        case .offline:
-            return "Offline • You can still collect stamps"
-        case .reconnecting:
-            return "Reconnecting..."
-        case .hidden:
-            return ""
-        }
-    }
-    
-    private var bannerBackgroundColor: Color {
-        switch bannerState {
-        case .offline:
-            return Color.yellow.opacity(0.2)
-        case .reconnecting:
-            return Color.green.opacity(0.15)
-        case .hidden:
-            return Color.clear
-        }
-    }
     
     private func handleConnectionChange(wasConnected: Bool, isConnected: Bool) {
         if !wasConnected && isConnected {
@@ -791,7 +740,7 @@ struct SearchSheet: View {
                     .scrollContentBackground(.hidden)
                 }
             }
-            .navigationTitle("Search Places")
+            .navigationTitle("Search places")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(.hidden, for: .navigationBar)
             .searchable(text: $searchText, prompt: "Search places")

@@ -9,6 +9,7 @@ struct ContentView: View {
         print("✅ [ContentView] StampsManager created")
         return manager
     }()
+    @StateObject private var mapCoordinator = MapCoordinator() // Coordinates map navigation
     @State private var selectedTab = 0
     @State private var previousTab = 0 // Track previous tab
     @State private var shouldResetStampsNavigation = false // Flag to reset StampsView navigation
@@ -38,6 +39,7 @@ struct ContentView: View {
             
             NavigationStack {
                 MapView()
+                    .environmentObject(mapCoordinator)
             }
             .tabItem {
                 Label("Map", systemImage: "map.fill")
@@ -51,8 +53,17 @@ struct ContentView: View {
                 .tag(2)
         }
         .environmentObject(stampsManager)
+        .environmentObject(mapCoordinator)
         .onChange(of: selectedTab) { oldValue, newValue in
             previousTab = oldValue
+        }
+        .onChange(of: mapCoordinator.shouldSwitchToMapTab) { _, shouldSwitch in
+            if shouldSwitch {
+                #if DEBUG
+                print("🗺️ [ContentView] Switching to Map tab (tab 1)")
+                #endif
+                selectedTab = 1 // Switch to Map tab
+            }
         }
         .onAppear {
             print("⏱️ [ContentView] onAppear started")

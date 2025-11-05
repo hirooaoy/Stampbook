@@ -238,60 +238,52 @@ struct UserProfileView: View {
     
     @ViewBuilder
     private var followButtonSection: some View {
-        // Follow and Share buttons (equal width)
+        // Follow button
         // Don't show for current user
         if !isCurrentUser {
-            HStack(spacing: 8) {
-                // Follow button
-                Button(action: {
-                    guard let currentUserId = authManager.userId else { return }
-                    // BEST PRACTICE: Pass current user's ProfileManager to keep counts synced
-                    followManager.toggleFollow(currentUserId: currentUserId, targetUserId: userId, profileManager: currentUserProfileManager) { updatedProfile in
-                        // Update local profile state with returned profile
-                        if let profile = updatedProfile {
-                            userProfile = profile
-                        }
+            Button(action: {
+                guard let currentUserId = authManager.userId else { return }
+                // BEST PRACTICE: Pass current user's ProfileManager to keep counts synced
+                followManager.toggleFollow(currentUserId: currentUserId, targetUserId: userId, profileManager: currentUserProfileManager) { updatedProfile in
+                    // Update local profile state with returned profile
+                    if let profile = updatedProfile {
+                        userProfile = profile
                     }
-                }) {
-                    HStack(spacing: 8) {
-                        if followManager.isProcessingFollow[userId] == true {
-                            ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle())
-                                .scaleEffect(0.8)
-                        }
-                        Text(isFollowing ? "Following" : "Follow")
-                    }
-                    .font(.footnote)
-                    .fontWeight(.semibold)
-                    .foregroundColor(isFollowing ? .primary : .white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 44)
-                    .background(isFollowing ? Color(.systemGray5) : Color.blue)
-                    .cornerRadius(10)
                 }
-                .disabled(followManager.isProcessingFollow[userId] == true)
-                
-                // Share button (equal width to Follow button)
-                Button(action: {
-                    // TODO: Implement share functionality
-                    print("Share profile tapped")
-                }) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "square.and.arrow.up")
-                            .font(.system(size: 16))
-                        Text("Share")
+            }) {
+                HStack(spacing: 8) {
+                    if followManager.isProcessingFollow[userId] == true {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle())
+                            .scaleEffect(0.8)
                     }
-                    .font(.footnote)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.primary)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 44)
-                    .background(Color.gray.opacity(0.1))
-                    .cornerRadius(10)
+                    Text(isFollowing ? "Following" : "Follow")
                 }
+                .font(.footnote)
+                .fontWeight(.semibold)
+                .foregroundColor(isFollowing ? .primary : .white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 44)
+                .background(isFollowing ? Color(.systemGray5) : Color.blue)
+                .cornerRadius(10)
             }
+            .disabled(followManager.isProcessingFollow[userId] == true)
             .padding(.horizontal, 20)
             .padding(.bottom, 20)
+            
+            // TODO: POST-MVP - Implement Profile Sharing with Universal Links
+            // Option 3: Universal Links (https://stampbook.app/user/username)
+            // Setup needed:
+            //   1. Create simple web page for profile preview (Firebase Hosting)
+            //   2. Configure Apple App Site Association (AASA) file on domain
+            //   3. Add associated domain to app entitlements (Xcode)
+            //   4. Handle incoming universal links in StampbookApp.swift (onOpenURL)
+            // Benefits:
+            //   - Professional standard (Instagram/Twitter pattern)
+            //   - Works even if app not installed (shows web profile fallback)
+            //   - Great for user acquisition and growth
+            //   - Can track shares via web analytics
+            // See: https://developer.apple.com/ios/universal-links/
         }
     }
     
@@ -323,7 +315,7 @@ struct UserProfileView: View {
                         Button(role: .destructive, action: {
                             showUserReport = true
                         }) {
-                            Label("Report User", systemImage: "exclamationmark.bubble")
+                            Label("Report user", systemImage: "exclamationmark.bubble")
                         }
                     } label: {
                         Image(systemName: "ellipsis")

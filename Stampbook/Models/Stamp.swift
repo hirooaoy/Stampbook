@@ -1,7 +1,7 @@
 import Foundation
 import CoreLocation
 
-struct Stamp: Identifiable, Codable {
+struct Stamp: Identifiable, Codable, Equatable {
     let id: String
     let name: String
     let latitude: Double
@@ -17,6 +17,16 @@ struct Stamp: Identifiable, Codable {
     
     var coordinate: CLLocationCoordinate2D {
         CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
+    }
+    
+    /// Check if this stamp requires a location to claim
+    var requiresLocation: Bool {
+        return latitude != 0.0 || longitude != 0.0
+    }
+    
+    /// Check if this is the special welcome stamp
+    var isWelcomeStamp: Bool {
+        return id == "your-first-stamp"
     }
     
     /// Extract storage path from Firebase Storage URL
@@ -52,7 +62,7 @@ struct Stamp: Identifiable, Codable {
                 return "\(parts[0]), \(parts[1])"
             }
         }
-        return "Unknown Location"
+        return "Location not included"
     }
     
     // For backward compatibility with JSON that uses collectionId

@@ -10,6 +10,7 @@ struct FeedView: View {
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var stampsManager: StampsManager
     @EnvironmentObject var profileManager: ProfileManager
+    @EnvironmentObject var networkMonitor: NetworkMonitor
     @StateObject private var feedManager = FeedManager() // Persists across tab switches
     @StateObject private var likeManager = LikeManager() // Manages likes
     @StateObject private var commentManager = CommentManager() // Manages comments
@@ -25,6 +26,8 @@ struct FeedView: View {
     @State private var showAboutStampbook = false
     @State private var showForLocalBusiness = false
     @State private var showForCreators = false
+    @State private var showAppStoreUrlCopied = false // Show confirmation when App Store URL is copied
+    @State private var bannerState: ConnectionBanner.BannerState = .hidden // Connection status
     
     enum FeedTab: String, CaseIterable {
         case all = "All"
@@ -40,18 +43,24 @@ struct FeedView: View {
             Label("About Stampbook", systemImage: "info.circle")
         }
         
+        Button(action: {
+            copyAppStoreUrl()
+        }) {
+            Label("Share Stampbook", systemImage: "square.and.arrow.up")
+        }
+        
         Divider()
         
         Button(action: {
             showForLocalBusiness = true
         }) {
-            Label("For Local Business", systemImage: "storefront")
+            Label("For local business", systemImage: "storefront")
         }
         
         Button(action: {
             showForCreators = true
         }) {
-            Label("For Creators", systemImage: "sparkles")
+            Label("For creators", systemImage: "sparkles")
         }
         
         Divider()
@@ -59,29 +68,34 @@ struct FeedView: View {
         Button(action: {
             showProblemReport = true
         }) {
-            Label("Report a Problem", systemImage: "exclamationmark.bubble")
+            Label("Report a problem", systemImage: "exclamationmark.bubble")
         }
         
         Button(action: {
             showFeedback = true
         }) {
-            Label("Send Feedback", systemImage: "envelope")
+            Label("Send feedback", systemImage: "envelope")
         }
     }
     
     /// Refresh feed data without clearing cached statistics
     private func refreshFeedData() async {
-        // Just refresh the feed - no need to sync user's collected stamps
-        // The feed will show the latest posts from Firebase
+        // Refresh based on currently selected tab
         guard let userId = authManager.userId else { return }
-        await feedManager.refresh(userId: userId, stampsManager: stampsManager)
+        
+        if selectedFeedTab == .all {
+            await feedManager.refresh(userId: userId, stampsManager: stampsManager)
+        } else {
+            await feedManager.loadMyPosts(userId: userId, stampsManager: stampsManager, forceRefresh: true)
+        }
         
         // Initialize like counts from feed data (bulk operation, no race condition)
-        let likeCounts = Dictionary(uniqueKeysWithValues: feedManager.feedPosts.map { ($0.id, $0.likeCount) })
+        let postsToSync = selectedFeedTab == .all ? feedManager.feedPosts : feedManager.myPosts
+        let likeCounts = Dictionary(uniqueKeysWithValues: postsToSync.map { ($0.id, $0.likeCount) })
         likeManager.setLikeCounts(likeCounts)
         
         // Fetch like status for all posts to sync with cached state
-        let postIds = feedManager.feedPosts.map { $0.id }
+        let postIds = postsToSync.map { $0.id }
         if !postIds.isEmpty {
             await likeManager.fetchLikeStatus(postIds: postIds, userId: userId)
         }
@@ -112,7 +126,7 @@ struct FeedView: View {
                         Spacer()
                         
                         if authManager.isSignedIn {
-                            // Signed-in menu: Search, notification, and ellipses
+                        // Signed-in menu: Search and ellipses
                             HStack(spacing: 8) {
                                 Button(action: {
                                     showUserSearch = true
@@ -143,7 +157,7 @@ struct FeedView: View {
                                     Button(role: .destructive, action: {
                                         showSignOutConfirmation = true
                                     }) {
-                                        Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
+                                        Label("Sign out", systemImage: "rectangle.portrait.and.arrow.right")
                                     }
                                 } label: {
                                     Image(systemName: "ellipsis")
@@ -274,13 +288,13 @@ struct FeedView: View {
                 .environmentObject(authManager)
         }
         .sheet(isPresented: $showAboutStampbook) {
-            ContentPageView(contentPageId: "about-stampbook")
+            AboutStampbookView()
         }
         .sheet(isPresented: $showForLocalBusiness) {
-            ContentPageView(contentPageId: "partner-with-stampbook")
+            ForLocalBusinessView()
         }
         .sheet(isPresented: $showForCreators) {
-            ContentPageView(contentPageId: "become-a-creator")
+            ForCreatorsView()
         }
         .alert("Sign Out", isPresented: $showSignOutConfirmation) {
             Button("Cancel", role: .cancel) {}
@@ -290,27 +304,74 @@ struct FeedView: View {
         } message: {
             Text("Are you sure you want to sign out?")
         }
+        .alert("App Store Link Copied", isPresented: $showAppStoreUrlCopied) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("The App Store link has been copied to your clipboard.")
+        }
         .overlay(alignment: .top) {
-            // MARK: - Error Display Pattern: Toast Overlay
-            // USE TOAST FOR: Non-critical errors, quick feedback, user can continue without fixing
-            // Examples: Like errors, comment failures, network timeouts
-            // Behavior: Slides in from top, auto-dismisses after ~2s, non-blocking
-            //
-            // USE ALERT FOR: Critical errors, confirmations, user must acknowledge
-            // Examples: Profile errors, delete confirmations, sign out, follow failures
-            // Behavior: Center modal, blocks interaction, requires user tap
-            if let errorMessage = likeManager.errorMessage {
-                Text(errorMessage)
-                    .font(.subheadline)
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .background(Color.black.opacity(0.8))
-                    .cornerRadius(8)
-                    .padding(.top, 8)
-                    .transition(.move(edge: .top).combined(with: .opacity))
-                    .animation(.spring(response: 0.3), value: errorMessage)
+            VStack(spacing: 8) {
+                // Connection status banner
+                ConnectionBanner(state: bannerState, context: .feed)
+                
+                // Feed error messages
+                if let errorMessage = feedManager.errorMessage {
+                    Text(errorMessage)
+                        .font(.subheadline)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .background(Color.orange.opacity(0.9))
+                        .cornerRadius(8)
+                        .padding(.top, bannerState == .hidden ? 8 : 0)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                        .animation(.spring(response: 0.3), value: errorMessage)
+                }
+                
+                // Like error messages
+                if let errorMessage = likeManager.errorMessage {
+                    Text(errorMessage)
+                        .font(.subheadline)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .background(Color.black.opacity(0.8))
+                        .cornerRadius(8)
+                        .padding(.top, (bannerState == .hidden && feedManager.errorMessage == nil) ? 8 : 0)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                        .animation(.spring(response: 0.3), value: errorMessage)
+                }
             }
+            .animation(.easeInOut(duration: 0.3), value: bannerState)
+        }
+        .onChange(of: networkMonitor.isConnected) { oldValue, newValue in
+            handleConnectionChange(wasConnected: oldValue, isConnected: newValue)
+        }
+        .onAppear {
+            // Set initial state if already offline
+            if !networkMonitor.isConnected {
+                bannerState = .offline
+            }
+        }
+    }
+    
+    // MARK: - Banner Helpers
+    
+    private func handleConnectionChange(wasConnected: Bool, isConnected: Bool) {
+        if !wasConnected && isConnected {
+            // Going from offline to online
+            bannerState = .reconnecting
+            
+            // Show "Reconnecting..." for 3 seconds, then hide
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                bannerState = .hidden
+            }
+        } else if wasConnected && !isConnected {
+            // Going from online to offline
+            bannerState = .offline
+        } else if !isConnected && bannerState == .hidden {
+            // Initial offline state
+            bannerState = .offline
         }
     }
     
@@ -328,6 +389,8 @@ struct FeedView: View {
         @State private var hasLoadedOnce = false
         
         // Choose data source based on feed type
+        // "All" = Instagram-style chronological feed from followed users
+        // "Only Yours" = All YOUR stamps in chronological order
         private var posts: [FeedManager.FeedPost] {
             feedType == .all ? feedManager.feedPosts : feedManager.myPosts
         }
@@ -351,9 +414,10 @@ struct FeedView: View {
                 if !authManager.isSignedIn {
                     // Not signed in - show sign-in prompt (handled by parent)
                     EmptyView()
-                } else if posts.isEmpty && !hasLoadedOnce {
+                } else if posts.isEmpty && (feedManager.isLoading || !hasLoadedOnce) {
                     // Loading with no content - show skeleton posts
-                    // Show skeleton only if we've never successfully loaded
+                    // Show skeleton during first load OR retry attempts to avoid flashing "No posts yet"
+                    // This prevents confusing UX when retries happen after connection issues
                     ForEach(0..<3, id: \.self) { index in
                         SkeletonPostView()
                         
@@ -401,10 +465,26 @@ struct FeedView: View {
                             commentManager: commentManager
                         )
                         .transition(.opacity)
+                        .onAppear {
+                            // Trigger pagination when user scrolls near the end
+                            // Only trigger if we have more posts available AND we're near the bottom
+                            if feedManager.hasMorePosts && 
+                               posts.count >= 15 && 
+                               index == posts.count - 5 {
+                                loadMorePostsIfNeeded()
+                            }
+                        }
                         
                         if index < posts.count - 1 {
                             Divider()
                         }
+                    }
+                    
+                    // Loading indicator at bottom (if loading more posts)
+                    if feedManager.isLoadingMore {
+                        ProgressView()
+                            .padding(.top, 16)
+                            .padding(.bottom, 16)
                     }
                     
                     // Loading indicator at bottom (if refreshing existing content)
@@ -417,7 +497,8 @@ struct FeedView: View {
             .padding(.horizontal, 20)
             .padding(.top, 8)
             .padding(.bottom, 32)
-            .onAppear {
+            .task(id: feedType) {
+                // Load feed when tab is selected (runs when feedType changes)
                 loadFeedIfNeeded()
             }
         }
@@ -430,22 +511,41 @@ struct FeedView: View {
             guard let userId = authManager.userId else { return }
             guard authManager.isSignedIn else { return }
             
+            // Check if we already have data for this tab (prevent duplicate loads)
+            let currentPosts = feedType == .all ? feedManager.feedPosts : feedManager.myPosts
+            if !currentPosts.isEmpty {
+                if debugEnabled {
+                    print("🔍 [DEBUG] FeedContent \(feedType.rawValue) already has data, skipping load")
+                }
+                return
+            }
+            
             if debugEnabled {
-                print("🔍 [DEBUG] FeedContent calling feedManager.loadFeed()")
+                print("🔍 [DEBUG] FeedContent calling feedManager.load\(feedType == .all ? "Feed" : "MyPosts")()")
             }
             Task {
-                await feedManager.loadFeed(
-                    userId: userId,
-                    stampsManager: stampsManager,
-                    forceRefresh: false
-                )
+                // Load appropriate feed based on selected tab
+                if feedType == .all {
+                    await feedManager.loadFeed(
+                        userId: userId,
+                        stampsManager: stampsManager,
+                        forceRefresh: false
+                    )
+                } else {
+                    await feedManager.loadMyPosts(
+                        userId: userId,
+                        stampsManager: stampsManager,
+                        forceRefresh: false
+                    )
+                }
                 
                 // Initialize like counts from feed data (bulk operation, no race condition)
-                let likeCounts = Dictionary(uniqueKeysWithValues: feedManager.feedPosts.map { ($0.id, $0.likeCount) })
+                let postsToSync = feedType == .all ? feedManager.feedPosts : feedManager.myPosts
+                let likeCounts = Dictionary(uniqueKeysWithValues: postsToSync.map { ($0.id, $0.likeCount) })
                 likeManager.setLikeCounts(likeCounts)
                 
                 // Fetch like status for all posts to sync with cached state
-                let postIds = feedManager.feedPosts.map { $0.id }
+                let postIds = postsToSync.map { $0.id }
                 if !postIds.isEmpty {
                     await likeManager.fetchLikeStatus(postIds: postIds, userId: userId)
                 }
@@ -453,6 +553,43 @@ struct FeedView: View {
                 // Mark that we've attempted to load at least once
                 await MainActor.run {
                     hasLoadedOnce = true
+                }
+            }
+        }
+        
+        /// Load more posts when scrolling near the end
+        private func loadMorePostsIfNeeded() {
+            guard let userId = authManager.userId else { return }
+            guard authManager.isSignedIn else { return }
+            guard feedManager.hasMorePosts && !feedManager.isLoadingMore else { return }
+            
+            if debugEnabled {
+                print("🔍 [DEBUG] FeedContent triggering loadMore\(feedType == .all ? "Posts" : "MyPosts")")
+            }
+            
+            Task {
+                // Load more for appropriate tab
+                if feedType == .all {
+                    await feedManager.loadMorePosts(
+                        userId: userId,
+                        stampsManager: stampsManager
+                    )
+                } else {
+                    await feedManager.loadMoreMyPosts(
+                        userId: userId,
+                        stampsManager: stampsManager
+                    )
+                }
+                
+                // Update like counts for new posts
+                let postsToSync = feedType == .all ? feedManager.feedPosts : feedManager.myPosts
+                let likeCounts = Dictionary(uniqueKeysWithValues: postsToSync.map { ($0.id, $0.likeCount) })
+                likeManager.setLikeCounts(likeCounts)
+                
+                // Fetch like status for new posts
+                let postIds = postsToSync.map { $0.id }
+                if !postIds.isEmpty {
+                    await likeManager.fetchLikeStatus(postIds: postIds, userId: userId)
                 }
             }
         }
@@ -550,10 +687,12 @@ struct FeedView: View {
                         }
                         .buttonStyle(PlainButtonStyle())
                         
-                        // Second line: Location
-                        Text(location)
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
+                        // Second line: Location (only show if not "Location not included")
+                        if location != "Location not included" {
+                            Text(location)
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        }
                         
                         // Third line: Date
                         Text(date)
@@ -589,7 +728,7 @@ struct FeedView: View {
                         editingNotes = ""
                         showNotesEditor = true
                     }) {
-                        HStack(spacing: 8) {
+                        HStack(alignment: .firstTextBaseline, spacing: 8) {
                             Image(systemName: "note.text")
                                 .font(.body)
                                 .foregroundColor(.primary)
@@ -808,5 +947,17 @@ struct FeedView: View {
                 }
             }
         }
+    }
+    
+    // MARK: - Helper Functions
+    
+    /// Copies the App Store URL to clipboard and shows confirmation
+    /// TODO: Update URL once app is published to App Store
+    private func copyAppStoreUrl() {
+        // TODO: Replace with actual App Store URL after app is published
+        // Format: https://apps.apple.com/app/stampbook/idXXXXXXXXX
+        let appStoreUrl = "https://apps.apple.com/app/stampbook/id123456789"
+        UIPasteboard.general.string = appStoreUrl
+        showAppStoreUrlCopied = true
     }
 }

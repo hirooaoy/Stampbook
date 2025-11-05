@@ -72,7 +72,16 @@ class AuthManager: NSObject, ObservableObject {
         let fetchStart = Date()
         do {
             // Fetch profile (no timeout wrapper - let Firebase SDK handle network timeouts)
-            let profile = try await firebaseService.fetchUserProfile(userId: userId)
+            var profile = try await firebaseService.fetchUserProfile(userId: userId)
+            
+            // Fetch counts on-demand for MVP scale (<100 users)
+            let followerCount = try await firebaseService.fetchFollowerCount(userId: userId)
+            let followingCount = try await firebaseService.fetchFollowingCount(userId: userId)
+            
+            // Update profile with actual counts from subcollections
+            profile.followerCount = followerCount
+            profile.followingCount = followingCount
+            
             let duration = Date().timeIntervalSince(fetchStart)
             
             // Update published properties on MainActor
@@ -81,7 +90,7 @@ class AuthManager: NSObject, ObservableObject {
                 self.userDisplayName = profile.displayName
             }
             
-            print("✅ [AuthManager] User profile loaded in \(String(format: "%.2f", duration))s: \(profile.displayName)")
+            print("✅ [AuthManager] User profile loaded in \(String(format: "%.2f", duration))s: \(profile.displayName) (\(followerCount) followers, \(followingCount) following)")
             
             // Sync profile to ProfileManager
             await MainActor.run {

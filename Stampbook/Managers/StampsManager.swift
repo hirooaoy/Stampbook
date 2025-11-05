@@ -4,7 +4,7 @@ import MapKit
 
 class StampsManager: ObservableObject {
     // Debug flag - set to true to enable debug logging
-    private let DEBUG_STAMPS = false
+    private let DEBUG_STAMPS = true
     // DEPRECATED: For backward compatibility during migration
     // Views should use lazy loading methods (fetchStamps, fetchStampsInRegion, etc.)
     @Published var stamps: [Stamp] = []
@@ -388,6 +388,11 @@ class StampsManager: ObservableObject {
         userCollection.isCollected(stamp.id)
     }
     
+    /// Check if the user has claimed the welcome stamp
+    func hasClaimedWelcomeStamp() -> Bool {
+        return userCollection.isCollected("your-first-stamp")
+    }
+    
     /// Set the current user - filters collected stamps to show only this user's stamps
     func setCurrentUser(_ userId: String?, profileManager: ProfileManager? = nil) {
         userCollection.setCurrentUser(userId)
@@ -444,7 +449,15 @@ class StampsManager: ObservableObject {
                     stampStatistics[stamp.id] = updatedStats
                 }
                 
-                print("✅ Updated stamp statistics for \(stamp.id): \(updatedStats.totalCollectors) collectors (user rank: \(userRank ?? -1))")
+                // Fetch and cache the user's rank now that Firebase is updated
+                if let newRank = try? await getUserRankForStamp(stampId: stamp.id, userId: userId) {
+                    await MainActor.run {
+                        userCollection.updateUserRank(for: stamp.id, rank: newRank)
+                    }
+                    print("✅ Updated stamp statistics for \(stamp.id): \(updatedStats.totalCollectors) collectors (user rank: \(newRank))")
+                } else {
+                    print("✅ Updated stamp statistics for \(stamp.id): \(updatedStats.totalCollectors) collectors (user rank: \(userRank ?? -1))")
+                }
                 print("✅ Updated user stats: \(totalStamps) stamps, \(uniqueCountries) countries")
             } catch {
                 print("⚠️ Failed to update statistics: \(error.localizedDescription)")

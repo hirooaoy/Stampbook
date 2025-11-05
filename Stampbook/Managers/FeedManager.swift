@@ -11,17 +11,14 @@ import Combine
 /// This follows Instagram/Beli's "perception-first" loading model
 class FeedManager: ObservableObject {
     @Published var feedPosts: [FeedPost] = []
+    @Published var myPosts: [FeedPost] = [] // Separate list for "Only Yours" tab
     @Published var isLoading = false
     @Published var isLoadingMore = false
     @Published var lastRefreshTime: Date?
     @Published var hasMorePosts = true
-    
-    /// Computed property: Filter current user's posts from feed
-    /// This enables instant "Only Yours" tab when "All" tab has loaded
-    /// No additional Firebase query needed!
-    var myPosts: [FeedPost] {
-        feedPosts.filter { $0.isCurrentUser }
-    }
+    @Published var errorMessage: String? = nil // For displaying errors to user
+    private var lastFetchedPostDate: Date? = nil // Track pagination cursor for "All" tab
+    private var lastFetchedMyPostDate: Date? = nil // Track pagination cursor for "Only Yours" tab
     
     private let firebaseService = FirebaseService.shared
     private let imageManager = ImageManager.shared
@@ -111,19 +108,322 @@ class FeedManager: ObservableObject {
         await fetchFeedAndPrefetch(userId: userId, stampsManager: stampsManager, isInitialLoad: true)
     }
     
-    /// Load more posts (pagination)
-    func loadMorePosts(userId: String, stampsManager: StampsManager) async {
+    /// Load "Only Yours" feed (all your stamps in chronological order)
+    func loadMyPosts(userId: String, stampsManager: StampsManager, forceRefresh: Bool = false) async {
+        #if DEBUG
+        print("🔍 [DEBUG] FeedManager.loadMyPosts called (forceRefresh: \(forceRefresh), hasPosts: \(!myPosts.isEmpty))")
+        #endif
+        
+        // Check if we have fresh data in memory
+        if !forceRefresh,
+           !myPosts.isEmpty,
+           let lastRefresh = lastRefreshTime,
+           Date().timeIntervalSince(lastRefresh) < refreshInterval {
+            #if DEBUG
+            print("🔍 [DEBUG] FeedManager using cached 'Only Yours' data")
+            #endif
+            return
+        }
+        
+        await MainActor.run {
+            self.isLoading = true
+        }
+        
+        do {
+            // Fetch user's profile
+            let userProfile = try await firebaseService.fetchUserProfile(userId: userId)
+            
+            // Fetch user's collected stamps (limit 20 for first page)
+            let collectedStamps = try await firebaseService.fetchCollectedStamps(for: userId, limit: 20)
+            
+            // Get unique stamp IDs
+            let stampIds = collectedStamps.map { $0.stampId }
+            let stamps = await stampsManager.fetchStamps(ids: stampIds)
+            let stampLookup = Dictionary(uniqueKeysWithValues: stamps.map { ($0.id, $0) })
+            
+            // Convert to FeedPost
+            var posts: [FeedPost] = []
+            for collectedStamp in collectedStamps {
+                guard let stamp = stampLookup[collectedStamp.stampId] else { continue }
+                
+                let post = FeedPost(
+                    id: "\(userId)-\(collectedStamp.stampId)",
+                    userId: userId,
+                    userName: userProfile.username,
+                    displayName: userProfile.displayName,
+                    avatarUrl: userProfile.avatarUrl,
+                    stampName: stamp.name,
+                    stampImageName: stamp.imageUrl ?? "",
+                    location: stamp.cityCountry,
+                    date: collectedStamp.collectedDate.formattedMedium(),
+                    actualDate: collectedStamp.collectedDate,
+                    isCurrentUser: true,
+                    stampId: stamp.id,
+                    userPhotos: collectedStamp.userImageNames,
+                    note: collectedStamp.userNotes.isEmpty ? nil : collectedStamp.userNotes,
+                    likeCount: collectedStamp.likeCount,
+                    commentCount: collectedStamp.commentCount
+                )
+                posts.append(post)
+            }
+            
+            // Update cursor
+            if let lastPost = posts.last {
+                lastFetchedMyPostDate = lastPost.actualDate
+            }
+            
+            // Update UI
+            await MainActor.run {
+                self.myPosts = posts
+                self.isLoading = false
+                // Only set hasMorePosts if we got a full page
+                self.hasMorePosts = posts.count == 20
+            }
+            
+            #if DEBUG
+            print("✅ [FeedManager] Loaded \(posts.count) 'Only Yours' posts")
+            #endif
+            
+            // Prefetch images in background
+            Task {
+                await prefetchFeedImages(posts: posts)
+            }
+            
+        } catch {
+            print("❌ [FeedManager] Failed to load 'Only Yours' feed: \(error.localizedDescription)")
+            await MainActor.run {
+                self.isLoading = false
+                self.errorMessage = self.getUserFriendlyError(error)
+            }
+            
+            // Auto-dismiss error after 3 seconds
+            Task {
+                try? await Task.sleep(nanoseconds: 3_000_000_000)
+                await MainActor.run {
+                    self.errorMessage = nil
+                }
+            }
+        }
+    }
+    
+    /// Load more posts (pagination) for "Only Yours" tab
+    func loadMoreMyPosts(userId: String, stampsManager: StampsManager) async {
         guard !isLoadingMore && hasMorePosts else { return }
+        
+        #if DEBUG
+        print("📄 [FeedManager] Loading more 'Only Yours' posts (cursor: \(lastFetchedMyPostDate?.description ?? "none"))")
+        #endif
         
         await MainActor.run {
             isLoadingMore = true
         }
         
-        // For now, just mark as no more posts since we're fetching everything at once
-        // In a real pagination system, you'd fetch the next page here
+        do {
+            // Fetch user's profile
+            let userProfile = try await firebaseService.fetchUserProfile(userId: userId)
+            
+            // Fetch next batch of user's collected stamps with cursor
+            let collectedStamps = try await firebaseService.fetchCollectedStamps(
+                for: userId,
+                limit: 20,
+                afterDate: lastFetchedMyPostDate
+            )
+            
+            if collectedStamps.isEmpty {
+                #if DEBUG
+                print("📄 [FeedManager] No more 'Only Yours' posts available")
+                #endif
+                await MainActor.run {
+                    isLoadingMore = false
+                    hasMorePosts = false
+                }
+                return
+            }
+            
+            // Extract unique stamp IDs
+            let stampIds = collectedStamps.map { $0.stampId }
+            let stamps = await stampsManager.fetchStamps(ids: stampIds)
+            let stampLookup = Dictionary(uniqueKeysWithValues: stamps.map { ($0.id, $0) })
+            
+            // Convert to FeedPost
+            var newPosts: [FeedPost] = []
+            for collectedStamp in collectedStamps {
+                guard let stamp = stampLookup[collectedStamp.stampId] else { continue }
+                
+                let post = FeedPost(
+                    id: "\(userId)-\(collectedStamp.stampId)",
+                    userId: userId,
+                    userName: userProfile.username,
+                    displayName: userProfile.displayName,
+                    avatarUrl: userProfile.avatarUrl,
+                    stampName: stamp.name,
+                    stampImageName: stamp.imageUrl ?? "",
+                    location: stamp.cityCountry,
+                    date: collectedStamp.collectedDate.formattedMedium(),
+                    actualDate: collectedStamp.collectedDate,
+                    isCurrentUser: true,
+                    stampId: stamp.id,
+                    userPhotos: collectedStamp.userImageNames,
+                    note: collectedStamp.userNotes.isEmpty ? nil : collectedStamp.userNotes,
+                    likeCount: collectedStamp.likeCount,
+                    commentCount: collectedStamp.commentCount
+                )
+                newPosts.append(post)
+            }
+            
+            // Update cursor
+            if let lastPost = newPosts.last {
+                lastFetchedMyPostDate = lastPost.actualDate
+            }
+            
+            // Filter out any duplicates before appending (safety check)
+            let existingIds = Set(myPosts.map { $0.id })
+            let uniqueNewPosts = newPosts.filter { !existingIds.contains($0.id) }
+            
+            // Append to existing posts
+            await MainActor.run {
+                self.myPosts.append(contentsOf: uniqueNewPosts)
+                self.isLoadingMore = false
+                // Only set hasMorePosts if we got a full page
+                self.hasMorePosts = newPosts.count == 20
+            }
+            
+            #if DEBUG
+            print("📄 [FeedManager] Loaded \(uniqueNewPosts.count) more 'Only Yours' posts (\(newPosts.count) fetched, \(newPosts.count - uniqueNewPosts.count) duplicates filtered, total: \(self.myPosts.count))")
+            #endif
+            
+            // Prefetch images in background
+            Task {
+                await prefetchFeedImages(posts: uniqueNewPosts)
+            }
+            
+        } catch {
+            print("❌ [FeedManager] Failed to load more 'Only Yours' posts: \(error.localizedDescription)")
+            await MainActor.run {
+                self.isLoadingMore = false
+                self.errorMessage = self.getUserFriendlyError(error)
+            }
+            
+            // Auto-dismiss error after 3 seconds
+            Task {
+                try? await Task.sleep(nanoseconds: 3_000_000_000)
+                await MainActor.run {
+                    self.errorMessage = nil
+                }
+            }
+        }
+    }
+    
+    /// Convert technical errors to user-friendly messages
+    private func getUserFriendlyError(_ error: Error) -> String {
+        let errorString = error.localizedDescription.lowercased()
+        
+        if errorString.contains("network") || errorString.contains("internet") || errorString.contains("connection") {
+            return "No internet connection. Showing cached posts."
+        } else if errorString.contains("permission") {
+            return "Unable to load feed. Please try again."
+        } else if errorString.contains("timeout") {
+            return "Request timed out. Please check your connection."
+        } else {
+            return "Couldn't load feed. Pull to refresh to try again."
+        }
+    }
+    
+    /// Load more posts (pagination)
+    func loadMorePosts(userId: String, stampsManager: StampsManager) async {
+        guard !isLoadingMore && hasMorePosts else { return }
+        
+        #if DEBUG
+        print("📄 [FeedManager] Loading more posts (cursor: \(lastFetchedPostDate?.description ?? "none"))")
+        #endif
+        
         await MainActor.run {
-            isLoadingMore = false
-            hasMorePosts = false
+            isLoadingMore = true
+        }
+        
+        do {
+            // Fetch next batch with cursor
+            let feedItems = try await firebaseService.fetchFollowingFeed(
+                userId: userId,
+                limit: 20,
+                afterDate: lastFetchedPostDate // Cursor for pagination
+            )
+            
+            if feedItems.isEmpty {
+                #if DEBUG
+                print("📄 [FeedManager] No more posts available")
+                #endif
+                await MainActor.run {
+                    isLoadingMore = false
+                    hasMorePosts = false
+                }
+                return
+            }
+            
+            // Extract unique stamp IDs
+            let uniqueStampIds = Array(Set(feedItems.map { $0.1.stampId }))
+            let stamps = await stampsManager.fetchStamps(ids: uniqueStampIds)
+            let stampLookup = Dictionary(uniqueKeysWithValues: stamps.map { ($0.id, $0) })
+            
+            // Convert to FeedPost
+            var newPosts: [FeedPost] = []
+            for (_, (profile, collectedStamp)) in feedItems.enumerated() {
+                guard let stamp = stampLookup[collectedStamp.stampId] else {
+                    continue
+                }
+                
+                let post = FeedPost(
+                    id: "\(profile.id)-\(collectedStamp.stampId)",
+                    userId: profile.id,
+                    userName: profile.username,
+                    displayName: profile.displayName,
+                    avatarUrl: profile.avatarUrl,
+                    stampName: stamp.name,
+                    stampImageName: stamp.imageUrl ?? "",
+                    location: stamp.cityCountry,
+                    date: collectedStamp.collectedDate.formattedMedium(),
+                    actualDate: collectedStamp.collectedDate,
+                    isCurrentUser: profile.id == userId,
+                    stampId: stamp.id,
+                    userPhotos: collectedStamp.userImageNames,
+                    note: collectedStamp.userNotes.isEmpty ? nil : collectedStamp.userNotes,
+                    likeCount: collectedStamp.likeCount,
+                    commentCount: collectedStamp.commentCount
+                )
+                newPosts.append(post)
+            }
+            
+            // Update cursor
+            if let lastPost = newPosts.last {
+                lastFetchedPostDate = lastPost.actualDate
+            }
+            
+            // Filter out any duplicates before appending (safety check)
+            let existingIds = Set(feedPosts.map { $0.id })
+            let uniqueNewPosts = newPosts.filter { !existingIds.contains($0.id) }
+            
+            // Append to existing posts
+            await MainActor.run {
+                self.feedPosts.append(contentsOf: uniqueNewPosts)
+                self.isLoadingMore = false
+                // Only set hasMorePosts if we got a full page (exactly 20 = might be more)
+                self.hasMorePosts = newPosts.count == 20
+            }
+            
+            #if DEBUG
+            print("📄 [FeedManager] Loaded \(uniqueNewPosts.count) more posts (\(newPosts.count) fetched, \(newPosts.count - uniqueNewPosts.count) duplicates filtered, total: \(self.feedPosts.count))")
+            #endif
+            
+            // Prefetch images in background
+            Task {
+                await prefetchFeedImages(posts: newPosts)
+            }
+            
+        } catch {
+            print("❌ [FeedManager] Failed to load more posts: \(error.localizedDescription)")
+            await MainActor.run {
+                isLoadingMore = false
+            }
         }
     }
     
@@ -161,8 +461,7 @@ class FeedManager: ObservableObject {
             
             let feedItems = try await firebaseService.fetchFollowingFeed(
                 userId: userId,
-                limit: 20,  // ✅ Reduced from 50 - cuts Firestore reads by 50%, faster load
-                stampsPerUser: 5  // ✅ Reduced from 10 - still plenty of content per user
+                limit: 20  // ✅ Instagram-style: Fetch 20 most recent posts chronologically
             )
             
             #if DEBUG
@@ -223,13 +522,19 @@ class FeedManager: ObservableObject {
             print("⏱️ [FeedManager] Total processing time: \(String(format: "%.3f", processingTime))s")
             #endif
             
+            // Update cursor for pagination
+            if let lastPost = posts.last {
+                lastFetchedPostDate = lastPost.actualDate
+            }
+            
             // Update UI immediately
             await MainActor.run {
                 self.feedPosts = posts
                 self.lastRefreshTime = Date()
                 self.isLoading = false
                 self.isLoadingMore = false
-                self.hasMorePosts = posts.count >= 50
+                // Only set hasMorePosts if we got a full page (exactly 20 = might be more)
+                self.hasMorePosts = posts.count == 20
             }
             
             #if DEBUG
@@ -248,6 +553,15 @@ class FeedManager: ObservableObject {
             await MainActor.run {
                 self.isLoading = false
                 self.isLoadingMore = false
+                self.errorMessage = self.getUserFriendlyError(error)
+            }
+            
+            // Auto-dismiss error after 3 seconds
+            Task {
+                try? await Task.sleep(nanoseconds: 3_000_000_000)
+                await MainActor.run {
+                    self.errorMessage = nil
+                }
             }
         }
     }
@@ -289,6 +603,7 @@ class FeedManager: ObservableObject {
         feedPosts = []
         lastRefreshTime = nil
         hasMorePosts = true
+        lastFetchedPostDate = nil // Reset pagination cursor
         clearDiskCache()
     }
     

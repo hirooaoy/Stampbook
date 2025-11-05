@@ -79,7 +79,7 @@ struct FullScreenPhotoView: View {
                             Button(role: .destructive, action: {
                                 showDeleteConfirmation = true
                             }) {
-                                Label("Delete Photo", systemImage: "trash")
+                                Label("Delete photo", systemImage: "trash")
                             }
                         } label: {
                             Image(systemName: "ellipsis")
@@ -125,7 +125,7 @@ struct FullScreenPhotoView: View {
                 }
             }
         }
-        .alert("Delete Photo", isPresented: $showDeleteConfirmation) {
+        .alert("Delete photo", isPresented: $showDeleteConfirmation) {
             Button("Cancel", role: .cancel) {}
             Button("Delete", role: .destructive) {
                 Task {

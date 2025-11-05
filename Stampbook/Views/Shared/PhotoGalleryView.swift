@@ -61,7 +61,7 @@ struct PhotoGalleryView: View {
                 maxSelectionCount: maxPhotos,
                 matching: .images
             ) {
-                HStack(spacing: 8) {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Image(systemName: "photo")
                         .font(.body)
                         .foregroundColor(.primary)

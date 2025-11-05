@@ -178,7 +178,7 @@ struct ProfileEditView: View {
                     }
                 }
             }
-            .navigationTitle("Edit Profile")
+            .navigationTitle("Edit profile")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 // MARK: - Navigation Buttons

@@ -63,6 +63,21 @@
         }
       ],
       "_comment": "For fetching followers via collection group query (MVP on-demand counting)"
+    },
+    {
+      "collectionGroup": "collected_stamps",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "collectedDate",
+          "order": "DESCENDING"
+        }
+      ],
+      "_comment": "Instagram-style chronological feed - fetches posts across all users sorted by date"
     }
   ],
   "fieldOverrides": []

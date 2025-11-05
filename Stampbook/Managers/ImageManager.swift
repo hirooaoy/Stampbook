@@ -66,9 +66,9 @@ class ImageManager: ObservableObject {
             try imageData.write(to: fileURL)
             print("✅ Image saved locally: \(filename)")
             
-            // Generate and save thumbnail (320x320 for crisp retina display)
+            // Generate and save thumbnail (512x512 for crisp @3x retina displays)
             // Note: User photos are saved as JPEG (no transparency needed)
-            if let thumbnail = generateThumbnail(resizedImage, size: CGSize(width: 320, height: 320)) {
+            if let thumbnail = generateThumbnail(resizedImage, size: CGSize(width: 512, height: 512)) {
                 let thumbnailFilename = "\(stampId)_\(Int(timestamp))_\(uuid)_thumb.jpg"
                 let thumbnailURL = getDocumentsDirectory().appendingPathComponent(thumbnailFilename)
                 
@@ -271,9 +271,9 @@ class ImageManager: ObservableObject {
             // Also store in memory cache
             ImageCacheManager.shared.setFullImage(image, key: filename)
             
-            // Also generate and cache thumbnail
+            // Also generate and cache thumbnail (512x512 for crisp @3x retina displays)
             // Use PNG for stamp images to preserve transparency, JPEG for user photos
-            if let thumbnail = generateThumbnail(image, size: CGSize(width: 320, height: 320)) {
+            if let thumbnail = generateThumbnail(image, size: CGSize(width: 512, height: 512)) {
                 // Detect if this is a stamp image (from stamps/ path) vs user photo (from users/ path)
                 // Stamp images stored at: stamps/us-ca-sf-dolores-park.png
                 // User photos stored at: users/{userId}/stamps/{stampId}/photo.jpg
@@ -522,9 +522,9 @@ class ImageManager: ObservableObject {
     /// Generate thumbnail for feed display
     /// Uses aspectFill to crop (not squish) the image to fill the square
     /// Forces scale = 1.0 so that points = pixels (no retina scaling)
-    /// Default 320x320 provides crisp quality on 2x retina displays
+    /// Default 512x512 provides crisp quality on 3x retina displays (iPhone Pro)
     /// Preserves alpha channel for transparent images (like PNG stamps)
-    func generateThumbnail(_ image: UIImage, size: CGSize = CGSize(width: 320, height: 320)) -> UIImage? {
+    func generateThumbnail(_ image: UIImage, size: CGSize = CGSize(width: 512, height: 512)) -> UIImage? {
         let format = UIGraphicsImageRendererFormat()
         format.scale = 1.0  // Force 1x scale to get actual pixel dimensions
         format.opaque = false  // Support transparency (for PNG stamps)

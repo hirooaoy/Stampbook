@@ -1,5 +1,23 @@
 [
   {
+    "id": "your-first-stamp",
+    "name": "Your First Stamp",
+    "latitude": 0.0,
+    "longitude": 0.0,
+    "address": "Anywhere in the world",
+    "collectionIds": [],
+    "about": "Welcome to Stampbook! This is your first special stamp that you can claim from anywhere.",
+    "notesFromOthers": [
+      "Welcome to the community! 🎉",
+      "This is where your journey begins!"
+    ],
+    "thingsToDoFromEditors": [
+      "Tap Collect Stamp",
+      "Explore the world"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fyour-first-stamp.png?alt=media&token=da8bd021-b67a-4b3d-81de-d015a7d3bf46"
+  },
+  {
     "id": "us-ca-sf-baker-beach",
     "name": "Baker Beach",
     "latitude": 37.7936,
