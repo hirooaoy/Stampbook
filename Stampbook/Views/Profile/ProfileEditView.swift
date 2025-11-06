@@ -10,7 +10,45 @@ import PhotosUI
 /// - Real-time input validation and sanitization
 /// - Character limits: 20 for name/username, 70 for bio
 /// - Username format: lowercase, alphanumeric + underscore only
+/// - Reserved words & profanity filtering (usernames and display names only)
 struct ProfileEditView: View {
+    
+    // MARK: - Restricted Words List
+    
+    /// Reserved words that cannot be used in usernames or display names
+    /// Includes: admin terms, brand names, and common profanity
+    /// Note: Comments and bios are NOT filtered (free expression)
+    private static let restrictedWords: Set<String> = [
+        // Reserved system/brand terms
+        "admin", "administrator", "support", "help", "official", "verified",
+        "stampbook", "stamp_book", "stamp", "moderator", "mod", "staff",
+        
+        // Common profanity (basic list to prevent obvious offensive usernames)
+        "fuck", "shit", "ass", "bitch", "dick", "cock", "pussy", "cunt",
+        "damn", "hell", "bastard", "asshole", "fag", "nigger", "nigga",
+        "retard", "whore", "slut", "piss", "nazi", "hitler"
+    ]
+    
+    /// Check if a string contains restricted words
+    /// Case-insensitive check against username/display name
+    private static func containsRestrictedWord(_ text: String) -> Bool {
+        let lowercased = text.lowercased()
+        
+        // Check for exact matches
+        if restrictedWords.contains(lowercased) {
+            return true
+        }
+        
+        // Check if any restricted word is contained within the text
+        // e.g., "adminuser" contains "admin"
+        for word in restrictedWords {
+            if lowercased.contains(word) {
+                return true
+            }
+        }
+        
+        return false
+    }
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var networkMonitor: NetworkMonitor
@@ -271,6 +309,13 @@ struct ProfileEditView: View {
             return
         }
         
+        // Check for restricted words in display name
+        if Self.containsRestrictedWord(trimmedName) {
+            errorMessage = "Display name contains restricted words"
+            showError = true
+            return
+        }
+        
         // Step 4: Validate username
         let trimmedUsername = username.trimmingCharacters(in: .whitespaces)
         guard !trimmedUsername.isEmpty else {
@@ -280,6 +325,12 @@ struct ProfileEditView: View {
         
         guard trimmedUsername.count >= 3 else {
             usernameError = "Username must be at least 3 characters"
+            return
+        }
+        
+        // Check for restricted words in username
+        if Self.containsRestrictedWord(trimmedUsername) {
+            usernameError = "Username contains restricted words"
             return
         }
         

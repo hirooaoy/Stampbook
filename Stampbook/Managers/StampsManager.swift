@@ -416,25 +416,31 @@ class StampsManager: ObservableObject {
     ///
     /// **FUTURE UPGRADE:** When scaling, migrate to Cloud Functions (see reconcileUserStats comment)
     func collectStamp(_ stamp: Stamp, userId: String) {
-        // Fetch the user's rank BEFORE incrementing collectors (to get correct position)
         Task {
-            // Get rank before incrementing (user will be the NEXT collector)
-            let userRank = await getUserRankForStamp(stampId: stamp.id, userId: userId)
-            
-            // Collect the stamp locally with rank (optimistic update)
+            // Collect the stamp locally first (optimistic update - no rank yet)
             await MainActor.run {
-                userCollection.collectStamp(stamp.id, userId: userId, userRank: userRank)
+                userCollection.collectStamp(stamp.id, userId: userId, userRank: nil)
             }
             
             // Update Firebase statistics in the background
             do {
+                // Update stamp statistics (collectors count) FIRST
+                try await firebaseService.incrementStampCollectors(stampId: stamp.id, userId: userId)
+                
+                // NOW fetch the user's rank (after incrementing, so we get the correct position)
+                let userRank = await getUserRankForStamp(stampId: stamp.id, userId: userId)
+                
+                // Update the cached rank in the collected stamp
+                if let rank = userRank {
+                    await MainActor.run {
+                        userCollection.updateUserRank(for: stamp.id, rank: rank)
+                    }
+                }
+                
                 // Calculate new stats (async)
                 let totalStamps = await MainActor.run { userCollection.collectedStamps.count }
                 let collectedStampIds = await MainActor.run { userCollection.collectedStamps.map { $0.stampId } }
                 let uniqueCountries = await calculateUniqueCountries(from: collectedStampIds)
-                
-                // Update stamp statistics (collectors count)
-                try await firebaseService.incrementStampCollectors(stampId: stamp.id, userId: userId)
                 
                 // Update user profile statistics
                 try await firebaseService.updateUserStampStats(
@@ -449,15 +455,7 @@ class StampsManager: ObservableObject {
                     stampStatistics[stamp.id] = updatedStats
                 }
                 
-                // Fetch and cache the user's rank now that Firebase is updated
-                if let newRank = await getUserRankForStamp(stampId: stamp.id, userId: userId) {
-                    await MainActor.run {
-                        userCollection.updateUserRank(for: stamp.id, rank: newRank)
-                    }
-                    print("✅ Updated stamp statistics for \(stamp.id): \(updatedStats.totalCollectors) collectors (user rank: \(newRank))")
-                } else {
-                    print("✅ Updated stamp statistics for \(stamp.id): \(updatedStats.totalCollectors) collectors (user rank: \(userRank ?? -1))")
-                }
+                print("✅ Updated stamp statistics for \(stamp.id): \(updatedStats.totalCollectors) collectors (user rank: \(userRank ?? -1))")
                 print("✅ Updated user stats: \(totalStamps) stamps, \(uniqueCountries) countries")
             } catch {
                 print("⚠️ Failed to update statistics: \(error.localizedDescription)")

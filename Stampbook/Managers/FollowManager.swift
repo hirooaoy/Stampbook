@@ -35,9 +35,35 @@ class FollowManager: ObservableObject {
     }
     
     /// Check follow status for multiple users at once (batch operation)
-    func checkFollowStatuses(currentUserId: String, targetUserIds: [String]) {
-        for targetUserId in targetUserIds {
-            checkFollowStatus(currentUserId: currentUserId, targetUserId: targetUserId)
+    func checkFollowStatuses(currentUserId: String, targetUserIds: [String]) async {
+        print("🔍 [FollowManager] Batch checking follow statuses for \(targetUserIds.count) users")
+        
+        await withTaskGroup(of: (String, Bool).self) { group in
+            for targetUserId in targetUserIds {
+                group.addTask {
+                    do {
+                        let following = try await self.firebaseService.isFollowing(followerId: currentUserId, followeeId: targetUserId)
+                        return (targetUserId, following)
+                    } catch {
+                        print("❌ [FollowManager] Failed to check follow status for \(targetUserId): \(error.localizedDescription)")
+                        return (targetUserId, false)
+                    }
+                }
+            }
+            
+            // Collect all results
+            var results: [String: Bool] = [:]
+            for await (userId, isFollowing) in group {
+                results[userId] = isFollowing
+            }
+            
+            // Update state on main actor
+            await MainActor.run {
+                for (userId, isFollowing) in results {
+                    self.isFollowing[userId] = isFollowing
+                }
+                print("✅ [FollowManager] Batch updated follow statuses for \(results.count) users")
+            }
         }
     }
     
@@ -249,7 +275,7 @@ class FollowManager: ObservableObject {
     // MARK: - List Fetching
     
     /// Fetch followers for a user
-    func fetchFollowers(userId: String) {
+    func fetchFollowers(userId: String, currentUserId: String? = nil) {
         isLoading = true
         error = nil
         
@@ -261,6 +287,12 @@ class FollowManager: ObservableObject {
                     self.isLoading = false
                 }
                 print("✅ Fetched \(profiles.count) followers")
+                
+                // Batch check follow statuses if current user is provided
+                if let currentUserId = currentUserId {
+                    let userIds = profiles.map { $0.id }
+                    await checkFollowStatuses(currentUserId: currentUserId, targetUserIds: userIds)
+                }
             } catch {
                 await MainActor.run {
                     self.error = error.localizedDescription
@@ -272,7 +304,7 @@ class FollowManager: ObservableObject {
     }
     
     /// Fetch following for a user
-    func fetchFollowing(userId: String) {
+    func fetchFollowing(userId: String, currentUserId: String? = nil) {
         isLoading = true
         error = nil
         
@@ -284,6 +316,12 @@ class FollowManager: ObservableObject {
                     self.isLoading = false
                 }
                 print("✅ Fetched \(profiles.count) following")
+                
+                // Batch check follow statuses if current user is provided
+                if let currentUserId = currentUserId {
+                    let userIds = profiles.map { $0.id }
+                    await checkFollowStatuses(currentUserId: currentUserId, targetUserIds: userIds)
+                }
             } catch {
                 await MainActor.run {
                     self.error = error.localizedDescription

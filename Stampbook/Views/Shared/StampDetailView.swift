@@ -15,11 +15,22 @@ struct StampDetailView: View {
     @State private var showMemorySection = false
     @State private var showNotesEditor = false
     @State private var editingNotes = ""
-    @State private var stampStats: StampStatistics?
     @State private var userRank: Int? // User's rank for this stamp (1st, 2nd, 3rd collector, etc.)
     @State private var collectionProgress: [String: Int] = [:] // collectionId -> collected count
     @State private var showSuggestEdit = false
     @State private var showAddressOptions = false
+    
+    // Computed property to get live stampStats from StampsManager
+    private var stampStats: StampStatistics? {
+        stampsManager.stampStatistics[stamp.id]
+    }
+    
+    // Computed property to get user rank from cached CollectedStamp
+    // This updates automatically when userCollection changes
+    private var cachedUserRank: Int? {
+        stampsManager.userCollection.collectedStamps
+            .first(where: { $0.stampId == stamp.id })?.userRank
+    }
     
     private var isCollected: Bool {
         stampsManager.isCollected(stamp)
@@ -138,7 +149,7 @@ struct StampDetailView: View {
                                             .font(.caption)
                                             .foregroundColor(.secondary)
                                         
-                                        if let rank = userRank {
+                                        if let rank = cachedUserRank ?? userRank {
                                             Text("#\(rank)")
                                                 .font(.body)
                                                 .fontWeight(.semibold)
@@ -542,18 +553,19 @@ struct StampDetailView: View {
             
             // Fetch stamp statistics (one-time fetch on appear vs real-time listener: lower cost, simpler code, fresh enough for social proof)
             Task {
-                stampStats = await stampsManager.fetchStampStatistics(stampId: stamp.id)
+                // Fetch statistics - updates stampsManager.stampStatistics dictionary
+                _ = await stampsManager.fetchStampStatistics(stampId: stamp.id)
                 
                 // Load user's rank from cached CollectedStamp first (instant!)
                 // Rank = position in collector list (1st, 2nd, 3rd...) - never changes!
                 if isCollected, let userId = authManager.userId {
-                    // FAST PATH: Try cached rank first
-                    if let collectedStamp = stampsManager.userCollection.collectedStamps.first(where: { $0.stampId == stamp.id }),
-                       let cachedRank = collectedStamp.userRank {
-                        userRank = cachedRank
-                    } else {
+                    // FAST PATH: Try cached rank first (via computed property cachedUserRank)
+                    if cachedUserRank == nil {
                         // FALLBACK: Fetch from Firebase (for old stamps collected before caching was added)
-                        userRank = await stampsManager.getUserRankForStamp(stampId: stamp.id, userId: userId)
+                        let fetchedRank = await stampsManager.getUserRankForStamp(stampId: stamp.id, userId: userId)
+                        await MainActor.run {
+                            userRank = fetchedRank
+                        }
                     }
                 }
                 
@@ -569,13 +581,15 @@ struct StampDetailView: View {
                 
                 // Fetch statistics when stamp is collected
                 Task {
-                    stampStats = await stampsManager.fetchStampStatistics(stampId: stamp.id)
+                    // Fetch statistics - updates stampsManager.stampStatistics dictionary
+                    _ = await stampsManager.fetchStampStatistics(stampId: stamp.id)
                     
-                    // Rank is now set when stamp is collected (cached in CollectedStamp)
-                    // Load it from cache immediately
-                    if let collectedStamp = stampsManager.userCollection.collectedStamps.first(where: { $0.stampId == stamp.id }),
-                       let cachedRank = collectedStamp.userRank {
-                        userRank = cachedRank
+                    // If rank is not cached yet, try to fetch it
+                    if cachedUserRank == nil, let userId = authManager.userId {
+                        let fetchedRank = await stampsManager.getUserRankForStamp(stampId: stamp.id, userId: userId)
+                        await MainActor.run {
+                            userRank = fetchedRank
+                        }
                     }
                     
                     // Recalculate collection progress when stamp is collected

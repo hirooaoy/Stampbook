@@ -458,7 +458,6 @@ struct FeedView: View {
                             isCurrentUser: feedType == .onlyYou ? true : post.isCurrentUser,
                             stampId: post.stampId,
                             userPhotos: post.userPhotos,
-                            note: post.note,
                             likeCount: post.likeCount,
                             commentCount: post.commentCount,
                             selectedTab: $selectedTab,
@@ -608,7 +607,6 @@ struct FeedView: View {
         let isCurrentUser: Bool // true if this is the current user's post
         let stampId: String // The stamp ID to fetch from manager
         let userPhotos: [String] // Additional user photos (can be empty)
-        let note: String? // Optional note
         let likeCount: Int
         let commentCount: Int
         @Binding var selectedTab: Int
@@ -640,6 +638,15 @@ struct FeedView: View {
         
         private var currentCommentCount: Int {
             commentManager.getCommentCount(postId: postId)
+        }
+        
+        // Read notes dynamically from userCollection (same pattern as photos)
+        // This ensures notes update instantly when edited, consistent with other features
+        private var currentNote: String? {
+            let notes = stampsManager.userCollection.collectedStamps
+                .first(where: { $0.stampId == stampId })?
+                .userNotes ?? ""
+            return notes.isEmpty ? nil : notes
         }
         
         // Avatar URL comes from feed data (already fetched from Firebase)
@@ -719,7 +726,7 @@ struct FeedView: View {
                 .environmentObject(authManager)
                 
                 // Note section
-                if let note = note, !note.isEmpty {
+                if let note = currentNote, !note.isEmpty {
                     Text(note)
                         .font(.subheadline)
                         .foregroundColor(.primary)
@@ -727,7 +734,7 @@ struct FeedView: View {
                 } else if isCurrentUser {
                     // Add Notes button (only for current user)
                     Button(action: {
-                        editingNotes = ""
+                        editingNotes = currentNote ?? ""
                         showNotesEditor = true
                     }) {
                         HStack(alignment: .firstTextBaseline, spacing: 8) {

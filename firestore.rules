@@ -2,16 +2,28 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // ==================== ADMIN CONTENT (read-only) ====================
+    // ==================== HELPER FUNCTIONS ====================
+    
+    // Define admin users who can manage stamps and collections
+    function isAdmin() {
+      return request.auth != null && request.auth.uid in [
+        'LGp7cMqB2tSEVU1O7NEvR0Xib7y2',  // hiroo (primary admin)
+        'mpd4k2n13adMFMY52nksmaQTbMQ2'   // watagumostudio (secondary admin)
+      ];
+    }
+    
+    // ==================== ADMIN CONTENT ====================
     
     // Stamps - curated locations
     match /stamps/{stampId} {
-      allow read: if true;  // Public
+      allow read: if true;  // Public - anyone can view stamps
+      allow write: if isAdmin();  // Only admins can add/edit/delete stamps
     }
     
     // Collections - curated groups
     match /collections/{collectionId} {
-      allow read: if true;  // Public
+      allow read: if true;  // Public - anyone can view collections
+      allow write: if isAdmin();  // Only admins can add/edit/delete collections
     }
     
     // Content pages - rich content for local businesses, creators, and app info
@@ -70,10 +82,12 @@ service cloud.firestore {
     // Likes
     match /likes/{likeId} {
       allow read: if request.auth != null;
-      // Rate limit: Max 10 likes per minute per user (prevents spam bots)
+      // Validation: Ensure likes are properly attributed and timestamped
+      // Note: Rate limiting implemented client-side for MVP (<100 users)
+      // TODO: POST-MVP - Move to Cloud Function for server-side rate limiting (>500 users)
       allow create: if request.auth != null 
         && request.resource.data.userId == request.auth.uid
-        && request.resource.data.createdAt is timestamp;  // Require timestamp for rate limit tracking
+        && request.resource.data.createdAt is timestamp;
       allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
     }
     

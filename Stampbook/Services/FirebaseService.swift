@@ -1130,8 +1130,40 @@ class FirebaseService {
     
     // MARK: - Likes & Comments System
     
+    // TODO: PHASE 2 - Add reconciliation mechanism
+    // Create reconcile_like_comment_counts.js to periodically verify:
+    // - Count actual likes in subcollection
+    // - Compare to stored likeCount
+    // - Fix drift and log discrepancies
+    // Run weekly or on-demand. See docs/LIKE_COUNT_FIX_ROADMAP.md
+    
+    // TODO: PHASE 2 - Add monitoring/alerting
+    // Detect negative counts automatically:
+    // - Option A: Add to reconciliation script (console.error + notification)
+    // - Option B: Firebase Function trigger on write (validates counts >= 0)
+    // See docs/LIKE_COUNT_FIX_ROADMAP.md
+    
+    // TODO: PHASE 3 - Move to Cloud Functions (at 1000+ users)
+    // Replace client-side increment with server-side Cloud Function:
+    // - exports.toggleLike = functions.https.onCall(...)
+    // - Server validates auth and enforces business rules
+    // - Prevents client manipulation
+    // - Single source of logic
+    // See docs/LIKE_COUNT_FIX_ROADMAP.md
+    
+    // TODO: PHASE 3 - Automated reconciliation (at 1000+ users)
+    // Add scheduled Cloud Function to run daily:
+    // - exports.dailyReconciliation = functions.pubsub.schedule('0 3 * * *')
+    // - Automatically fixes drift without manual intervention
+    // - Logs results for monitoring
+    // See docs/LIKE_COUNT_FIX_ROADMAP.md
+    
     /// Like a post (create or toggle like)
     /// Returns true if liked, false if unliked
+    ///
+    /// ✅ PHASE 1 COMPLETE: Fields now initialized to 0 on collection
+    /// - FieldValue.increment() works correctly on initialized fields
+    /// - No more undefined → -1 bug
     @discardableResult
     func toggleLike(postId: String, stampId: String, userId: String, postOwnerId: String) async throws -> Bool {
         let likeRef = db.collection("likes").document("\(userId)_\(postId)")

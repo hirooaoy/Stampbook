@@ -51,9 +51,9 @@ struct FollowListView: View {
             .onChange(of: selectedTab) { oldTab, newTab in
                 // Refresh data when switching tabs
                 if newTab == .followers && followManager.followers.isEmpty {
-                    followManager.fetchFollowers(userId: userId)
+                    followManager.fetchFollowers(userId: userId, currentUserId: authManager.userId)
                 } else if newTab == .following && followManager.following.isEmpty {
-                    followManager.fetchFollowing(userId: userId)
+                    followManager.fetchFollowing(userId: userId, currentUserId: authManager.userId)
                 }
             }
             
@@ -111,8 +111,9 @@ struct FollowListView: View {
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             // Load both followers and following data to show accurate counts
-            followManager.fetchFollowers(userId: userId)
-            followManager.fetchFollowing(userId: userId)
+            // Pass current user ID to batch check follow statuses
+            followManager.fetchFollowers(userId: userId, currentUserId: authManager.userId)
+            followManager.fetchFollowing(userId: userId, currentUserId: authManager.userId)
         }
     }
 }
@@ -172,12 +173,7 @@ struct UserRow: View {
                 }
             }
         }
-        .onAppear {
-            // Check follow status when row appears
-            if let currentUserId = authManager.userId, !isCurrentUser {
-                followManager.checkFollowStatus(currentUserId: currentUserId, targetUserId: user.id)
-            }
-        }
+        // Removed onAppear check - follow statuses are now batch loaded when fetching the list
     }
 }
 

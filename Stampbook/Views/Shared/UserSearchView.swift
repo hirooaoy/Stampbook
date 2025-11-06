@@ -172,6 +172,12 @@ struct UserSearchView: View {
                     self.hasSearched = true
                     self.isSearching = false
                 }
+                
+                // Batch check follow statuses for all search results
+                if let currentUserId = authManager.userId {
+                    let userIds = results.map { $0.id }
+                    await followManager.checkFollowStatuses(currentUserId: currentUserId, targetUserIds: userIds)
+                }
             } catch {
                 print("❌ Search failed: \(error.localizedDescription)")
                 await MainActor.run {
@@ -239,12 +245,7 @@ struct UserSearchRow: View {
                 }
             }
         }
-        .onAppear {
-            // Check follow status when row appears
-            if let currentUserId = authManager.userId, !isCurrentUser {
-                followManager.checkFollowStatus(currentUserId: currentUserId, targetUserId: user.id)
-            }
-        }
+        // Removed onAppear check - follow statuses are now batch loaded after search
     }
 }
 

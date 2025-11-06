@@ -133,6 +133,7 @@ struct ProfileImageView: View {
             
             #if DEBUG
             let loadTime = CFAbsoluteTimeGetCurrent() - loadStart
+            _ = loadTime // Used in next line
             print("⏱️ [ProfileImageView] Profile picture loaded: \(String(format: "%.3f", loadTime))s for userId: \(userId)")
             #endif
             

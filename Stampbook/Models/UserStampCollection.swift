@@ -194,6 +194,8 @@ class UserStampCollection: ObservableObject {
             userNotes: "",
             userImageNames: [],
             userImagePaths: [],
+            likeCount: 0,      // ✅ PHASE 1: Always initialize to 0 to prevent undefined fields
+            commentCount: 0,   // ✅ PHASE 1: Always initialize to 0 to prevent undefined fields
             userRank: userRank
         )
         
@@ -223,6 +225,10 @@ class UserStampCollection: ObservableObject {
         if let index = collectedStamps.firstIndex(where: { $0.stampId == stampId }) {
             collectedStamps[index].userNotes = notes
         }
+        
+        // Trigger SwiftUI refresh (mutation inside array doesn't auto-publish)
+        objectWillChange.send()
+        
         saveCollectedStamps()
         
         // Sync to Firestore
@@ -266,6 +272,10 @@ class UserStampCollection: ObservableObject {
                 collectedStamps[index].userImagePaths.append(path)
             }
         }
+        
+        // Trigger SwiftUI refresh (mutation inside array doesn't auto-publish)
+        objectWillChange.send()
+        
         saveCollectedStamps()
         
         // Sync to Firestore
@@ -390,6 +400,9 @@ class UserStampCollection: ObservableObject {
             }
         }
         
+        // Trigger SwiftUI refresh (mutation inside array doesn't auto-publish)
+        objectWillChange.send()
+        
         // STEP 3: Delete local file
         ImageManager.shared.deleteImage(named: imageName)
         saveCollectedStamps()
@@ -446,6 +459,9 @@ class UserStampCollection: ObservableObject {
         if uploadingPhotos[stampId]?.isEmpty == true {
             uploadingPhotos.removeValue(forKey: stampId)
         }
+        // Note: uploadingPhotos is @Published so this already triggers updates
+        // But we explicitly trigger here for consistency with other mutations
+        objectWillChange.send()
     }
     
     func getUploadingPhotos(for stampId: String) -> Set<String> {
