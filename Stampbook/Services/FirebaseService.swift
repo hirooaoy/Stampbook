@@ -10,10 +10,15 @@ class FirebaseService {
     private let storage = Storage.storage()
     
     private init() {
-        // Enable offline persistence
+        // Configure offline persistence
+        // NOTE: For fresh installs with no cache, offline persistence can cause
+        // 10+ second delays while Firestore waits for backend. This is acceptable
+        // because once cache is populated, subsequent launches are instant.
         let settings = FirestoreSettings()
         settings.cacheSettings = PersistentCacheSettings()
         db.settings = settings
+        
+        print("ℹ️ [FirebaseService] Offline persistence enabled (cache will populate on first sync)")
         
         // Run connectivity diagnostics in background (non-blocking)
         // NOTE: This should NOT block app initialization

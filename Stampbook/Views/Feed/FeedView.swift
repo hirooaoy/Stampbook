@@ -43,11 +43,12 @@ struct FeedView: View {
             Label("About Stampbook", systemImage: "info.circle")
         }
         
-        Button(action: {
-            copyAppStoreUrl()
-        }) {
-            Label("Share Stampbook", systemImage: "square.and.arrow.up")
-        }
+        // TODO: Add back later
+        // Button(action: {
+        //     copyAppStoreUrl()
+        // }) {
+        //     Label("Share Stampbook", systemImage: "square.and.arrow.up")
+        // }
         
         Divider()
         
@@ -57,11 +58,12 @@ struct FeedView: View {
             Label("For local business", systemImage: "storefront")
         }
         
-        Button(action: {
-            showForCreators = true
-        }) {
-            Label("For creators", systemImage: "sparkles")
-        }
+        // TODO: Add back later
+        // Button(action: {
+        //     showForCreators = true
+        // }) {
+        //     Label("For creators", systemImage: "sparkles")
+        // }
         
         Divider()
         

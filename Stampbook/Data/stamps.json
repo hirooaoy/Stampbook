@@ -12,7 +12,7 @@
       "This is where your journey begins!"
     ],
     "thingsToDoFromEditors": [
-      "Tap Collect Stamp",
+      "Tap \"Collect Stamp\"",
       "Explore the world"
     ],
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fyour-first-stamp.png?alt=media&token=da8bd021-b67a-4b3d-81de-d015a7d3bf46"
@@ -283,7 +283,7 @@
       "Grab coffee here before exploring Golden Gate Park two blocks north",
       "Try their oat milk latte with pastries from Arizmendi across the street"
     ],
-    "imageUrl": ""
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-the-coffee-movement.png?alt=media&token=c8796134-2b50-4b5f-bf12-442db7f6c290"
   },
   {
     "id": "us-ca-sf-andytown",
@@ -323,7 +323,7 @@
       "Arrive early for warm croissants - they sell out by noon",
       "Walk to the Dogpatch waterfront along 3rd Street after your coffee"
     ],
-    "imageUrl": ""
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-neighbor-bakehouse.png?alt=media&token=ccad5364-8fac-41b2-a6a3-0957ab72d4a9"
   },
   {
     "id": "us-ca-sf-the-mill",
@@ -343,7 +343,7 @@
       "Order the cinnamon sugar toast - their iconic signature item",
       "Walk to Alamo Square and the Painted Ladies 10 minutes away"
     ],
-    "imageUrl": ""
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-the-mill.png?alt=media&token=d891f7e0-913a-4ad5-acb1-24d4ca9a24e2"
   },
   {
     "id": "us-ca-sf-saint-frank",
@@ -363,7 +363,7 @@
       "Ask baristas about their rotating single-origin espresso - they love sharing details",
       "Try the cortado to experience their roasting at its purest"
     ],
-    "imageUrl": ""
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-saint-frank-coffee.png?alt=media&token=6596ece8-6acb-41fc-8fa7-d90d36109b5d"
   },
   {
     "id": "us-ca-sf-sightglass",
@@ -383,7 +383,7 @@
       "Watch them roast coffee through the glass-walled roasting room",
       "Try the espresso tonic on warm days - refreshing and caffeinated"
     ],
-    "imageUrl": ""
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-sightglass-coffee.png?alt=media&token=692c9d82-cc28-4af1-80d4-dcad81bb816d"
   },
   {
     "id": "us-ca-sf-four-barrel",
@@ -403,7 +403,7 @@
       "Order classic drip coffee to taste their legendary roasting",
       "Explore Clarion Alley's murals one block away at Valencia & 17th"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-four-barrel.png?alt=media&token=edf5f8ea-85c8-4cba-8a38-cc3ee3bad06f"
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-four-barrel.png?alt=media&token=4226c9d1-e80f-4fa6-a245-ae62406c886d"
   },
   {
     "id": "us-ca-sf-pinhole",
@@ -423,7 +423,7 @@
       "Sip their perfectly crafted flat white at the window bar",
       "Browse vintage shops on Haight Street a few blocks east"
     ],
-    "imageUrl": ""
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-pinhole-coffee.png?alt=media&token=e282ad2f-5b36-4097-9659-daff0f06ce73"
   },
   {
     "id": "us-ca-sf-ballast",
@@ -443,7 +443,7 @@
       "Grab coffee here then walk to Tartine Bakery for morning buns",
       "Bring your laptop - the wifi is solid and the vibe is calm"
     ],
-    "imageUrl": ""
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-ballast-coffee.png?alt=media&token=f6b927aa-6bdc-415c-95fe-85116156e85e"
   },
   {
     "id": "us-ca-sf-ggp-japanese-tea-garden",

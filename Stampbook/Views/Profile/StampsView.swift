@@ -106,11 +106,12 @@ struct StampsView: View {
                                     Label("About Stampbook", systemImage: "info.circle")
                                 }
                                 
-                                Button(action: {
-                                    copyAppStoreUrl()
-                                }) {
-                                    Label("Share app", systemImage: "square.and.arrow.up")
-                                }
+                                // TODO: Add back later
+                                // Button(action: {
+                                //     copyAppStoreUrl()
+                                // }) {
+                                //     Label("Share app", systemImage: "square.and.arrow.up")
+                                // }
                                 
                                 Divider()
                                 
@@ -120,11 +121,12 @@ struct StampsView: View {
                                     Label("For local business", systemImage: "storefront")
                                 }
                                 
-                                Button(action: {
-                                    showForCreators = true
-                                }) {
-                                    Label("For creators", systemImage: "sparkles")
-                                }
+                                // TODO: Add back later
+                                // Button(action: {
+                                //     showForCreators = true
+                                // }) {
+                                //     Label("For creators", systemImage: "sparkles")
+                                // }
                                 
                                 Divider()
                                 
@@ -178,11 +180,12 @@ struct StampsView: View {
                                 Label("About Stampbook", systemImage: "info.circle")
                             }
                             
-                            Button(action: {
-                                copyAppStoreUrl()
-                            }) {
-                                Label("Share app", systemImage: "square.and.arrow.up")
-                            }
+                            // TODO: Add back later
+                            // Button(action: {
+                            //     copyAppStoreUrl()
+                            // }) {
+                            //     Label("Share app", systemImage: "square.and.arrow.up")
+                            // }
                             
                             Divider()
                             
@@ -192,11 +195,12 @@ struct StampsView: View {
                                 Label("For local business", systemImage: "storefront")
                             }
                             
-                            Button(action: {
-                                showForCreators = true
-                            }) {
-                                Label("For creators", systemImage: "sparkles")
-                            }
+                            // TODO: Add back later
+                            // Button(action: {
+                            //     showForCreators = true
+                            // }) {
+                            //     Label("For creators", systemImage: "sparkles")
+                            // }
                             
                             Divider()
                             
@@ -293,17 +297,16 @@ struct StampsView: View {
                                             .lineLimit(2)
                                     }
                                 } else {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text("Loading User Name")
+                                    // Show friendly loading message instead of placeholder
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text("Setting up your stampbook...")
                                             .font(.title3)
                                             .fontWeight(.semibold)
                                         
-                                        Text("Loading bio text here that spans multiple lines")
-                                            .font(.subheadline)
+                                        Text("This may take a moment on first launch")
+                                            .font(.caption)
                                             .foregroundColor(.secondary)
-                                            .lineLimit(2)
                                     }
-                                    .redacted(reason: .placeholder)
                                 }
                             }
                             

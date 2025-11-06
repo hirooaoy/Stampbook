@@ -65,23 +65,22 @@ struct AboutStampbookView: View {
 /// For Local Business view - Partnership information
 struct ForLocalBusinessView: View {
     @Environment(\.dismiss) private var dismiss
+    @State private var showEmailOptions = false
+    
+    private let email = "watagumo.studio@gmail.com"
     
     // ✏️ Edit your content here
     private let contentParagraphs = [
-        "Have a café, shop, or local spot people love?",
+        "Hello fellow entrepreneurs,",
+        "Thank you so much for being here.",
         "",
-        "You can create your own digital stamp that explorers collect when they visit.",
+        "I truly appreciate you taking the time to download my app. I hope it brings joy to people as they travel around and collect stamps as a fun little memory.",
         "",
-        "Every partner gets to write their own \"About\" story, and you'll work directly with me to design a stamp that captures your vibe.",
+        "I'd love to partner with you to feature your business with its own unique stamp that visitors can collect when they stop by. I'll work with you to design your custom stamp art and write a short description that reflects your style and story.",
         "",
-        "We're still early and small — I'm a solo developer building this idea and growing the community one place at a time.",
+        "This app is still in its early stages and growing. For now, I'm asking for a **$25 contribution for a 6-month listing** to help fund development and expand its reach. As always, I'd also love to hear any feedback or ideas you might have.",
         "",
-        "If you like the vision, I'd love to collaborate with you.",
-        "",
-        "💰 **Offer: $25 for a 6-month listing**",
-        "(Early partner spots only)",
-        "",
-        "Contact: **partner@stampbook.app**"
+        "Let's chat!"
     ]
     
     var body: some View {
@@ -109,6 +108,16 @@ struct ForLocalBusinessView: View {
                                 .lineSpacing(6)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
+                        
+                        // Tappable email
+                        Button(action: {
+                            showEmailOptions = true
+                        }) {
+                            Text(email)
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundColor(.blue)
+                                .lineSpacing(6)
+                        }
                     }
                     .padding(.horizontal, 24)
                     
@@ -123,6 +132,11 @@ struct ForLocalBusinessView: View {
                         dismiss()
                     }
                 }
+            }
+        }
+        .sheet(isPresented: $showEmailOptions) {
+            EmailOptionsSheet(email: email) {
+                showEmailOptions = false
             }
         }
     }
