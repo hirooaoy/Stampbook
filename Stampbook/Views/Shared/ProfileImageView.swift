@@ -141,14 +141,10 @@ struct ProfileImageView: View {
                 self.isLoadingImage = false
             }
         } catch {
-            #if DEBUG
-            let loadTime = CFAbsoluteTimeGetCurrent() - loadStart
-            #endif
             // Fail silently - placeholder already showing
             // Don't spam console - prefetch failures are expected
             await MainActor.run {
                 self.isLoadingImage = false
-                print("⏱️ [ProfileImageView] Failed to load: \(String(format: "%.3f", loadTime))s for userId: \(userId): \(error.localizedDescription)")
             }
         }
     }

@@ -450,7 +450,7 @@ class StampsManager: ObservableObject {
                 }
                 
                 // Fetch and cache the user's rank now that Firebase is updated
-                if let newRank = try? await getUserRankForStamp(stampId: stamp.id, userId: userId) {
+                if let newRank = await getUserRankForStamp(stampId: stamp.id, userId: userId) {
                     await MainActor.run {
                         userCollection.updateUserRank(for: stamp.id, rank: newRank)
                     }
