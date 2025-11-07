@@ -47,7 +47,7 @@ struct StampDetailView: View {
         guard let userLocation = userLocation else { return false }
         let stampLocation = CLLocation(latitude: stamp.coordinate.latitude, longitude: stamp.coordinate.longitude)
         let distance = userLocation.distance(from: stampLocation)
-        return distance <= MapView.stampCollectionRadius
+        return distance <= stamp.collectionRadiusInMeters
     }
     
     private var collectedDate: Date? {

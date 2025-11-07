@@ -13,6 +13,7 @@ struct Stamp: Identifiable, Codable, Equatable {
     let about: String
     let thingsToDoFromEditors: [String]
     let geohash: String? // Optional for backward compatibility
+    let collectionRadius: String  // Collection radius category: "regular" (150m), "regularplus" (500m), "large" (1500m), "xlarge" (3000m)
     
     // ==================== VISIBILITY SYSTEM ====================
     // Fields for moderation and temporary stamps (all optional for backward compatibility)
@@ -35,6 +36,22 @@ struct Stamp: Identifiable, Codable, Equatable {
     
     var coordinate: CLLocationCoordinate2D {
         CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
+    }
+    
+    /// Get collection radius in meters based on category
+    var collectionRadiusInMeters: Double {
+        switch collectionRadius {
+        case "regular":
+            return 150  // 150m (~500ft) - specific landmarks, monuments, restaurants
+        case "regularplus":
+            return 500  // 500m (~0.31mi) - gardens, parks, museums, beaches
+        case "large":
+            return 1500  // 1.5km (~0.93mi) - large parks, viewing areas (not used yet)
+        case "xlarge":
+            return 3000  // 3km (~1.9mi) - airports, massive venues (not used yet)
+        default:
+            return 150  // Default to regular if unknown category
+        }
     }
     
     /// Check if this stamp requires a location to claim
@@ -111,7 +128,7 @@ struct Stamp: Identifiable, Codable, Equatable {
     
     // For backward compatibility with JSON that uses collectionId
     enum CodingKeys: String, CodingKey {
-        case id, name, latitude, longitude, address, imageName, imageUrl, about, thingsToDoFromEditors, geohash
+        case id, name, latitude, longitude, address, imageName, imageUrl, about, thingsToDoFromEditors, geohash, collectionRadius
         case collectionIds
         case collectionId
         // Visibility system
@@ -121,6 +138,7 @@ struct Stamp: Identifiable, Codable, Equatable {
     init(id: String, name: String, latitude: Double, longitude: Double, address: String, 
          imageName: String = "", imageUrl: String? = nil, collectionIds: [String], 
          about: String, thingsToDoFromEditors: [String] = [], geohash: String? = nil,
+         collectionRadius: String = "regular",
          status: String? = nil, availableFrom: Date? = nil, 
          availableUntil: Date? = nil, removalReason: String? = nil) {
         self.id = id
@@ -134,6 +152,7 @@ struct Stamp: Identifiable, Codable, Equatable {
         self.about = about
         self.thingsToDoFromEditors = thingsToDoFromEditors
         self.geohash = geohash
+        self.collectionRadius = collectionRadius
         self.status = status
         self.availableFrom = availableFrom
         self.availableUntil = availableUntil
@@ -152,6 +171,7 @@ struct Stamp: Identifiable, Codable, Equatable {
         about = try container.decode(String.self, forKey: .about)
         thingsToDoFromEditors = try container.decodeIfPresent([String].self, forKey: .thingsToDoFromEditors) ?? []
         geohash = try container.decodeIfPresent(String.self, forKey: .geohash)
+        collectionRadius = try container.decodeIfPresent(String.self, forKey: .collectionRadius) ?? "regular"  // Default to regular if missing
         
         // Visibility system fields (optional for backward compatibility)
         status = try container.decodeIfPresent(String.self, forKey: .status)
@@ -182,6 +202,7 @@ struct Stamp: Identifiable, Codable, Equatable {
         try container.encode(about, forKey: .about)
         try container.encode(thingsToDoFromEditors, forKey: .thingsToDoFromEditors)
         try container.encodeIfPresent(geohash, forKey: .geohash)
+        try container.encode(collectionRadius, forKey: .collectionRadius)
         
         // Visibility system fields
         try container.encodeIfPresent(status, forKey: .status)

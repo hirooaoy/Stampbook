@@ -128,7 +128,8 @@ async function uploadStamps() {
         about: stamp.about,
         notesFromOthers: stamp.notesFromOthers || [],
         thingsToDoFromEditors: stamp.thingsToDoFromEditors || [],
-        geohash: geohash
+        geohash: geohash,
+        collectionRadius: stamp.collectionRadius || 'regular'  // Default to regular if missing
       };
       
       // Add visibility fields only if present (keeps it clean)

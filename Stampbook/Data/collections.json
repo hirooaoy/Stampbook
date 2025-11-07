@@ -33,6 +33,13 @@
     "description": "Iconic natural wonders and local favorites in and around Acadia National Park",
     "region": "acadia",
     "totalStamps": 4
+  },
+  {
+    "id": "airports-of-the-world",
+    "name": "Airports of the World",
+    "description": "Travel the world and collect stamps from unique airports",
+    "region": "global",
+    "totalStamps": 1
   }
 ]
 

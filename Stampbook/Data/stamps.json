@@ -11,7 +11,8 @@
       "Tap \"Collect Stamp\"",
       "Go out there and explore the world!"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fyour-first-stamp.png?alt=media&token=da8bd021-b67a-4b3d-81de-d015a7d3bf46"
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fyour-first-stamp.png?alt=media&token=da8bd021-b67a-4b3d-81de-d015a7d3bf46",
+    "collectionRadius": "regular"
   },
   {
     "id": "us-ca-sf-baker-beach",
@@ -27,7 +28,8 @@
       "Bring a picnic blanket and relax with the Golden Gate",
       "Hike Batteries to Bluffs Trail along the cliffs"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-baker-beach.png?alt=media&token=134fe2c4-ef0b-48a2-93a1-754d5604b633"
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-baker-beach.png?alt=media&token=134fe2c4-ef0b-48a2-93a1-754d5604b633",
+    "collectionRadius": "regularplus"
   },
   {
     "id": "us-ca-sf-dolores-park",
@@ -43,7 +45,8 @@
       "Grab Crème Brûlée ice cream from Bi-Rite",
       "Visit the southwest corner at sunset"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-dolores-park.png?alt=media&token=1498c809-67a1-4c21-824b-2d0e0763a00e"
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-dolores-park.png?alt=media&token=1498c809-67a1-4c21-824b-2d0e0763a00e",
+    "collectionRadius": "regularplus"
   },
   {
     "id": "us-ca-sf-pier-39",
@@ -59,7 +62,8 @@
       "Go to the end and smell the sea lions",
       "Walk to Fisherman’s Wharf and Ghirardelli Chocolate"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-pier-39.png?alt=media&token=10913fcd-5f14-4fcf-8691-01bf686557e4"
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-pier-39.png?alt=media&token=10913fcd-5f14-4fcf-8691-01bf686557e4",
+    "collectionRadius": "regularplus"
   },
   {
     "id": "us-ca-sf-ferry-building",
@@ -75,7 +79,8 @@
       "Find porchetta sandwich during the Saturday farmers’ market (8am-2pm)",
       "Taste Vietnamese Coffee ice cream from Humphry Slocombe"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-ferry-building.png?alt=media&token=21b607d1-dbdf-477c-b9bd-a9a7ffbaa21e"
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-ferry-building.png?alt=media&token=21b607d1-dbdf-477c-b9bd-a9a7ffbaa21e",
+    "collectionRadius": "regularplus"
   },
   {
     "id": "us-ca-sf-oracle-park",
@@ -89,9 +94,10 @@
     "about": "Home of the San Francisco Giants and one of baseball's most beautiful ballparks.",
     "thingsToDoFromEditors": [
       "Order garlic fries and crab sandwich - two ballpark food legends",
-      "Walk along the San Francisco Bay Trail to see under the Bay Bridge."
+      "Walk along the San Francisco Bay Trail to see under the Bay Bridge"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-oracle-park.png?alt=media&token=dc10bfc9-9d45-41ea-8b7a-ba37740a5bd7"
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-oracle-park.png?alt=media&token=dc10bfc9-9d45-41ea-8b7a-ba37740a5bd7",
+    "collectionRadius": "regularplus"
   },
   {
     "id": "us-ca-sf-twin-peaks",
@@ -107,7 +113,8 @@
       "Arrive 30 minutes before sunset",
       "Bring layers - it gets windy and cold"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-twin-peaks.png?alt=media&token=c6d928d3-8495-49f7-bcfc-91e971ae16f8"
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-twin-peaks.png?alt=media&token=c6d928d3-8495-49f7-bcfc-91e971ae16f8",
+    "collectionRadius": "regularplus"
   },
   {
     "id": "us-ca-sf-japantown",
@@ -123,7 +130,8 @@
       "Browse Japanese snacks, drinks, and bento at Nijiya Market",
       "Eat amazing udon, yakitori, takoyaki, matcha ice cream, and mochi donuts"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-japantown.png?alt=media&token=d6b09e54-57cb-4e1b-884d-00f58185a7a5"
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-japantown.png?alt=media&token=d6b09e54-57cb-4e1b-884d-00f58185a7a5",
+    "collectionRadius": "regular"
   },
   {
     "id": "us-ca-sf-powell-hyde-cable-car",
@@ -139,7 +147,8 @@
       "Board at Powell & Market early morning to avoid 2-hour waits",
       "Stand on the outer running board going down Hyde Street for thrilling bay views"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-powell-hyde-cable-car.png?alt=media&token=e23bd312-b32e-4934-8b31-dd27b949b2da"
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-powell-hyde-cable-car.png?alt=media&token=e23bd312-b32e-4934-8b31-dd27b949b2da",
+    "collectionRadius": "regular"
   },
   {
     "id": "us-ca-sf-palace-of-fine-arts",
@@ -155,7 +164,8 @@
       "Visit at golden hour for stunning light on the rotunda reflected in the lagoon",
       "Walk around the entire lagoon to find different angles of the columns"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-palace-of-fine-arts.png?alt=media&token=9a0324da-81e3-4b44-9999-38dfd1c2882a"
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-palace-of-fine-arts.png?alt=media&token=9a0324da-81e3-4b44-9999-38dfd1c2882a",
+    "collectionRadius": "regularplus"
   },
   {
     "id": "us-ca-sf-painted-ladies",
@@ -171,7 +181,8 @@
       "Bring a picnic blanket and snacks to enjoy the view from the park",
       "Take photos from the Alamo Square lawn in late afternoon when the houses glow golden"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-painted-ladies.png?alt=media&token=2d3e8cf5-0ae7-4cdb-abda-4191cce52d3d"
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-painted-ladies.png?alt=media&token=2d3e8cf5-0ae7-4cdb-abda-4191cce52d3d",
+    "collectionRadius": "regular"
   },
   {
     "id": "us-ca-sf-golden-gate-viewpoint",
@@ -185,9 +196,10 @@
     "about": "Breathtaking elevated views of the Golden Gate Bridge from the Marin Headlands.",
     "thingsToDoFromEditors": [
       "You need a car to drive up here",
-      "You can see the Golden Gate with San Francisco from the other side."
+      "You can see the Golden Gate with San Francisco from the other side"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-golden-gate-viewpoint.png?alt=media&token=a8a4f0e3-1cda-4735-aa57-4d833677f3ca"
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-golden-gate-viewpoint.png?alt=media&token=a8a4f0e3-1cda-4735-aa57-4d833677f3ca",
+    "collectionRadius": "regularplus"
   },
   {
     "id": "us-ca-sf-equator-coffee",
@@ -203,7 +215,8 @@
       "Order the single-origin pour-over to taste their roasting expertise",
       "Walk to Baker Beach to collect another stamp"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-equator-coffee.png?alt=media&token=056426bf-5165-4523-96cf-2a21c3f80d87"
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-equator-coffee.png?alt=media&token=056426bf-5165-4523-96cf-2a21c3f80d87",
+    "collectionRadius": "regular"
   },
   {
     "id": "us-ca-sf-coffee-movement",
@@ -219,7 +232,8 @@
       "Order their donuts with specialty coffee for the perfect pairing",
       "Note: This location has very short hours - if you want to try their coffee, check out another branch!"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-the-coffee-movement.png?alt=media&token=c8796134-2b50-4b5f-bf12-442db7f6c290"
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-the-coffee-movement.png?alt=media&token=c8796134-2b50-4b5f-bf12-442db7f6c290",
+    "collectionRadius": "regular"
   },
   {
     "id": "us-ca-sf-andytown",
@@ -235,7 +249,8 @@
       "Order the Snowy Plover (brown sugar ice cream + espresso) - their signature drink",
       "Take your drink to Ocean Beach and relax by the water"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-andytown-coffee-roasters.png?alt=media&token=2ec624c2-cb64-4846-b570-2286fcab72e3"
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-andytown-coffee-roasters.png?alt=media&token=2ec624c2-cb64-4846-b570-2286fcab72e3",
+    "collectionRadius": "regular"
   },
   {
     "id": "us-ca-sf-neighbor",
@@ -251,7 +266,8 @@
       "Order their house drip coffee with a fresh pastry",
       "Grab a seat by the window and watch the neighborhood go by"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-neighbors-corner.png?alt=media&token=683746dd-949c-4781-ad5b-5973f5ae05d4"
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-neighbors-corner.png?alt=media&token=683746dd-949c-4781-ad5b-5973f5ae05d4",
+    "collectionRadius": "regular"
   },
   {
     "id": "us-ca-sf-the-mill",
@@ -267,7 +283,8 @@
       "Order the cinnamon sugar toast - their iconic signature item",
       "Walk to Alamo Square and the Painted Ladies 10 minutes away"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-the-mill.png?alt=media&token=d891f7e0-913a-4ad5-acb1-24d4ca9a24e2"
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-the-mill.png?alt=media&token=d891f7e0-913a-4ad5-acb1-24d4ca9a24e2",
+    "collectionRadius": "regular"
   },
   {
     "id": "us-ca-sf-saint-frank",
@@ -283,7 +300,8 @@
       "Ask baristas about their rotating single-origin espresso - they love sharing details",
       "Try the cortado to experience their roasting at its purest"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-saint-frank-coffee.png?alt=media&token=6596ece8-6acb-41fc-8fa7-d90d36109b5d"
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-saint-frank-coffee.png?alt=media&token=6596ece8-6acb-41fc-8fa7-d90d36109b5d",
+    "collectionRadius": "regular"
   },
   {
     "id": "us-ca-sf-sightglass",
@@ -299,7 +317,8 @@
       "Watch them roast coffee through the glass-walled roasting room",
       "Try the espresso tonic on warm days - refreshing and caffeinated"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-sightglass-coffee.png?alt=media&token=692c9d82-cc28-4af1-80d4-dcad81bb816d"
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-sightglass-coffee.png?alt=media&token=692c9d82-cc28-4af1-80d4-dcad81bb816d",
+    "collectionRadius": "regular"
   },
   {
     "id": "us-ca-sf-four-barrel",
@@ -315,7 +334,8 @@
       "Order classic drip coffee to taste their legendary roasting",
       "Explore Clarion Alley's murals one block away at Valencia & 17th"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-four-barrel.png?alt=media&token=4226c9d1-e80f-4fa6-a245-ae62406c886d"
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-four-barrel.png?alt=media&token=4226c9d1-e80f-4fa6-a245-ae62406c886d",
+    "collectionRadius": "regular"
   },
   {
     "id": "us-ca-sf-pinhole",
@@ -331,7 +351,8 @@
       "Order their perfectly crafted flat white at the window bar",
       "Walk up to Bernal Heights Park for panoramic city views"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-pinhole-coffee.png?alt=media&token=e282ad2f-5b36-4097-9659-daff0f06ce73"
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-pinhole-coffee.png?alt=media&token=e282ad2f-5b36-4097-9659-daff0f06ce73",
+    "collectionRadius": "regular"
   },
   {
     "id": "us-ca-sf-ballast",
@@ -347,14 +368,15 @@
       "Order a pour-over and enjoy the relaxed neighborhood vibe",
       "Explore the shops and restaurants along W Portal Avenue"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-ballast-coffee.png?alt=media&token=f6b927aa-6bdc-415c-95fe-85116156e85e"
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-ballast-coffee.png?alt=media&token=f6b927aa-6bdc-415c-95fe-85116156e85e",
+    "collectionRadius": "regular"
   },
   {
     "id": "us-ca-sf-ggp-japanese-tea-garden",
     "name": "Japanese Tea Garden",
-    "latitude": 37.7701,
-    "longitude": -122.4707,
-    "address": "75 Hagiwara Tea Garden Dr\nSan Francisco, CA, USA 94118",
+    "latitude": 37.77008990002528,
+    "longitude": -122.47034070170011,
+    "address": "75 Hagiwara Tea Garden Dr, San Francisco, CA 94118",
     "collectionIds": [
       "sf-golden-gate-park"
     ],
@@ -363,30 +385,32 @@
       "Arrive right at opening (9am) for serene photos before crowds",
       "Stop at the tea house for traditional tea and fortune cookies"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-japanese-tea-garden.png?alt=media&token=04abdfa9-bbb1-4f4c-9ddd-f893f38f8b36"
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-japanese-tea-garden.png?alt=media&token=04abdfa9-bbb1-4f4c-9ddd-f893f38f8b36",
+    "collectionRadius": "regularplus"
   },
   {
     "id": "us-ca-sf-ggp-three-gems",
     "name": "Three Gems by James Turrell",
-    "latitude": 37.7715,
-    "longitude": -122.4686,
-    "address": "50 Hagiwara Tea Garden Dr\nSan Francisco, CA, USA 94118",
+    "latitude": 37.77109659878524,
+    "longitude": -122.46959614379908,
+    "address": "50 Hagiwara Tea Garden Dr, San Francisco, CA 94118",
     "collectionIds": [
       "sf-golden-gate-park"
     ],
-    "about": "Hidden James Turrell skyspace installation inside the de Young Museum.",
+    "about": "Hidden James Turrell skyspace installation outside the de Young Museum.",
     "thingsToDoFromEditors": [
-      "Free admission before 10am on Saturdays - perfect for experiencing Three Gems",
-      "Lie on the benches and watch the sky change through the skyspace opening"
+      "Sit, watch the sky, and listen to the world",
+      "No ticket or reservation required"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-three-gems-by-james-turrell.png?alt=media&token=a619999b-18a7-495b-9023-80b15d7c70bb"
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-three-gems-by-james-turrell.png?alt=media&token=a619999b-18a7-495b-9023-80b15d7c70bb",
+    "collectionRadius": "regular"
   },
   {
     "id": "us-ca-sf-ggp-portals-of-the-past",
     "name": "Portals of the Past",
-    "latitude": 37.7729,
-    "longitude": -122.474,
-    "address": "John F. Kennedy Dr & 6th Ave\nSan Francisco, CA, USA 94118",
+    "latitude": 37.77076826928884,
+    "longitude": -122.48248596068633,
+    "address": "Golden Gate Park, John F Kennedy Dr, San Francisco, CA 94117",
     "collectionIds": [
       "sf-golden-gate-park"
     ],
@@ -395,14 +419,15 @@
       "Photograph the columns reflected in Lloyd Lake at sunrise",
       "Walk around the lake to see the columns from different perspectives"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-portal-of-the-past.png?alt=media&token=ffc7f8f6-cc85-4d93-bcf4-ea83628a7cee"
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-portal-of-the-past.png?alt=media&token=ffc7f8f6-cc85-4d93-bcf4-ea83628a7cee",
+    "collectionRadius": "regular"
   },
   {
     "id": "us-ca-sf-ggp-conservatory-of-flowers",
     "name": "Conservatory of Flowers",
-    "latitude": 37.7726,
-    "longitude": -122.4606,
-    "address": "100 John F. Kennedy Dr\nSan Francisco, CA, USA 94118",
+    "latitude": 37.77261499169494,
+    "longitude": -122.46023941131006,
+    "address": "100 John F Kennedy Dr\nSan Francisco, CA 94118",
     "collectionIds": [
       "sf-golden-gate-park",
       "sf-must-visits"
@@ -412,14 +437,15 @@
       "Visit the Aquatic Plants room to see giant water lilies and carnivorous plants",
       "Come during holiday season for spectacular light displays on the building"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-conservatory-of-flowers.png?alt=media&token=73144806-c0f9-4f44-9fe5-50972762678d"
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-conservatory-of-flowers.png?alt=media&token=73144806-c0f9-4f44-9fe5-50972762678d",
+    "collectionRadius": "regularplus"
   },
   {
     "id": "us-ca-sf-ggp-bison-paddock",
     "name": "Bison Paddock",
-    "latitude": 37.7691,
-    "longitude": -122.495,
-    "address": "John F. Kennedy Dr & Chain of Lakes Dr\nSan Francisco, CA, USA 94121",
+    "latitude": 37.76968976551815,
+    "longitude": -122.49823606313684,
+    "address": "1237 John F Kennedy Dr, San Francisco, CA 94121",
     "collectionIds": [
       "sf-golden-gate-park"
     ],
@@ -428,7 +454,8 @@
       "Visit early morning (7-9am) when bison are most active and near the fence",
       "Bring binoculars if they're grazing in the back of the paddock"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-bison-paddock.png?alt=media&token=a3f42d85-4171-4cda-823b-3ae1b951b1a0"
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-bison-paddock.png?alt=media&token=a3f42d85-4171-4cda-823b-3ae1b951b1a0",
+    "collectionRadius": "regularplus"
   },
   {
     "id": "us-ca-sf-fort-mason-garden",
@@ -444,7 +471,8 @@
       "Walk through the terraced gardens then continue to Fort Mason waterfront",
       "Visit in spring/summer to see the gardens at their most lush"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-fort-mason-community-garden.png?alt=media&token=7d1e2a2b-09cb-46f5-b402-4dd94f69d2a7"
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-fort-mason-community-garden.png?alt=media&token=7d1e2a2b-09cb-46f5-b402-4dd94f69d2a7",
+    "collectionRadius": "regular"
   },
   {
     "id": "us-ca-sf-bernal-heights-garden",
@@ -460,7 +488,8 @@
       "Check the bulletin board for free gardening workshops and events",
       "Hike up Bernal Hill right after for 360-degree city views"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-bernal-heights-community-garden.png?alt=media&token=1adcace5-5882-4303-8e1c-3816e409f4a4"
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-bernal-heights-community-garden.png?alt=media&token=1adcace5-5882-4303-8e1c-3816e409f4a4",
+    "collectionRadius": "regular"
   },
   {
     "id": "us-ca-sf-garden-for-environment",
@@ -476,7 +505,8 @@
       "Sign up for a free weekend workshop on composting or native plants",
       "Explore the native plant section for California gardening ideas"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-garden-for-the-environment.png?alt=media&token=e2a377a4-6447-479b-8d9c-b4b1c46e5921"
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-garden-for-the-environment.png?alt=media&token=e2a377a4-6447-479b-8d9c-b4b1c46e5921",
+    "collectionRadius": "regular"
   },
   {
     "id": "us-ca-sf-clipper-terrace-garden",
@@ -492,7 +522,8 @@
       "Walk the terraced paths for unique city views between the garden plots",
       "Visit in peak summer for the most colorful flower displays"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-clipper-community-garden.png?alt=media&token=1ee6d531-7e35-49de-9110-1a69b70ea74f"
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-clipper-community-garden.png?alt=media&token=1ee6d531-7e35-49de-9110-1a69b70ea74f",
+    "collectionRadius": "regular"
   },
   {
     "id": "us-ca-sf-potrero-hill-garden",
@@ -508,7 +539,8 @@
       "Explore the garden then check out local cafés and restaurants along 18th Street",
       "Visit during monthly open houses to meet gardeners and learn tips"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-potero-hill-community-garden.png?alt=media&token=c706476b-4232-4636-914b-5b8b28bdbfc3"
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-potero-hill-community-garden.png?alt=media&token=c706476b-4232-4636-914b-5b8b28bdbfc3",
+    "collectionRadius": "regular"
   },
   {
     "id": "us-ca-sf-alemany-farm",
@@ -524,7 +556,8 @@
       "Join Saturday volunteer mornings (10am) to help with planting and harvesting",
       "Take in the sweeping city views from this hilltop farm"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-alemany-farm.png?alt=media&token=7cfd398c-eeed-4574-8fec-e623094d25ee"
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-alemany-farm.png?alt=media&token=7cfd398c-eeed-4574-8fec-e623094d25ee",
+    "collectionRadius": "regularplus"
   },
   {
     "id": "us-me-acadia-bubble-rock",
@@ -540,7 +573,8 @@
       "Take the classic 'pushing the rock' optical illusion photo",
       "Continue to South Bubble summit for panoramic Jordan Pond views"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-me-bar-harbor-bubble-rock.png?alt=media&token=8764de0d-d7cd-47f3-a240-10ac455592e9"
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-me-bar-harbor-bubble-rock.png?alt=media&token=8764de0d-d7cd-47f3-a240-10ac455592e9",
+    "collectionRadius": "regular"
   },
   {
     "id": "us-me-acadia-beehive-trail",
@@ -556,7 +590,8 @@
       "Arrive before 7am to avoid waiting at the iron rungs sections",
       "Wear gloves for better grip on the metal rungs and ladders"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-me-bar-harbor-beehive-trail-summit%20.png?alt=media&token=34433b72-3775-4fe9-b17b-592bc31a6d67"
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-me-bar-harbor-beehive-trail-summit%20.png?alt=media&token=34433b72-3775-4fe9-b17b-592bc31a6d67",
+    "collectionRadius": "regular"
   },
   {
     "id": "us-me-acadia-beals-lobster-pier",
@@ -572,7 +607,8 @@
       "Order the warm buttered lobster roll over cold mayo version",
       "Bring cash - they don't take cards but have an ATM nearby"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-me-bar-harbor-beals.png?alt=media&token=6a23408d-94ca-4a03-b601-9d5552f7387e"
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-me-bar-harbor-beals.png?alt=media&token=6a23408d-94ca-4a03-b601-9d5552f7387e",
+    "collectionRadius": "regular"
   },
   {
     "id": "us-me-bar-harbor-mckays-public-house",
@@ -588,6 +624,24 @@
       "Order fish & chips with a local Maine beer like Allagash or Shipyard",
       "Peak season May-Oct; check ahead in winter to confirm hours"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-me-bar-harbor-mckays-public-house.png?alt=media&token=19898515-aeaf-48c8-b293-b7d9ec52c34b"
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-me-bar-harbor-mckays-public-house.png?alt=media&token=19898515-aeaf-48c8-b293-b7d9ec52c34b",
+    "collectionRadius": "regular"
+  },
+  {
+    "id": "us-ca-sfo-airport",
+    "name": "San Francisco International Airport",
+    "latitude": 37.616311330998435,
+    "longitude": -122.38619540440072,
+    "address": "San Francisco International Airport\nSan Francisco, CA, USA 94128",
+    "collectionIds": [
+      "airports-of-the-world"
+    ],
+    "about": "SFO pioneered the airport-as-destination concept. It was the first US airport with a museum (1980) and yoga room. The iconic Terminal 2 renovation won architectural awards for sustainability, featuring a living roof and locally-sourced materials.",
+    "thingsToDoFromEditors": [
+      "Explore the SFO Museum's rotating exhibits in all terminals - completely free",
+      "Try local favorites: Tony's Pizza Napoletana (Terminal 1) and Tartine (Terminal A)"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-san-francisco-airport.png?alt=media&token=36dee52c-4513-4e6e-9e09-ad0d34530cf4",
+    "collectionRadius": "xlarge"
   }
 ]

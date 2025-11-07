@@ -435,7 +435,7 @@ struct NativeMapView: UIViewRepresentable {
                 guard let userLocation = userLocation else { return [] }
                 return Set(stamps.filter { stamp in
                     let stampLocation = CLLocation(latitude: stamp.coordinate.latitude, longitude: stamp.coordinate.longitude)
-                    return userLocation.distance(from: stampLocation) <= MapView.stampCollectionRadius
+                    return userLocation.distance(from: stampLocation) <= stamp.collectionRadiusInMeters
                 }.map { $0.id })
             }()
             
@@ -470,7 +470,7 @@ struct NativeMapView: UIViewRepresentable {
                     if let userLocation = userLocation {
                         let stampLocation = CLLocation(latitude: stamp.coordinate.latitude, longitude: stamp.coordinate.longitude)
                         let distance = userLocation.distance(from: stampLocation)
-                        annotation.isWithinRange = distance <= MapView.stampCollectionRadius
+                        annotation.isWithinRange = distance <= stamp.collectionRadiusInMeters
                     }
                     
                     return annotation
@@ -490,7 +490,7 @@ struct NativeMapView: UIViewRepresentable {
                     if let userLocation = userLocation {
                         let stampLocation = CLLocation(latitude: annotation.stamp.coordinate.latitude, longitude: annotation.stamp.coordinate.longitude)
                         let distance = userLocation.distance(from: stampLocation)
-                        annotation.isWithinRange = distance <= MapView.stampCollectionRadius
+                        annotation.isWithinRange = distance <= annotation.stamp.collectionRadiusInMeters
                     } else {
                         annotation.isWithinRange = false
                     }
