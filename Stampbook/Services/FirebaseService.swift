@@ -1348,6 +1348,16 @@ class FirebaseService {
         return snapshot.documents.count
     }
     
+    // MARK: - Stamp Suggestions
+    
+    /// Submit a stamp or collection suggestion from a user
+    /// Admins can review suggestions in Firebase Console under "stamp_suggestions" collection
+    func submitStampSuggestion(_ suggestion: StampSuggestion) async throws {
+        let docRef = db.collection("stamp_suggestions").document()
+        try docRef.setData(from: suggestion)
+        print("✅ Stamp suggestion submitted: \(docRef.documentID)")
+    }
+    
     // MARK: - Feedback System
     
     /// Submit user feedback or bug report to Firestore

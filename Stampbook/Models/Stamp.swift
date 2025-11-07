@@ -11,7 +11,6 @@ struct Stamp: Identifiable, Codable, Equatable {
     let imageUrl: String?  // Firebase Storage URL for stamp image
     let collectionIds: [String]
     let about: String
-    let notesFromOthers: [String]
     let thingsToDoFromEditors: [String]
     let geohash: String? // Optional for backward compatibility
     
@@ -67,12 +66,12 @@ struct Stamp: Identifiable, Codable, Equatable {
     
     // For backward compatibility with JSON that uses collectionId
     enum CodingKeys: String, CodingKey {
-        case id, name, latitude, longitude, address, imageName, imageUrl, about, notesFromOthers, thingsToDoFromEditors, geohash
+        case id, name, latitude, longitude, address, imageName, imageUrl, about, thingsToDoFromEditors, geohash
         case collectionIds
         case collectionId
     }
     
-    init(id: String, name: String, latitude: Double, longitude: Double, address: String, imageName: String = "", imageUrl: String? = nil, collectionIds: [String], about: String, notesFromOthers: [String], thingsToDoFromEditors: [String] = [], geohash: String? = nil) {
+    init(id: String, name: String, latitude: Double, longitude: Double, address: String, imageName: String = "", imageUrl: String? = nil, collectionIds: [String], about: String, thingsToDoFromEditors: [String] = [], geohash: String? = nil) {
         self.id = id
         self.name = name
         self.latitude = latitude
@@ -82,7 +81,6 @@ struct Stamp: Identifiable, Codable, Equatable {
         self.imageUrl = imageUrl
         self.collectionIds = collectionIds
         self.about = about
-        self.notesFromOthers = notesFromOthers
         self.thingsToDoFromEditors = thingsToDoFromEditors
         self.geohash = geohash
     }
@@ -97,7 +95,6 @@ struct Stamp: Identifiable, Codable, Equatable {
         imageName = try container.decodeIfPresent(String.self, forKey: .imageName) ?? ""  // Optional for backward compatibility
         imageUrl = try container.decodeIfPresent(String.self, forKey: .imageUrl)
         about = try container.decode(String.self, forKey: .about)
-        notesFromOthers = try container.decode([String].self, forKey: .notesFromOthers)
         thingsToDoFromEditors = try container.decodeIfPresent([String].self, forKey: .thingsToDoFromEditors) ?? []
         geohash = try container.decodeIfPresent(String.self, forKey: .geohash)
         
@@ -122,7 +119,6 @@ struct Stamp: Identifiable, Codable, Equatable {
         try container.encodeIfPresent(imageUrl, forKey: .imageUrl)
         try container.encode(collectionIds, forKey: .collectionIds)
         try container.encode(about, forKey: .about)
-        try container.encode(notesFromOthers, forKey: .notesFromOthers)
         try container.encode(thingsToDoFromEditors, forKey: .thingsToDoFromEditors)
         try container.encodeIfPresent(geohash, forKey: .geohash)
     }

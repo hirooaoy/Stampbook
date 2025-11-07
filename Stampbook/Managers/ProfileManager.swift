@@ -1,6 +1,12 @@
 import Foundation
 import Combine
 
+/// Notification posted when current user's profile is updated
+/// Used to invalidate caches and refresh UI across the app
+extension Notification.Name {
+    static let profileDidUpdate = Notification.Name("profileDidUpdate")
+}
+
 /// Manages user profile state and operations
 class ProfileManager: ObservableObject {
     @Published var currentUserProfile: UserProfile?
@@ -74,9 +80,19 @@ class ProfileManager: ObservableObject {
     }
     
     /// Update the current user's profile
+    /// Posts notification to invalidate caches across the app
     func updateProfile(_ profile: UserProfile) {
         print("🔄 [ProfileManager] Updating profile: @\(profile.username)")
         currentUserProfile = profile
+        
+        // Notify the app that profile has been updated
+        // This triggers feed cache invalidation and UI refresh
+        NotificationCenter.default.post(
+            name: .profileDidUpdate,
+            object: nil,
+            userInfo: ["profile": profile]
+        )
+        print("📢 [ProfileManager] Posted profileDidUpdate notification")
     }
     
     /// Refresh the current user's profile from Firebase

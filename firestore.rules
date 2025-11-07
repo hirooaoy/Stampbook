@@ -124,5 +124,19 @@ service cloud.firestore {
         && request.resource.data.message.size() <= 5000  // Max 5000 chars
         && request.resource.data.createdAt is timestamp;
     }
+    
+    // Stamp suggestions (user-submitted stamp and collection suggestions)
+    match /stamp_suggestions/{suggestionId} {
+      // Allow authenticated users to create suggestions
+      allow create: if request.auth != null
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.stampName is string
+        && request.resource.data.stampName.size() > 0
+        && request.resource.data.fullAddress is string
+        && request.resource.data.fullAddress.size() > 0
+        && request.resource.data.additionalNotes is string
+        && request.resource.data.additionalNotes.size() > 0
+        && request.resource.data.createdAt is timestamp;
+    }
   }
 }

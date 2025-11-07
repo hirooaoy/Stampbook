@@ -19,6 +19,8 @@ struct StampsView: View {
     @State private var showAboutStampbook = false
     @State private var showForLocalBusiness = false
     @State private var showForCreators = false
+    @State private var showSuggestStamp = false
+    @State private var showSuggestCollection = false
     @State private var showAppStoreUrlCopied = false // Show confirmation when App Store URL is copied
     @State private var navigationPath = NavigationPath() // Track navigation stack
     @State private var welcomeStamp: Stamp? // Store the fetched welcome stamp (nil = sheet closed, non-nil = sheet open)
@@ -127,6 +129,20 @@ struct StampsView: View {
                                 // }) {
                                 //     Label("For creators", systemImage: "sparkles")
                                 // }
+                                
+                                Divider()
+                                
+                                Button(action: {
+                                    showSuggestStamp = true
+                                }) {
+                                    Label("Suggest a stamp", systemImage: "plus.app")
+                                }
+                                
+                                Button(action: {
+                                    showSuggestCollection = true
+                                }) {
+                                    Label("Suggest a collection", systemImage: "rectangle.stack.badge.plus")
+                                }
                                 
                                 Divider()
                                 
@@ -582,6 +598,16 @@ struct StampsView: View {
                 }
                 .sheet(isPresented: $showForCreators) {
                     ForCreatorsView()
+                }
+                .sheet(isPresented: $showSuggestStamp) {
+                    SuggestStampView()
+                        .environmentObject(authManager)
+                        .environmentObject(profileManager)
+                }
+                .sheet(isPresented: $showSuggestCollection) {
+                    SuggestCollectionView()
+                        .environmentObject(authManager)
+                        .environmentObject(profileManager)
                 }
                 .sheet(item: $welcomeStamp) { stamp in
                     // Sheet opens when welcomeStamp is set, closes when set to nil

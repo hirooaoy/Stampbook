@@ -2,6 +2,20 @@ import SwiftUI
 import FirebaseCore
 import FirebaseCrashlytics
 
+// MARK: - Future Features
+// TODO: iOS Widget - Rotating Stamp Widget
+// Implement a home screen widget that rotates through collected stamps (like Google Photos widget)
+// - Small widget: Shows one stamp image with name overlay
+// - Medium/Large: Stamp image + location details
+// - Rotates hourly to show different stamps from collection
+// - Deep link to specific stamp on tap
+// Implementation: ~2-3 hours
+//   1. Add App Group for data sharing between app and widget
+//   2. Create WidgetDataManager to share stamp collection via App Group UserDefaults
+//   3. Add Widget Extension target (File → New → Target → Widget Extension)
+//   4. Build widget UI with SwiftUI (AsyncImage + rotation logic)
+//   5. Add deep linking support with .onOpenURL()
+
 // MARK: - App Delegate
 class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication,

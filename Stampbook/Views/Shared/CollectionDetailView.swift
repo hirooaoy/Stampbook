@@ -115,28 +115,15 @@ struct CollectionStampItem: View {
             if isCollected {
                 // Show the stamp image if collected
                 if let imageUrl = stamp.imageUrl, !imageUrl.isEmpty {
-                    // Load from Firebase Storage
-                    AsyncImage(url: URL(string: imageUrl)) { phase in
-                        switch phase {
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .renderingMode(.original)
-                                .aspectRatio(contentMode: .fill)
-                                .frame(height: 160)
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
-                        case .failure, .empty:
-                            // Fallback to placeholder
-                            Image("empty")
-                                .resizable()
-                                .renderingMode(.original)
-                                .aspectRatio(contentMode: .fill)
-                                .frame(height: 160)
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
-                        @unknown default:
-                            EmptyView()
-                        }
-                    }
+                    // Load from Firebase Storage with caching (prevents blink on repeat views)
+                    CachedImageView.stampPhoto(
+                        imageName: stamp.imageName.isEmpty ? nil : stamp.imageName,
+                        storagePath: stamp.imageStoragePath,
+                        stampId: stamp.id,
+                        size: CGSize(width: 160, height: 160),
+                        cornerRadius: 12
+                    )
+                    .frame(height: 160)
                 } else if !stamp.imageName.isEmpty {
                     // Fallback to bundled image for backward compatibility
                     Image(stamp.imageName)

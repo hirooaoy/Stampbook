@@ -54,12 +54,8 @@ struct ProfileImageView: View {
             }
         }
         .animation(.easeInOut(duration: 0.2), value: image != nil)
-        .id("\(userId)-\(size)") // Stable identity prevents unnecessary recreation
-        .task {
-            // Only load once per unique user/avatar combination
-            guard !hasAttemptedLoad else { return }
-            hasAttemptedLoad = true
-            
+        .id("\(userId)-\(avatarUrl ?? "nil")-\(size)") // Include avatarUrl to force refresh on change
+        .task(id: avatarUrl) { // Retrigger task when avatarUrl changes
             // OPTIMIZED: Check cache synchronously first (instant if cached)
             // This prevents 9 ProfileImageViews from all calling async download
             // when the image is already in memory/disk cache
@@ -75,6 +71,13 @@ struct ProfileImageView: View {
             try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
             
             await loadProfilePicture()
+        }
+        .onChange(of: avatarUrl) { oldValue, newValue in
+            // Reset state when avatarUrl changes (profile photo updated)
+            if oldValue != newValue {
+                hasAttemptedLoad = false
+                image = nil
+            }
         }
     }
     

@@ -46,6 +46,31 @@ struct AboutStampbookView: View {
                     }
                     .padding(.horizontal, 24)
                     
+                    // Privacy Policy Link
+                    VStack(spacing: 12) {
+                        Divider()
+                            .padding(.horizontal, 24)
+                        
+                        Button(action: {
+                            if let url = URL(string: "https://hirooaoy.github.io/Stampbook/privacy-policy.html") {
+                                UIApplication.shared.open(url)
+                            }
+                        }) {
+                            HStack {
+                                Image(systemName: "hand.raised.fill")
+                                    .font(.system(size: 14))
+                                Text("Privacy Policy")
+                                    .font(.system(size: 15))
+                                Spacer()
+                                Image(systemName: "arrow.up.right")
+                                    .font(.system(size: 12))
+                            }
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal, 24)
+                        }
+                    }
+                    .padding(.top, 16)
+                    
                     Spacer(minLength: 40)
                 }
             }

@@ -340,69 +340,6 @@ struct StampDetailView: View {
                         .padding(.bottom, 36)
                     }
                     
-                    // TODO: IMPLEMENT NOTES SECTION
-                    // Phase 1: Add "Notes from following" section first (show notes from people you follow)
-                    // Phase 2: Add "Notes from others" section after (show all public notes)
-                    // UI Design:
-                    // - Section heading: "Notes from others" or "Notes from following"
-                    // - Each note shows: profile thumbnail (40x40 circle) + username + note text
-                    // - "See all" button at bottom to navigate to full notes view
-                    // - Only visible when signed in
-                    // - Divider above section
-                    
-                    /*
-                    // Notes from others section (only show when signed in)
-                    if authManager.isSignedIn {
-                        // Divider
-                        Divider()
-                            .padding(.horizontal, 24)
-                            .padding(.bottom, 36)
-                        
-                        VStack(alignment: .leading, spacing: 16) {
-                            Text("Notes from others")
-                                .font(.headline)
-                                .foregroundColor(.secondary)
-                            
-                            VStack(alignment: .leading, spacing: 16) {
-                                ForEach(stamp.notesFromOthers, id: \.self) { note in
-                                    HStack(alignment: .center, spacing: 12) {
-                                        // Profile thumbnail
-                                        Circle()
-                                            .fill(Color.gray.opacity(0.2))
-                                            .frame(width: 40, height: 40)
-                                            .overlay(
-                                                Image(systemName: "person.fill")
-                                                    .font(.system(size: 18))
-                                                    .foregroundColor(.gray)
-                                            )
-                                        
-                                        // Note text
-                                        Text(note)
-                                            .font(.body)
-                                            .foregroundColor(.primary)
-                                            .frame(maxWidth: .infinity, alignment: .leading)
-                                    }
-                                }
-                            }
-                            
-                            // See all button
-                            Button(action: {
-                                // TODO: Implement see all notes
-                            }) {
-                                Text("See all")
-                                    .font(.body)
-                                    .fontWeight(.semibold)
-                                    .foregroundColor(.primary)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .padding(.top, 8)
-                            }
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 24)
-                        .padding(.bottom, 36)
-                    }
-                    */
-                    
                     // Collections section - only show if stamp belongs to at least one collection
                     let stampCollections = stampsManager.collections.filter { collection in
                         stamp.collectionIds.contains(collection.id)

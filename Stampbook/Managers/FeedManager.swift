@@ -25,6 +25,40 @@ class FeedManager: ObservableObject {
     private let refreshInterval: TimeInterval = 300 // 5 minutes
     private let postsPerPage = 20
     
+    // MARK: - Lifecycle
+    
+    init() {
+        // Listen for profile updates to invalidate feed cache
+        // When user updates their profile photo/name, we need to refresh feed
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleProfileUpdate),
+            name: .profileDidUpdate,
+            object: nil
+        )
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+    
+    /// Handle profile update notification
+    /// Clears cached feed data so next load fetches fresh data with updated profile info
+    @objc private func handleProfileUpdate(_ notification: Notification) {
+        print("🔔 [FeedManager] Received profile update notification - clearing feed cache")
+        
+        // Clear all cached feed data (memory and disk)
+        clearCache()
+        
+        // Post to main actor to ensure published properties update on main thread
+        DispatchQueue.main.async {
+            // Clear published arrays to force refresh on next view
+            self.feedPosts = []
+            self.myPosts = []
+            print("✅ [FeedManager] Feed cache cleared, ready for refresh")
+        }
+    }
+    
     // MARK: - Disk Cache (Instagram-style warm start)
     
     /// Maximum posts to persist to disk (keep recent feed for instant cold start)
@@ -573,9 +607,9 @@ class FeedManager: ObservableObject {
     
     /// Update comment count for a specific post (called after comment deletion/addition)
     func updatePostCommentCount(postId: String, newCount: Int) {
+        // Update in "All" feed
         if let index = feedPosts.firstIndex(where: { $0.id == postId }) {
             let updatedPost = feedPosts[index]
-            // Use reflection to update the immutable struct
             feedPosts[index] = FeedPost(
                 id: updatedPost.id,
                 userId: updatedPost.userId,
@@ -594,7 +628,31 @@ class FeedManager: ObservableObject {
                 likeCount: updatedPost.likeCount,
                 commentCount: newCount // Update only the comment count
             )
-            print("✅ [FeedManager] Updated comment count for post \(postId): \(newCount)")
+            print("✅ [FeedManager] Updated comment count for post \(postId) in 'All' feed: \(newCount)")
+        }
+        
+        // Update in "Only Yours" feed
+        if let index = myPosts.firstIndex(where: { $0.id == postId }) {
+            let updatedPost = myPosts[index]
+            myPosts[index] = FeedPost(
+                id: updatedPost.id,
+                userId: updatedPost.userId,
+                userName: updatedPost.userName,
+                displayName: updatedPost.displayName,
+                avatarUrl: updatedPost.avatarUrl,
+                stampName: updatedPost.stampName,
+                stampImageName: updatedPost.stampImageName,
+                location: updatedPost.location,
+                date: updatedPost.date,
+                actualDate: updatedPost.actualDate,
+                isCurrentUser: updatedPost.isCurrentUser,
+                stampId: updatedPost.stampId,
+                userPhotos: updatedPost.userPhotos,
+                note: updatedPost.note,
+                likeCount: updatedPost.likeCount,
+                commentCount: newCount // Update only the comment count
+            )
+            print("✅ [FeedManager] Updated comment count for post \(postId) in 'Only Yours' feed: \(newCount)")
         }
     }
     

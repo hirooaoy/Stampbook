@@ -2,6 +2,7 @@ import SwiftUI
 import AuthenticationServices
 import PhotosUI
 import MessageUI
+import Combine
 
 struct FeedView: View {
     // Debug flag - set to true to enable debug logging
@@ -26,8 +27,11 @@ struct FeedView: View {
     @State private var showAboutStampbook = false
     @State private var showForLocalBusiness = false
     @State private var showForCreators = false
+    @State private var showSuggestStamp = false
+    @State private var showSuggestCollection = false
     @State private var showAppStoreUrlCopied = false // Show confirmation when App Store URL is copied
     @State private var bannerState: ConnectionBanner.BannerState = .hidden // Connection status
+    @State private var profileUpdateListener: AnyCancellable? // Listen for profile updates
     
     enum FeedTab: String, CaseIterable {
         case all = "All"
@@ -66,6 +70,23 @@ struct FeedView: View {
         // }
         
         Divider()
+        
+        // Only show suggestion options for signed-in users
+        if authManager.isSignedIn {
+            Button(action: {
+                showSuggestStamp = true
+            }) {
+                Label("Suggest a stamp", systemImage: "plus.app")
+            }
+            
+            Button(action: {
+                showSuggestCollection = true
+            }) {
+                Label("Suggest a collection", systemImage: "rectangle.stack.badge.plus")
+            }
+            
+            Divider()
+        }
         
         Button(action: {
             showProblemReport = true
@@ -298,6 +319,16 @@ struct FeedView: View {
         .sheet(isPresented: $showForCreators) {
             ForCreatorsView()
         }
+        .sheet(isPresented: $showSuggestStamp) {
+            SuggestStampView()
+                .environmentObject(authManager)
+                .environmentObject(profileManager)
+        }
+        .sheet(isPresented: $showSuggestCollection) {
+            SuggestCollectionView()
+                .environmentObject(authManager)
+                .environmentObject(profileManager)
+        }
         .alert("Sign Out", isPresented: $showSignOutConfirmation) {
             Button("Cancel", role: .cancel) {}
             Button("Sign Out", role: .destructive) {
@@ -353,6 +384,19 @@ struct FeedView: View {
             // Set initial state if already offline
             if !networkMonitor.isConnected {
                 bannerState = .offline
+            }
+            
+            // Listen for profile updates to refresh feed with new avatar/name
+            profileUpdateListener = NotificationCenter.default.publisher(for: .profileDidUpdate)
+                .sink { _ in
+                    print("🔔 [FeedView] Received profile update notification - will refresh on next view")
+                    // Feed will be automatically refreshed next time tab is visited
+                    // FeedManager already cleared the cache, so next load will fetch fresh data
+                }
+            
+            // Hook up comment count updates to feed
+            commentManager.onCommentCountChanged = { [weak feedManager] postId, newCount in
+                feedManager?.updatePostCommentCount(postId: postId, newCount: newCount)
             }
         }
     }
