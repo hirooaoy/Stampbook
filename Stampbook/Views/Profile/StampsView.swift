@@ -786,7 +786,8 @@ struct StampsView: View {
                 print("🎯 [AllStampsContent] Fetching \(collectedStampIds.count) user stamps")
                 print("🎯 [AllStampsContent] Stamp IDs: \(collectedStampIds)")
                 
-                let stamps = await stampsManager.fetchStamps(ids: collectedStampIds)
+                // Include removed stamps - users keep what they collected
+                let stamps = await stampsManager.fetchStamps(ids: collectedStampIds, includeRemoved: true)
                 
                 print("✅ [AllStampsContent] Fetched \(stamps.count) stamps")
                 

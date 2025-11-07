@@ -17,8 +17,10 @@ struct StampDetailView: View {
     @State private var editingNotes = ""
     @State private var userRank: Int? // User's rank for this stamp (1st, 2nd, 3rd collector, etc.)
     @State private var collectionProgress: [String: Int] = [:] // collectionId -> collected count
+    @State private var collectionTotals: [String: Int] = [:] // collectionId -> total ACTIVE stamps count
     @State private var showSuggestEdit = false
     @State private var showAddressOptions = false
+    @State private var showCopyConfirmation = false
     
     // Computed property to get live stampStats from StampsManager
     private var stampStats: StampStatistics? {
@@ -61,6 +63,22 @@ struct StampDetailView: View {
     private var formattedFullDate: String {
         guard let date = collectedDate else { return "" }
         return date.formatted(.dateTime.month(.abbreviated).day().year())
+    }
+    
+    // Status message for unavailable stamps (removed or expired)
+    private var statusMessage: String? {
+        // Check if stamp was removed by admin
+        if stamp.status == "removed" {
+            return "This stamp was removed by admin"
+        }
+        
+        // Check if event stamp has expired
+        if let until = stamp.availableUntil, Date() > until {
+            let dateStr = until.formatted(.dateTime.month(.abbreviated).day().year())
+            return "This event stamp expired on \(dateStr)"
+        }
+        
+        return nil
     }
     
     var body: some View {
@@ -123,9 +141,56 @@ struct StampDetailView: View {
                                 .font(.system(size: 80))
                                 .foregroundColor(.gray)
                         }
+                        
+                        // Copy confirmation checkmark overlay
+                        if showCopyConfirmation {
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color.black.opacity(0.6))
+                                .frame(width: 300, height: 300)
+                            
+                            VStack(spacing: 8) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.system(size: 60))
+                                    .foregroundColor(.white)
+                                Text("Copied!")
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                            }
+                            .transition(.scale.combined(with: .opacity))
+                        }
+                    }
+                    .contextMenu {
+                        if isCollected {
+                            Button(action: {
+                                copyStampImage()
+                            }) {
+                                Label("Copy Image", systemImage: "doc.on.doc")
+                            }
+                        }
                     }
                     .animation(.spring(response: 0.4, dampingFraction: 1.0), value: isCollected)
+                    .animation(.spring(response: 0.3, dampingFraction: 0.8), value: showCopyConfirmation)
                     .padding(.bottom, 36)
+                    
+                    // Status section - only show if stamp is unavailable (removed or expired)
+                    if let message = statusMessage {
+                        HStack(alignment: .top, spacing: 12) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .foregroundColor(.orange)
+                                .font(.system(size: 20))
+                            
+                            Text(message)
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        .padding(16)
+                        .background(Color.orange.opacity(0.1))
+                        .cornerRadius(12)
+                        .frame(maxWidth: .infinity) // Center on screen
+                        .padding(.horizontal, 24)
+                        .padding(.bottom, 36)
+                    }
                     
                     // Memory section - only visible after collection
                     if isCollected && showMemorySection {
@@ -341,8 +406,10 @@ struct StampDetailView: View {
                     }
                     
                     // Collections section - only show if stamp belongs to at least one collection
+                    // Hide collections for removed stamps to prevent confusion
+                    // (User keeps stamp in profile, but it's no longer part of collections)
                     let stampCollections = stampsManager.collections.filter { collection in
-                        stamp.collectionIds.contains(collection.id)
+                        stamp.collectionIds.contains(collection.id) && stamp.isCurrentlyAvailable
                     }
                     
                     if !stampCollections.isEmpty {
@@ -360,12 +427,14 @@ struct StampDetailView: View {
                                 NavigationLink(destination: CollectionDetailView(collection: collection)) {
                                     // Use pre-calculated progress from state
                                     let collectedInCollection = collectionProgress[collection.id] ?? 0
-                                    let percentage = collection.totalStamps > 0 ? Double(collectedInCollection) / Double(collection.totalStamps) : 0.0
+                                    // Use dynamic total (only active stamps) instead of static collection.totalStamps
+                                    let totalActiveStamps = collectionTotals[collection.id] ?? collection.totalStamps
+                                    let percentage = totalActiveStamps > 0 ? Double(collectedInCollection) / Double(totalActiveStamps) : 0.0
                                     
                                     CollectionCardView(
                                         name: collection.name,
                                         collectedCount: collectedInCollection,
-                                        totalCount: collection.totalStamps,
+                                        totalCount: totalActiveStamps,
                                         completionPercentage: percentage
                                     )
                                 }
@@ -653,24 +722,45 @@ struct StampDetailView: View {
             // No collected stamps - progress is 0 for all
             await MainActor.run {
                 collectionProgress = [:]
+                collectionTotals = [:]
             }
             return
         }
         
         // Fetch the actual stamp data (uses cache for efficiency)
-        let collectedStamps = await stampsManager.fetchStamps(ids: collectedStampIds)
+        // Include removed stamps so we can filter them ourselves
+        let collectedStamps = await stampsManager.fetchStamps(ids: collectedStampIds, includeRemoved: true)
         
         // Calculate progress for each collection this stamp belongs to
         var progress: [String: Int] = [:]
+        var totals: [String: Int] = [:]
+        
         for collection in stampsManager.collections where stamp.collectionIds.contains(collection.id) {
-            let count = collectedStamps.filter { stamp in
-                stamp.collectionIds.contains(collection.id)
+            // Fetch ALL stamps in this collection to get accurate total
+            let allCollectionStamps = await stampsManager.fetchStampsInCollection(collectionId: collection.id)
+            
+            // IMPORTANT: Only count ACTIVE stamps in both numerator and denominator
+            // This prevents showing weird progress like "10/9" when stamps are removed
+            // 
+            // Example: User collected 10 stamps, you removed 1:
+            // - Without filter: Shows 10/9 (numerator > denominator) ❌
+            // - With filter: Shows 9/9 (only active stamps) ✅
+            
+            // Numerator: Count user's collected stamps that are STILL ACTIVE
+            let activeCollectedCount = collectedStamps.filter { stamp in
+                stamp.collectionIds.contains(collection.id) && stamp.isCurrentlyAvailable
             }.count
-            progress[collection.id] = count
+            
+            // Denominator: Total ACTIVE stamps in collection (what's available NOW)
+            let totalActiveCount = allCollectionStamps.count // Already filtered by fetchStampsInCollection
+            
+            progress[collection.id] = activeCollectedCount
+            totals[collection.id] = totalActiveCount
         }
         
         await MainActor.run {
             collectionProgress = progress
+            collectionTotals = totals
         }
     }
     
@@ -716,6 +806,73 @@ struct StampDetailView: View {
             Text("Loading...")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
+        }
+    }
+    
+    // MARK: - Copy Image
+    
+    private func copyStampImage() {
+        Task {
+            // Try to get the cached image
+            var imageToCopy: UIImage?
+            
+            // Option 1: Firebase Storage image (most common)
+            if let imageUrl = stamp.imageUrl, !imageUrl.isEmpty,
+               let storagePath = stamp.imageStoragePath {
+                
+                // Extract filename from storage path
+                let filename = (storagePath as NSString).lastPathComponent
+                
+                // Try to get from cache (memory or disk)
+                imageToCopy = ImageCacheManager.shared.getFullImage(key: filename)
+                    ?? ImageManager.shared.loadImage(named: filename)
+                
+                // If not cached yet, try downloading
+                if imageToCopy == nil {
+                    do {
+                        imageToCopy = try await ImageManager.shared.downloadAndCacheImage(
+                            storagePath: storagePath,
+                            stampId: stamp.id
+                        )
+                    } catch {
+                        print("⚠️ Failed to download image for copying: \(error.localizedDescription)")
+                    }
+                }
+            }
+            // Option 2: Bundled image (legacy)
+            else if !stamp.imageName.isEmpty {
+                imageToCopy = UIImage(named: stamp.imageName)
+            }
+            // Option 3: Placeholder image
+            else {
+                imageToCopy = UIImage(named: "empty")
+            }
+            
+            // Copy to pasteboard on main thread
+            await MainActor.run {
+                if let image = imageToCopy {
+                    UIPasteboard.general.image = image
+                    
+                    // Show confirmation feedback
+                    withAnimation {
+                        showCopyConfirmation = true
+                    }
+                    
+                    // Hide confirmation after 1 second
+                    Task {
+                        try? await Task.sleep(nanoseconds: 1_000_000_000)
+                        await MainActor.run {
+                            withAnimation {
+                                showCopyConfirmation = false
+                            }
+                        }
+                    }
+                    
+                    print("✅ Stamp image copied to clipboard")
+                } else {
+                    print("⚠️ No image available to copy")
+                }
+            }
         }
     }
 }

@@ -152,8 +152,10 @@ class StampsManager: ObservableObject {
     /// Fetch specific stamps by IDs (for feed, profiles)
     /// Uses LRU cache for instant repeat access
     /// - Parameter ids: Array of stamp IDs to fetch
+    /// - Parameter includeRemoved: If true, returns removed stamps (for user's collected stamps/feed)
+    ///                              If false, filters out removed stamps (for map/collections)
     /// - Returns: Array of stamps matching the IDs
-    func fetchStamps(ids: [String]) async -> [Stamp] {
+    func fetchStamps(ids: [String], includeRemoved: Bool = false) async -> [Stamp] {
         var results: [Stamp] = []
         var uncachedIds: [String] = []
         
@@ -194,10 +196,19 @@ class StampsManager: ObservableObject {
         }
         
         if DEBUG_STAMPS {
-            print("✅ [StampsManager] fetchStamps complete: \(results.count)/\(ids.count) stamps")
+            print("✅ [StampsManager] fetchStamps complete: \(results.count)/\(ids.count) stamps (includeRemoved: \(includeRemoved))")
         }
         
-        return results
+        // Filter based on context
+        if includeRemoved {
+            // For user's collected stamps/feed - return everything (even removed)
+            // Users keep what they collected, even if stamp is later removed
+            return results
+        } else {
+            // For map/collections - only show currently available stamps
+            let available = filterAvailableStamps(results)
+            return available
+        }
     }
     
     /// Fetch all stamps globally (for map view)
@@ -232,7 +243,11 @@ class StampsManager: ObservableObject {
             if DEBUG_STAMPS {
                 print("✅ [StampsManager] Fetched \(fetched.count) stamps globally")
             }
-            return fetched
+            
+            // Filter: Only return currently available stamps
+            let available = filterAvailableStamps(fetched)
+            
+            return available
         } catch {
             print("❌ [StampsManager] Failed to fetch stamps: \(error.localizedDescription)")
             return []
@@ -265,15 +280,18 @@ class StampsManager: ObservableObject {
         do {
             let fetched = try await firebaseService.fetchStampsInCollection(collectionId: collectionId)
             
+            // Filter: Only show currently available stamps
+            let available = filterAvailableStamps(fetched)
+            
             // Add to cache
-            for stamp in fetched {
+            for stamp in available {
                 stampCache.set(stamp.id, stamp)
             }
             
             if DEBUG_STAMPS {
-                print("✅ [StampsManager] Fetched \(fetched.count) stamps in collection")
+                print("✅ [StampsManager] Fetched \(available.count) stamps in collection")
             }
-            return fetched
+            return available
         } catch {
             print("❌ [StampsManager] Failed to fetch stamps in collection: \(error.localizedDescription)")
             return []
@@ -293,6 +311,24 @@ class StampsManager: ObservableObject {
         if DEBUG_STAMPS {
             print("🗑️ [StampsManager] Cleared stamp cache")
         }
+    }
+    
+    // MARK: - Visibility Filtering
+    
+    /// Filter stamps to only show currently available ones (respects status and dates)
+    /// This is the SINGLE SOURCE OF TRUTH for stamp visibility
+    /// - Parameter stamps: Array of stamps to filter
+    /// - Returns: Only stamps that are currently available
+    /// - Note: Does NOT affect collected stamps - users keep what they collected
+    private func filterAvailableStamps(_ stamps: [Stamp]) -> [Stamp] {
+        let available = stamps.filter { $0.isCurrentlyAvailable }
+        
+        if DEBUG_STAMPS && available.count < stamps.count {
+            let filtered = stamps.count - available.count
+            print("🔍 [StampsManager] Filtered out \(filtered) unavailable stamp(s)")
+        }
+        
+        return available
     }
     
     // MARK: - Data Loading

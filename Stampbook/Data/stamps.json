@@ -32,8 +32,8 @@
   {
     "id": "us-ca-sf-dolores-park",
     "name": "Dolores Park",
-    "latitude": 37.76029189852176,
-    "longitude": -122.42668482208612,
+    "latitude": 37.75976910914757,
+    "longitude": -122.42712380019294,
     "address": "Dolores St & 19th St\nSan Francisco, CA, USA 94114",
     "collectionIds": [
       "sf-must-visits"
@@ -80,8 +80,8 @@
   {
     "id": "us-ca-sf-oracle-park",
     "name": "Oracle Park",
-    "latitude": 37.7786,
-    "longitude": -122.3893,
+    "latitude": 37.77836740581089,
+    "longitude": -122.38967830446195,
     "address": "24 Willie Mays Plaza\nSan Francisco, CA, USA 94107",
     "collectionIds": [
       "sf-must-visits"
@@ -96,8 +96,8 @@
   {
     "id": "us-ca-sf-twin-peaks",
     "name": "Twin Peaks",
-    "latitude": 37.7544,
-    "longitude": -122.4477,
+    "latitude": 37.75342416835136,
+    "longitude": -122.44737929240276,
     "address": "501 Twin Peaks Blvd\nSan Francisco, CA, USA 94114",
     "collectionIds": [
       "sf-must-visits"
@@ -112,8 +112,8 @@
   {
     "id": "us-ca-sf-japantown",
     "name": "Japantown",
-    "latitude": 37.7852,
-    "longitude": -122.4302,
+    "latitude": 37.785073880854185,
+    "longitude": -122.42987282230602,
     "address": "1610 Geary Blvd\nSan Francisco, CA, USA 94115",
     "collectionIds": [
       "sf-must-visits"
@@ -128,9 +128,9 @@
   {
     "id": "us-ca-sf-powell-hyde-cable-car",
     "name": "Powell-Hyde Cable Car",
-    "latitude": 37.7847,
-    "longitude": -122.4082,
-    "address": "Powell St & Market St\nSan Francisco, CA, USA 94102",
+    "latitude": 37.78477446697081,
+    "longitude": -122.40771095243076,
+    "address": "Cable Car Turnaround Powell St\nSan Francisco, CA, USA 94102",
     "collectionIds": [
       "sf-must-visits"
     ],
@@ -144,9 +144,9 @@
   {
     "id": "us-ca-sf-palace-of-fine-arts",
     "name": "Palace of Fine Arts",
-    "latitude": 37.8021,
-    "longitude": -122.4487,
-    "address": "3601 Lyon St\nSan Francisco, CA, USA 94123",
+    "latitude": 37.802929147736506,
+    "longitude": -122.44842353927599,
+    "address": "3301 Lyon St\nSan Francisco, CA, USA 94123",
     "collectionIds": [
       "sf-must-visits"
     ],
@@ -160,8 +160,8 @@
   {
     "id": "us-ca-sf-painted-ladies",
     "name": "Painted Ladies",
-    "latitude": 37.7762,
-    "longitude": -122.433,
+    "latitude": 37.7762629086978,
+    "longitude": -122.43275477855283,
     "address": "710-720 Steiner St\nSan Francisco, CA, USA 94117",
     "collectionIds": [
       "sf-must-visits"
@@ -176,8 +176,8 @@
   {
     "id": "us-ca-sf-golden-gate-viewpoint",
     "name": "Golden Gate Viewpoint",
-    "latitude": 37.8295,
-    "longitude": -122.4861,
+    "latitude": 37.82877635030523,
+    "longitude": -122.48603226554782,
     "address": "Old Conzelman Rd\nMill Valley, CA, USA 94941",
     "collectionIds": [
       "sf-must-visits"
@@ -192,8 +192,8 @@
   {
     "id": "us-ca-sf-equator-coffee",
     "name": "Equator Coffee",
-    "latitude": 37.7989,
-    "longitude": -122.4662,
+    "latitude": 37.80778763546057,
+    "longitude": -122.47566033185458,
     "address": "Golden Gate Bridge Plaza\nSan Francisco, CA, USA 94129",
     "collectionIds": [
       "sf-coffee"
@@ -208,25 +208,25 @@
   {
     "id": "us-ca-sf-coffee-movement",
     "name": "The Coffee Movement",
-    "latitude": 37.764,
-    "longitude": -122.4661,
-    "address": "1399 9th Ave\nSan Francisco, CA, USA 94122",
+    "latitude": 37.760618102039594,
+    "longitude": -122.4105447517096,
+    "address": "2814 19th St\nSan Francisco, CA, USA 94110",
     "collectionIds": [
       "sf-coffee"
     ],
-    "about": "Inner Sunset neighborhood favorite serving carefully sourced coffee.",
+    "about": "Mission District location serving specialty coffee and fresh donuts in a cozy space.",
     "thingsToDoFromEditors": [
-      "Order their coffee flight to taste a variety",
-      "Try their seasonal specialty coffee (I once had Orange Cream Latte)."
+      "Order their donuts with specialty coffee for the perfect pairing",
+      "Note: This location has very short hours - if you want to try their coffee, check out another branch!"
     ],
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-the-coffee-movement.png?alt=media&token=c8796134-2b50-4b5f-bf12-442db7f6c290"
   },
   {
     "id": "us-ca-sf-andytown",
     "name": "Andytown Coffee Roasters",
-    "latitude": 37.7607,
-    "longitude": -122.51,
-    "address": "3655 Lawton St\nSan Francisco, CA, USA 94122",
+    "latitude": 37.77277627504386,
+    "longitude": -122.51070066915784,
+    "address": "800 Great Hwy\nSan Francisco, CA, USA 94121",
     "collectionIds": [
       "sf-coffee"
     ],
@@ -239,25 +239,25 @@
   },
   {
     "id": "us-ca-sf-neighbor",
-    "name": "Neighbor Bakehouse",
-    "latitude": 37.758,
-    "longitude": -122.41,
-    "address": "2343 3rd St\nSan Francisco, CA, USA 94107",
+    "name": "Neighbor's Corner",
+    "latitude": 37.755580513369075,
+    "longitude": -122.43877098541338,
+    "address": "499 Douglass St\nSan Francisco, CA, USA 94114",
     "collectionIds": [
       "sf-coffee"
     ],
-    "about": "Dogpatch bakehouse combining excellent coffee with fresh-baked pastries.",
+    "about": "A local gem serving exceptional coffee with Japanese-inspired pastries and dishes.",
     "thingsToDoFromEditors": [
-      "Arrive early for warm croissants - they sell out by noon",
-      "Walk to the Dogpatch waterfront along 3rd Street after your coffee"
+      "Order their house drip coffee with a fresh pastry",
+      "Grab a seat by the window and watch the neighborhood go by"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-neighbor-bakehouse.png?alt=media&token=ccad5364-8fac-41b2-a6a3-0957ab72d4a9"
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-neighbors-corner.png?alt=media&token=683746dd-949c-4781-ad5b-5973f5ae05d4"
   },
   {
     "id": "us-ca-sf-the-mill",
     "name": "The Mill",
-    "latitude": 37.7764,
-    "longitude": -122.4373,
+    "latitude": 37.77647812185205,
+    "longitude": -122.43796816418411,
     "address": "736 Divisadero St\nSan Francisco, CA, USA 94117",
     "collectionIds": [
       "sf-coffee"
@@ -272,13 +272,13 @@
   {
     "id": "us-ca-sf-saint-frank",
     "name": "Saint Frank Coffee",
-    "latitude": 37.8008,
-    "longitude": -122.4214,
+    "latitude": 37.79845985628947,
+    "longitude": -122.42215826061671,
     "address": "2340 Polk St\nSan Francisco, CA, USA 94109",
     "collectionIds": [
       "sf-coffee"
     ],
-    "about": "Bright, minimalist Russian Hill café serving meticulously sourced coffee.",
+    "about": "Bright, minimalist café serving meticulously sourced coffee.",
     "thingsToDoFromEditors": [
       "Ask baristas about their rotating single-origin espresso - they love sharing details",
       "Try the cortado to experience their roasting at its purest"
@@ -288,8 +288,8 @@
   {
     "id": "us-ca-sf-sightglass",
     "name": "Sightglass Coffee",
-    "latitude": 37.7754,
-    "longitude": -122.4094,
+    "latitude": 37.777041665701155,
+    "longitude": -122.40845792491726,
     "address": "270 7th St\nSan Francisco, CA, USA 94103",
     "collectionIds": [
       "sf-coffee"
@@ -304,8 +304,8 @@
   {
     "id": "us-ca-sf-four-barrel",
     "name": "Four Barrel Coffee",
-    "latitude": 37.7651,
-    "longitude": -122.4214,
+    "latitude": 37.76702523672126,
+    "longitude": -122.42195009409077,
     "address": "375 Valencia St\nSan Francisco, CA, USA 94103",
     "collectionIds": [
       "sf-coffee"
@@ -320,32 +320,32 @@
   {
     "id": "us-ca-sf-pinhole",
     "name": "Pinhole Coffee",
-    "latitude": 37.7745,
-    "longitude": -122.4242,
-    "address": "231 Fillmore St\nSan Francisco, CA, USA 94117",
+    "latitude": 37.739620678258134,
+    "longitude": -122.41901983576798,
+    "address": "231 Cortland Ave\nSan Francisco, CA, USA 94110",
     "collectionIds": [
       "sf-coffee"
     ],
-    "about": "Cozy, intimate Lower Haight café for specialty coffee.",
+    "about": "Cozy Bernal Heights café serving exceptional specialty coffee.",
     "thingsToDoFromEditors": [
-      "Sip their perfectly crafted flat white at the window bar",
-      "Browse vintage shops on Haight Street a few blocks east"
+      "Order their perfectly crafted flat white at the window bar",
+      "Walk up to Bernal Heights Park for panoramic city views"
     ],
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-pinhole-coffee.png?alt=media&token=e282ad2f-5b36-4097-9659-daff0f06ce73"
   },
   {
     "id": "us-ca-sf-ballast",
     "name": "Ballast Coffee",
-    "latitude": 37.7629,
-    "longitude": -122.4095,
-    "address": "798 Florida St\nSan Francisco, CA, USA 94110",
+    "latitude": 37.737474930057395,
+    "longitude": -122.46940794656437,
+    "address": "329 W Portal Ave\nSan Francisco, CA, USA 94127",
     "collectionIds": [
       "sf-coffee"
     ],
-    "about": "Mission café serving thoughtfully sourced coffee in a minimalist space.",
+    "about": "West Portal neighborhood café serving thoughtfully sourced coffee in a minimalist space.",
     "thingsToDoFromEditors": [
-      "Grab coffee here then walk to Tartine Bakery for morning buns",
-      "Bring your laptop - the wifi is solid and the vibe is calm"
+      "Order a pour-over and enjoy the relaxed neighborhood vibe",
+      "Explore the shops and restaurants along W Portal Avenue"
     ],
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-ballast-coffee.png?alt=media&token=f6b927aa-6bdc-415c-95fe-85116156e85e"
   },
@@ -433,9 +433,9 @@
   {
     "id": "us-ca-sf-fort-mason-garden",
     "name": "Fort Mason Community Garden",
-    "latitude": 37.8054,
-    "longitude": -122.4316,
-    "address": "2 Marina Blvd\nSan Francisco, CA, USA 94123",
+    "latitude": 37.8059854184772,
+    "longitude": -122.42785617169,
+    "address": "Pope Rd\nSan Francisco, CA, USA 94109",
     "collectionIds": [
       "sf-community-gardens"
     ],
@@ -449,9 +449,9 @@
   {
     "id": "us-ca-sf-bernal-heights-garden",
     "name": "Bernal Heights Community Garden",
-    "latitude": 37.7416,
-    "longitude": -122.4166,
-    "address": "Folsom St & Ellsworth St\nSan Francisco, CA, USA 94110",
+    "latitude": 37.74219499983504,
+    "longitude": -122.41309706731519,
+    "address": "3501-3581 Folsom St\nSan Francisco, CA, USA 94110",
     "collectionIds": [
       "sf-community-gardens"
     ],
@@ -465,9 +465,9 @@
   {
     "id": "us-ca-sf-garden-for-environment",
     "name": "Garden for the Environment",
-    "latitude": 37.7476,
-    "longitude": -122.4678,
-    "address": "7th Ave & Lawton St\nSan Francisco, CA, USA 94122",
+    "latitude": 37.75922873824694,
+    "longitude": -122.46363297974044,
+    "address": "1590 7th Ave\nSan Francisco, CA, USA 94122",
     "collectionIds": [
       "sf-community-gardens"
     ],
@@ -480,10 +480,10 @@
   },
   {
     "id": "us-ca-sf-clipper-terrace-garden",
-    "name": "Clipper Terrace Community Garden",
-    "latitude": 37.7355,
-    "longitude": -122.4395,
-    "address": "Clipper St & Douglass St\nSan Francisco, CA, USA 94114",
+    "name": "Clipper Community Garden",
+    "latitude": 37.74786044648981,
+    "longitude": -122.44313454856169,
+    "address": "855 Clipper Terrace\nSan Francisco, CA, USA 94114",
     "collectionIds": [
       "sf-community-gardens"
     ],
@@ -492,20 +492,20 @@
       "Walk the terraced paths for unique city views between the garden plots",
       "Visit in peak summer for the most colorful flower displays"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-clipper-terrace-community-garden.png?alt=media&token=dcd958d6-f837-4f80-9b7a-c0d6eb82c29a"
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-clipper-community-garden.png?alt=media&token=1ee6d531-7e35-49de-9110-1a69b70ea74f"
   },
   {
     "id": "us-ca-sf-potrero-hill-garden",
     "name": "Potrero Hill Community Garden",
-    "latitude": 37.7545,
-    "longitude": -122.4009,
-    "address": "Utah St & 20th St\nSan Francisco, CA, USA 94107",
+    "latitude": 37.75980671754864,
+    "longitude": -122.40528423979812,
+    "address": "780 San Bruno Ave\nSan Francisco, CA, USA 94107",
     "collectionIds": [
       "sf-community-gardens"
     ],
     "about": "One of San Francisco's oldest community gardens, established in the 1970s.",
     "thingsToDoFromEditors": [
-      "Explore the garden then grab lunch at nearby Chez Maman on 18th",
+      "Explore the garden then check out local cafés and restaurants along 18th Street",
       "Visit during monthly open houses to meet gardeners and learn tips"
     ],
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-potero-hill-community-garden.png?alt=media&token=c706476b-4232-4636-914b-5b8b28bdbfc3"
@@ -513,8 +513,8 @@
   {
     "id": "us-ca-sf-alemany-farm",
     "name": "Alemany Farm",
-    "latitude": 37.7135,
-    "longitude": -122.4264,
+    "latitude": 37.73244001063801,
+    "longitude": -122.41972746552071,
     "address": "700 Alemany Blvd\nSan Francisco, CA, USA 94110",
     "collectionIds": [
       "sf-community-gardens"
@@ -525,22 +525,6 @@
       "Take in the sweeping city views from this hilltop farm"
     ],
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-alemany-farm.png?alt=media&token=7cfd398c-eeed-4574-8fec-e623094d25ee"
-  },
-  {
-    "id": "us-ca-sf-howard-langton-garden",
-    "name": "Howard Langton Community Garden",
-    "latitude": 37.7792,
-    "longitude": -122.4083,
-    "address": "Howard St & Langton St\nSan Francisco, CA, USA 94103",
-    "collectionIds": [
-      "sf-community-gardens"
-    ],
-    "about": "Hidden SoMa garden known for creative vertical space and container gardening.",
-    "thingsToDoFromEditors": [
-      "Study their vertical gardening techniques for small-space inspiration",
-      "Peek through the fence even when closed to see creative container gardens"
-    ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-howard-langton-community-garden.png?alt=media&token=34437ecb-d2b5-4e82-b4ec-6b485ca11b2f"
   },
   {
     "id": "us-me-acadia-bubble-rock",
@@ -599,10 +583,10 @@
     "collectionIds": [
       "acadia-must-visits"
     ],
-    "about": "Beloved Irish-style pub known for cozy atmosphere and craft beers.",
+    "about": "Beloved seasonal Irish-style pub known for cozy atmosphere and craft beers.",
     "thingsToDoFromEditors": [
       "Order fish & chips with a local Maine beer like Allagash or Shipyard",
-      "Check their schedule for live music nights on weekends"
+      "Peak season May-Oct; check ahead in winter to confirm hours"
     ],
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-me-bar-harbor-mckays-public-house.png?alt=media&token=19898515-aeaf-48c8-b293-b7d9ec52c34b"
   }

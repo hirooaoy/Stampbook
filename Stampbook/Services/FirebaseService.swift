@@ -237,10 +237,15 @@ class FirebaseService {
     
     /// Fetch all stamps from Firestore
     /// ⚠️ WARNING: This loads ALL stamps. For production use, prefer lazy loading methods below.
-    func fetchStamps() async throws -> [Stamp] {
+    /// Fetch all stamps from Firestore
+    /// - Parameter forceRefresh: If true, bypass cache and fetch from server
+    /// - Returns: Array of all stamps (no filtering - StampsManager handles that)
+    func fetchStamps(forceRefresh: Bool = false) async throws -> [Stamp] {
+        let source: FirestoreSource = forceRefresh ? .server : .default
+        
         let snapshot = try await db
             .collection("stamps")
-            .getDocuments()
+            .getDocuments(source: source)
         
         let stamps = snapshot.documents.compactMap { doc -> Stamp? in
             try? doc.data(as: Stamp.self)

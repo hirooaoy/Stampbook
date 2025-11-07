@@ -203,8 +203,8 @@ struct SuggestCollectionView: View {
                     lastActiveAt: Date()
                 )
                 
-                let firstStamp = completeStamps[0]
-                let additionalStampData = completeStamps.dropFirst().map { stamp in
+                // Convert all complete stamps to StampData
+                let stampData = completeStamps.map { stamp in
                     StampData(
                         name: stamp.name.trimmingCharacters(in: .whitespacesAndNewlines),
                         fullAddress: stamp.address.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -217,11 +217,11 @@ struct SuggestCollectionView: View {
                     username: profile.username,
                     userDisplayName: profile.displayName,
                     type: .collection,
-                    stampName: firstStamp.name.trimmingCharacters(in: .whitespacesAndNewlines),
-                    fullAddress: firstStamp.address.trimmingCharacters(in: .whitespacesAndNewlines),
-                    additionalNotes: firstStamp.notes.trimmingCharacters(in: .whitespacesAndNewlines),
+                    stampName: nil,
+                    fullAddress: nil,
+                    additionalNotes: nil,
                     collectionName: collectionName.trimmingCharacters(in: .whitespacesAndNewlines),
-                    additionalStamps: additionalStampData,
+                    stamps: stampData,
                     createdAt: Date()
                 )
                 

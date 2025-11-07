@@ -3,8 +3,8 @@
 /**
  * Upload stamps.json and collections.json to Firestore
  * 
- * This script reads the local JSON files and uploads them to Firebase.
- * Run once to populate Firestore, then you can add/update stamps via Firebase Console.
+ * NEW: Now syncs deletions! Stamps removed from JSON are removed from Firebase.
+ * NEW: Supports visibility system (status, availableFrom, availableUntil)
  * 
  * Usage: node upload_stamps_to_firestore.js
  */
@@ -24,10 +24,6 @@ const db = admin.firestore();
 
 /**
  * Encode coordinates to geohash string
- * @param {number} latitude 
- * @param {number} longitude 
- * @param {number} precision 
- * @returns {string} geohash
  */
 function encodeGeohash(latitude, longitude, precision = 8) {
   const base32 = '0123456789bcdefghjkmnpqrstuvwxyz';
@@ -40,7 +36,6 @@ function encodeGeohash(latitude, longitude, precision = 8) {
   
   while (hash.length < precision) {
     if (even) {
-      // Longitude
       const mid = (lonRange[0] + lonRange[1]) / 2;
       if (longitude > mid) {
         bit |= (1 << (4 - bits));
@@ -49,7 +44,6 @@ function encodeGeohash(latitude, longitude, precision = 8) {
         lonRange[1] = mid;
       }
     } else {
-      // Latitude
       const mid = (latRange[0] + latRange[1]) / 2;
       if (latitude > mid) {
         bit |= (1 << (4 - bits));
@@ -72,44 +66,109 @@ function encodeGeohash(latitude, longitude, precision = 8) {
   return hash;
 }
 
+/**
+ * Convert ISO date string to Firestore Timestamp
+ */
+function parseDate(dateString) {
+  if (!dateString) return null;
+  try {
+    return admin.firestore.Timestamp.fromDate(new Date(dateString));
+  } catch (error) {
+    console.error(`⚠️  Invalid date: ${dateString}`);
+    return null;
+  }
+}
+
 async function uploadStamps() {
   console.log('📚 Reading stamps.json...');
   const stampsPath = path.join(__dirname, 'Stampbook', 'Data', 'stamps.json');
   const stampsData = JSON.parse(fs.readFileSync(stampsPath, 'utf8'));
   
-  console.log(`✅ Found ${stampsData.length} stamps\n`);
+  console.log(`✅ Found ${stampsData.length} stamps in JSON\n`);
   
-  console.log('📤 Uploading stamps to Firestore (with auto-generated geohashes)...');
+  // ==================== SYNC DELETIONS ====================
+  console.log('🔍 Checking for deletions...');
+  const snapshot = await db.collection('stamps').get();
+  const existingIds = new Set(snapshot.docs.map(doc => doc.id));
+  const jsonIds = new Set(stampsData.map(stamp => stamp.id));
+  
+  const toDelete = [...existingIds].filter(id => !jsonIds.has(id));
+  
+  if (toDelete.length > 0) {
+    console.log(`\n🗑️  Deleting ${toDelete.length} stamp(s) not in JSON:`);
+    for (const id of toDelete) {
+      try {
+        await db.collection('stamps').doc(id).delete();
+        console.log(`   ✓ Deleted: ${id}`);
+      } catch (error) {
+        console.error(`   ✗ Failed to delete ${id}:`, error.message);
+      }
+    }
+  } else {
+    console.log('✅ No stamps to delete\n');
+  }
+  // ========================================================
+  
+  console.log('\n📤 Uploading/updating stamps...');
   let uploadedCount = 0;
   
   for (const stamp of stampsData) {
     try {
-      // Auto-generate geohash from coordinates
       const geohash = encodeGeohash(stamp.latitude, stamp.longitude, 8);
       
-      await db.collection('stamps').doc(stamp.id).set({
+      // Build stamp data with visibility fields
+      const stampData = {
         id: stamp.id,
         name: stamp.name,
         latitude: stamp.latitude,
         longitude: stamp.longitude,
         address: stamp.address,
-        imageUrl: stamp.imageUrl || '',  // Changed from imageName to imageUrl
+        imageUrl: stamp.imageUrl || '',
         collectionIds: stamp.collectionIds,
         about: stamp.about,
         notesFromOthers: stamp.notesFromOthers || [],
         thingsToDoFromEditors: stamp.thingsToDoFromEditors || [],
-        geohash: geohash  // Auto-generated for map queries
-      });
+        geohash: geohash
+      };
+      
+      // Add visibility fields only if present (keeps it clean)
+      if (stamp.status) {
+        stampData.status = stamp.status;
+      }
+      if (stamp.availableFrom) {
+        stampData.availableFrom = parseDate(stamp.availableFrom);
+      }
+      if (stamp.availableUntil) {
+        stampData.availableUntil = parseDate(stamp.availableUntil);
+      }
+      if (stamp.removalReason) {
+        stampData.removalReason = stamp.removalReason;
+      }
+      
+      await db.collection('stamps').doc(stamp.id).set(stampData);
       
       uploadedCount++;
-      console.log(`  ✓ Uploaded: ${stamp.name} (${stamp.id})`);
-      console.log(`    Geohash: ${geohash}`);
+      console.log(`  ✓ ${stamp.name} (${stamp.id})`);
+      
+      // Show visibility status if non-standard
+      if (stamp.status && stamp.status !== 'active') {
+        console.log(`    📌 Status: ${stamp.status}`);
+      }
+      if (stamp.availableFrom || stamp.availableUntil) {
+        const from = stamp.availableFrom || 'always';
+        const until = stamp.availableUntil || 'forever';
+        console.log(`    📅 ${from} → ${until}`);
+      }
+      
     } catch (error) {
-      console.error(`  ✗ Failed to upload ${stamp.id}:`, error.message);
+      console.error(`  ✗ Failed: ${stamp.id} -`, error.message);
     }
   }
   
-  console.log(`\n✅ Successfully uploaded ${uploadedCount}/${stampsData.length} stamps\n`);
+  console.log(`\n✅ Processed ${uploadedCount}/${stampsData.length} stamps`);
+  if (toDelete.length > 0) {
+    console.log(`🗑️  Deleted ${toDelete.length} stamps\n`);
+  }
 }
 
 async function uploadCollections() {
@@ -119,7 +178,7 @@ async function uploadCollections() {
   
   console.log(`✅ Found ${collectionsData.length} collections\n`);
   
-  console.log('📤 Uploading collections to Firestore...');
+  console.log('📤 Uploading collections...');
   let uploadedCount = 0;
   
   for (const collection of collectionsData) {
@@ -133,31 +192,29 @@ async function uploadCollections() {
       });
       
       uploadedCount++;
-      console.log(`  ✓ Uploaded: ${collection.name} (${collection.id})`);
+      console.log(`  ✓ ${collection.name}`);
     } catch (error) {
-      console.error(`  ✗ Failed to upload ${collection.id}:`, error.message);
+      console.error(`  ✗ Failed: ${collection.id} -`, error.message);
     }
   }
   
-  console.log(`\n✅ Successfully uploaded ${uploadedCount}/${collectionsData.length} collections\n`);
+  console.log(`\n✅ Uploaded ${uploadedCount}/${collectionsData.length} collections\n`);
 }
 
 async function main() {
-  console.log('🚀 Starting Firestore upload...\n');
+  console.log('🚀 Syncing Firestore with local JSON...\n');
   
   try {
     await uploadStamps();
     await uploadCollections();
     
-    console.log('🎉 Upload complete! Your app will now load stamps from Firestore.\n');
-    console.log('✅ Geohashes automatically generated for all stamps!\n');
-    console.log('💡 To add new stamps in the future:');
-    console.log('   1. Add to stamps.json locally');
-    console.log('   2. Run this script again (geohashes will be auto-generated)');
-    console.log('   OR add directly via Firebase Console (and run add_geohash_to_stamps.js)\n');
+    console.log('🎉 Sync complete!\n');
+    console.log('✅ Stamps synced (added, updated, deleted)');
+    console.log('✅ Collections synced');
+    console.log('✅ Visibility system ready\n');
     
   } catch (error) {
-    console.error('❌ Upload failed:', error.message);
+    console.error('❌ Sync failed:', error.message);
     process.exit(1);
   }
   
@@ -165,4 +222,3 @@ async function main() {
 }
 
 main();
-

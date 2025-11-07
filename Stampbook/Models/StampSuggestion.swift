@@ -8,14 +8,14 @@ struct StampSuggestion: Codable {
     let userDisplayName: String
     let type: SuggestionType
     
-    // Single stamp fields
-    let stampName: String
-    let fullAddress: String
-    let additionalNotes: String
+    // Single stamp fields (for backwards compatibility)
+    let stampName: String?
+    let fullAddress: String?
+    let additionalNotes: String?
     
     // Collection fields (if type = collection)
     let collectionName: String?
-    let additionalStamps: [StampData]? // 2+ more stamps for collection
+    let stamps: [StampData]? // All stamps in collection (minimum 3)
     
     let createdAt: Date
     

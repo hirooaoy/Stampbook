@@ -14,6 +14,25 @@ struct Stamp: Identifiable, Codable, Equatable {
     let thingsToDoFromEditors: [String]
     let geohash: String? // Optional for backward compatibility
     
+    // ==================== VISIBILITY SYSTEM ====================
+    // Fields for moderation and temporary stamps (all optional for backward compatibility)
+    // - status: "active" (default), "hidden", or "removed"
+    // - availableFrom/Until: For future event stamps (not used in MVP, but ready to scale)
+    // - removalReason: Audit trail for moderation
+    // ===========================================================
+    
+    /// Visibility status - defaults to "active" if nil
+    let status: String?
+    
+    /// When stamp becomes visible (for future events) - nil means always visible
+    let availableFrom: Date?
+    
+    /// When stamp expires (for temporary events) - nil means never expires
+    let availableUntil: Date?
+    
+    /// Why stamp was removed (audit trail for moderation)
+    let removalReason: String?
+    
     var coordinate: CLLocationCoordinate2D {
         CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
     }
@@ -26,6 +45,32 @@ struct Stamp: Identifiable, Codable, Equatable {
     /// Check if this is the special welcome stamp
     var isWelcomeStamp: Bool {
         return id == "your-first-stamp"
+    }
+    
+    /// Check if stamp should be visible right now (respects status and date range)
+    /// - Returns: true if stamp is currently available to collect
+    /// - Note: This does NOT affect collected stamps - users keep what they collected
+    var isCurrentlyAvailable: Bool {
+        // Check status (default to "active" if nil for backward compatibility)
+        let currentStatus = status ?? "active"
+        guard currentStatus == "active" else {
+            return false // Hidden or removed
+        }
+        
+        // For MVP: Date checks are ready but optional (no event stamps yet)
+        let now = Date()
+        
+        // Check if not yet available (future event)
+        if let from = availableFrom, now < from {
+            return false
+        }
+        
+        // Check if expired (past event)
+        if let until = availableUntil, now > until {
+            return false
+        }
+        
+        return true
     }
     
     /// Extract storage path from Firebase Storage URL
@@ -69,9 +114,15 @@ struct Stamp: Identifiable, Codable, Equatable {
         case id, name, latitude, longitude, address, imageName, imageUrl, about, thingsToDoFromEditors, geohash
         case collectionIds
         case collectionId
+        // Visibility system
+        case status, availableFrom, availableUntil, removalReason
     }
     
-    init(id: String, name: String, latitude: Double, longitude: Double, address: String, imageName: String = "", imageUrl: String? = nil, collectionIds: [String], about: String, thingsToDoFromEditors: [String] = [], geohash: String? = nil) {
+    init(id: String, name: String, latitude: Double, longitude: Double, address: String, 
+         imageName: String = "", imageUrl: String? = nil, collectionIds: [String], 
+         about: String, thingsToDoFromEditors: [String] = [], geohash: String? = nil,
+         status: String? = nil, availableFrom: Date? = nil, 
+         availableUntil: Date? = nil, removalReason: String? = nil) {
         self.id = id
         self.name = name
         self.latitude = latitude
@@ -83,6 +134,10 @@ struct Stamp: Identifiable, Codable, Equatable {
         self.about = about
         self.thingsToDoFromEditors = thingsToDoFromEditors
         self.geohash = geohash
+        self.status = status
+        self.availableFrom = availableFrom
+        self.availableUntil = availableUntil
+        self.removalReason = removalReason
     }
     
     init(from decoder: Decoder) throws {
@@ -97,6 +152,12 @@ struct Stamp: Identifiable, Codable, Equatable {
         about = try container.decode(String.self, forKey: .about)
         thingsToDoFromEditors = try container.decodeIfPresent([String].self, forKey: .thingsToDoFromEditors) ?? []
         geohash = try container.decodeIfPresent(String.self, forKey: .geohash)
+        
+        // Visibility system fields (optional for backward compatibility)
+        status = try container.decodeIfPresent(String.self, forKey: .status)
+        availableFrom = try container.decodeIfPresent(Date.self, forKey: .availableFrom)
+        availableUntil = try container.decodeIfPresent(Date.self, forKey: .availableUntil)
+        removalReason = try container.decodeIfPresent(String.self, forKey: .removalReason)
         
         // Support both collectionIds (array) and collectionId (string) for backward compatibility
         if let ids = try? container.decode([String].self, forKey: .collectionIds) {
@@ -121,6 +182,12 @@ struct Stamp: Identifiable, Codable, Equatable {
         try container.encode(about, forKey: .about)
         try container.encode(thingsToDoFromEditors, forKey: .thingsToDoFromEditors)
         try container.encodeIfPresent(geohash, forKey: .geohash)
+        
+        // Visibility system fields
+        try container.encodeIfPresent(status, forKey: .status)
+        try container.encodeIfPresent(availableFrom, forKey: .availableFrom)
+        try container.encodeIfPresent(availableUntil, forKey: .availableUntil)
+        try container.encodeIfPresent(removalReason, forKey: .removalReason)
     }
 }
 

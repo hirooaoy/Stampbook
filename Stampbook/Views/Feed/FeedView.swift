@@ -888,7 +888,8 @@ struct FeedView: View {
             // This prefetch makes navigation instant when user taps (Instagram pattern)
             isLoadingStamp = true
             Task {
-                let stamps = await stampsManager.fetchStamps(ids: [stampId])
+                // Include removed stamps - users can view stamps they already collected
+                let stamps = await stampsManager.fetchStamps(ids: [stampId], includeRemoved: true)
                 await MainActor.run {
                     stamp = stamps.first
                     isLoadingStamp = false
@@ -909,7 +910,8 @@ struct FeedView: View {
             
             Task {
                 // FALLBACK: Fetch stamp only if prefetch didn't complete
-                let stamps = await stampsManager.fetchStamps(ids: [stampId])
+                // Include removed stamps - users can view stamps they already collected
+                let stamps = await stampsManager.fetchStamps(ids: [stampId], includeRemoved: true)
                 
                 await MainActor.run {
                     stamp = stamps.first

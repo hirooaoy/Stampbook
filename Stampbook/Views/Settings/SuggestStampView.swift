@@ -116,7 +116,7 @@ struct SuggestStampView: View {
                     fullAddress: fullAddress.trimmingCharacters(in: .whitespacesAndNewlines),
                     additionalNotes: additionalNotes.trimmingCharacters(in: .whitespacesAndNewlines),
                     collectionName: nil,
-                    additionalStamps: nil,
+                    stamps: nil,
                     createdAt: Date()
                 )
                 

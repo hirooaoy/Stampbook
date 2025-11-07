@@ -172,7 +172,8 @@ class FeedManager: ObservableObject {
             
             // Get unique stamp IDs
             let stampIds = collectedStamps.map { $0.stampId }
-            let stamps = await stampsManager.fetchStamps(ids: stampIds)
+            // Include removed stamps - users keep feed posts even if stamp removed
+            let stamps = await stampsManager.fetchStamps(ids: stampIds, includeRemoved: true)
             let stampLookup = Dictionary(uniqueKeysWithValues: stamps.map { ($0.id, $0) })
             
             // Convert to FeedPost
@@ -276,7 +277,8 @@ class FeedManager: ObservableObject {
             
             // Extract unique stamp IDs
             let stampIds = collectedStamps.map { $0.stampId }
-            let stamps = await stampsManager.fetchStamps(ids: stampIds)
+            // Include removed stamps - users keep feed posts even if stamp removed
+            let stamps = await stampsManager.fetchStamps(ids: stampIds, includeRemoved: true)
             let stampLookup = Dictionary(uniqueKeysWithValues: stamps.map { ($0.id, $0) })
             
             // Convert to FeedPost
@@ -396,7 +398,8 @@ class FeedManager: ObservableObject {
             
             // Extract unique stamp IDs
             let uniqueStampIds = Array(Set(feedItems.map { $0.1.stampId }))
-            let stamps = await stampsManager.fetchStamps(ids: uniqueStampIds)
+            // Include removed stamps - users keep feed posts even if stamp removed
+            let stamps = await stampsManager.fetchStamps(ids: uniqueStampIds, includeRemoved: true)
             let stampLookup = Dictionary(uniqueKeysWithValues: stamps.map { ($0.id, $0) })
             
             // Convert to FeedPost
@@ -512,7 +515,8 @@ class FeedManager: ObservableObject {
             let stampsStart = CFAbsoluteTimeGetCurrent()
             #endif
             
-            let stamps = await stampsManager.fetchStamps(ids: uniqueStampIds)
+            // Include removed stamps - users keep feed posts even if stamp removed
+            let stamps = await stampsManager.fetchStamps(ids: uniqueStampIds, includeRemoved: true)
             
             #if DEBUG
             let stampsTime = CFAbsoluteTimeGetCurrent() - stampsStart

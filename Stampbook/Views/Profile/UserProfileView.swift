@@ -543,7 +543,8 @@ struct UserProfileView: View {
                 let collectedStampIds = userCollectedStamps.map { $0.stampId }
                 print("🎯 [UserProfileView] Fetching \(collectedStampIds.count) user stamps")
                 
-                let stamps = await stampsManager.fetchStamps(ids: collectedStampIds)
+                // Include removed stamps - users keep what they collected
+                let stamps = await stampsManager.fetchStamps(ids: collectedStampIds, includeRemoved: true)
                 
                 await MainActor.run {
                     userStamps = stamps
