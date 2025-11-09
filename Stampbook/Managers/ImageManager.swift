@@ -231,23 +231,34 @@ class ImageManager: ObservableObject {
     /// Download image from Firebase Storage and cache locally
     /// Returns cached image if already exists (checks memory and disk)
     /// 
-    /// ⚠️ CACHE INVALIDATION TODO: Currently no TTL or version checking on cached images.
-    /// If stamp images are updated server-side, users will see old cached versions indefinitely.
-    /// For MVP with <100 users and rare image updates, this is acceptable (users can reinstall).
-    /// Future options if needed: Add TTL (e.g. 30 days), version numbers in stamps.json, or pull-to-refresh.
-    func downloadAndCacheImage(storagePath: String, stampId: String) async throws -> UIImage {
+    /// ✅ CACHE INVALIDATION: Uses URL-based cache keys (includes token)
+    /// When stamp images are updated in Firebase, the token changes automatically
+    /// This triggers a cache miss and the new image downloads automatically
+    /// Orphaned files from old tokens are harmless and cleaned by iOS when storage is low
+    func downloadAndCacheImage(storagePath: String, stampId: String, imageUrl: String? = nil) async throws -> UIImage {
         // Extract filename from path (e.g., "users/123/stamps/abc/photo.jpg" → "photo.jpg")
         let filename = (storagePath as NSString).lastPathComponent
         
+        // Generate cache key: Use full URL if available (includes token for auto-invalidation)
+        // Fallback to filename for user photos (which don't have imageUrl)
+        let cacheKey: String
+        if let imageUrl = imageUrl, !imageUrl.isEmpty {
+            // For stamp images: Use URL-based key (token changes = new cache key)
+            cacheKey = generateCacheKey(from: imageUrl, stampId: stampId)
+        } else {
+            // For user photos: Use filename (no URL available)
+            cacheKey = filename
+        }
+        
         // Check memory cache first (fastest)
-        if let cachedImage = ImageCacheManager.shared.getFullImage(key: filename) {
-            print("✅ Image loaded from memory cache: \(filename)")
+        if let cachedImage = ImageCacheManager.shared.getFullImage(key: cacheKey) {
+            print("✅ Image loaded from memory cache: \(cacheKey)")
             return cachedImage
         }
         
         // Check if already cached on disk
-        if let cachedImage = loadImage(named: filename) {
-            print("✅ Image loaded from disk cache: \(filename)")
+        if let cachedImage = loadImage(named: cacheKey) {
+            print("✅ Image loaded from disk cache: \(cacheKey)")
             return cachedImage
         }
         
@@ -262,14 +273,14 @@ class ImageManager: ObservableObject {
             throw ImageError.invalidImageData
         }
         
-        // Cache to disk for future use
-        let fileURL = getDocumentsDirectory().appendingPathComponent(filename)
+        // Cache to disk for future use (use cache key instead of filename)
+        let fileURL = getDocumentsDirectory().appendingPathComponent(cacheKey)
         do {
             try data.write(to: fileURL)
-            print("✅ Image cached locally: \(filename)")
+            print("✅ Image cached locally: \(cacheKey)")
             
             // Also store in memory cache
-            ImageCacheManager.shared.setFullImage(image, key: filename)
+            ImageCacheManager.shared.setFullImage(image, key: cacheKey)
             
             // Also generate and cache thumbnail (512x512 for crisp @3x retina displays)
             // Use PNG for stamp images to preserve transparency, JPEG for user photos
@@ -279,27 +290,28 @@ class ImageManager: ObservableObject {
                 // User photos stored at: users/{userId}/stamps/{stampId}/photo.jpg
                 let isStampImage = storagePath.contains("/stamps/") || filename.hasSuffix(".png")
                 
-                let thumbnailFilename: String
+                let thumbnailCacheKey: String
                 let thumbnailData: Data?
                 
                 if isStampImage {
                     // Stamp images: use PNG to preserve transparency
-                    thumbnailFilename = filename.replacingOccurrences(of: ".jpg", with: "_thumb.png")
+                    // Append _thumb to cache key instead of replacing extension
+                    thumbnailCacheKey = cacheKey.replacingOccurrences(of: ".jpg", with: "_thumb.png")
                         .replacingOccurrences(of: ".png", with: "_thumb.png")
                     thumbnailData = thumbnail.pngData()
                 } else {
                     // User photos: use JPEG for smaller file size
-                    thumbnailFilename = filename.replacingOccurrences(of: ".jpg", with: "_thumb.jpg")
+                    thumbnailCacheKey = cacheKey.replacingOccurrences(of: ".jpg", with: "_thumb.jpg")
                         .replacingOccurrences(of: ".png", with: "_thumb.jpg")
                     thumbnailData = thumbnail.jpegData(compressionQuality: 0.8)
                 }
                 
                 if let thumbnailData = thumbnailData {
-                    let thumbnailURL = getDocumentsDirectory().appendingPathComponent(thumbnailFilename)
+                    let thumbnailURL = getDocumentsDirectory().appendingPathComponent(thumbnailCacheKey)
                     try thumbnailData.write(to: thumbnailURL)
-                    print("✅ Thumbnail cached: \(thumbnailFilename) (\(isStampImage ? "PNG" : "JPEG"))")
+                    print("✅ Thumbnail cached: \(thumbnailCacheKey) (\(isStampImage ? "PNG" : "JPEG"))")
                     // Store thumbnail in memory cache
-                    ImageCacheManager.shared.setThumbnail(thumbnail, key: thumbnailFilename)
+                    ImageCacheManager.shared.setThumbnail(thumbnail, key: thumbnailCacheKey)
                 }
             }
         } catch {
@@ -312,19 +324,27 @@ class ImageManager: ObservableObject {
     
     /// Download thumbnail from Firebase Storage and cache locally
     /// Falls back to full image if needed
-    func downloadAndCacheThumbnail(storagePath: String, stampId: String) async throws -> UIImage {
+    func downloadAndCacheThumbnail(storagePath: String, stampId: String, imageUrl: String? = nil) async throws -> UIImage {
         let filename = (storagePath as NSString).lastPathComponent
         
+        // Generate cache key for thumbnail lookup (same logic as downloadAndCacheImage)
+        let baseCacheKey: String
+        if let imageUrl = imageUrl, !imageUrl.isEmpty {
+            baseCacheKey = generateCacheKey(from: imageUrl, stampId: stampId)
+        } else {
+            baseCacheKey = filename
+        }
+        
         // Check if thumbnail already cached
-        if let cachedThumbnail = loadThumbnail(named: filename) {
+        if let cachedThumbnail = loadThumbnail(named: baseCacheKey) {
             return cachedThumbnail
         }
         
         // Download full image and generate thumbnail
-        let fullImage = try await downloadAndCacheImage(storagePath: storagePath, stampId: stampId)
+        let fullImage = try await downloadAndCacheImage(storagePath: storagePath, stampId: stampId, imageUrl: imageUrl)
         
         // Return thumbnail (was generated during caching)
-        if let thumbnail = loadThumbnail(named: filename) {
+        if let thumbnail = loadThumbnail(named: baseCacheKey) {
             return thumbnail
         }
         
@@ -445,6 +465,18 @@ class ImageManager: ObservableObject {
         
         print("✅ Cleaned up \(deletedCount) orphaned images for stamp \(stampId)")
         return deletedCount
+    }
+    
+    
+    // MARK: - Cache Key Generation
+    
+    /// Generate cache key from image URL
+    /// Uses stampId + URL hash to create unique, debuggable cache keys
+    /// When Firebase token changes (image update), hash changes → cache miss → re-download
+    private func generateCacheKey(from imageUrl: String, stampId: String) -> String {
+        // Use hash of URL (includes token) combined with stampId for debugging
+        let urlHash = abs(imageUrl.hashValue)
+        return "\(stampId)_\(urlHash).png"
     }
     
     // MARK: - Utilities

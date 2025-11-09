@@ -36,6 +36,15 @@ class FeedManager: ObservableObject {
             name: .profileDidUpdate,
             object: nil
         )
+        
+        // Listen for stamp collection to invalidate feed cache
+        // When user collects a stamp, we need to refresh feed to show it
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleStampCollection),
+            name: .stampDidCollect,
+            object: nil
+        )
     }
     
     deinit {
@@ -56,6 +65,23 @@ class FeedManager: ObservableObject {
             self.feedPosts = []
             self.myPosts = []
             print("✅ [FeedManager] Feed cache cleared, ready for refresh")
+        }
+    }
+    
+    /// Handle stamp collection notification
+    /// Clears cached feed data so next load fetches fresh data with newly collected stamp
+    @objc private func handleStampCollection(_ notification: Notification) {
+        print("🔔 [FeedManager] Received stamp collection notification - clearing feed cache")
+        
+        // Clear all cached feed data (memory and disk)
+        clearCache()
+        
+        // Post to main actor to ensure published properties update on main thread
+        DispatchQueue.main.async {
+            // Clear published arrays to force refresh on next view
+            self.feedPosts = []
+            self.myPosts = []
+            print("✅ [FeedManager] Feed cache cleared after stamp collection, ready for refresh")
         }
     }
     

@@ -9,6 +9,7 @@ struct StampDetailView: View {
     @EnvironmentObject var stampsManager: StampsManager
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var mapCoordinator: MapCoordinator
+    @EnvironmentObject var networkMonitor: NetworkMonitor
     let stamp: Stamp
     let userLocation: CLLocation?
     let showBackButton: Bool
@@ -65,17 +66,22 @@ struct StampDetailView: View {
         return date.formatted(.dateTime.month(.abbreviated).day().year())
     }
     
-    // Status message for unavailable stamps (removed or expired)
-    private var statusMessage: String? {
-        // Check if stamp was removed by admin
-        if stamp.status == "removed" {
-            return "This stamp was removed by admin"
+    // Status message for unavailable stamps (removed, expired, or offline sync pending)
+    private var statusBanner: (message: String, icon: String, color: Color)? {
+        // Priority 1: Show offline sync status (when collected and offline)
+        if isCollected && !networkMonitor.isConnected {
+            return ("Saved locally · Will sync when online", "icloud.and.arrow.up", .blue)
         }
         
-        // Check if event stamp has expired
+        // Priority 2: Stamp was removed by admin
+        if stamp.status == "removed" {
+            return ("This stamp was removed by admin", "exclamationmark.triangle.fill", .orange)
+        }
+        
+        // Priority 3: Event stamp has expired
         if let until = stamp.availableUntil, Date() > until {
             let dateStr = until.formatted(.dateTime.month(.abbreviated).day().year())
-            return "This event stamp expired on \(dateStr)"
+            return ("This event stamp expired on \(dateStr)", "calendar.badge.exclamationmark", .orange)
         }
         
         return nil
@@ -111,7 +117,8 @@ struct StampDetailView: View {
                                     stampId: stamp.id,
                                     size: CGSize(width: 300, height: 300),
                                     cornerRadius: 16,
-                                    useFullResolution: true
+                                    useFullResolution: true,
+                                    imageUrl: imageUrl
                                 )
                                 .transition(.scale.combined(with: .opacity))
                             } else if !stamp.imageName.isEmpty {
@@ -172,24 +179,25 @@ struct StampDetailView: View {
                     .animation(.spring(response: 0.3, dampingFraction: 0.8), value: showCopyConfirmation)
                     .padding(.bottom, 36)
                     
-                    // Status section - only show if stamp is unavailable (removed or expired)
-                    if let message = statusMessage {
+                    // Status banner - shows offline sync, removed, or expired status
+                    if let banner = statusBanner {
                         HStack(alignment: .top, spacing: 12) {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .foregroundColor(.orange)
+                            Image(systemName: banner.icon)
+                                .foregroundColor(banner.color)
                                 .font(.system(size: 20))
                             
-                            Text(message)
+                            Text(banner.message)
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                         .padding(16)
-                        .background(Color.orange.opacity(0.1))
+                        .background(banner.color.opacity(0.1))
                         .cornerRadius(12)
-                        .frame(maxWidth: .infinity) // Center on screen
+                        .frame(maxWidth: .infinity)
                         .padding(.horizontal, 24)
                         .padding(.bottom, 36)
+                        .transition(.move(edge: .top).combined(with: .opacity))
                     }
                     
                     // Memory section - only visible after collection
@@ -408,10 +416,6 @@ struct StampDetailView: View {
                     // Collections section - only show if stamp belongs to at least one collection
                     // Hide collections for removed stamps to prevent confusion
                     // (User keeps stamp in profile, but it's no longer part of collections)
-                    let stampCollections = stampsManager.collections.filter { collection in
-                        stamp.collectionIds.contains(collection.id) && stamp.isCurrentlyAvailable
-                    }
-                    
                     if !stampCollections.isEmpty {
                         // Divider
                         Divider()
@@ -432,6 +436,7 @@ struct StampDetailView: View {
                                     let percentage = totalActiveStamps > 0 ? Double(collectedInCollection) / Double(totalActiveStamps) : 0.0
                                     
                                     CollectionCardView(
+                                        emoji: collection.emoji,
                                         name: collection.name,
                                         collectedCount: collectedInCollection,
                                         totalCount: totalActiveStamps,
@@ -445,7 +450,7 @@ struct StampDetailView: View {
                         .padding(.horizontal, 24)
                     }
                 }
-                .padding(.bottom, 48)
+                .padding(.bottom, !stampCollections.isEmpty ? 48 : 24)
                 .animation(.spring(response: 0.4, dampingFraction: 1.0), value: isCollected)
             }
             
@@ -552,31 +557,28 @@ struct StampDetailView: View {
         .toolbarBackground(.hidden, for: .navigationBar)
         .presentationDetents([.fraction(0.75), .large])
         .onAppear {
-            // Show Memory section immediately if stamp is already collected
-            if isCollected {
-                showMemorySection = true
-            }
-            
-            // Fetch stamp statistics (one-time fetch on appear vs real-time listener: lower cost, simpler code, fresh enough for social proof)
+            // Single task to load data sequentially (prevents race conditions)
             Task {
-                // Fetch statistics - updates stampsManager.stampStatistics dictionary
-                _ = await stampsManager.fetchStampStatistics(stampId: stamp.id)
-                
-                // Load user's rank from cached CollectedStamp first (instant!)
-                // Rank = position in collector list (1st, 2nd, 3rd...) - never changes!
-                if isCollected, let userId = authManager.userId {
-                    // FAST PATH: Try cached rank first (via computed property cachedUserRank)
-                    if cachedUserRank == nil {
-                        // FALLBACK: Fetch from Firebase (for old stamps collected before caching was added)
-                        let fetchedRank = await stampsManager.getUserRankForStamp(stampId: stamp.id, userId: userId)
-                        await MainActor.run {
-                            userRank = fetchedRank
-                        }
-                    }
+                // 1. Always fetch stamp statistics first (needed for "X people have this stamp")
+                // Only fetch if cache is stale (older than 5 minutes) or doesn't exist
+                if stampStats == nil || stampStats?.isCacheStale() == true {
+                    _ = await stampsManager.fetchStampStatistics(stampId: stamp.id)
                 }
                 
-                // Calculate collection progress for all collections this stamp belongs to
-                await calculateCollectionProgress()
+                // 2. Then handle collected-specific logic
+                if isCollected {
+                    showMemorySection = true
+                    
+                    // Only fetch user rank if not cached (for old stamps collected before rank caching)
+                    // Rank is permanent (your position in collector line), so cache is always valid
+                    if cachedUserRank == nil, let userId = authManager.userId {
+                        let fetchedRank = await stampsManager.getUserRankForStamp(stampId: stamp.id, userId: userId)
+                        userRank = fetchedRank  // Already on MainActor
+                    }
+                    
+                    // Calculate collection progress
+                    await calculateCollectionProgress()
+                }
             }
         }
         .onChange(of: isCollected) { _, newValue in
@@ -585,20 +587,18 @@ struct StampDetailView: View {
                     showMemorySection = true
                 }
                 
-                // Fetch statistics when stamp is collected
+                // Fetch fresh data when just collected
                 Task {
-                    // Fetch statistics - updates stampsManager.stampStatistics dictionary
+                    // Get latest collector count (important: user just became a collector!)
                     _ = await stampsManager.fetchStampStatistics(stampId: stamp.id)
                     
-                    // If rank is not cached yet, try to fetch it
+                    // Rank should already be cached by collectStamp(), but fallback just in case
                     if cachedUserRank == nil, let userId = authManager.userId {
                         let fetchedRank = await stampsManager.getUserRankForStamp(stampId: stamp.id, userId: userId)
-                        await MainActor.run {
-                            userRank = fetchedRank
-                        }
+                        userRank = fetchedRank  // Already on MainActor
                     }
                     
-                    // Recalculate collection progress when stamp is collected
+                    // Recalculate collection progress
                     await calculateCollectionProgress()
                 }
             } else {
@@ -789,6 +789,13 @@ struct StampDetailView: View {
         } else {
             // Fallback to web version if Google Maps app not installed
             UIApplication.shared.open(googleMapsWebURL)
+        }
+    }
+    
+    // Computed property for stamp collections (extracted to fix type-checking issue)
+    private var stampCollections: [Collection] {
+        stampsManager.collections.filter { collection in
+            stamp.collectionIds.contains(collection.id) && stamp.isCurrentlyAvailable
         }
     }
     

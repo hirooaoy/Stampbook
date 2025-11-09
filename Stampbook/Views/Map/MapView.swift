@@ -105,6 +105,7 @@ struct MapView: View {
             // Connection status banner at top
             VStack {
                 ConnectionBanner(state: bannerState, context: .map)
+                    .padding(.top, 12)
                 
                 Spacer()
             }

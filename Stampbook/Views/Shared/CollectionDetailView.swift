@@ -20,8 +20,15 @@ struct CollectionDetailView: View {
         VStack(spacing: 0) {
             ScrollView {
                 VStack(spacing: 0) {
-                    // Collection name and description
-                    VStack(spacing: 6) {
+                    // Collection emoji, name and description
+                    VStack(spacing: 12) {
+                        // Display emoji (if exists)
+                        if !collection.emoji.isEmpty {
+                            Text(collection.emoji)
+                                .font(.system(size: 64))
+                        }
+                        
+                        // Display title
                         Text(collection.name)
                             .font(.system(size: 28, weight: .bold))
                             .multilineTextAlignment(.center)
@@ -121,7 +128,8 @@ struct CollectionStampItem: View {
                         storagePath: stamp.imageStoragePath,
                         stampId: stamp.id,
                         size: CGSize(width: 160, height: 160),
-                        cornerRadius: 12
+                        cornerRadius: 12,
+                        imageUrl: imageUrl
                     )
                     .frame(height: 160)
                 } else if !stamp.imageName.isEmpty {

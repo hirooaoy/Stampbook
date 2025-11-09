@@ -3,6 +3,7 @@ import SwiftUI
 /// A card view that displays collection information with a progress indicator
 /// Shows collection name, completion status, and visual progress bar
 struct CollectionCardView: View {
+    let emoji: String
     let name: String
     let collectedCount: Int
     let totalCount: Int
@@ -23,19 +24,31 @@ struct CollectionCardView: View {
             }
             
             // Content on top
-            VStack(alignment: .leading, spacing: 8) {
-                Text(name)
-                    .font(.title3)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.primary)
+            HStack(alignment: .center, spacing: 8) {
+                // Left: Emoji (if exists)
+                if !emoji.isEmpty {
+                    Text(emoji)
+                        .font(.system(size: 26))
+                        .frame(width: 34, height: 34)
+                }
                 
-                Text("\(collectedCount) out of \(totalCount) stamp\(totalCount == 1 ? "" : "s") collected")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+                // Right: Title + count
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(name)
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                        .lineLimit(2)
+                    
+                    Text("\(collectedCount) out of \(totalCount) stamp\(totalCount == 1 ? "" : "s") collected")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.vertical, 32)
-            .padding(.horizontal, 20)
+            .padding(.vertical, 24)
+            .padding(.leading, 16)
+            .padding(.trailing, 24)
         }
         .cornerRadius(12)
     }

@@ -5,6 +5,7 @@ import Combine
 /// Used to invalidate caches and refresh UI across the app
 extension Notification.Name {
     static let profileDidUpdate = Notification.Name("profileDidUpdate")
+    static let stampDidCollect = Notification.Name("stampDidCollect")
 }
 
 /// Manages user profile state and operations

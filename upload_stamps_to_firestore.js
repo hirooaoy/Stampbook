@@ -186,6 +186,7 @@ async function uploadCollections() {
     try {
       await db.collection('collections').doc(collection.id).set({
         id: collection.id,
+        emoji: collection.emoji || '',
         name: collection.name,
         description: collection.description,
         region: collection.region,
@@ -193,7 +194,7 @@ async function uploadCollections() {
       });
       
       uploadedCount++;
-      console.log(`  ✓ ${collection.name}`);
+      console.log(`  ✓ ${collection.emoji} ${collection.name}`);
     } catch (error) {
       console.error(`  ✗ Failed: ${collection.id} -`, error.message);
     }

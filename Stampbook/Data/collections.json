@@ -1,6 +1,7 @@
 [
   {
     "id": "sf-coffee",
+    "emoji": "☕",
     "name": "Great Coffee in San Francisco",
     "description": "Discover the finest coffee shops in San Francisco",
     "region": "san-francisco",
@@ -8,6 +9,7 @@
   },
   {
     "id": "sf-must-visits",
+    "emoji": "🌉",
     "name": "San Francisco Must Visits",
     "description": "Essential spots to visit in San Francisco",
     "region": "san-francisco",
@@ -15,6 +17,7 @@
   },
   {
     "id": "sf-golden-gate-park",
+    "emoji": "🌳",
     "name": "Explore Golden Gate Park",
     "description": "Discover hidden gems and iconic landmarks in San Francisco's urban oasis",
     "region": "san-francisco",
@@ -22,6 +25,7 @@
   },
   {
     "id": "sf-community-gardens",
+    "emoji": "🌱",
     "name": "Popular Community Gardens in San Francisco",
     "description": "Discover vibrant community gardens where neighbors grow together",
     "region": "san-francisco",
@@ -29,6 +33,7 @@
   },
   {
     "id": "acadia-must-visits",
+    "emoji": "🍁",
     "name": "Acadia National Park Explorer's Log",
     "description": "Iconic natural wonders and local favorites in and around Acadia National Park",
     "region": "acadia",
@@ -36,8 +41,17 @@
   },
   {
     "id": "airports-of-the-world",
+    "emoji": "✈️",
     "name": "Airports of the World",
     "description": "Travel the world and collect stamps from unique airports",
+    "region": "global",
+    "totalStamps": 1
+  },
+  {
+    "id": "libraries-that-make-you-forget-time",
+    "emoji": "📚",
+    "name": "Libraries that make you forget time",
+    "description": "Beautiful libraries where you can lose yourself in thought and tranquility",
     "region": "global",
     "totalStamps": 1
   }

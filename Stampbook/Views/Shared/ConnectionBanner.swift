@@ -52,7 +52,6 @@ struct ConnectionBanner: View {
                 x: 0,
                 y: 4
             )
-            .padding(.top, 12)
             .transition(.move(edge: .top).combined(with: .opacity))
         }
     }

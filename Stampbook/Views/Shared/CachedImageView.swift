@@ -4,7 +4,7 @@ import SwiftUI
 /// Consolidates duplicate logic from AsyncImageView and ProfileImageView
 struct CachedImageView: View {
     enum ImageType {
-        case stampPhoto(imageName: String?, storagePath: String?, stampId: String)
+        case stampPhoto(imageName: String?, storagePath: String?, stampId: String, imageUrl: String?)
         case profilePicture(avatarUrl: String?, userId: String)
     }
     
@@ -98,14 +98,14 @@ struct CachedImageView: View {
     
     private func loadImage() async {
         switch imageType {
-        case .stampPhoto(let imageName, let storagePath, let stampId):
-            await loadStampPhoto(imageName: imageName, storagePath: storagePath, stampId: stampId)
+        case .stampPhoto(let imageName, let storagePath, let stampId, let imageUrl):
+            await loadStampPhoto(imageName: imageName, storagePath: storagePath, stampId: stampId, imageUrl: imageUrl)
         case .profilePicture(let avatarUrl, let userId):
             await loadProfilePicture(avatarUrl: avatarUrl, userId: userId)
         }
     }
     
-    private func loadStampPhoto(imageName: String?, storagePath: String?, stampId: String) async {
+    private func loadStampPhoto(imageName: String?, storagePath: String?, stampId: String, imageUrl: String?) async {
         // Try loading from local cache first (instant if exists)
         if let imageName = imageName,
            let cachedImage = ImageManager.shared.loadThumbnail(named: imageName) {
@@ -115,7 +115,7 @@ struct CachedImageView: View {
             
             // If full resolution is needed, continue to load full-res in background
             if useFullResolution, let storagePath = storagePath {
-                await loadFullResolution(storagePath: storagePath, stampId: stampId)
+                await loadFullResolution(storagePath: storagePath, stampId: stampId, imageUrl: imageUrl)
             }
             return
         }
@@ -135,7 +135,8 @@ struct CachedImageView: View {
             do {
                 let thumbnail = try await ImageManager.shared.downloadAndCacheThumbnail(
                     storagePath: storagePath,
-                    stampId: stampId
+                    stampId: stampId,
+                    imageUrl: imageUrl
                 )
                 
                 await MainActor.run {
@@ -144,7 +145,7 @@ struct CachedImageView: View {
                 }
                 
                 // Then load full-res (upgrade)
-                await loadFullResolution(storagePath: storagePath, stampId: stampId)
+                await loadFullResolution(storagePath: storagePath, stampId: stampId, imageUrl: imageUrl)
             } catch {
                 print("⚠️ Failed to download thumbnail: \(error.localizedDescription)")
                 await MainActor.run {
@@ -156,7 +157,8 @@ struct CachedImageView: View {
             do {
                 let downloadedImage = try await ImageManager.shared.downloadAndCacheThumbnail(
                     storagePath: storagePath,
-                    stampId: stampId
+                    stampId: stampId,
+                    imageUrl: imageUrl
                 )
                 
                 await MainActor.run {
@@ -172,11 +174,12 @@ struct CachedImageView: View {
         }
     }
     
-    private func loadFullResolution(storagePath: String, stampId: String) async {
+    private func loadFullResolution(storagePath: String, stampId: String, imageUrl: String?) async {
         do {
             let fullResImage = try await ImageManager.shared.downloadAndCacheImage(
                 storagePath: storagePath,
-                stampId: stampId
+                stampId: stampId,
+                imageUrl: imageUrl
             )
             
             await MainActor.run {
@@ -241,10 +244,11 @@ extension CachedImageView {
         stampId: String,
         size: CGSize,
         cornerRadius: CGFloat,
-        useFullResolution: Bool = false
+        useFullResolution: Bool = false,
+        imageUrl: String? = nil
     ) -> CachedImageView {
         CachedImageView(
-            imageType: .stampPhoto(imageName: imageName, storagePath: storagePath, stampId: stampId),
+            imageType: .stampPhoto(imageName: imageName, storagePath: storagePath, stampId: stampId, imageUrl: imageUrl),
             shape: .rectangle(cornerRadius: cornerRadius),
             size: size,
             useFullResolution: useFullResolution

@@ -129,7 +129,8 @@ struct PhotoGalleryView: View {
                                     storagePath: storagePath,
                                     stampId: stampId,
                                     size: CGSize(width: 120, height: 120),
-                                    cornerRadius: 12
+                                    cornerRadius: 12,
+                                    imageUrl: stampImageName
                                 )
                             } else {
                                 // Load from local assets (backward compatibility)

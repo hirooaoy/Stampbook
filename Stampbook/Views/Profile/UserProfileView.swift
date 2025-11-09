@@ -573,7 +573,8 @@ struct UserProfileView: View {
                         storagePath: stamp.imageStoragePath,
                         stampId: stamp.id,
                         size: CGSize(width: 160, height: 160),
-                        cornerRadius: 12
+                        cornerRadius: 12,
+                        imageUrl: imageUrl
                     )
                     .frame(height: 160)
                 } else if !stamp.imageName.isEmpty {

@@ -345,10 +345,25 @@ class FirebaseService {
     }
     
     /// Fetch all collections from Firestore
-    func fetchCollections() async throws -> [Collection] {
+    /// - Parameter forceRefresh: If true, bypass cache and fetch from server
+    /// - Returns: Array of all collections
+    ///
+    /// **CURRENT STRATEGY (MVP):**
+    /// Always force refresh (called with forceRefresh: true in StampsManager)
+    /// - Ensures users see new collections immediately
+    /// - Simple, works well for 7 collections at MVP scale
+    ///
+    /// **FUTURE OPTIMIZATION (1000+ users, 50+ collections):**
+    /// Implement hybrid TTL + Schema Versioning:
+    /// 1. TTL: Refresh if cache older than 6-24 hours (content updates)
+    /// 2. Versioning: Refresh if schema changed (structure updates)
+    /// 3. See StampsManager.loadCollections() for implementation guide
+    func fetchCollections(forceRefresh: Bool = false) async throws -> [Collection] {
+        let source: FirestoreSource = forceRefresh ? .server : .default
+        
         let snapshot = try await db
             .collection("collections")
-            .getDocuments()
+            .getDocuments(source: source)
         
         let collections = snapshot.documents.compactMap { doc -> Collection? in
             try? doc.data(as: Collection.self)
@@ -1424,11 +1439,34 @@ struct StampStatistics: Codable {
     let stampId: String
     let totalCollectors: Int
     let collectorUserIds: [String] // Ordered by collection time (first to collect is first in array)
+    let cachedAt: Date // Timestamp for cache expiry
     
     enum CodingKeys: String, CodingKey {
         case stampId
         case totalCollectors
         case collectorUserIds
+    }
+    
+    // Custom init to set cachedAt (not stored in Firebase)
+    init(stampId: String, totalCollectors: Int, collectorUserIds: [String], cachedAt: Date = Date()) {
+        self.stampId = stampId
+        self.totalCollectors = totalCollectors
+        self.collectorUserIds = collectorUserIds
+        self.cachedAt = cachedAt
+    }
+    
+    // Custom decoder to set cachedAt when decoding from Firebase
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        stampId = try container.decode(String.self, forKey: .stampId)
+        totalCollectors = try container.decode(Int.self, forKey: .totalCollectors)
+        collectorUserIds = try container.decode([String].self, forKey: .collectorUserIds)
+        cachedAt = Date() // Set cache timestamp to now when fetching
+    }
+    
+    // Check if cache is stale (older than 5 minutes)
+    func isCacheStale(minutes: Int = 5) -> Bool {
+        return Date().timeIntervalSince(cachedAt) > TimeInterval(minutes * 60)
     }
 }
 

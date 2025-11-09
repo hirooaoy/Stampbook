@@ -8,10 +8,9 @@ struct StampSuggestion: Codable {
     let userDisplayName: String
     let type: SuggestionType
     
-    // Single stamp fields (for backwards compatibility)
-    let stampName: String?
-    let fullAddress: String?
-    let additionalNotes: String?
+    // Single stamp fields
+    let googleMapLink: String?
+    let description: String?
     
     // Collection fields (if type = collection)
     let collectionName: String?
@@ -28,14 +27,12 @@ struct StampSuggestion: Codable {
 /// Individual stamp data within a collection suggestion
 struct StampData: Identifiable, Codable {
     var id = UUID()
-    let name: String
-    let fullAddress: String
-    let additionalNotes: String
+    let googleMapLink: String
+    let description: String
     
     /// Check if all fields are filled (for validation)
     var isComplete: Bool {
-        !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        !fullAddress.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        !additionalNotes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        !googleMapLink.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+        !description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 }

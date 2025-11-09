@@ -668,9 +668,7 @@ struct StampsView: View {
     struct AllStampsContent: View {
         @EnvironmentObject var stampsManager: StampsManager
         @State private var displayedCount = 20 // Initial load
-        @State private var showSkeleton = true
         @State private var userStamps: [Stamp] = [] // Lazy-loaded user stamps
-        @State private var isLoadingStamps = false
         
         private let columns = [
             GridItem(.flexible(), spacing: 16),
@@ -697,8 +695,8 @@ struct StampsView: View {
         
         var body: some View {
             Group {
-                if isLoadingStamps || (showSkeleton && userStamps.isEmpty) {
-                    // Skeleton loading state - show only when actively loading
+                if stampsManager.isLoadingUserStamps {
+                    // Skeleton loading state - show while loading
                     LazyVGrid(columns: columns, spacing: 24) {
                         ForEach(0..<8, id: \.self) { _ in
                             SkeletonStampGridItem()
@@ -769,42 +767,32 @@ struct StampsView: View {
         }
         
         private func loadUserStamps() {
-            guard !isLoadingStamps else {
-                print("⚠️ [AllStampsContent] Already loading stamps, skipping")
-                return
-            }
-            
             print("🔄 [AllStampsContent] loadUserStamps() called")
             print("📊 [AllStampsContent] Current collectedStamps count: \(stampsManager.userCollection.collectedStamps.count)")
             
-            isLoadingStamps = true
-            showSkeleton = true
-            
             Task {
+                // Set loading state at view level
+                await MainActor.run {
+                    stampsManager.isLoadingUserStamps = true
+                }
+                
                 // LAZY LOADING: Fetch ONLY stamps the user has collected
                 let collectedStampIds = stampsManager.userCollection.collectedStamps.map { $0.stampId }
                 print("🎯 [AllStampsContent] Fetching \(collectedStampIds.count) user stamps")
                 print("🎯 [AllStampsContent] Stamp IDs: \(collectedStampIds)")
                 
                 // Include removed stamps - users keep what they collected
+                // Note: fetchStamps will also set/clear isLoadingUserStamps, but we control it here
                 let stamps = await stampsManager.fetchStamps(ids: collectedStampIds, includeRemoved: true)
                 
                 print("✅ [AllStampsContent] Fetched \(stamps.count) stamps")
                 
                 await MainActor.run {
                     userStamps = stamps
-                    isLoadingStamps = false
+                    stampsManager.isLoadingUserStamps = false // Clear AFTER data is set
                     
                     print("📊 [AllStampsContent] userStamps count after update: \(userStamps.count)")
                     print("📊 [AllStampsContent] sortedCollectedStamps count: \(sortedCollectedStamps.count)")
-                    
-                    // Add minimum display time for smooth transition
-                    Task {
-                        try? await Task.sleep(nanoseconds: 150_000_000) // 150ms
-                        withAnimation(.easeInOut(duration: 0.3)) {
-                            showSkeleton = false
-                        }
-                    }
                 }
             }
         }
@@ -829,7 +817,8 @@ struct StampsView: View {
                         storagePath: stamp.imageStoragePath,
                         stampId: stamp.id,
                         size: CGSize(width: 160, height: 160),
-                        cornerRadius: 12
+                        cornerRadius: 12,
+                        imageUrl: imageUrl
                     )
                     .frame(height: 160)
                 } else if !stamp.imageName.isEmpty {
@@ -870,14 +859,20 @@ struct StampsView: View {
         
         var body: some View {
             VStack(spacing: 20) {
-                if isLoadingMetadata && !hasLoadedOnce {
-                    // Skeleton loading state - show only on FIRST load
+                if stampsManager.isLoadingCollections {
+                    // Skeleton loading state - show while collections are loading from Firebase
+                    ForEach(0..<4, id: \.self) { _ in
+                        SkeletonCollectionCard()
+                            .redacted(reason: .placeholder)
+                    }
+                } else if isLoadingMetadata && !hasLoadedOnce && !stampsManager.collections.isEmpty {
+                    // Skeleton loading state - show only on FIRST metadata load (after collections loaded)
                     ForEach(0..<4, id: \.self) { _ in
                         SkeletonCollectionCard()
                             .redacted(reason: .placeholder)
                     }
                 } else if stampsManager.collections.isEmpty {
-                    // Empty state
+                    // Empty state - only show if not loading and collections are truly empty
                     VStack {
                         Spacer()
                         
@@ -906,6 +901,7 @@ struct StampsView: View {
                             let percentage = metadata.total > 0 ? Double(metadata.collected) / Double(metadata.total) : 0.0
                             
                             CollectionCardView(
+                                emoji: collection.emoji,
                                 name: collection.name,
                                 collectedCount: metadata.collected,
                                 totalCount: metadata.total,

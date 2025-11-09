@@ -30,7 +30,6 @@ struct FeedView: View {
     @State private var showSuggestStamp = false
     @State private var showSuggestCollection = false
     @State private var showAppStoreUrlCopied = false // Show confirmation when App Store URL is copied
-    @State private var bannerState: ConnectionBanner.BannerState = .hidden // Connection status
     @State private var profileUpdateListener: AnyCancellable? // Listen for profile updates
     
     enum FeedTab: String, CaseIterable {
@@ -344,9 +343,6 @@ struct FeedView: View {
         }
         .overlay(alignment: .top) {
             VStack(spacing: 8) {
-                // Connection status banner
-                ConnectionBanner(state: bannerState, context: .feed)
-                
                 // Feed error messages
                 if let errorMessage = feedManager.errorMessage {
                     Text(errorMessage)
@@ -356,7 +352,7 @@ struct FeedView: View {
                         .padding(.vertical, 12)
                         .background(Color.orange.opacity(0.9))
                         .cornerRadius(8)
-                        .padding(.top, bannerState == .hidden ? 8 : 0)
+                        .padding(.top, 8)
                         .transition(.move(edge: .top).combined(with: .opacity))
                         .animation(.spring(response: 0.3), value: errorMessage)
                 }
@@ -370,22 +366,13 @@ struct FeedView: View {
                         .padding(.vertical, 12)
                         .background(Color.black.opacity(0.8))
                         .cornerRadius(8)
-                        .padding(.top, (bannerState == .hidden && feedManager.errorMessage == nil) ? 8 : 0)
+                        .padding(.top, feedManager.errorMessage == nil ? 8 : 0)
                         .transition(.move(edge: .top).combined(with: .opacity))
                         .animation(.spring(response: 0.3), value: errorMessage)
                 }
             }
-            .animation(.easeInOut(duration: 0.3), value: bannerState)
-        }
-        .onChange(of: networkMonitor.isConnected) { oldValue, newValue in
-            handleConnectionChange(wasConnected: oldValue, isConnected: newValue)
         }
         .onAppear {
-            // Set initial state if already offline
-            if !networkMonitor.isConnected {
-                bannerState = .offline
-            }
-            
             // Listen for profile updates to refresh feed with new avatar/name
             profileUpdateListener = NotificationCenter.default.publisher(for: .profileDidUpdate)
                 .sink { _ in
@@ -398,26 +385,6 @@ struct FeedView: View {
             commentManager.onCommentCountChanged = { [weak feedManager] postId, newCount in
                 feedManager?.updatePostCommentCount(postId: postId, newCount: newCount)
             }
-        }
-    }
-    
-    // MARK: - Banner Helpers
-    
-    private func handleConnectionChange(wasConnected: Bool, isConnected: Bool) {
-        if !wasConnected && isConnected {
-            // Going from offline to online
-            bannerState = .reconnecting
-            
-            // Show "Reconnecting..." for 3 seconds, then hide
-            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-                bannerState = .hidden
-            }
-        } else if wasConnected && !isConnected {
-            // Going from online to offline
-            bannerState = .offline
-        } else if !isConnected && bannerState == .hidden {
-            // Initial offline state
-            bannerState = .offline
         }
     }
     

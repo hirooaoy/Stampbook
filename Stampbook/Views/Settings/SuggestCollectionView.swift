@@ -20,14 +20,12 @@ struct SuggestCollectionView: View {
     
     struct EditableStamp: Identifiable {
         let id = UUID()
-        var name = ""
-        var address = ""
-        var notes = ""
+        var googleMapLink = ""
+        var description = ""
         
         var isComplete: Bool {
-            !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-            !address.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-            !notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            !googleMapLink.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+            !description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         }
     }
     
@@ -76,27 +74,19 @@ struct SuggestCollectionView: View {
                     
                     // Stamp fields (same detailed layout as single stamp)
                     Section {
-                        TextField("Golden Gate View Point", text: binding(for: index, keyPath: \.name))
+                        TextField("http://...", text: binding(for: index, keyPath: \.googleMapLink))
                     } header: {
-                        Text("Stamp Name")
+                        Text("Google Map Link")
                     }
                     
                     Section {
-                        TextField("Old Conzelman Rd, Mill Valley, CA 94941", text: binding(for: index, keyPath: \.address))
-                    } header: {
-                        Text("Address")
-                    } footer: {
-                        Text("Copy full address from Google or Apple Maps")
-                    }
-                    
-                    Section {
-                        TextField("Stamp should include the bridge", text: binding(for: index, keyPath: \.notes), axis: .vertical)
+                        TextField("The stamp should include the golden gate bridge", text: binding(for: index, keyPath: \.description), axis: .vertical)
                             .lineLimit(5...10)
                             .lineSpacing(8)
                     } header: {
-                        Text("Additional Notes")
+                        Text("Description")
                     } footer: {
-                        Text("Tell us what we should include for the stamp image and things to do.")
+                        Text("Tell us about this place and what details we should include")
                     }
                     
                     // Remove button as separate section
@@ -206,9 +196,8 @@ struct SuggestCollectionView: View {
                 // Convert all complete stamps to StampData
                 let stampData = completeStamps.map { stamp in
                     StampData(
-                        name: stamp.name.trimmingCharacters(in: .whitespacesAndNewlines),
-                        fullAddress: stamp.address.trimmingCharacters(in: .whitespacesAndNewlines),
-                        additionalNotes: stamp.notes.trimmingCharacters(in: .whitespacesAndNewlines)
+                        googleMapLink: stamp.googleMapLink.trimmingCharacters(in: .whitespacesAndNewlines),
+                        description: stamp.description.trimmingCharacters(in: .whitespacesAndNewlines)
                     )
                 }
                 
@@ -217,9 +206,8 @@ struct SuggestCollectionView: View {
                     username: profile.username,
                     userDisplayName: profile.displayName,
                     type: .collection,
-                    stampName: nil,
-                    fullAddress: nil,
-                    additionalNotes: nil,
+                    googleMapLink: nil,
+                    description: nil,
                     collectionName: collectionName.trimmingCharacters(in: .whitespacesAndNewlines),
                     stamps: stampData,
                     createdAt: Date()

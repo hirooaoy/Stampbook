@@ -10,11 +10,16 @@ class StampsManager: ObservableObject {
     @Published var stamps: [Stamp] = []
     
     @Published var collections: [Collection] = []
+    @Published var isLoadingCollections: Bool = true // Start as true since we load collections in init()
+    @Published var isLoadingUserStamps: Bool = false // Track user stamps loading state
     @Published var userCollection = UserStampCollection()
     @Published var isLoading: Bool = false
     @Published var loadError: String?
     
     // Cache stamp statistics to avoid repeated fetches
+    // TODO: MVP - Replace with LRU cache when scaling beyond 100 users (similar to stampCache below)
+    // Current implementation: Unlimited cache, grows with every stamp detail view opened
+    // Future: Implement LRUCache<String, StampStatistics> with capacity ~50-100 to prevent memory bloat
     @Published var stampStatistics: [String: StampStatistics] = [:]
     
     // LRU cache for stamp data (max 300 stamps in memory)
@@ -60,19 +65,39 @@ class StampsManager: ObservableObject {
         if DEBUG_STAMPS {
             print("🔄 [StampsManager] loadCollections() - about to fetch from Firebase")
         }
+        
+        // Set loading state
+        await MainActor.run {
+            self.isLoadingCollections = true
+        }
+        
         do {
-            // Fetch collections (no timeout wrapper - let Firebase SDK handle network timeouts)
-            let fetchedCollections = try await firebaseService.fetchCollections()
+            // Cache-first approach for fast startup
+            // Firebase persistent cache makes this instant after first load
+            // Trade-off: New collections may not appear immediately, but startup is reliable
+            // 
+            // Future: Hybrid approach (TTL + Schema Versioning)
+            // 1. Add TTL: Refresh only if older than 6-24 hours (for content updates)
+            // 2. Add Versioning: Refresh immediately if schema changed (for structure updates)
+            // 3. Combine: forceRefresh = SchemaVersions.needsRefresh() || isOlderThan(hours: 6)
+            // 
+            // Benefits: Fast (cache), fresh (periodic refresh), instant schema updates
+            // When: 1000+ users, 50+ collections, or startup performance issues
+            let fetchedCollections = try await firebaseService.fetchCollections(forceRefresh: false)
             
             // Update published property on MainActor
             await MainActor.run {
-            self.collections = fetchedCollections
+                self.collections = fetchedCollections
+                self.isLoadingCollections = false
             }
             if DEBUG_STAMPS {
                 print("✅ [StampsManager] Loaded \(fetchedCollections.count) collections")
             }
         } catch {
             print("❌ [StampsManager] Failed to load collections: \(error.localizedDescription)")
+            await MainActor.run {
+                self.isLoadingCollections = false
+            }
             // Continue anyway - collections are not critical for app startup
         }
     }
@@ -357,7 +382,8 @@ class StampsManager: ObservableObject {
             let collectionsStartTime = Date()
             #endif
             
-            let fetchedCollections = try await firebaseService.fetchCollections()
+            // Force refresh collections from server (bypass cache)
+            let fetchedCollections = try await firebaseService.fetchCollections(forceRefresh: true)
             
             #if DEBUG
             let fetchCollectionsDuration = Date().timeIntervalSince(collectionsStartTime)
@@ -457,6 +483,9 @@ class StampsManager: ObservableObject {
             await MainActor.run {
                 userCollection.collectStamp(stamp.id, userId: userId, userRank: nil)
             }
+            
+            // Notify feed that a stamp was collected (clears cache for auto-refresh)
+            NotificationCenter.default.post(name: .stampDidCollect, object: nil)
             
             // Update Firebase statistics in the background
             do {

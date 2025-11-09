@@ -7,9 +7,8 @@ struct SuggestStampView: View {
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var profileManager: ProfileManager
     
-    @State private var stampName = ""
-    @State private var fullAddress = ""
-    @State private var additionalNotes = ""
+    @State private var googleMapLink = ""
+    @State private var description = ""
     @State private var isSending = false
     @State private var showSuccessAlert = false
     @State private var showErrorAlert = false
@@ -17,9 +16,8 @@ struct SuggestStampView: View {
     
     /// Check if all fields are filled
     private var isValid: Bool {
-        !stampName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        !fullAddress.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        !additionalNotes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        !googleMapLink.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+        !description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
     
     var body: some View {
@@ -42,9 +40,8 @@ struct SuggestStampView: View {
                 
                 StampSuggestionFormField(
                     stampNumber: nil,
-                    name: $stampName,
-                    address: $fullAddress,
-                    notes: $additionalNotes
+                    googleMapLink: $googleMapLink,
+                    description: $description
                 )
             }
             .listSectionSpacing(16)
@@ -112,9 +109,8 @@ struct SuggestStampView: View {
                     username: profile.username,
                     userDisplayName: profile.displayName,
                     type: .singleStamp,
-                    stampName: stampName.trimmingCharacters(in: .whitespacesAndNewlines),
-                    fullAddress: fullAddress.trimmingCharacters(in: .whitespacesAndNewlines),
-                    additionalNotes: additionalNotes.trimmingCharacters(in: .whitespacesAndNewlines),
+                    googleMapLink: googleMapLink.trimmingCharacters(in: .whitespacesAndNewlines),
+                    description: description.trimmingCharacters(in: .whitespacesAndNewlines),
                     collectionName: nil,
                     stamps: nil,
                     createdAt: Date()
