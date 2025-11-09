@@ -18,7 +18,7 @@ class FirebaseService {
         settings.cacheSettings = PersistentCacheSettings()
         db.settings = settings
         
-        print("ℹ️ [FirebaseService] Offline persistence enabled (cache will populate on first sync)")
+        Logger.info("Offline persistence enabled (cache will populate on first sync)", category: "FirebaseService")
         
         // Run connectivity diagnostics in background (non-blocking)
         // NOTE: This should NOT block app initialization
@@ -33,27 +33,27 @@ class FirebaseService {
     
     /// Run comprehensive connectivity diagnostics for Firebase
     func runConnectivityDiagnostics() async {
-        print("\n🔍 [Firebase Diagnostics] Starting connectivity tests...\n")
+        Logger.debug("\nStarting connectivity tests...\n")
         
         // Test 1: Basic network connectivity
-        print("1️⃣ Testing basic network connectivity...")
+        Logger.debug("Testing basic network connectivity...")
         await testNetworkConnectivity()
         
         // Test 2: Firestore connection
-        print("\n2️⃣ Testing Firestore connection...")
+        Logger.debug("\nTesting Firestore connection...")
         await testFirestoreConnection()
         
         // Test 3: Firebase Storage connection
-        print("\n3️⃣ Testing Firebase Storage connection...")
+        Logger.debug("\nTesting Firebase Storage connection...")
         await testStorageConnection()
         
-        print("\n✅ [Firebase Diagnostics] Tests complete\n")
+        Logger.debug("\nConnectivity tests complete\n")
     }
     
     private func testNetworkConnectivity() async {
         // Try to reach Google's DNS server
         guard let url = URL(string: "https://www.google.com") else {
-            print("❌ Failed to create URL")
+            Logger.error("Failed to create URL", category: "FirebaseService")
             return
         }
         
@@ -64,13 +64,13 @@ class FirebaseService {
             
             if let httpResponse = response as? HTTPURLResponse {
                 if httpResponse.statusCode == 200 {
-                    print("✅ Internet connection OK (\(String(format: "%.3f", duration))s)")
+                    Logger.success("Internet connection OK (\(String(format: "%.3f", duration))s)", category: "FirebaseService")
                 } else {
-                    print("⚠️ Internet reachable but returned status code \(httpResponse.statusCode)")
+                    Logger.warning("Internet reachable but returned status code \(httpResponse.statusCode)", category: "FirebaseService")
                 }
             }
         } catch {
-            print("❌ No internet connection: \(error.localizedDescription)")
+            Logger.error("No internet connection", error: error, category: "FirebaseService")
         }
     }
     
@@ -112,12 +112,12 @@ class FirebaseService {
                 print("   Project: stampbook-app")
             } else {
                 // Timeout occurred
-                print("⏱️ Firestore connection slow/timed out after \(String(format: "%.3f", duration))s")
-                print("   → Using offline cache if available")
+                Logger.warning("Firestore connection slow/timed out after \(String(format: "%.3f", duration))s", category: "FirebaseService")
+                Logger.info("   → Using offline cache if available", category: "FirebaseService")
             }
         } catch let error as NSError {
-            print("❌ Firestore connection FAILED (\(error.domain), code: \(error.code))")
-            print("   Message: \(error.localizedDescription)")
+            Logger.error("Firestore connection FAILED (\(error.domain), code: \(error.code))", category: "FirebaseService")
+            Logger.error("   Message: \(error.localizedDescription)", category: "FirebaseService")
             
             // Common error codes
             if error.domain == "FIRFirestoreErrorDomain" {
@@ -454,6 +454,19 @@ class FirebaseService {
     
     // MARK: - User Profile Management
     
+    /// Check if a user profile exists in Firestore
+    /// Used to detect orphaned auth states or verify profile existence
+    func userProfileExists(userId: String) async -> Bool {
+        do {
+            let docRef = db.collection("users").document(userId)
+            let document = try await docRef.getDocument()
+            return document.exists
+        } catch {
+            Logger.error("Error checking user profile existence", error: error, category: "FirebaseService")
+            return false
+        }
+    }
+    
     /// Fetch user profile from Firestore
     /// Used when loading a user's profile data
     func fetchUserProfile(userId: String) async throws -> UserProfile {
@@ -481,7 +494,7 @@ class FirebaseService {
             #endif
             return profile
         } else {
-            print("❌ [FirebaseService] Profile document exists but failed to parse")
+            Logger.error("Profile document exists but failed to parse", category: "FirebaseService")
             throw NSError(domain: "FirebaseService", code: 404, userInfo: [NSLocalizedDescriptionKey: "User profile not found"])
         }
     }
@@ -653,12 +666,11 @@ class FirebaseService {
             return rank
         } catch {
             let elapsed = Date().timeIntervalSince(startTime)
-            print("❌ [FirebaseService] Rank calculation failed after \(String(format: "%.3f", elapsed))s")
-            print("❌ [FirebaseService] Error: \(error.localizedDescription)")
+            Logger.error("Rank calculation failed after \(String(format: "%.3f", elapsed))s", error: error, category: "FirebaseService")
             
             if let firestoreError = error as NSError? {
-                print("❌ [FirebaseService] Error domain: \(firestoreError.domain), code: \(firestoreError.code)")
-                print("❌ [FirebaseService] Full error info: \(firestoreError)")
+                Logger.error("Error domain: \(firestoreError.domain), code: \(firestoreError.code)", category: "FirebaseService")
+                Logger.error("Full error info: \(firestoreError)", category: "FirebaseService")
                 
                 // Check for specific error types
                 if firestoreError.domain == "FIRFirestoreErrorDomain" {
@@ -718,7 +730,7 @@ class FirebaseService {
                 print("✅ Deleted old profile photo before uploading new one")
             } catch {
                 // Log but don't fail - old photo might already be deleted or invalid
-                print("⚠️ Could not delete old profile photo: \(error.localizedDescription)")
+                Logger.warning("Could not delete old profile photo: \(error.localizedDescription)", category: "FirebaseService")
             }
         }
         
@@ -803,7 +815,7 @@ class FirebaseService {
         // Check if already following (idempotency)
         let existingDoc = try await followingRef.getDocument()
         if existingDoc.exists {
-            print("⚠️ Already following - skipping")
+            Logger.warning("Already following - skipping", category: "FirebaseService")
             return false
         }
         
@@ -836,7 +848,7 @@ class FirebaseService {
         // Check if actually following (idempotency)
         let existingDoc = try await followingRef.getDocument()
         if !existingDoc.exists {
-            print("⚠️ Not following - skipping")
+            Logger.warning("Not following - skipping", category: "FirebaseService")
             return false
         }
         
@@ -1352,7 +1364,7 @@ class FirebaseService {
                 "commentCount": FieldValue.increment(Int64(-1))
             ])
         } catch {
-            print("⚠️ Failed to decrement comment count (comment was deleted but count may be off): \(error.localizedDescription)")
+            Logger.warning("Failed to decrement comment count (comment was deleted but count may be off): \(error.localizedDescription)", category: "FirebaseService")
             // Don't throw here - comment deletion succeeded, count decrement is less critical
         }
         
@@ -1417,7 +1429,7 @@ class FirebaseService {
                 feedbackData["displayName"] = userProfile.displayName
             } catch {
                 // If profile fetch fails, continue with anonymous submission
-                print("⚠️ Could not fetch user profile for feedback, submitting as anonymous: \(error.localizedDescription)")
+                Logger.warning("Could not fetch user profile for feedback, submitting as anonymous: \(error.localizedDescription)", category: "FirebaseService")
                 feedbackData["username"] = "anonymous"
                 feedbackData["displayName"] = "Anonymous User"
             }

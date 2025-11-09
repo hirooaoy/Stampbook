@@ -54,6 +54,14 @@
     "description": "Beautiful libraries where you can lose yourself in thought and tranquility",
     "region": "global",
     "totalStamps": 1
+  },
+  {
+    "id": "discover-central-park",
+    "emoji": "🐴",
+    "name": "Discover Central Park",
+    "description": "You're never too old to be happily exploring Central Park's iconic landmarks and hidden corners",
+    "region": "new-york",
+    "totalStamps": 1
   }
 ]
 

@@ -107,10 +107,29 @@ service cloud.firestore {
                         resource.data.postOwnerId == request.auth.uid);  // Or your post
     }
     
+    // ==================== INVITE SYSTEM ====================
+    
+    // Invite codes - control app growth
+    match /invite_codes/{code} {
+      // Anyone can read a SPECIFIC code by its ID (for validation during signup)
+      // This allows app to check if code exists and is active
+      allow get: if true;
+      
+      // CANNOT list/query all codes (prevents scraping valid codes)
+      allow list: if false;
+      
+      // Only admin service account can create/update codes (via generate_invite_codes.js)
+      // Regular users cannot write codes
+      allow write: if false;
+    }
+    
     // ==================== FEEDBACK ====================
     
     // User feedback (admin only reads)
     match /feedback/{feedbackId} {
+      // Admins can read all feedback
+      allow read: if isAdmin();
+      
       // Validation: Require message, limit size to prevent abuse
       // Allow both authenticated users and anonymous submissions
       allow create: if (
@@ -127,6 +146,9 @@ service cloud.firestore {
     
     // Stamp suggestions (user-submitted stamp and collection suggestions)
     match /stamp_suggestions/{suggestionId} {
+      // Admins can read all suggestions, users can read their own
+      allow read: if isAdmin() || (request.auth != null && resource.data.userId == request.auth.uid);
+      
       // Allow authenticated users to create suggestions
       allow create: if request.auth != null
         && request.resource.data.userId == request.auth.uid

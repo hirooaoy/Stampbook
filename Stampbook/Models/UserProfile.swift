@@ -68,7 +68,7 @@ struct UserProfile: Codable, Identifiable, Equatable, Sendable {
             let firstName = displayName.components(separatedBy: " ").first ?? "user"
             let cleanFirstName = firstName.lowercased()
                 .filter { $0.isLetter || $0.isNumber }
-            let randomNumber = Int.random(in: 10000...99999)
+            let randomNumber = Int.random(in: AppConfig.usernameRandomNumberRange)
             username = cleanFirstName + "\(randomNumber)"
             print("⚠️ Migrated legacy profile: generated username @\(username)")
         }

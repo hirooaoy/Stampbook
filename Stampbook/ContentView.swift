@@ -4,9 +4,9 @@ struct ContentView: View {
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var profileManager: ProfileManager // Shared profile manager
     @StateObject private var stampsManager: StampsManager = {
-        print("⏱️ [ContentView] Creating StampsManager...")
+        Logger.debug("Creating StampsManager...")
         let manager = StampsManager()
-        print("✅ [ContentView] StampsManager created")
+        Logger.debug("StampsManager created")
         return manager
     }()
     @StateObject private var mapCoordinator = MapCoordinator() // Coordinates map navigation
@@ -15,7 +15,9 @@ struct ContentView: View {
     @State private var shouldResetStampsNavigation = false // Flag to reset StampsView navigation
     
     var body: some View {
-        let _ = print("⏱️ [ContentView] body evaluation started")
+        #if DEBUG
+        let _ = Logger.debug("body evaluation started")
+        #endif
         
         // Show splash while checking auth state
         if authManager.isCheckingAuth {
@@ -29,8 +31,8 @@ struct ContentView: View {
                     .cornerRadius(24)
             }
         } else {
-            // Auth check complete - show main app
-            TabView(selection: $selectedTab) {
+            // Auth check complete - show main app (TabBar always visible)
+        TabView(selection: $selectedTab) {
             FeedView(selectedTab: $selectedTab, shouldResetStampsNavigation: $shouldResetStampsNavigation)
                 .tabItem {
                     Label("Feed", systemImage: "person.2.fill")
@@ -59,50 +61,41 @@ struct ContentView: View {
         }
         .onChange(of: mapCoordinator.shouldSwitchToMapTab) { _, shouldSwitch in
             if shouldSwitch {
-                #if DEBUG
-                print("🗺️ [ContentView] Switching to Map tab (tab 1)")
-                #endif
+                Logger.debug("Switching to Map tab (tab 1)")
                 selectedTab = 1 // Switch to Map tab
             }
         }
         .onAppear {
-            print("⏱️ [ContentView] onAppear started")
+            Logger.debug("onAppear started")
             // Set current user on initial load
             stampsManager.setCurrentUser(authManager.userId, profileManager: profileManager)
             
             // Link AuthManager to ProfileManager
             authManager.profileManager = profileManager
-            print("✅ [ContentView] onAppear completed")
+            Logger.debug("onAppear completed")
         }
         .onChange(of: authManager.isSignedIn) { _, isSignedIn in
-            print("🔄 [ContentView] Auth state changed - isSignedIn: \(isSignedIn)")
+            Logger.info("Auth state changed - isSignedIn: \(isSignedIn)", category: "ContentView")
             
             if !isSignedIn {
                 // User signed out - clear profile
-                print("🔄 [ContentView] User signed out, clearing profile")
+                Logger.info("User signed out, clearing profile", category: "ContentView")
                 profileManager.clearProfile()
             }
             // Note: AuthManager handles profile loading on sign-in
         }
         .onChange(of: authManager.userId) { _, newUserId in
-            print("🔄 [ContentView] UserId changed: \(newUserId ?? "nil")")
+            Logger.info("UserId changed: \(newUserId ?? "nil")", category: "ContentView")
             
             // Update stamps manager when user changes (sign in/out or switch user)
             stampsManager.setCurrentUser(newUserId, profileManager: profileManager)
             
             // Clear profile if signed out
             if !authManager.isSignedIn {
-                print("🔄 [ContentView] Clearing profile (signed out)")
+                Logger.info("Clearing profile (signed out)", category: "ContentView")
                 profileManager.clearProfile()
             }
-            // Note: AuthManager handles profile loading
-        }
-        .onChange(of: profileManager.currentUserProfile) { _, newProfile in
-            // Sync ProfileManager updates back to AuthManager for consistency
-            if let profile = newProfile {
-                authManager.userProfile = profile
-                authManager.userDisplayName = profile.displayName
-            }
+                // Note: AuthManager handles profile loading via ProfileManager
         }
         }
     }

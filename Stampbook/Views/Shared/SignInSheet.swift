@@ -1,12 +1,12 @@
 import SwiftUI
-import AuthenticationServices
 
-/// Reusable sign-in bottom sheet
+/// Reusable sign-in bottom sheet with invite code gate
 /// Shows when user needs to authenticate to access a feature
 struct SignInSheet: View {
     @EnvironmentObject var authManager: AuthManager
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.dismiss) var dismiss
+    @State private var showInviteCodeSheet = false
     
     let title: String
     let message: String
@@ -20,9 +20,7 @@ struct SignInSheet: View {
     }
     
     var body: some View {
-        VStack(spacing: 20) {  // Reduced from 24 to 20
-            // Drag indicator (automatic with .presentationDragIndicator)
-            
+        VStack(spacing: 20) {
             Spacer()
                 .frame(height: 8)
             
@@ -43,23 +41,23 @@ struct SignInSheet: View {
                     .font(.body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
-                    .lineLimit(nil)  // Allow unlimited lines
-                    .fixedSize(horizontal: false, vertical: true)  // Allow vertical expansion
+                    .lineLimit(nil)
+                    .fixedSize(horizontal: false, vertical: true)
                     .padding(.horizontal, 32)
             }
-            .padding(.bottom, 16)  // 16pt spacing to Sign In button
+            .padding(.bottom, 16)
             
-            // Native Sign In with Apple button
+            // Get Started button
             Button(action: {
-                authManager.signInWithApple()
-                dismiss()
+                showInviteCodeSheet = true
             }) {
-                SignInWithAppleButton(.signIn) { _ in }
-                    onCompletion: { _ in }
-                    .signInWithAppleButtonStyle(colorScheme == .dark ? .white : .black)
+                Text("Get Started")
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
                     .frame(height: 50)
+                    .background(Color.blue)
                     .cornerRadius(12)
-                    .allowsHitTesting(false) // Disable built-in handler, use our button action
             }
             .padding(.horizontal, 32)
             
@@ -75,6 +73,10 @@ struct SignInSheet: View {
         }
         .presentationDetents([.height(400)])
         .presentationDragIndicator(.visible)
+        .sheet(isPresented: $showInviteCodeSheet) {
+            InviteCodeSheet(isAuthenticated: $authManager.isSignedIn)
+                .environmentObject(authManager)
+        }
     }
 }
 

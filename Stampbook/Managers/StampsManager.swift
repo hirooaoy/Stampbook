@@ -94,7 +94,7 @@ class StampsManager: ObservableObject {
                 print("✅ [StampsManager] Loaded \(fetchedCollections.count) collections")
             }
         } catch {
-            print("❌ [StampsManager] Failed to load collections: \(error.localizedDescription)")
+            Logger.error("Failed to load collections", error: error, category: "StampsManager")
             await MainActor.run {
                 self.isLoadingCollections = false
             }
@@ -216,7 +216,7 @@ class StampsManager: ObservableObject {
                     print("✅ [StampsManager] Fetched \(fetched.count) stamps from Firebase")
                 }
             } catch {
-                print("❌ [StampsManager] Failed to fetch stamps: \(error.localizedDescription)")
+                Logger.error("Failed to fetch stamps", error: error, category: "StampsManager")
             }
         }
         
@@ -430,7 +430,7 @@ class StampsManager: ObservableObject {
             }
             return stats
         } catch {
-            print("⚠️ Failed to fetch statistics for \(stampId): \(error.localizedDescription)")
+            Logger.error("Failed to fetch statistics for \(stampId)", error: error, category: "StampsManager")
             return nil
         }
     }
@@ -441,7 +441,7 @@ class StampsManager: ObservableObject {
         do {
             return try await firebaseService.getUserRankForStamp(stampId: stampId, userId: userId)
         } catch {
-            print("⚠️ Failed to fetch rank for \(stampId): \(error.localizedDescription)")
+            Logger.error("Failed to fetch rank for \(stampId)", error: error, category: "StampsManager")
             return nil
         }
     }
@@ -523,7 +523,7 @@ class StampsManager: ObservableObject {
                 print("✅ Updated stamp statistics for \(stamp.id): \(updatedStats.totalCollectors) collectors (user rank: \(userRank ?? -1))")
                 print("✅ Updated user stats: \(totalStamps) stamps, \(uniqueCountries) countries")
             } catch {
-                print("⚠️ Failed to update statistics: \(error.localizedDescription)")
+                Logger.error("Failed to update statistics", error: error, category: "StampsManager")
                 // Don't revert local collection - stamp is saved locally and will auto-sync
                 // on next app launch via UserStampCollection.syncLocalOnlyStamps()
                 // Invalidate cache so it will be refetched next time
@@ -589,7 +589,7 @@ class StampsManager: ObservableObject {
             
             // Fetch current profile stats
             guard let profile = try? await firebaseService.fetchUserProfile(userId: userId) else {
-                print("⚠️ Could not fetch user profile for reconciliation")
+                Logger.warning("Could not fetch user profile for reconciliation", category: "StampsManager")
                 return
             }
             
@@ -618,7 +618,7 @@ class StampsManager: ObservableObject {
                 print("✅ User stats already correct (\(actualTotal) stamps, \(actualUniqueCountries) countries)")
             }
         } catch {
-            print("⚠️ Failed to reconcile user stats: \(error.localizedDescription)")
+            Logger.error("Failed to reconcile user stats", error: error, category: "StampsManager")
             // Don't crash - stats will be reconciled on next app launch
         }
     }
@@ -637,7 +637,7 @@ class StampsManager: ObservableObject {
             // - "Street\nCity, Country" (International format)
             let lines = stamp.address.components(separatedBy: "\n")
             guard lines.count >= 2 else {
-                print("⚠️ Invalid address format for stamp \(stamp.id): \(stamp.address)")
+                Logger.warning("Invalid address format for stamp \(stamp.id): \(stamp.address)", category: "StampsManager")
                 return nil
             }
             
@@ -654,7 +654,7 @@ class StampsManager: ObservableObject {
                 let countryPart = parts[1].components(separatedBy: " ").first ?? parts[1]
                 return countryPart.isEmpty ? nil : countryPart
             } else {
-                print("⚠️ Unexpected address format for stamp \(stamp.id): \(stamp.address)")
+                Logger.warning("Unexpected address format for stamp \(stamp.id): \(stamp.address)", category: "StampsManager")
                 return nil
             }
         })

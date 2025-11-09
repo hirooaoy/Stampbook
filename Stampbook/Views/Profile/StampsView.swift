@@ -24,6 +24,7 @@ struct StampsView: View {
     @State private var showAppStoreUrlCopied = false // Show confirmation when App Store URL is copied
     @State private var navigationPath = NavigationPath() // Track navigation stack
     @State private var welcomeStamp: Stamp? // Store the fetched welcome stamp (nil = sheet closed, non-nil = sheet open)
+    @State private var showInviteCodeSheet = false // Show invite code sheet for signed-out users
     // @State private var hasAttemptedRankLoad = false // TODO: POST-MVP - Rank loading disabled
     
     enum StampTab: String, CaseIterable {
@@ -39,6 +40,10 @@ struct StampsView: View {
     }
     
     var body: some View {
+        content
+    }
+    
+    private var content: some View {
         NavigationStack(path: $navigationPath) {
             VStack(spacing: 0) {
                 // Top bar
@@ -54,14 +59,8 @@ struct StampsView: View {
                                 .font(.headline)
                                 .fontWeight(.semibold)
                         }
-                    } else {
-                        // Signed-out: Show app logo
-                        Image("AppLogo")
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: 32, height: 32)
-                            .cornerRadius(6)
                     }
+                    // Signed-out: Show nothing (no logo)
                     
                     Spacer()
                     
@@ -272,16 +271,17 @@ struct StampsView: View {
                                         .padding(.horizontal, 32)
                                 }
                                 
-                                // Native Sign In with Apple button
+                                // Get Started button
                                 Button(action: {
-                                    authManager.signInWithApple()
+                                    showInviteCodeSheet = true
                                 }) {
-                                    SignInWithAppleButton(.signIn) { _ in }
-                                        onCompletion: { _ in }
-                                        .signInWithAppleButtonStyle(colorScheme == .dark ? .white : .black)
+                                    Text("Get Started")
+                                        .font(.headline)
+                                        .foregroundColor(.white)
+                                        .frame(maxWidth: .infinity)
                                         .frame(height: 50)
-                                        .cornerRadius(8)
-                                        .allowsHitTesting(false)
+                                        .background(Color.blue)
+                                        .cornerRadius(12)
                                 }
                                 .padding(.horizontal, 32)
                                 .padding(.top, 8)
@@ -621,6 +621,10 @@ struct StampsView: View {
                         .environmentObject(authManager)
                         .environmentObject(MapCoordinator())
                     }
+                }
+                .sheet(isPresented: $showInviteCodeSheet) {
+                    InviteCodeSheet(isAuthenticated: $authManager.isSignedIn)
+                        .environmentObject(authManager)
                 }
                 .alert("Sign Out", isPresented: $showSignOutConfirmation) {
                     Button("Cancel", role: .cancel) {}

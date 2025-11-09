@@ -33,20 +33,20 @@ class ProfileManager: ObservableObject {
     func loadProfile(userId: String, loadRank: Bool = false) {
         // Skip if already loaded for this user (avoid redundant loads)
         if let currentProfile = currentUserProfile, currentProfile.id == userId, !isLoading {
-            print("✅ [ProfileManager] Profile already loaded for userId: \(userId)")
+            Logger.debug("Profile already loaded for userId: \(userId)")
             return
         }
         
         // Prevent duplicate loads
         if isLoading {
-            print("⚠️ [ProfileManager] Already loading profile, skipping duplicate request")
+            Logger.warning("Already loading profile, skipping duplicate request")
             return
         }
         
         isLoading = true
         error = nil
         
-        print("🔄 [ProfileManager] Loading profile for userId: \(userId)")
+        Logger.info("Loading profile for userId: \(userId)", category: "ProfileManager")
         
         Task {
             do {
@@ -64,7 +64,7 @@ class ProfileManager: ObservableObject {
                     self.currentUserProfile = profile
                     self.isLoading = false
                 }
-                print("✅ [ProfileManager] Loaded user profile: \(profile.displayName) (\(followerCount) followers, \(followingCount) following)")
+                Logger.success("Loaded user profile: \(profile.displayName) (\(followerCount) followers, \(followingCount) following)", category: "ProfileManager")
                 
                 // TODO: POST-MVP - Rank loading disabled
                 // if loadRank {
@@ -75,7 +75,7 @@ class ProfileManager: ObservableObject {
                     self.error = error.localizedDescription
                     self.isLoading = false
                 }
-                print("❌ [ProfileManager] Failed to load profile: \(error.localizedDescription)")
+                Logger.error("Failed to load profile", error: error, category: "ProfileManager")
             }
         }
     }
@@ -83,7 +83,7 @@ class ProfileManager: ObservableObject {
     /// Update the current user's profile
     /// Posts notification to invalidate caches across the app
     func updateProfile(_ profile: UserProfile) {
-        print("🔄 [ProfileManager] Updating profile: @\(profile.username)")
+        Logger.info("Updating profile: @\(profile.username)", category: "ProfileManager")
         currentUserProfile = profile
         
         // Notify the app that profile has been updated
@@ -93,7 +93,7 @@ class ProfileManager: ObservableObject {
             object: nil,
             userInfo: ["profile": profile]
         )
-        print("📢 [ProfileManager] Posted profileDidUpdate notification")
+        Logger.debug("Posted profileDidUpdate notification")
     }
     
     /// Refresh the current user's profile from Firebase
@@ -128,7 +128,7 @@ class ProfileManager: ObservableObject {
             //     await fetchUserRank(for: profile)
             // }
         } catch {
-            print("⚠️ Failed to refresh profile: \(error.localizedDescription)")
+            Logger.warning("Failed to refresh profile", category: "ProfileManager")
         }
     }
     
@@ -190,7 +190,7 @@ class ProfileManager: ObservableObject {
     
     /// Clear profile data (on sign out)
     func clearProfile() {
-        print("🗑️ [ProfileManager] Clearing profile data")
+        Logger.info("Clearing profile data", category: "ProfileManager")
         currentUserProfile = nil
         // userRank = nil // TODO: POST-MVP
         error = nil

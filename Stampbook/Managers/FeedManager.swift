@@ -251,7 +251,7 @@ class FeedManager: ObservableObject {
             }
             
         } catch {
-            print("❌ [FeedManager] Failed to load 'Only Yours' feed: \(error.localizedDescription)")
+            Logger.error("Failed to load 'Only Yours' feed", error: error, category: "FeedManager")
             await MainActor.run {
                 self.isLoading = false
                 self.errorMessage = self.getUserFriendlyError(error)
@@ -360,7 +360,7 @@ class FeedManager: ObservableObject {
             }
             
         } catch {
-            print("❌ [FeedManager] Failed to load more 'Only Yours' posts: \(error.localizedDescription)")
+            Logger.error("Failed to load more 'Only Yours' posts", error: error, category: "FeedManager")
             await MainActor.run {
                 self.isLoadingMore = false
                 self.errorMessage = self.getUserFriendlyError(error)
@@ -483,7 +483,7 @@ class FeedManager: ObservableObject {
             }
             
         } catch {
-            print("❌ [FeedManager] Failed to load more posts: \(error.localizedDescription)")
+            Logger.error("Failed to load more posts", error: error, category: "FeedManager")
             await MainActor.run {
                 isLoadingMore = false
             }
@@ -613,7 +613,7 @@ class FeedManager: ObservableObject {
             // Save to disk for next cold start
             saveToDiskCache(posts: posts)
         } catch {
-            print("❌ [FeedManager] Failed to load feed: \(error.localizedDescription)")
+            Logger.error("Failed to load feed", error: error, category: "FeedManager")
             await MainActor.run {
                 self.isLoading = false
                 self.isLoadingMore = false

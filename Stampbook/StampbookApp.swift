@@ -20,7 +20,7 @@ import FirebaseCrashlytics
 class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication,
                     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
-        print("⏱️ [AppDelegate] didFinishLaunching started")
+        Logger.debug("didFinishLaunching started")
         
         // Configure Firebase
         FirebaseApp.configure()
@@ -28,7 +28,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         // Configure Crashlytics
         Crashlytics.crashlytics().setCrashlyticsCollectionEnabled(true)
         
-        print("⏱️ [AppDelegate] Firebase & Crashlytics configured")
+        Logger.info("Firebase & Crashlytics configured", category: "AppDelegate")
         return true
     }
 }
@@ -41,35 +41,35 @@ struct StampbookApp: App {
     
     // Track startup time for watchdog debugging
     init() {
-        print("⏱️ [StampbookApp] App init() started")
-        print("⏱️ [StampbookApp] About to create @StateObject managers...")
+        Logger.debug("App init() started")
+        Logger.debug("About to create @StateObject managers...")
     }
     
     @StateObject private var authManager: AuthManager = {
-        print("⏱️ [StampbookApp] Creating AuthManager...")
+        Logger.debug("Creating AuthManager...")
         let manager = AuthManager()
-        print("✅ [StampbookApp] AuthManager created")
+        Logger.debug("AuthManager created")
         return manager
     }()
     
     @StateObject private var networkMonitor: NetworkMonitor = {
-        print("⏱️ [StampbookApp] Creating NetworkMonitor...")
+        Logger.debug("Creating NetworkMonitor...")
         let monitor = NetworkMonitor()
-        print("✅ [StampbookApp] NetworkMonitor created")
+        Logger.debug("NetworkMonitor created")
         return monitor
     }()
     
     @StateObject private var followManager: FollowManager = {
-        print("⏱️ [StampbookApp] Creating FollowManager...")
+        Logger.debug("Creating FollowManager...")
         let manager = FollowManager()
-        print("✅ [StampbookApp] FollowManager created")
+        Logger.debug("FollowManager created")
         return manager
     }()
     
     @StateObject private var profileManager: ProfileManager = {
-        print("⏱️ [StampbookApp] Creating ProfileManager...")
+        Logger.debug("Creating ProfileManager...")
         let manager = ProfileManager()
-        print("✅ [StampbookApp] ProfileManager created")
+        Logger.debug("ProfileManager created")
         return manager
     }()
     
@@ -97,9 +97,9 @@ struct StampbookApp: App {
     private func handleAuthStateChange(isSignedIn: Bool) {
         // Currently no specific actions needed on auth state change
         if isSignedIn {
-            print("✅ [AppLifecycle] User signed in")
+            Logger.debug("User signed in")
         } else {
-            print("✅ [AppLifecycle] User signed out")
+            Logger.debug("User signed out")
         }
     }
     
@@ -111,17 +111,17 @@ struct StampbookApp: App {
         case .active:
             // App became active (foreground)
             if oldPhase == .inactive || oldPhase == .background {
-                print("🌅 [AppLifecycle] App became active")
+                Logger.debug("App became active")
                 // Network monitor will automatically check connectivity
             }
             
         case .inactive:
             // App became inactive (transitioning to/from background)
-            print("⏸️ [AppLifecycle] App became inactive")
+            Logger.debug("App became inactive")
             
         case .background:
             // App moved to background
-            print("🌙 [AppLifecycle] App moved to background")
+            Logger.debug("App moved to background")
             // ImageCacheManager automatically clears full images via notification
             
         @unknown default:

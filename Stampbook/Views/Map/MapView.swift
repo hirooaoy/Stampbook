@@ -19,7 +19,8 @@ import Combine
 
 struct MapView: View {
     /// The radius in meters within which a user can collect a stamp
-    static let stampCollectionRadius: Double = 150 // 150m (~1.5 blocks) - accounts for GPS accuracy in urban areas
+    /// Defined in AppConfig for consistency across the app
+    static let stampCollectionRadius: Double = AppConfig.stampCollectionRadius
     
     @StateObject private var locationManager = LocationManager()
     @StateObject private var networkMonitor = NetworkMonitor()

@@ -690,5 +690,22 @@
     ],
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-marshall-hog-island-oyster-farm.png?alt=media&token=45bb8409-4f1e-4d50-9f01-3d6ffd7cecd8",
     "collectionRadius": "regular"
+  },
+  {
+    "id": "us-ny-nyc-bethesda-fountain",
+    "name": "Bethesda Fountain",
+    "latitude": 40.77432385893823,
+    "longitude": -73.9708430029675,
+    "address": "Bethesda Fountain\nNew York, NY, USA 10024",
+    "collectionIds": [
+      "discover-central-park"
+    ],
+    "about": "This iconic Central Park fountain features the Angel of the Waters statue by Emma Stebbins, who became the first woman to receive a public art commission in NYC.",
+    "thingsToDoFromEditors": [
+      "Listen to street musicians who perform around the fountain",
+      "Walk through the arcade to see the restored Minton tile ceiling"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ny-nyc-bethesda-fountain.png?alt=media&token=91dd47ef-f3cc-4f1f-9597-78b1db73f110",
+    "collectionRadius": "regularplus"
   }
 ]

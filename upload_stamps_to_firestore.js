@@ -179,6 +179,29 @@ async function uploadCollections() {
   
   console.log(`✅ Found ${collectionsData.length} collections\n`);
   
+  // ==================== SYNC DELETIONS ====================
+  console.log('🔍 Checking for collection deletions...');
+  const snapshot = await db.collection('collections').get();
+  const existingIds = new Set(snapshot.docs.map(doc => doc.id));
+  const jsonIds = new Set(collectionsData.map(collection => collection.id));
+  
+  const toDelete = [...existingIds].filter(id => !jsonIds.has(id));
+  
+  if (toDelete.length > 0) {
+    console.log(`\n🗑️  Deleting ${toDelete.length} collection(s) not in JSON:`);
+    for (const id of toDelete) {
+      try {
+        await db.collection('collections').doc(id).delete();
+        console.log(`   ✓ Deleted: ${id}`);
+      } catch (error) {
+        console.error(`   ✗ Failed to delete ${id}:`, error.message);
+      }
+    }
+  } else {
+    console.log('✅ No collections to delete\n');
+  }
+  // ========================================================
+  
   console.log('📤 Uploading collections...');
   let uploadedCount = 0;
   
@@ -203,16 +226,75 @@ async function uploadCollections() {
   console.log(`\n✅ Uploaded ${uploadedCount}/${collectionsData.length} collections\n`);
 }
 
+async function verifyCollectionCounts() {
+  console.log('🔍 Verifying collection counts before upload...\n');
+  
+  const stampsPath = path.join(__dirname, 'Stampbook', 'Data', 'stamps.json');
+  const collectionsPath = path.join(__dirname, 'Stampbook', 'Data', 'collections.json');
+  
+  const stampsData = JSON.parse(fs.readFileSync(stampsPath, 'utf8'));
+  const collectionsData = JSON.parse(fs.readFileSync(collectionsPath, 'utf8'));
+  
+  // Count actual stamps per collection from stamps.json
+  const actualCounts = {};
+  stampsData.forEach(stamp => {
+    const collectionIds = stamp.collectionIds || [];
+    collectionIds.forEach(collectionId => {
+      actualCounts[collectionId] = (actualCounts[collectionId] || 0) + 1;
+    });
+  });
+  
+  // Check for mismatches
+  let hasErrors = false;
+  const errors = [];
+  
+  collectionsData.forEach(collection => {
+    const expected = collection.totalStamps;
+    const actual = actualCounts[collection.id] || 0;
+    
+    if (expected !== actual) {
+      hasErrors = true;
+      errors.push({
+        id: collection.id,
+        name: collection.name,
+        expected,
+        actual
+      });
+    }
+  });
+  
+  if (hasErrors) {
+    console.log('❌ COLLECTION COUNT MISMATCHES FOUND:\n');
+    errors.forEach(err => {
+      console.log(`   ${err.name} (${err.id})`);
+      console.log(`   Expected: ${err.expected}, Actual: ${err.actual}`);
+      console.log(`   → Update collections.json: "totalStamps": ${err.actual}\n`);
+    });
+    console.log('⚠️  Please fix collections.json before uploading!\n');
+    return false;
+  }
+  
+  console.log('✅ All collection counts are correct!\n');
+  return true;
+}
+
 async function main() {
   console.log('🚀 Syncing Firestore with local JSON...\n');
   
   try {
+    // Verify counts first
+    const countsValid = await verifyCollectionCounts();
+    if (!countsValid) {
+      console.log('❌ Upload aborted due to count mismatches.\n');
+      process.exit(1);
+    }
+    
     await uploadStamps();
     await uploadCollections();
     
     console.log('🎉 Sync complete!\n');
     console.log('✅ Stamps synced (added, updated, deleted)');
-    console.log('✅ Collections synced');
+    console.log('✅ Collections synced (added, updated, deleted)');
     console.log('✅ Visibility system ready\n');
     
   } catch (error) {

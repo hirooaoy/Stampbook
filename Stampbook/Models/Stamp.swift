@@ -42,7 +42,7 @@ struct Stamp: Identifiable, Codable, Equatable {
     var collectionRadiusInMeters: Double {
         switch collectionRadius {
         case "regular":
-            return 150  // 150m (~500ft) - specific landmarks, monuments, restaurants
+            return AppConfig.stampCollectionRadius  // 150m (~500ft) - specific landmarks, monuments, restaurants
         case "regularplus":
             return 500  // 500m (~0.31mi) - gardens, parks, museums, beaches
         case "large":
@@ -50,7 +50,7 @@ struct Stamp: Identifiable, Codable, Equatable {
         case "xlarge":
             return 3000  // 3km (~1.9mi) - airports, massive venues (not used yet)
         default:
-            return 150  // Default to regular if unknown category
+            return AppConfig.stampCollectionRadius  // Default to regular if unknown category
         }
     }
     

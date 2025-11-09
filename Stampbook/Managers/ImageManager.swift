@@ -50,7 +50,7 @@ class ImageManager: ObservableObject {
         
         // Compress image (reduced from 2MB to 0.8MB for cost savings)
         guard let imageData = compressImage(resizedImage, maxSizeMB: 0.8) else {
-            print("⚠️ Failed to compress image")
+            Logger.warning("Failed to compress image", category: "ImageManager")
             return nil
         }
         
@@ -79,8 +79,8 @@ class ImageManager: ObservableObject {
             }
             
             return filename
-        } catch {
-            print("⚠️ Failed to save image: \(error.localizedDescription)")
+        } catch let saveError {
+            Logger.error("Failed to save image", error: saveError, category: "ImageManager")
             return nil
         }
     }
@@ -173,8 +173,8 @@ class ImageManager: ObservableObject {
                 // Remove thumbnail from memory cache
                 ImageCacheManager.shared.removeThumbnail(key: thumbnailFilename)
             }
-        } catch {
-            print("⚠️ Failed to delete image: \(error.localizedDescription)")
+        } catch let deleteError {
+            Logger.error("Failed to delete image", error: deleteError, category: "ImageManager")
         }
     }
     
@@ -314,8 +314,8 @@ class ImageManager: ObservableObject {
                     ImageCacheManager.shared.setThumbnail(thumbnail, key: thumbnailCacheKey)
                 }
             }
-        } catch {
-            print("⚠️ Failed to cache image: \(error.localizedDescription)")
+        } catch let cacheError {
+            Logger.error("Failed to cache image", error: cacheError, category: "ImageManager")
             // Still return the image even if caching failed
         }
         
@@ -356,13 +356,13 @@ class ImageManager: ObservableObject {
     func deleteImageFromFirebase(path: String) async throws {
         // Validate path is not empty
         guard !path.isEmpty else {
-            print("⚠️ Cannot delete: empty storage path provided")
+            Logger.warning("Cannot delete: empty storage path provided", category: "ImageManager")
             throw ImageError.invalidPath
         }
         
         // Ensure path doesn't contain any invalid characters
         guard path.contains("/") else {
-            print("⚠️ Cannot delete: invalid storage path format: \(path)")
+            Logger.warning("Cannot delete: invalid storage path format: \(path)", category: "ImageManager")
             throw ImageError.invalidPath
         }
         
@@ -376,22 +376,22 @@ class ImageManager: ObservableObject {
             if error.domain == "FIRStorageErrorDomain" {
                 switch error.code {
                 case -13010: // Object not found
-                    print("⚠️ Image already deleted or doesn't exist in Firebase: \(path)")
+                    Logger.warning("Image already deleted or doesn't exist in Firebase: \(path)", category: "ImageManager")
                     // Don't throw - image is already gone, which is the desired state
                     return
                 case -13020: // Unauthorized
-                    print("❌ Permission denied deleting from Firebase Storage: \(path)")
+                    Logger.error("Permission denied deleting from Firebase Storage: \(path)", category: "ImageManager")
                     throw ImageError.deleteUnauthorized
                 case -13030: // Canceled
-                    print("⚠️ Deletion canceled: \(path)")
+                    Logger.warning("Deletion canceled: \(path)", category: "ImageManager")
                     throw ImageError.deletionCanceled
                 default:
-                    print("❌ Firebase Storage error (\(error.code)): \(error.localizedDescription)")
+                    Logger.error("Firebase Storage error (\(error.code)): \(error.localizedDescription)", category: "ImageManager")
                     throw error
                 }
             } else {
                 // Network or other errors
-                print("❌ Network/other error deleting from Firebase: \(error.localizedDescription)")
+                Logger.error("Network/other error deleting from Firebase", error: error, category: "ImageManager")
                 throw error
             }
         }
@@ -424,9 +424,9 @@ class ImageManager: ObservableObject {
             let paths = result.items.map { $0.fullPath }
             print("📋 Found \(paths.count) images in Firebase for stamp \(stampId)")
             return paths
-        } catch {
-            print("⚠️ Failed to list Firebase images: \(error.localizedDescription)")
-            throw error
+        } catch let fetchError {
+            Logger.error("Failed to list Firebase images", error: fetchError, category: "ImageManager")
+            throw fetchError
         }
     }
     
@@ -457,8 +457,8 @@ class ImageManager: ObservableObject {
             do {
                 try await deleteImageFromFirebase(path: path)
                 deletedCount += 1
-            } catch {
-                print("⚠️ Failed to delete orphaned image \(path): \(error.localizedDescription)")
+            } catch let deleteError {
+                Logger.error("Failed to delete orphaned image \(path)", error: deleteError, category: "ImageManager")
                 // Continue with other deletions
             }
         }
@@ -658,8 +658,8 @@ class ImageManager: ObservableObject {
                             filename: photo.filename
                         )
                         return (photo.filename, storagePath)
-                    } catch {
-                        print("⚠️ Failed to upload \(photo.filename) to Firebase: \(error.localizedDescription)")
+                    } catch let uploadError {
+                        Logger.error("Failed to upload \(photo.filename) to Firebase", error: uploadError, category: "ImageManager")
                         
                         // Show user-friendly error message (only once for batch)
                         await MainActor.run {
@@ -702,13 +702,13 @@ class ImageManager: ObservableObject {
         // Resize to 200x200px (square crop, aspect fill) - optimized for MVP
         // 200px = retina-ready + 4x faster downloads vs 400px
         guard let resizedImage = resizeProfilePicture(image, size: 200) else {
-            print("⚠️ Failed to resize profile picture")
+            Logger.warning("Failed to resize profile picture", category: "ImageManager")
             return nil
         }
         
         // Compress image (200px should be ~20-30KB vs ~80KB for 400px)
         guard let imageData = compressImage(resizedImage, maxSizeMB: 0.2) else {
-            print("⚠️ Failed to compress profile picture")
+            Logger.warning("Failed to compress profile picture", category: "ImageManager")
             return nil
         }
         
@@ -723,8 +723,8 @@ class ImageManager: ObservableObject {
             try imageData.write(to: fileURL)
             print("✅ Profile picture saved locally: \(filename)")
             return filename
-        } catch {
-            print("⚠️ Failed to save profile picture: \(error.localizedDescription)")
+        } catch let saveError {
+            Logger.error("Failed to save profile picture", error: saveError, category: "ImageManager")
             return nil
         }
     }

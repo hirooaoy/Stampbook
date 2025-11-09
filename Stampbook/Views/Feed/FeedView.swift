@@ -31,6 +31,7 @@ struct FeedView: View {
     @State private var showSuggestCollection = false
     @State private var showAppStoreUrlCopied = false // Show confirmation when App Store URL is copied
     @State private var profileUpdateListener: AnyCancellable? // Listen for profile updates
+    @State private var showInviteCodeSheet = false // Show invite code sheet for new users
     
     enum FeedTab: String, CaseIterable {
         case all = "All"
@@ -138,12 +139,14 @@ struct FeedView: View {
                 VStack(spacing: 0) {
                     // Top bar with logo and icons
                     HStack {
-                        // Logo on the left (app icon)
-                        Image("AppLogo")
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: 32, height: 32)
-                            .cornerRadius(6)
+                        // Logo on the left (app icon) - only show when signed in
+                        if authManager.isSignedIn {
+                            Image("AppLogo")
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 32, height: 32)
+                                .cornerRadius(6)
+                        }
                         
                         Spacer()
                         
@@ -266,20 +269,16 @@ struct FeedView: View {
                                         .padding(.horizontal, 32)
                                 }
                                 
-                                // Native Sign In with Apple button
+                                // Get Started button (replaced Sign in with Apple)
                                 Button(action: {
-                                    authManager.signInWithApple()
+                                    showInviteCodeSheet = true
                                 }) {
-                                    HStack {
-                                        Image(systemName: "applelogo")
-                                            .font(.system(size: 18, weight: .medium))
-                                        Text("Sign in with Apple")
-                                            .font(.system(size: 17, weight: .semibold))
-                                    }
-                                    .foregroundColor(colorScheme == .dark ? .black : .white)
+                                    Text("Get Started")
+                                        .font(.headline)
+                                        .foregroundColor(.white)
                                     .frame(maxWidth: .infinity)
                                     .frame(height: 50)
-                                    .background(colorScheme == .dark ? Color.white : Color.black)
+                                        .background(Color.blue)
                                     .cornerRadius(8)
                                 }
                                 .padding(.horizontal, 32)
@@ -327,6 +326,10 @@ struct FeedView: View {
             SuggestCollectionView()
                 .environmentObject(authManager)
                 .environmentObject(profileManager)
+        }
+        .sheet(isPresented: $showInviteCodeSheet) {
+            InviteCodeSheet(isAuthenticated: $authManager.isSignedIn)
+                .environmentObject(authManager)
         }
         .alert("Sign Out", isPresented: $showSignOutConfirmation) {
             Button("Cancel", role: .cancel) {}

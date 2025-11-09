@@ -22,6 +22,7 @@ struct StampDetailView: View {
     @State private var showSuggestEdit = false
     @State private var showAddressOptions = false
     @State private var showCopyConfirmation = false
+    @State private var showInviteCodeSheet = false
     
     // Computed property to get live stampStats from StampsManager
     private var stampStats: StampStatistics? {
@@ -459,21 +460,22 @@ struct StampDetailView: View {
                 Divider()
                 
                 if !authManager.isSignedIn {
-                    // Not signed in - show text and native Sign In with Apple button
+                    // Not signed in - show text and Get Started button
                     VStack(spacing: 16) {
                         Text("Start your stamp collection")
                             .font(.headline)
                             .foregroundColor(.primary)
                         
                         Button(action: {
-                            authManager.signInWithApple()
+                            showInviteCodeSheet = true
                         }) {
-                            SignInWithAppleButton(.signIn) { _ in }
-                                onCompletion: { _ in }
-                                .signInWithAppleButtonStyle(colorScheme == .dark ? .white : .black)
+                            Text("Get Started")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
                                 .frame(height: 50)
+                                .background(Color.blue)
                                 .cornerRadius(12)
-                                .allowsHitTesting(false) // Disable built-in handler
                         }
                     }
                     .padding(.horizontal, 16)
@@ -613,6 +615,10 @@ struct StampDetailView: View {
         }
         .sheet(isPresented: $showSuggestEdit) {
             SuggestEditView(stampId: stamp.id, stampName: stamp.name)
+                .environmentObject(authManager)
+        }
+        .sheet(isPresented: $showInviteCodeSheet) {
+            InviteCodeSheet(isAuthenticated: $authManager.isSignedIn)
                 .environmentObject(authManager)
         }
         .sheet(isPresented: $showAddressOptions) {

@@ -29,7 +29,7 @@ class FollowManager: ObservableObject {
                     print("✅ [FollowManager] isFollowing[\(targetUserId)] = \(following)")
                 }
             } catch {
-                print("❌ [FollowManager] Failed to check follow status: \(error.localizedDescription)")
+                Logger.error("Failed to check follow status", error: error, category: "FollowManager")
             }
         }
     }
@@ -45,7 +45,7 @@ class FollowManager: ObservableObject {
                         let following = try await self.firebaseService.isFollowing(followerId: currentUserId, followeeId: targetUserId)
                         return (targetUserId, following)
                     } catch {
-                        print("❌ [FollowManager] Failed to check follow status for \(targetUserId): \(error.localizedDescription)")
+                        Logger.error("Failed to check follow status for \(targetUserId)", error: error, category: "FollowManager")
                         return (targetUserId, false)
                     }
                 }
@@ -127,7 +127,7 @@ class FollowManager: ObservableObject {
                             }
                         }
                     } else {
-                        print("⚠️ [FollowManager] Already following, rolling back optimistic updates")
+                        Logger.warning("Already following, rolling back optimistic updates", category: "FollowManager")
                         // Already following - rollback optimistic updates
                         if var currentCounts = self.followCounts[currentUserId] {
                             currentCounts.following = max(0, currentCounts.following - 1)
@@ -140,7 +140,7 @@ class FollowManager: ObservableObject {
                     }
                 }
             } catch {
-                print("❌ [FollowManager] Failed to follow user: \(error.localizedDescription)")
+                Logger.error("Failed to follow user", error: error, category: "FollowManager")
                 // Rollback on error
                 await MainActor.run {
                     self.isFollowing[targetUserId] = false
@@ -214,7 +214,7 @@ class FollowManager: ObservableObject {
                     
                     onSuccess?(nil)
                 } else {
-                    print("⚠️ [FollowManager] Wasn't following, rolling back optimistic updates")
+                    Logger.warning("Wasn't following, rolling back optimistic updates", category: "FollowManager")
                     // Wasn't following - rollback optimistic updates
                     await MainActor.run {
                         self.isFollowing[targetUserId] = true
@@ -233,7 +233,7 @@ class FollowManager: ObservableObject {
                     }
                 }
             } catch {
-                print("❌ [FollowManager] Failed to unfollow user: \(error.localizedDescription)")
+                Logger.error("Failed to unfollow user", error: error, category: "FollowManager")
                 // Rollback on error - re-add to following list
                 await MainActor.run {
                     self.isFollowing[targetUserId] = true
@@ -298,7 +298,7 @@ class FollowManager: ObservableObject {
                     self.error = error.localizedDescription
                     self.isLoading = false
                 }
-                print("❌ Failed to fetch followers: \(error.localizedDescription)")
+                Logger.error("Failed to fetch followers", error: error, category: "FollowManager")
             }
         }
     }
@@ -327,7 +327,7 @@ class FollowManager: ObservableObject {
                     self.error = error.localizedDescription
                     self.isLoading = false
                 }
-                print("❌ Failed to fetch following: \(error.localizedDescription)")
+                Logger.error("Failed to fetch following", error: error, category: "FollowManager")
             }
         }
     }
@@ -352,7 +352,7 @@ class FollowManager: ObservableObject {
                 print("✅ [FollowManager] Updated counts for \(userId): followers=\(followerCount), following=\(followingCount)")
             }
         } catch {
-            print("❌ [FollowManager] Failed to refresh follow counts: \(error.localizedDescription)")
+            Logger.error("Failed to refresh follow counts", error: error, category: "FollowManager")
         }
     }
     
