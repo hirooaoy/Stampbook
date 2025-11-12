@@ -297,17 +297,20 @@ class LikeManagerTests: XCTestCase {
         XCTAssertTrue(likeManager.isLiked(postId: postId))
         XCTAssertEqual(likeManager.getLikeCount(postId: postId), 6)
         
-        // Manually clear UserDefaults (avoid calling clearCache which triggers Combine cleanup)
-        UserDefaults.standard.removeObject(forKey: "likedPosts")
-        UserDefaults.standard.removeObject(forKey: "likeCounts")
+        // Clear cache using the manager's method
+        likeManager.clearCache()
         
-        // Create new instance - should have no cached data
-        let newLikeManager = LikeManager()
+        // Verify data is cleared in memory
+        XCTAssertFalse(likeManager.isLiked(postId: postId), 
+                      "Liked state should be cleared")
+        XCTAssertEqual(likeManager.getLikeCount(postId: postId), 0, 
+                      "Cached count should be cleared")
         
-        XCTAssertFalse(newLikeManager.isLiked(postId: postId), 
-                      "Liked state should be cleared from UserDefaults")
-        XCTAssertEqual(newLikeManager.getLikeCount(postId: postId), 0, 
-                      "Cached count should be cleared from UserDefaults")
+        // Verify UserDefaults was cleared
+        let cachedLikes = UserDefaults.standard.array(forKey: "likedPosts") as? [String]
+        let cachedCounts = UserDefaults.standard.dictionary(forKey: "likeCounts") as? [String: Int]
+        XCTAssertNil(cachedLikes, "likedPosts should be removed from UserDefaults")
+        XCTAssertNil(cachedCounts, "likeCounts should be removed from UserDefaults")
     }
 }
 

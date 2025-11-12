@@ -140,14 +140,16 @@ class CommentManagerTests: XCTestCase {
         commentManager.updateCommentCount(postId: postId, count: 5, forceUpdate: true)
         XCTAssertEqual(commentManager.getCommentCount(postId: postId), 5)
         
-        // Manually clear UserDefaults (avoid calling clearCache which triggers Combine cleanup)
-        UserDefaults.standard.removeObject(forKey: "commentCounts")
+        // Clear cache using the manager's method
+        commentManager.clearCache()
         
-        // Create new instance - should have no cached data
-        let newCommentManager = CommentManager()
+        // Verify data is cleared in memory
+        XCTAssertEqual(commentManager.getCommentCount(postId: postId), 0, 
+                      "Cached comment count should be cleared")
         
-        XCTAssertEqual(newCommentManager.getCommentCount(postId: postId), 0, 
-                      "Cached comment count should be cleared from UserDefaults")
+        // Verify UserDefaults was cleared
+        let cachedCounts = UserDefaults.standard.dictionary(forKey: "commentCounts") as? [String: Int]
+        XCTAssertNil(cachedCounts, "commentCounts should be removed from UserDefaults")
     }
     
     /// Test realistic scenario: add comment → delete → restart
