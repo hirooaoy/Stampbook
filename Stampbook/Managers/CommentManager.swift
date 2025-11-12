@@ -9,7 +9,6 @@ class CommentManager: ObservableObject {
     @Published var errorMessage: String? // Error message to display to user
     
     private let firebaseService = FirebaseService.shared
-    private var cancellables = Set<AnyCancellable>()
     
     // Callback to notify FeedManager when comment count changes
     var onCommentCountChanged: ((String, Int) -> Void)?

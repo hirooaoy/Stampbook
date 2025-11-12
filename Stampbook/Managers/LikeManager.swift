@@ -8,7 +8,6 @@ class LikeManager: ObservableObject {
     @Published var errorMessage: String? // Error message to display to user
     
     private let firebaseService = FirebaseService.shared
-    private var cancellables = Set<AnyCancellable>()
     
     // Optimistic update tracking
     private var pendingLikes: Set<String> = [] // Posts being liked (optimistic)
