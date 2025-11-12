@@ -1,7 +1,7 @@
 [
   {
     "id": "your-first-stamp",
-    "name": "Your First Stamp",
+    "name": "Welcome Stamp",
     "latitude": 0,
     "longitude": 0,
     "address": "Anywhere in the world",
@@ -76,11 +76,11 @@
     ],
     "about": "Historic terminal and marketplace with artisan food vendors and iconic clock tower.",
     "thingsToDoFromEditors": [
-      "Find porchetta sandwich during the Saturday farmers’ market (8am-2pm)",
+      "Find porchetta sandwich during the Saturday farmers' market (8am-2pm)",
       "Taste Vietnamese Coffee ice cream from Humphry Slocombe"
     ],
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-ferry-building.png?alt=media&token=21b607d1-dbdf-477c-b9bd-a9a7ffbaa21e",
-    "collectionRadius": "regularplus"
+    "collectionRadius": "regular"
   },
   {
     "id": "us-ca-sf-oracle-park",
@@ -165,7 +165,7 @@
       "Walk around the entire lagoon to find different angles of the columns"
     ],
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-palace-of-fine-arts.png?alt=media&token=9a0324da-81e3-4b44-9999-38dfd1c2882a",
-    "collectionRadius": "regularplus"
+    "collectionRadius": "regular"
   },
   {
     "id": "us-ca-sf-painted-ladies",
@@ -438,7 +438,7 @@
       "Come during holiday season for spectacular light displays on the building"
     ],
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-conservatory-of-flowers.png?alt=media&token=73144806-c0f9-4f44-9fe5-50972762678d",
-    "collectionRadius": "regularplus"
+    "collectionRadius": "regular"
   },
   {
     "id": "us-ca-sf-ggp-bison-paddock",
@@ -674,7 +674,7 @@
       "Book the Seated Tasting Experience to sample five wines while exploring the castle at your own pace"
     ],
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-calistoga-castello-di-amorosa.png?alt=media&token=2abf64a2-932d-451f-b7cb-4b7653dbfc10",
-    "collectionRadius": "regularplus"
+    "collectionRadius": "regular"
   },
   {
     "id": "us-ca-marshall-hog-island-oyster-farm",
@@ -700,12 +700,217 @@
     "collectionIds": [
       "discover-central-park"
     ],
-    "about": "This iconic Central Park fountain features the Angel of the Waters statue by Emma Stebbins, who became the first woman to receive a public art commission in NYC.",
+    "about": "This iconic Central Park fountain features the Angel of the Waters statue by Emma Stebbins, who in 1863 became the first woman to receive a public art commission in NYC.",
     "thingsToDoFromEditors": [
       "Listen to street musicians who perform around the fountain",
       "Walk through the arcade to see the restored Minton tile ceiling"
     ],
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ny-nyc-bethesda-fountain.png?alt=media&token=91dd47ef-f3cc-4f1f-9597-78b1db73f110",
+    "collectionRadius": "regular"
+  },
+  {
+    "id": "us-ny-nyc-jacqueline-kennedy-onassis",
+    "name": "Jacqueline Kennedy Onassis Reservoir",
+    "latitude": 40.78217342996016,
+    "longitude": -73.96256475545574,
+    "address": "Jacqueline Kennedy Onassis Reservoir\nNew York, NY 10128",
+    "collectionIds": [
+      "discover-central-park"
+    ],
+    "about": "This 106-acre reservoir was renamed in 1994 to honor former First Lady Jacqueline Kennedy Onassis, who lived nearby and frequently jogged around it. The 1.58-mile running track offers stunning views of the Manhattan skyline.",
+    "thingsToDoFromEditors": [
+      "Walk or run the 1.58-mile path around the reservoir for beautiful skyline views",
+      "Visit at sunrise or sunset for the most spectacular light on the water"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ny-nyc-jacqueline-kennedy-onassis.png?alt=media&token=4ab3fb49-8a53-417e-98b1-3c7548d47297",
     "collectionRadius": "regularplus"
+  },
+  {
+    "id": "us-ny-nyc-the-ramble",
+    "name": "The Ramble",
+    "latitude": 40.77786894698316,
+    "longitude": -73.96971601812602,
+    "address": "79th St Transverse\nNew York, NY 10024",
+    "collectionIds": [
+      "discover-central-park"
+    ],
+    "about": "This 36-acre wilderness with rocky outcroppings and winding paths is one of the best birdwatching spots in North America, with over 230 species spotted here throughout the year.",
+    "thingsToDoFromEditors": [
+      "Bring binoculars during spring migration (April-May) for incredible birdwatching",
+      "Let yourself get lost on the winding paths - it's designed to feel like you've left the city"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ny-nyc-the-ramble.png?alt=media&token=e672b444-dfe9-4339-b7b7-5d877b903ef4",
+    "collectionRadius": "regularplus"
+  },
+  {
+    "id": "us-ny-nyc-conservatory-garden",
+    "name": "Conservatory Garden",
+    "latitude": 40.79377772795462,
+    "longitude": -73.95247967437285,
+    "address": "1233 5th Ave\nNew York, NY 10029",
+    "collectionIds": [
+      "discover-central-park"
+    ],
+    "about": "Central Park's only formal garden, featuring 6 acres divided into three distinct styles: Italian, French, and English. Free to visit and a peaceful escape with seasonal blooms and elegant fountains.",
+    "thingsToDoFromEditors": [
+      "Visit in spring (April-May) to see the famous Tulip Festival with 20,000+ tulips",
+      "Enter through the Vanderbilt Gate at 105th Street, one of Central Park's most ornate entrances"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ny-nyc-conservatory-garden.png?alt=media&token=82d731d4-6bbc-4087-b946-68a1551ae3b5",
+    "collectionRadius": "regularplus"
+  },
+  {
+    "id": "us-ny-nyc-bow-bridge",
+    "name": "Bow Bridge",
+    "latitude": 40.77582993707421,
+    "longitude": -73.97184158311308,
+    "address": "Bow Bridge\nNew York, NY 10024",
+    "collectionIds": [
+      "discover-central-park"
+    ],
+    "about": "One of Central Park's most iconic and photographed bridges, built in 1862. This elegant cast iron bridge spans the Lake and offers stunning views of the Manhattan skyline and surrounding woodlands.",
+    "thingsToDoFromEditors": [
+      "Visit at sunrise or golden hour for the best photos with soft light reflecting off the water",
+      "Walk to the center of the bridge for the classic view looking north toward the San Remo towers"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ny-nyc-bow-bridge.png?alt=media&token=b6074da0-aca5-4d06-b9eb-1529a82c76e8",
+    "collectionRadius": "regular"
+  },
+  {
+    "id": "us-ny-nyc-the-mall-and-literary-walk",
+    "name": "The Mall and Literary Walk",
+    "latitude": 40.77254781522678,
+    "longitude": -73.97151193545764,
+    "address": "The Mall\nNew York, NY 10022",
+    "collectionIds": [
+      "discover-central-park"
+    ],
+    "about": "The only straight path in Central Park, featuring a majestic canopy of American elm trees. \"The Mall\" comes from an old English term meaning a tree-lined promenade for walking or social gatherings.",
+    "thingsToDoFromEditors": [
+      "Visit Literary Walk at the southern end to see statues of famous writers like Shakespeare",
+      "Walk under the elm canopy in fall when the golden leaves create a natural tunnel"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ny-nyc-the-mall-and-literary-walk.png?alt=media&token=d7ad5f48-1410-461c-8c4d-4ada216181db",
+    "collectionRadius": "regular"
+  },
+  {
+    "id": "us-ny-nyc-lincoln-center-for-the-performing-arts",
+    "name": "Lincoln Center for the Performing Arts",
+    "latitude": 40.77231303514775,
+    "longitude": -73.9834150425368,
+    "address": "Lincoln Center Plaza\nNew York, NY 10023",
+    "collectionIds": [],
+    "about": "Home to the Metropolitan Opera, New York Philharmonic, and NYC Ballet.",
+    "thingsToDoFromEditors": [
+      "Visit the David Rubenstein Atrium for free performances, coffee, and free WiFi in a beautiful public space",
+      "Come at night when the buildings are illuminated and the fountain is lit up for the most stunning photos"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ny-nyc-lincoln-center-for-the-performing-arts.png?alt=media&token=31978733-ae4c-4e2a-a0f7-5c9b3591a8b0",
+    "collectionRadius": "regular"
+  },
+  {
+    "id": "us-ny-williamsburg-domino-park",
+    "name": "Domino Park",
+    "latitude": 40.715083924855314,
+    "longitude": -73.96792078995901,
+    "address": "15 River St\nBrooklyn, NY 11249",
+    "collectionIds": [],
+    "about": "Waterfront park built on the historic Domino Sugar Refinery site with stunning Manhattan skyline views, preserved industrial artifacts, and innovative playground features.",
+    "thingsToDoFromEditors": [
+      "Walk the elevated walkway for panoramic views of the Manhattan skyline and Williamsburg Bridge",
+      "Explore the preserved industrial artifacts scattered throughout the park"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ny-williamsburg-domino-park.png?alt=media&token=7d5bfb23-2a34-4526-aa22-98f72af02f1c",
+    "collectionRadius": "regular"
+  },
+  {
+    "id": "us-ny-nyc-little-island",
+    "name": "Little Island",
+    "latitude": 40.74201366923398,
+    "longitude": -74.01062815667991,
+    "address": "Pier 55 at Hudson River Park, Hudson River Greenway\nNew York, NY 10014",
+    "collectionIds": [],
+    "about": "Opened in 2021, this floating park is built on 132 tulip-shaped concrete pillars rising from the Hudson River, featuring landscaped gardens, an amphitheater, and stunning city views.",
+    "thingsToDoFromEditors": [
+      "Walk the undulating pathways through over 350 species of trees, shrubs, and perennials",
+      "Bring a blanket and relax on the grassy hills while watching boats pass by on the Hudson"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ny-nyc-little-island.png?alt=media&token=8df6f15d-aef6-4746-a2f5-80cff6de7bdd",
+    "collectionRadius": "regular"
+  },
+  {
+    "id": "us-ca-la-the-getty-museum",
+    "name": "The Getty Museum",
+    "latitude": 34.07779958540805,
+    "longitude": -118.4744750174548,
+    "address": "1200 Getty Center Dr\nLos Angeles, CA 90049",
+    "collectionIds": [],
+    "about": "This art museum opened in 1997 and is home to masterpieces like Van Gogh's \"Irises\". The museum also features stunning outdoor spaces and gardens, including the famous Central Garden designed by artist Robert Irwin.",
+    "thingsToDoFromEditors": [
+      "Admission is always free (only parking costs $20, or $15 after 3pm)",
+      "Take in panoramic views of Los Angeles from various viewpoints around the hilltop campus"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-la-the-getty-museum.png?alt=media&token=06c39907-c3dc-4a6e-a07f-166541f44fd4",
+    "collectionRadius": "regular"
+  },
+  {
+    "id": "us-ca-la-griffith-observatory",
+    "name": "Griffith Observatory",
+    "latitude": 34.11834831363419,
+    "longitude": -118.30042827173688,
+    "address": "2800 E Observatory Rd, Los Angeles, CA 90027",
+    "collectionIds": ["stargazing-spots"],
+    "about": "This observatory is built on land donated by Griffith J. Griffith in 1896, who wanted it to be \"a place where everyone could access the stars\". It was later opened in 1935.",
+    "thingsToDoFromEditors": [
+      "Stargaze through the public telescopes",
+      "Photograph the Hollywood Sign"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-la-griffith-observatory.png?alt=media&token=4d15b722-ae09-4078-9fa3-ee3759888b23",
+    "collectionRadius": "regular"
+  },
+  {
+    "id": "us-ca-fern-canyon",
+    "name": "Fern Canyon",
+    "latitude": 41.40169431327207,
+    "longitude": -124.06501199403411,
+    "address": "Fern Canyon\nOrick, CA 95555",
+    "collectionIds": [],
+    "about": "The unique landscape features 50-foot high walls covered in lush ferns and mosses. It served as a filming location for 1997 film The Lost World: Jurassic Park.",
+    "thingsToDoFromEditors": [
+      "Be prepared to get wet and hike a moderate 1-mile loop through the heart of the canyon",
+      "Observe wildlife including Roosevelt elk and various bird species that inhabit the canyon and surrounding area"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-fern-canyon.png?alt=media&token=bf1c457e-a92e-4988-8996-e018a17a06e0",
+    "collectionRadius": "regular"
+  },
+  {
+    "id": "us-hi-maui-kahekili-beach-park",
+    "name": "Kahekili Beach Park",
+    "latitude": 20.936568164369742,
+    "longitude": -156.69270590314878,
+    "address": "65 Kai Ala Dr\nLahaina, HI 96761",
+    "collectionIds": [],
+    "about": "This beach is named after the last ruling chief of Maui, King Kahekili Nui ʻAhumanu. It is also known as \"Airport Beach\" after the Ka'anapali Airport that operated nearby from 1961 to 1986.",
+    "thingsToDoFromEditors": [
+      "Snorkel with green sea turtles among the vibrant coral reefs (stay 10 feet away)",
+      "Parking at the free lot off Kai Ala Drive before 10AM"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-hi-maui-kahekili-beach-park.png?alt=media&token=0af72597-0e7f-4ec1-ab74-a3c839776d10",
+    "collectionRadius": "regular"
+  },
+  {
+    "id": "us-hi-the-big-island-mauna-kea",
+    "name": "Mauna Kea",
+    "latitude": 19.82386657495944,
+    "longitude": -155.4729126144228,
+    "address": "Mauna Kea Access Rd, Hilo, HI 96720",
+    "collectionIds": ["stargazing-spots"],
+    "about": "Mauna Kea is the highest point in Hawaii at 13,796 feet. It is home to the Keck Observatory that helped astronomers win the 2020 Nobel Prize in Physics by proving the existence of a supermassive black hole at the center of our Milky Way galaxy.",
+    "thingsToDoFromEditors": [
+      "Drive to the summit for sunset with a 4WD vehicle (required for the steep unpaved road) and witness one of the most spectacular sunset in the world.",
+      "Join the free nightly stargazing programs at the Visitor Information Station with telescopes and expert staff"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-hi-the-big-island-mauna-kea.png?alt=media&token=730a6d7c-3863-4348-b4ff-958faa2c91db",
+    "collectionRadius": "regular"
   }
 ]

@@ -43,616 +43,612 @@ struct StampsView: View {
         content
     }
     
+    // MARK: - Top Bar
+    private var topBar: some View {
+        HStack {
+            if authManager.isSignedIn {
+                // Signed-in: Show username
+                if let profile = profileManager.currentUserProfile {
+                    Text("@\(profile.username)")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                } else {
+                    Text("@user")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                }
+            }
+            // Signed-out: Show nothing (no logo)
+            
+            Spacer()
+            
+            if authManager.isSignedIn {
+                signedInMenuButtons
+            } else {
+                signedOutMenuButton
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 8)
+        .padding(.bottom, 8)
+    }
+    
+    // MARK: - Signed-in Menu Buttons
+    private var signedInMenuButtons: some View {
+        HStack(spacing: 8) {
+            // Gift icon - only show if user hasn't claimed welcome stamp
+            if !stampsManager.hasClaimedWelcomeStamp() {
+                Button(action: {
+                    // Fetch welcome stamp and show it
+                    Task {
+                        let stamps = await stampsManager.fetchStamps(ids: ["your-first-stamp"])
+                        await MainActor.run {
+                            // Setting welcomeStamp automatically opens the sheet
+                            welcomeStamp = stamps.first
+                        }
+                    }
+                }) {
+                    Image(systemName: "gift.fill")
+                        .font(.system(size: 24))
+                        .foregroundColor(.red)
+                        .frame(width: 44, height: 44)  // Larger tap target
+                        .contentShape(Rectangle())     // Make entire frame tappable
+                }
+            }
+            
+            // Edit Profile Button - Opens ProfileEditView sheet
+            Button(action: {
+                showEditProfile = true
+            }) {
+                Image(systemName: "pencil.circle")
+                    .font(.system(size: 24))
+                    .foregroundColor(.primary)
+                    .frame(width: 44, height: 44)  // Larger tap target
+                    .contentShape(Rectangle())     // Make entire frame tappable
+            }
+            .disabled(profileManager.currentUserProfile == nil)
+            
+            // More Options Menu
+            signedInOptionsMenu
+        }
+    }
+    
+    // MARK: - Signed-in Options Menu
+    private var signedInOptionsMenu: some View {
+        Menu {
+            Button(action: {
+                showAboutStampbook = true
+            }) {
+                Label("About Stampbook", systemImage: "info.circle")
+            }
+            
+            // TODO: Add back later
+            // Button(action: {
+            //     copyAppStoreUrl()
+            // }) {
+            //     Label("Share app", systemImage: "square.and.arrow.up")
+            // }
+            
+            Divider()
+            
+            Button(action: {
+                showForLocalBusiness = true
+            }) {
+                Label("For local business", systemImage: "storefront")
+            }
+            
+            // TODO: Add back later
+            // Button(action: {
+            //     showForCreators = true
+            // }) {
+            //     Label("For creators", systemImage: "sparkles")
+            // }
+            
+            Divider()
+            
+            Button(action: {
+                showSuggestStamp = true
+            }) {
+                Label("Suggest a stamp", systemImage: "plus.app")
+            }
+            
+            Button(action: {
+                showSuggestCollection = true
+            }) {
+                Label("Suggest a collection", systemImage: "rectangle.stack.badge.plus")
+            }
+            
+            Divider()
+            
+            Button(action: {
+                showProblemReport = true
+            }) {
+                Label("Report a problem", systemImage: "exclamationmark.bubble")
+            }
+            
+            Button(action: {
+                showFeedback = true
+            }) {
+                Label("Send feedback", systemImage: "envelope")
+            }
+            
+            Divider()
+            
+            Button(action: {
+                showDataDownload = true
+            }) {
+                Label("Download my data", systemImage: "square.and.arrow.down")
+            }
+            
+            Button(action: {
+                showAccountDeletion = true
+            }) {
+                Label("Delete account", systemImage: "trash")
+            }
+            
+            Divider()
+            
+            Button(role: .destructive, action: {
+                showSignOutConfirmation = true
+            }) {
+                Label("Sign out", systemImage: "rectangle.portrait.and.arrow.right")
+            }
+        } label: {
+            Image(systemName: "ellipsis")
+                .font(.system(size: 24))
+                .foregroundColor(.primary)
+                .frame(width: 44, height: 44)  // Larger tap target
+                .contentShape(Rectangle())     // Make entire frame tappable
+        }
+    }
+    
+    // MARK: - Signed-in Content
+    private var signedInContent: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                profileSection
+                statsCardsSection
+                
+                // Native segmented control
+                Picker("View", selection: $selectedTab) {
+                    ForEach(StampTab.allCases, id: \.self) { tab in
+                        Text(tab.rawValue)
+                            .font(.system(size: 24, weight: .medium))
+                            .tag(tab)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .controlSize(.large)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
+                
+                // Content based on selected tab
+                if selectedTab == .all {
+                    AllStampsContent()
+                } else {
+                    CollectionsContent()
+                }
+            }
+        }
+        .refreshable {
+            // Just refresh profile stats - user's stamps are already synced
+            // No need to refetch all collected stamps from Firestore every time
+            await profileManager.refresh()
+        }
+    }
+    
+    // MARK: - Signed-out Content
+    private var signedOutContent: some View {
+        ScrollView {
+            VStack(spacing: 24) {
+                Spacer()
+                    .frame(height: 60)
+                
+                // App logo
+                Image("AppLogo")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 80, height: 80)
+                    .cornerRadius(16)
+                
+                VStack(spacing: 12) {
+                    Text("Welcome to Stampbook")
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                    
+                    Text("Sign in to start your stamp collection and create your own stampbook")
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 32)
+                }
+                
+                // Get Started button
+                Button(action: {
+                    showInviteCodeSheet = true
+                }) {
+                    Text("Get Started")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .background(Color.blue)
+                        .cornerRadius(12)
+                }
+                .padding(.horizontal, 32)
+                .padding(.top, 8)
+                .padding(.bottom, 40)
+            }
+        }
+    }
+    
+    // MARK: - Profile Section
+    private var profileSection: some View {
+        HStack(spacing: 12) {
+            // Profile picture
+            ProfileImageView(
+                avatarUrl: profileManager.currentUserProfile?.avatarUrl,
+                userId: authManager.userId ?? "",
+                size: 64
+            )
+            
+            // Name and bio
+            VStack(alignment: .leading, spacing: 4) {
+                if let profile = profileManager.currentUserProfile {
+                    Text(profile.displayName)
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                    
+                    if !profile.bio.isEmpty {
+                        Text(profile.bio)
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .lineLimit(2)
+                    }
+                } else {
+                    // Skeleton loading state - gray rectangles
+                    VStack(alignment: .leading, spacing: 4) {
+                        // Display name skeleton
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(Color.gray.opacity(0.3))
+                            .frame(width: 150, height: 22)
+                        
+                        // Bio skeleton (2 lines)
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(Color.gray.opacity(0.3))
+                            .frame(height: 16)
+                        
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(Color.gray.opacity(0.3))
+                            .frame(width: 180, height: 16)
+                    }
+                    .redacted(reason: .placeholder)
+                }
+            }
+            
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 20)
+        .padding(.top, 16)
+        .padding(.bottom, 20)
+    }
+    
+    // MARK: - Stats Cards Section
+    private var statsCardsSection: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 12) {
+                countriesCard
+                followersCard
+                followingCard
+            }
+            .padding(.horizontal, 20)
+        }
+        .padding(.bottom, 20)
+    }
+    
+    // MARK: - Countries Card
+    private var countriesCard: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "globe")
+                .font(.system(size: 24))
+                .foregroundColor(.blue)
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Countries")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                Text("\(profileManager.currentUserProfile?.uniqueCountriesVisited ?? 0)")
+                    .font(.body)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+            }
+            
+            Spacer()
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .frame(width: 160)
+        .frame(height: 70)
+        .background(Color.gray.opacity(0.1))
+        .cornerRadius(12)
+    }
+    
+    // MARK: - Followers Card
+    private var followersCard: some View {
+        NavigationLink(value: FollowListDestination(
+            userId: authManager.userId ?? "",
+            userDisplayName: profileManager.currentUserProfile?.displayName ?? "User",
+            initialTab: .followers
+        )) {
+            HStack(spacing: 12) {
+                Image(systemName: "person.2.fill")
+                    .font(.system(size: 24))
+                    .foregroundColor(.green)
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Followers")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    // Use cached count if available, fallback to profile
+                    Text("\(followManager.followCounts[authManager.userId ?? ""]?.followers ?? profileManager.currentUserProfile?.followerCount ?? 0)")
+                        .font(.body)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                }
+                
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .frame(width: 160)
+            .frame(height: 70)
+            .background(Color.gray.opacity(0.1))
+            .cornerRadius(12)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+    
+    // MARK: - Following Card
+    private var followingCard: some View {
+        NavigationLink(value: FollowListDestination(
+            userId: authManager.userId ?? "",
+            userDisplayName: profileManager.currentUserProfile?.displayName ?? "User",
+            initialTab: .following
+        )) {
+            HStack(spacing: 12) {
+                Image(systemName: "person.fill.checkmark")
+                    .font(.system(size: 24))
+                    .foregroundColor(.purple)
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Following")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    // Use cached count if available, fallback to profile
+                    Text("\(followManager.followCounts[authManager.userId ?? ""]?.following ?? profileManager.currentUserProfile?.followingCount ?? 0)")
+                        .font(.body)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                }
+                
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .frame(width: 160)
+            .frame(height: 70)
+            .background(Color.gray.opacity(0.1))
+            .cornerRadius(12)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+    
+    // MARK: - Signed-out Menu Button
+    private var signedOutMenuButton: some View {
+        Menu {
+            Button(action: {
+                showAboutStampbook = true
+            }) {
+                Label("About Stampbook", systemImage: "info.circle")
+            }
+            
+            // TODO: Add back later
+            // Button(action: {
+            //     copyAppStoreUrl()
+            // }) {
+            //     Label("Share app", systemImage: "square.and.arrow.up")
+            // }
+            
+            Divider()
+            
+            Button(action: {
+                showForLocalBusiness = true
+            }) {
+                Label("For local business", systemImage: "storefront")
+            }
+            
+            // TODO: Add back later
+            // Button(action: {
+            //     showForCreators = true
+            // }) {
+            //     Label("For creators", systemImage: "sparkles")
+            // }
+            
+            Divider()
+            
+            Button(action: {
+                showProblemReport = true
+            }) {
+                Label("Report a problem", systemImage: "exclamationmark.bubble")
+            }
+            
+            Button(action: {
+                showFeedback = true
+            }) {
+                Label("Send feedback", systemImage: "envelope")
+            }
+        } label: {
+            Image(systemName: "ellipsis")
+                .font(.system(size: 24))
+                .foregroundColor(.primary)
+                .frame(width: 44, height: 44)  // Larger tap target
+                .contentShape(Rectangle())     // Make entire frame tappable
+        }
+    }
+    
     private var content: some View {
         NavigationStack(path: $navigationPath) {
             VStack(spacing: 0) {
-                // Top bar
-                HStack {
-                    if authManager.isSignedIn {
-                        // Signed-in: Show username
-                        if let profile = profileManager.currentUserProfile {
-                            Text("@\(profile.username)")
-                                .font(.headline)
-                                .fontWeight(.semibold)
-                        } else {
-                            Text("@user")
-                                .font(.headline)
-                                .fontWeight(.semibold)
-                        }
-                    }
-                    // Signed-out: Show nothing (no logo)
-                    
-                    Spacer()
-                    
-                    if authManager.isSignedIn {
-                        // Signed-in menu
-                        HStack(spacing: 8) {
-                            // Gift icon - only show if user hasn't claimed welcome stamp
-                            if !stampsManager.hasClaimedWelcomeStamp() {
-                                Button(action: {
-                                    // Fetch welcome stamp and show it
-                                    Task {
-                                        let stamps = await stampsManager.fetchStamps(ids: ["your-first-stamp"])
-                                        await MainActor.run {
-                                            // Setting welcomeStamp automatically opens the sheet
-                                            welcomeStamp = stamps.first
-                                        }
-                                    }
-                                }) {
-                                    Image(systemName: "gift.fill")
-                                        .font(.system(size: 24))
-                                        .foregroundColor(.red)
-                                        .frame(width: 44, height: 44)  // Larger tap target
-                                        .contentShape(Rectangle())     // Make entire frame tappable
-                                }
-                            }
-                            
-                            // Edit Profile Button - Opens ProfileEditView sheet
-                            Button(action: {
-                                showEditProfile = true
-                            }) {
-                                Image(systemName: "pencil.circle")
-                                    .font(.system(size: 24))
-                                    .foregroundColor(.primary)
-                                    .frame(width: 44, height: 44)  // Larger tap target
-                                    .contentShape(Rectangle())     // Make entire frame tappable
-                            }
-                            .disabled(profileManager.currentUserProfile == nil)
-                            
-                            // More Options Menu
-                            Menu {
-                                Button(action: {
-                                    showAboutStampbook = true
-                                }) {
-                                    Label("About Stampbook", systemImage: "info.circle")
-                                }
-                                
-                                // TODO: Add back later
-                                // Button(action: {
-                                //     copyAppStoreUrl()
-                                // }) {
-                                //     Label("Share app", systemImage: "square.and.arrow.up")
-                                // }
-                                
-                                Divider()
-                                
-                                Button(action: {
-                                    showForLocalBusiness = true
-                                }) {
-                                    Label("For local business", systemImage: "storefront")
-                                }
-                                
-                                // TODO: Add back later
-                                // Button(action: {
-                                //     showForCreators = true
-                                // }) {
-                                //     Label("For creators", systemImage: "sparkles")
-                                // }
-                                
-                                Divider()
-                                
-                                Button(action: {
-                                    showSuggestStamp = true
-                                }) {
-                                    Label("Suggest a stamp", systemImage: "plus.app")
-                                }
-                                
-                                Button(action: {
-                                    showSuggestCollection = true
-                                }) {
-                                    Label("Suggest a collection", systemImage: "rectangle.stack.badge.plus")
-                                }
-                                
-                                Divider()
-                                
-                                Button(action: {
-                                    showProblemReport = true
-                                }) {
-                                    Label("Report a problem", systemImage: "exclamationmark.bubble")
-                                }
-                                
-                                Button(action: {
-                                    showFeedback = true
-                                }) {
-                                    Label("Send feedback", systemImage: "envelope")
-                                }
-                                
-                                Divider()
-                                
-                                Button(action: {
-                                    showDataDownload = true
-                                }) {
-                                    Label("Download my data", systemImage: "square.and.arrow.down")
-                                }
-                                
-                                Button(action: {
-                                    showAccountDeletion = true
-                                }) {
-                                    Label("Delete account", systemImage: "trash")
-                                }
-                                
-                                Divider()
-                                
-                                Button(role: .destructive, action: {
-                                    showSignOutConfirmation = true
-                                }) {
-                                    Label("Sign out", systemImage: "rectangle.portrait.and.arrow.right")
-                                }
-                            } label: {
-                                Image(systemName: "ellipsis")
-                                    .font(.system(size: 24))
-                                    .foregroundColor(.primary)
-                                    .frame(width: 44, height: 44)  // Larger tap target
-                                    .contentShape(Rectangle())     // Make entire frame tappable
-                            }
-                        }
-                    } else {
-                        // Signed-out menu: Just ellipsis with Menu
-                        Menu {
-                            Button(action: {
-                                showAboutStampbook = true
-                            }) {
-                                Label("About Stampbook", systemImage: "info.circle")
-                            }
-                            
-                            // TODO: Add back later
-                            // Button(action: {
-                            //     copyAppStoreUrl()
-                            // }) {
-                            //     Label("Share app", systemImage: "square.and.arrow.up")
-                            // }
-                            
-                            Divider()
-                            
-                            Button(action: {
-                                showForLocalBusiness = true
-                            }) {
-                                Label("For local business", systemImage: "storefront")
-                            }
-                            
-                            // TODO: Add back later
-                            // Button(action: {
-                            //     showForCreators = true
-                            // }) {
-                            //     Label("For creators", systemImage: "sparkles")
-                            // }
-                            
-                            Divider()
-                            
-                            Button(action: {
-                                showProblemReport = true
-                            }) {
-                                Label("Report a problem", systemImage: "exclamationmark.bubble")
-                            }
-                            
-                            Button(action: {
-                                showFeedback = true
-                            }) {
-                                Label("Send feedback", systemImage: "envelope")
-                            }
-                        } label: {
-                            Image(systemName: "ellipsis")
-                                .font(.system(size: 24))
-                                .foregroundColor(.primary)
-                                .frame(width: 44, height: 44)  // Larger tap target
-                                .contentShape(Rectangle())     // Make entire frame tappable
-                        }
-                    }
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 8)
-                .padding(.bottom, 8)
+                topBar
                 
                 // Scrollable content
-                ScrollView {
-                    VStack(spacing: 0) {
-                        // Sign-in prompt (only when signed out)
-                        if !authManager.isSignedIn {
-                            VStack(spacing: 24) {
-                                Spacer()
-                                    .frame(height: 60)
-                                
-                                // App logo
-                                Image("AppLogo")
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .frame(width: 80, height: 80)
-                                    .cornerRadius(16)
-                                
-                                VStack(spacing: 12) {
-                                    Text("Welcome to Stampbook")
-                                        .font(.title2)
-                                        .fontWeight(.semibold)
-                                    
-                                    Text("Sign in to start your stamp collection and create your own stampbook")
-                                        .font(.body)
-                                        .foregroundStyle(.secondary)
-                                        .multilineTextAlignment(.center)
-                                        .padding(.horizontal, 32)
-                                }
-                                
-                                // Get Started button
-                                Button(action: {
-                                    showInviteCodeSheet = true
-                                }) {
-                                    Text("Get Started")
-                                        .font(.headline)
-                                        .foregroundColor(.white)
-                                        .frame(maxWidth: .infinity)
-                                        .frame(height: 50)
-                                        .background(Color.blue)
-                                        .cornerRadius(12)
-                                }
-                                .padding(.horizontal, 32)
-                                .padding(.top, 8)
-                                .padding(.bottom, 40)
-                            }
-                        }
-                        
-                        // Profile section (only when signed in)
-                        if authManager.isSignedIn {
-                        HStack(spacing: 12) {
-                            // Profile picture
-                            ProfileImageView(
-                                avatarUrl: profileManager.currentUserProfile?.avatarUrl,
-                                userId: authManager.userId ?? "",
-                                size: 64
-                            )
-                            
-                            // Name and bio
-                            VStack(alignment: .leading, spacing: 4) {
-                                if let profile = profileManager.currentUserProfile {
-                                    Text(profile.displayName)
-                                        .font(.title3)
-                                        .fontWeight(.semibold)
-                                    
-                                    if !profile.bio.isEmpty {
-                                        Text(profile.bio)
-                                            .font(.subheadline)
-                                            .foregroundColor(.secondary)
-                                            .lineLimit(2)
-                                    }
-                                } else {
-                                    // Show friendly loading message instead of placeholder
-                                    VStack(alignment: .leading, spacing: 8) {
-                                        Text("Setting up your stampbook...")
-                                            .font(.title3)
-                                            .fontWeight(.semibold)
-                                        
-                                        Text("This may take a moment on first launch")
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-                                    }
-                                }
-                            }
-                            
-                            Spacer()
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.horizontal, 20)
-                        .padding(.top, 16)
-                        .padding(.bottom, 20)
-                        
-                        // Stats cards - horizontal scrollable
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 12) {
-                                // TODO: POST-MVP - Rank card disabled
-                                // Rank calculation requires expensive Firestore queries
-                                // Consider implementing with Cloud Functions for cached ranks
-                                /*
-                                // Rank card
-                                HStack(spacing: 12) {
-                                    Image(systemName: "trophy.fill")
-                                        .font(.system(size: 24))
-                                        .foregroundColor(.orange)
-                                    
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text("Rank")
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-                                        if let rank = profileManager.userRank {
-                                            Text("#\(rank)")
-                                                .font(.body)
-                                                .fontWeight(.semibold)
-                                                .foregroundColor(.primary)
-                                                .lineLimit(1)
-                                                .minimumScaleFactor(0.5)
-                                        } else {
-                                            Text("...")
-                                                .font(.body)
-                                                .fontWeight(.semibold)
-                                                .foregroundColor(.secondary)
-                                                .lineLimit(1)
-                                        }
-                                    }
-                                    
-                                    Spacer()
-                                }
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 14)
-                                .frame(width: 160)
-                                .frame(height: 70)
-                                .background(Color.gray.opacity(0.1))
-                                .cornerRadius(12)
-                                .onAppear {
-                                    // Lazy load rank when card appears
-                                    print("🔍 [DEBUG] Rank card .onAppear triggered (hasAttemptedRankLoad: \(hasAttemptedRankLoad))")
-                                    
-                                    // Only fetch once per view lifecycle
-                                    guard !hasAttemptedRankLoad else {
-                                        print("✅ [StampsView] Rank load already attempted, skipping")
-                                        return
-                                    }
-                                    
-                                    print("🎯 [StampsView] Rank card appeared - userRank: \(profileManager.userRank?.description ?? "nil")")
-                                    if profileManager.userRank == nil,
-                                       let profile = profileManager.currentUserProfile {
-                                        print("🔄 [StampsView] Triggering rank fetch for \(profile.displayName)...")
-                                        hasAttemptedRankLoad = true
-                                        Task {
-                                            await profileManager.fetchUserRank(for: profile)
-                                        }
-                                    } else if let rank = profileManager.userRank {
-                                        print("✅ [StampsView] Rank already loaded: #\(rank)")
-                                        hasAttemptedRankLoad = true
-                                    } else {
-                                        print("⚠️ [StampsView] Profile not loaded yet - cannot fetch rank")
-                                    }
-                                }
-                                */
-                                
-                                // Countries card
-                                HStack(spacing: 12) {
-                                    Image(systemName: "globe")
-                                        .font(.system(size: 24))
-                                        .foregroundColor(.blue)
-                                    
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text("Countries")
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-                                        Text("\(profileManager.currentUserProfile?.uniqueCountriesVisited ?? 0)")
-                                            .font(.body)
-                                            .fontWeight(.semibold)
-                                            .foregroundColor(.primary)
-                                            .lineLimit(1)
-                                            .minimumScaleFactor(0.5)
-                                    }
-                                    
-                                    Spacer()
-                                }
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 14)
-                                .frame(width: 160)
-                                .frame(height: 70)
-                                .background(Color.gray.opacity(0.1))
-                                .cornerRadius(12)
-                                
-                                // Followers card
-                                NavigationLink(value: FollowListDestination(
-                                    userId: authManager.userId ?? "",
-                                    userDisplayName: profileManager.currentUserProfile?.displayName ?? "User",
-                                    initialTab: .followers
-                                )) {
-                                    HStack(spacing: 12) {
-                                        Image(systemName: "person.2.fill")
-                                            .font(.system(size: 24))
-                                            .foregroundColor(.green)
-                                        
-                                        VStack(alignment: .leading, spacing: 2) {
-                                            Text("Followers")
-                                                .font(.caption)
-                                                .foregroundColor(.secondary)
-                                            // Use cached count if available, fallback to profile
-                                            Text("\(followManager.followCounts[authManager.userId ?? ""]?.followers ?? profileManager.currentUserProfile?.followerCount ?? 0)")
-                                                .font(.body)
-                                                .fontWeight(.semibold)
-                                                .foregroundColor(.primary)
-                                                .lineLimit(1)
-                                                .minimumScaleFactor(0.5)
-                                        }
-                                        
-                                        Spacer()
-                                    }
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 14)
-                                    .frame(width: 160)
-                                    .frame(height: 70)
-                                    .background(Color.gray.opacity(0.1))
-                                    .cornerRadius(12)
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                                
-                                // Following card
-                                NavigationLink(value: FollowListDestination(
-                                    userId: authManager.userId ?? "",
-                                    userDisplayName: profileManager.currentUserProfile?.displayName ?? "User",
-                                    initialTab: .following
-                                )) {
-                                    HStack(spacing: 12) {
-                                        Image(systemName: "person.fill.checkmark")
-                                            .font(.system(size: 24))
-                                            .foregroundColor(.purple)
-                                        
-                                        VStack(alignment: .leading, spacing: 2) {
-                                            Text("Following")
-                                                .font(.caption)
-                                                .foregroundColor(.secondary)
-                                            // Use cached count if available, fallback to profile
-                                            Text("\(followManager.followCounts[authManager.userId ?? ""]?.following ?? profileManager.currentUserProfile?.followingCount ?? 0)")
-                                                .font(.body)
-                                                .fontWeight(.semibold)
-                                                .foregroundColor(.primary)
-                                                .lineLimit(1)
-                                                .minimumScaleFactor(0.5)
-                                        }
-                                        
-                                        Spacer()
-                                    }
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 14)
-                                    .frame(width: 160)
-                                    .frame(height: 70)
-                                    .background(Color.gray.opacity(0.1))
-                                    .cornerRadius(12)
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                            }
-                            .padding(.horizontal, 20)
-                        }
-                        .padding(.bottom, 20)
-                        }
-                        
-                        // Native segmented control (only when signed in)
-                        if authManager.isSignedIn {
-                            Picker("View", selection: $selectedTab) {
-                                ForEach(StampTab.allCases, id: \.self) { tab in
-                                    Text(tab.rawValue)
-                                        .font(.system(size: 24, weight: .medium))
-                                        .tag(tab)
-                                }
-                            }
-                            .pickerStyle(.segmented)
-                            .controlSize(.large)
-                            .padding(.horizontal, 20)
-                            .padding(.bottom, 20)
-                            
-                            // Content based on selected tab
-                            if selectedTab == .all {
-                                AllStampsContent()
-                            } else {
-                                CollectionsContent()
-                            }
-                        }
-                    }
+                if authManager.isSignedIn {
+                    signedInContent
+                } else {
+                    signedOutContent
                 }
-                .refreshable {
-                    // Just refresh profile stats - user's stamps are already synced
-                    // No need to refetch all collected stamps from Firestore every time
-                    await profileManager.refresh()
+            }
+            .navigationDestination(for: FollowListDestination.self) { destination in
+                FollowListView(
+                    userId: destination.userId,
+                    userDisplayName: destination.userDisplayName,
+                    initialTab: destination.initialTab
+                )
+            }
+        }
+        .toolbar(.hidden, for: .navigationBar)
+        // MARK: - Cache Follow Counts
+        // Initialize cache when profile loads (only if cache is empty)
+        .onAppear {
+            if let profile = profileManager.currentUserProfile, let userId = authManager.userId {
+                // Only initialize cache if it's not already set (to avoid overwriting fresh counts from follow actions)
+                if followManager.followCounts[userId] == nil {
+                    print("📊 [StampsView] Initializing follow counts cache on appear: userId=\(userId)")
+                    print("📊 [StampsView] Profile counts: followers=\(profile.followerCount), following=\(profile.followingCount)")
+                    followManager.updateFollowCounts(userId: userId, followerCount: profile.followerCount, followingCount: profile.followingCount)
+                } else {
+                    print("📊 [StampsView] Follow counts cache already exists, not overwriting")
                 }
-                .toolbar(.hidden, for: .navigationBar)
-                // MARK: - Cache Follow Counts
-                // Initialize cache when profile loads
-                .onAppear {
-                    if let profile = profileManager.currentUserProfile, let userId = authManager.userId {
-                        print("📊 [StampsView] Caching follow counts on appear: userId=\(userId)")
-                        print("📊 [StampsView] Profile counts: followers=\(profile.followerCount), following=\(profile.followingCount)")
-                        followManager.updateFollowCounts(userId: userId, followerCount: profile.followerCount, followingCount: profile.followingCount)
-                    }
+            }
+        }
+        // Update cache when profile changes (only if new counts are different)
+        .onChange(of: profileManager.currentUserProfile) { oldProfile, newProfile in
+            if let profile = newProfile, let userId = authManager.userId {
+                let currentCachedCounts = followManager.followCounts[userId]
+                // Only update if profile has newer counts (higher values or not cached)
+                if currentCachedCounts == nil ||
+                   profile.followerCount != currentCachedCounts?.followers ||
+                   profile.followingCount != currentCachedCounts?.following {
+                    print("📊 [StampsView] Profile changed - updating follow counts cache")
+                    print("📊 [StampsView] Old: followers=\(oldProfile?.followerCount ?? 0), following=\(oldProfile?.followingCount ?? 0)")
+                    print("📊 [StampsView] New: followers=\(profile.followerCount), following=\(profile.followingCount)")
+                    followManager.updateFollowCounts(userId: userId, followerCount: profile.followerCount, followingCount: profile.followingCount)
+                } else {
+                    print("📊 [StampsView] Profile counts match cache, not updating")
                 }
-                // Update cache when profile changes
-                .onChange(of: profileManager.currentUserProfile) { oldProfile, newProfile in
-                    if let profile = newProfile, let userId = authManager.userId {
-                        print("📊 [StampsView] Profile changed - updating follow counts cache")
-                        print("📊 [StampsView] Old: followers=\(oldProfile?.followerCount ?? 0), following=\(oldProfile?.followingCount ?? 0)")
-                        print("📊 [StampsView] New: followers=\(profile.followerCount), following=\(profile.followingCount)")
-                        followManager.updateFollowCounts(userId: userId, followerCount: profile.followerCount, followingCount: profile.followingCount)
-                    }
+            }
+        }
+        // MARK: - Profile Edit Sheet
+        // Shows ProfileEditView when user taps pencil icon
+        // On save, updates the local profile state and syncs to Firebase
+        .sheet(isPresented: $showEditProfile) {
+            if let profile = profileManager.currentUserProfile {
+                ProfileEditView(profile: profile) { updatedProfile in
+                    // Update local profile state when save succeeds
+                    profileManager.updateProfile(updatedProfile)
                 }
-                // MARK: - Profile Edit Sheet
-                // Shows ProfileEditView when user taps pencil icon
-                // On save, updates the local profile state and syncs to Firebase
-                .sheet(isPresented: $showEditProfile) {
-                    if let profile = profileManager.currentUserProfile {
-                        ProfileEditView(profile: profile) { updatedProfile in
-                            // Update local profile state when save succeeds
-                            profileManager.updateProfile(updatedProfile)
-                        }
-                        .environmentObject(authManager)
-                    }
+                .environmentObject(authManager)
+            }
+        }
+        // MARK: - Profile Refresh on Stamp Collection
+        // Refresh profile stats when user collects stamps
+        .onChange(of: stampsManager.userCollection.collectedStamps.count) { oldCount, newCount in
+            // Only refresh if count increased (stamp collected)
+            if newCount > oldCount && authManager.isSignedIn {
+                // Add slight delay to ensure Firebase stats are updated
+                Task {
+                    try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+                    profileManager.refreshProfile()
                 }
-                // MARK: - Profile Refresh on Stamp Collection
-                // Refresh profile stats when user collects stamps
-                .onChange(of: stampsManager.userCollection.collectedStamps.count) { oldCount, newCount in
-                    // Only refresh if count increased (stamp collected)
-                    if newCount > oldCount && authManager.isSignedIn {
-                        // Add slight delay to ensure Firebase stats are updated
-                        Task {
-                            try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
-                            profileManager.refreshProfile()
-                        }
-                    }
-                }
-                .sheet(isPresented: $showFeedback) {
-                    SimpleFeedbackView()
-                        .environmentObject(authManager)
-                }
-                .sheet(isPresented: $showProblemReport) {
-                    SimpleProblemReportView()
-                        .environmentObject(authManager)
-                }
-                .sheet(isPresented: $showAccountDeletion) {
-                    AccountDeletionRequestView()
-                        .environmentObject(authManager)
-                }
-                .sheet(isPresented: $showDataDownload) {
-                    DataDownloadRequestView()
-                        .environmentObject(authManager)
-                }
-                .sheet(isPresented: $showAboutStampbook) {
-                    AboutStampbookView()
-                }
-                .sheet(isPresented: $showForLocalBusiness) {
-                    ForLocalBusinessView()
-                }
-                .sheet(isPresented: $showForCreators) {
-                    ForCreatorsView()
-                }
-                .sheet(isPresented: $showSuggestStamp) {
-                    SuggestStampView()
-                        .environmentObject(authManager)
-                        .environmentObject(profileManager)
-                }
-                .sheet(isPresented: $showSuggestCollection) {
-                    SuggestCollectionView()
-                        .environmentObject(authManager)
-                        .environmentObject(profileManager)
-                }
-                .sheet(item: $welcomeStamp) { stamp in
-                    // Sheet opens when welcomeStamp is set, closes when set to nil
-                    NavigationStack {
-                        StampDetailView(
-                            stamp: stamp,
-                            userLocation: nil,
-                            showBackButton: false
-                        )
-                        .environmentObject(stampsManager)
-                        .environmentObject(authManager)
-                        .environmentObject(MapCoordinator())
-                    }
-                }
-                .sheet(isPresented: $showInviteCodeSheet) {
-                    InviteCodeSheet(isAuthenticated: $authManager.isSignedIn)
-                        .environmentObject(authManager)
-                }
-                .alert("Sign Out", isPresented: $showSignOutConfirmation) {
-                    Button("Cancel", role: .cancel) {}
-                    Button("Sign Out", role: .destructive) {
-                        authManager.signOut()
-                    }
-                } message: {
-                    Text("Are you sure you want to sign out?")
-                }
-                .alert("App Store Link Copied", isPresented: $showAppStoreUrlCopied) {
-                    Button("OK", role: .cancel) {}
-                } message: {
-                    Text("The App Store link has been copied to your clipboard.")
-                }
-                .navigationDestination(for: FollowListDestination.self) { destination in
-                    FollowListView(
-                        userId: destination.userId,
-                        userDisplayName: destination.userDisplayName,
-                        initialTab: destination.initialTab
-                    )
-                }
-                .onChange(of: shouldResetNavigation) { _, newValue in
-                    // Reset navigation stack when flag is set
-                    if newValue {
-                        navigationPath = NavigationPath()
-                        shouldResetNavigation = false
-                    }
-                }
+            }
+        }
+        .sheet(isPresented: $showFeedback) {
+            SimpleFeedbackView()
+                .environmentObject(authManager)
+        }
+        .sheet(isPresented: $showProblemReport) {
+            SimpleProblemReportView()
+                .environmentObject(authManager)
+        }
+        .sheet(isPresented: $showAccountDeletion) {
+            AccountDeletionRequestView()
+                .environmentObject(authManager)
+        }
+        .sheet(isPresented: $showDataDownload) {
+            DataDownloadRequestView()
+                .environmentObject(authManager)
+        }
+        .sheet(isPresented: $showAboutStampbook) {
+            AboutStampbookView()
+        }
+        .sheet(isPresented: $showForLocalBusiness) {
+            ForLocalBusinessView()
+        }
+        .sheet(isPresented: $showForCreators) {
+            ForCreatorsView()
+        }
+        .sheet(isPresented: $showSuggestStamp) {
+            SuggestStampView()
+                .environmentObject(authManager)
+                .environmentObject(profileManager)
+        }
+        .sheet(isPresented: $showSuggestCollection) {
+            SuggestCollectionView()
+                .environmentObject(authManager)
+                .environmentObject(profileManager)
+        }
+        .sheet(item: $welcomeStamp) { stamp in
+            // Sheet opens when welcomeStamp is set, closes when set to nil
+            NavigationStack {
+                StampDetailView(
+                    stamp: stamp,
+                    userLocation: nil,
+                    showBackButton: false
+                )
+                .environmentObject(stampsManager)
+                .environmentObject(authManager)
+                .environmentObject(MapCoordinator())
+            }
+        }
+        .sheet(isPresented: $showInviteCodeSheet) {
+            InviteCodeSheet(isAuthenticated: $authManager.isSignedIn)
+                .environmentObject(authManager)
+        }
+        .alert("Sign Out", isPresented: $showSignOutConfirmation) {
+            Button("Cancel", role: .cancel) {}
+            Button("Sign Out", role: .destructive) {
+                authManager.signOut()
+            }
+        } message: {
+            Text("Are you sure you want to sign out?")
+        }
+        .alert("App Store Link Copied", isPresented: $showAppStoreUrlCopied) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("The App Store link has been copied to your clipboard.")
+        }
+        .onChange(of: shouldResetNavigation) { _, newValue in
+            // Reset navigation stack when flag is set
+            if newValue {
+                navigationPath = NavigationPath()
+                shouldResetNavigation = false
             }
         }
     }
@@ -673,6 +669,7 @@ struct StampsView: View {
         @EnvironmentObject var stampsManager: StampsManager
         @State private var displayedCount = 20 // Initial load
         @State private var userStamps: [Stamp] = [] // Lazy-loaded user stamps
+        @State private var hasLoadedOnce = false // Prevent multiple initial loads
         
         private let columns = [
             GridItem(.flexible(), spacing: 16),
@@ -699,8 +696,8 @@ struct StampsView: View {
         
         var body: some View {
             Group {
-                if stampsManager.isLoadingUserStamps {
-                    // Skeleton loading state - show while loading
+                if stampsManager.isLoadingUserStamps && !hasLoadedOnce {
+                    // Skeleton loading state - show only on first load
                     LazyVGrid(columns: columns, spacing: 24) {
                         ForEach(0..<8, id: \.self) { _ in
                             SkeletonStampGridItem()
@@ -709,8 +706,8 @@ struct StampsView: View {
                     }
                     .padding(.horizontal, 20)
                     .padding(.bottom, 32)
-                } else if sortedCollectedStamps.isEmpty {
-                    // Empty state
+                } else if sortedCollectedStamps.isEmpty && !stampsManager.isLoadingUserStamps {
+                    // Empty state - only show if not loading and truly empty
                     VStack {
                         Spacer()
                         
@@ -759,7 +756,9 @@ struct StampsView: View {
                     .padding(.bottom, 32)
                 }
             }
-            .onAppear {
+            .task {
+                // .task is more stable than .onAppear - only runs once per view appearance
+                guard !hasLoadedOnce else { return }
                 loadUserStamps()
             }
             .onChange(of: stampsManager.userCollection.collectedStamps.count) { oldValue, newValue in
@@ -771,6 +770,12 @@ struct StampsView: View {
         }
         
         private func loadUserStamps() {
+            // Prevent re-entry if already loading
+            guard !stampsManager.isLoadingUserStamps else { 
+                print("⏭️ [AllStampsContent] Already loading, skipping loadUserStamps()")
+                return 
+            }
+            
             print("🔄 [AllStampsContent] loadUserStamps() called")
             print("📊 [AllStampsContent] Current collectedStamps count: \(stampsManager.userCollection.collectedStamps.count)")
             
@@ -793,6 +798,7 @@ struct StampsView: View {
                 
                 await MainActor.run {
                     userStamps = stamps
+                    hasLoadedOnce = true // Mark as loaded to prevent re-entry
                     stampsManager.isLoadingUserStamps = false // Clear AFTER data is set
                     
                     print("📊 [AllStampsContent] userStamps count after update: \(userStamps.count)")

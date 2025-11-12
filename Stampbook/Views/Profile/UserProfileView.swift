@@ -19,6 +19,7 @@ struct UserProfileView: View {
     @State private var userProfile: UserProfile?
     // @State private var userRank: Int? // TODO: POST-MVP - Rank for the viewed user
     @State private var showFollowError = false
+    @State private var showUnfollowConfirmation = false
     @State private var userCollectedStamps: [CollectedStamp] = [] // Stamps for the viewed user
     @State private var isLoadingStamps = false
     
@@ -243,11 +244,16 @@ struct UserProfileView: View {
         if !isCurrentUser {
             Button(action: {
                 guard let currentUserId = authManager.userId else { return }
-                // BEST PRACTICE: Pass current user's ProfileManager to keep counts synced
-                followManager.toggleFollow(currentUserId: currentUserId, targetUserId: userId, profileManager: currentUserProfileManager) { updatedProfile in
-                    // Update local profile state with returned profile
-                    if let profile = updatedProfile {
-                        userProfile = profile
+                if isFollowing {
+                    // Show confirmation for unfollow
+                    showUnfollowConfirmation = true
+                } else {
+                    // Follow immediately without confirmation
+                    followManager.toggleFollow(currentUserId: currentUserId, targetUserId: userId, profileManager: currentUserProfileManager) { updatedProfile in
+                        // Update local profile state with returned profile
+                        if let profile = updatedProfile {
+                            userProfile = profile
+                        }
                     }
                 }
             }) {
@@ -333,6 +339,20 @@ struct UserProfileView: View {
             }
         } message: {
             Text(followManager.error ?? "Couldn't update follow status. Try again.")
+        }
+        .alert("Unfollow \(userProfile?.displayName ?? displayName)?", isPresented: $showUnfollowConfirmation) {
+            Button("Cancel", role: .cancel) {}
+            Button("Unfollow", role: .destructive) {
+                guard let currentUserId = authManager.userId else { return }
+                followManager.toggleFollow(currentUserId: currentUserId, targetUserId: userId, profileManager: currentUserProfileManager) { updatedProfile in
+                    // Update local profile state with returned profile
+                    if let profile = updatedProfile {
+                        userProfile = profile
+                    }
+                }
+            }
+        } message: {
+            Text("Are you sure you want to unfollow @\(userProfile?.username ?? username)?")
         }
         .sheet(isPresented: $showUserReport) {
             SimpleUserReportView(reportedUserId: userId, reportedUsername: username)
@@ -437,6 +457,7 @@ struct UserProfileView: View {
         @State private var displayedCount = 20 // Initial load
         @State private var userStamps: [Stamp] = [] // Lazy-loaded stamps
         @State private var isLoadingLazyStamps = false
+        @State private var hasLoadedOnce = false // Prevent multiple initial loads
         
         private let columns = [
             GridItem(.flexible(), spacing: 16),
@@ -463,8 +484,8 @@ struct UserProfileView: View {
         
         var body: some View {
             Group {
-                if isLoadingLazyStamps && userStamps.isEmpty {
-                    // Loading skeleton
+                if isLoadingLazyStamps && !hasLoadedOnce {
+                    // Loading skeleton - show only on first load
                     VStack {
                         Spacer()
                         ProgressView()
@@ -522,7 +543,9 @@ struct UserProfileView: View {
                     .padding(.bottom, 32)
                 }
             }
-            .onAppear {
+            .task {
+                // .task is more stable than .onAppear - only runs once per view appearance
+                guard !hasLoadedOnce else { return }
                 loadUserStamps()
             }
             .onChange(of: userCollectedStamps.count) { oldCount, newCount in
@@ -548,6 +571,7 @@ struct UserProfileView: View {
                 
                 await MainActor.run {
                     userStamps = stamps
+                    hasLoadedOnce = true // Mark as loaded to prevent re-entry
                     isLoadingLazyStamps = false
                 }
             }

@@ -59,7 +59,9 @@ struct CachedImageView: View {
         switch shape {
         case .rectangle(let cornerRadius):
             RoundedRectangle(cornerRadius: cornerRadius)
-                .fill(Color.gray.opacity(0.3))
+                // Show transparent while loading (gray box underneath visible)
+                // Show gray background if failed (matches feed/everywhere else)
+                .fill(isLoading ? Color.clear : Color.gray.opacity(0.1))
                 .frame(width: size.width, height: size.height)
                 .overlay(placeholderContent())
         case .circle:

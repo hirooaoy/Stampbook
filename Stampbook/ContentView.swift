@@ -15,10 +15,6 @@ struct ContentView: View {
     @State private var shouldResetStampsNavigation = false // Flag to reset StampsView navigation
     
     var body: some View {
-        #if DEBUG
-        let _ = Logger.debug("body evaluation started")
-        #endif
-        
         // Show splash while checking auth state
         if authManager.isCheckingAuth {
             ZStack {
@@ -69,9 +65,7 @@ struct ContentView: View {
             Logger.debug("onAppear started")
             // Set current user on initial load
             stampsManager.setCurrentUser(authManager.userId, profileManager: profileManager)
-            
-            // Link AuthManager to ProfileManager
-            authManager.profileManager = profileManager
+            // Note: ProfileManager is linked to AuthManager in StampbookApp.body (WindowGroup.onAppear)
             Logger.debug("onAppear completed")
         }
         .onChange(of: authManager.isSignedIn) { _, isSignedIn in

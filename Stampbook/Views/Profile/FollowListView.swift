@@ -123,6 +123,7 @@ struct UserRow: View {
     @EnvironmentObject var followManager: FollowManager // Shared instance
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var profileManager: ProfileManager // BEST PRACTICE: Pass to keep counts synced
+    @State private var showUnfollowConfirmation = false
     
     var isCurrentUser: Bool {
         authManager.userId == user.id
@@ -159,8 +160,13 @@ struct UserRow: View {
             if !isCurrentUser {
                 Button(action: {
                     guard let currentUserId = authManager.userId else { return }
-                    // BEST PRACTICE: Pass ProfileManager to keep counts synced across views
-                    followManager.toggleFollow(currentUserId: currentUserId, targetUserId: user.id, profileManager: profileManager)
+                    if isFollowing {
+                        // Show confirmation for unfollow
+                        showUnfollowConfirmation = true
+                    } else {
+                        // Follow immediately without confirmation
+                        followManager.toggleFollow(currentUserId: currentUserId, targetUserId: user.id, profileManager: profileManager)
+                    }
                 }) {
                     Text(isFollowing ? "Following" : "Follow")
                         .font(.footnote)
@@ -170,6 +176,15 @@ struct UserRow: View {
                         .padding(.vertical, 8)
                         .background(isFollowing ? Color(.systemGray5) : Color.blue)
                         .cornerRadius(8)
+                }
+                .alert("Unfollow \(user.displayName)?", isPresented: $showUnfollowConfirmation) {
+                    Button("Cancel", role: .cancel) {}
+                    Button("Unfollow", role: .destructive) {
+                        guard let currentUserId = authManager.userId else { return }
+                        followManager.toggleFollow(currentUserId: currentUserId, targetUserId: user.id, profileManager: profileManager)
+                    }
+                } message: {
+                    Text("Are you sure you want to unfollow @\(user.username)?")
                 }
             }
         }

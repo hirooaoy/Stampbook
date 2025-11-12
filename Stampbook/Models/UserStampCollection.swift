@@ -184,6 +184,27 @@ class UserStampCollection: ObservableObject {
         collectedStamps.contains { $0.stampId == stampId }
     }
     
+    /// Add stamp to local collection (in-memory only, instant)
+    /// Caller is responsible for saving and syncing
+    func addStampToCollection(_ stampId: String, userId: String, userRank: Int? = nil) {
+        guard !isCollected(stampId) else { return }
+        
+        let newCollection = CollectedStamp(
+            stampId: stampId,
+            userId: userId,
+            collectedDate: Date(),
+            userNotes: "",
+            userImageNames: [],
+            userImagePaths: [],
+            likeCount: 0,
+            commentCount: 0,
+            userRank: userRank
+        )
+        
+        allStamps.append(newCollection)
+        collectedStamps.append(newCollection)
+    }
+    
     func collectStamp(_ stampId: String, userId: String, userRank: Int? = nil) {
         guard !isCollected(stampId) else { return }
         
@@ -541,7 +562,7 @@ class UserStampCollection: ObservableObject {
     
     // MARK: - Local Storage
     
-    private func saveCollectedStamps() {
+    func saveCollectedStamps() {
         if let encoded = try? JSONEncoder().encode(allStamps) {
             UserDefaults.standard.set(encoded, forKey: userDefaultsKey)
         }

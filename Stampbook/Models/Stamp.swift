@@ -119,8 +119,10 @@ struct Stamp: Identifiable, Codable, Equatable {
                 let countryPart = parts[2].components(separatedBy: " ").first ?? parts[2]
                 return "\(city), \(countryPart)"
             } else if parts.count >= 2 {
-                // Fallback to just city and state/country
-                return "\(parts[0]), \(parts[1])"
+                // Format: "City, Country PostalCode" - strip postal code
+                let city = parts[0]
+                let countryPart = parts[1].components(separatedBy: " ").first ?? parts[1]
+                return "\(city), \(countryPart)"
             }
         }
         return "Location not included"

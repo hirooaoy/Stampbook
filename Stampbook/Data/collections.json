@@ -61,7 +61,15 @@
     "name": "Discover Central Park",
     "description": "You're never too old to be happily exploring Central Park's iconic landmarks and hidden corners",
     "region": "new-york",
-    "totalStamps": 1
+    "totalStamps": 6
+  },
+  {
+    "id": "stargazing-spots",
+    "emoji": "⭐",
+    "name": "Sight of the stars makes me dream",
+    "description": "Beautiful places on earth to stargaze and forget about the world",
+    "region": "global",
+    "totalStamps": 2
   }
 ]
 

@@ -535,7 +535,7 @@ class ImageManager: ObservableObject {
     }
     
     /// Resize image to fit within max dimension while maintaining aspect ratio
-    private func resizeImageToFit(_ image: UIImage, maxDimension: CGFloat) -> UIImage? {
+    func resizeImageToFit(_ image: UIImage, maxDimension: CGFloat) -> UIImage? {
         let size = image.size
         let aspectRatio = size.width / size.height
         

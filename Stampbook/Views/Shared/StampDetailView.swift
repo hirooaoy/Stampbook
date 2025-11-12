@@ -23,10 +23,20 @@ struct StampDetailView: View {
     @State private var showAddressOptions = false
     @State private var showCopyConfirmation = false
     @State private var showInviteCodeSheet = false
+    @State private var imageScale: CGFloat = 1.5 // Start larger, shrinks to 1.0 on collection
+    @State private var showStampImage = false // Controls stamp image visibility (animated)
+    @State private var showLockIcon = true // Controls lock icon visibility (animated)
+    @State private var isAnimatingCollection = false // Track if we're in collection animation
+    @State private var displayStats: StampStatistics? = nil // Stats to display (frozen during animation)
     
     // Computed property to get live stampStats from StampsManager
     private var stampStats: StampStatistics? {
-        stampsManager.stampStatistics[stamp.id]
+        // During collection animation, show frozen stats
+        if isAnimatingCollection, let frozen = displayStats {
+            return frozen
+        }
+        // Otherwise show live stats
+        return stampsManager.stampStatistics[stamp.id]
     }
     
     // Computed property to get user rank from cached CollectedStamp
@@ -67,19 +77,14 @@ struct StampDetailView: View {
         return date.formatted(.dateTime.month(.abbreviated).day().year())
     }
     
-    // Status message for unavailable stamps (removed, expired, or offline sync pending)
+    // Status message for unavailable stamps (removed or expired)
     private var statusBanner: (message: String, icon: String, color: Color)? {
-        // Priority 1: Show offline sync status (when collected and offline)
-        if isCollected && !networkMonitor.isConnected {
-            return ("Saved locally · Will sync when online", "icloud.and.arrow.up", .blue)
-        }
-        
-        // Priority 2: Stamp was removed by admin
+        // Priority 1: Stamp was removed by admin
         if stamp.status == "removed" {
             return ("This stamp was removed by admin", "exclamationmark.triangle.fill", .orange)
         }
         
-        // Priority 3: Event stamp has expired
+        // Priority 2: Event stamp has expired
         if let until = stamp.availableUntil, Date() > until {
             let dateStr = until.formatted(.dateTime.month(.abbreviated).day().year())
             return ("This event stamp expired on \(dateStr)", "calendar.badge.exclamationmark", .orange)
@@ -107,11 +112,20 @@ struct StampDetailView: View {
                     
                     // Centered square stamp image with lock icon
                     ZStack {
-                        if isCollected {
-                            // Show stamp image when collected
+                        // Lock icon - show when not collected
+                        if showLockIcon {
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color.gray.opacity(0.1))
+                                .frame(width: 240, height: 240)
+                            
+                            Image(systemName: "lock.fill")
+                                .font(.system(size: 75))
+                                .foregroundColor(.gray)
+                        }
+                        
+                        // Stamp image - always present, but hidden when not collected
+                        ZStack {
                             if let imageUrl = stamp.imageUrl, !imageUrl.isEmpty {
-                                // Use CachedImageView with FULL RESOLUTION for detail view (crisp quality)
-                                // Progressive loading: shows thumbnail instantly, then upgrades to full-res
                                 CachedImageView.stampPhoto(
                                     imageName: stamp.imageName.isEmpty ? nil : stamp.imageName,
                                     storagePath: stamp.imageStoragePath,
@@ -121,34 +135,23 @@ struct StampDetailView: View {
                                     useFullResolution: true,
                                     imageUrl: imageUrl
                                 )
-                                .transition(.scale.combined(with: .opacity))
                             } else if !stamp.imageName.isEmpty {
-                                // Fallback to bundled image for backward compatibility
                                 Image(stamp.imageName)
                                     .resizable()
                                     .renderingMode(.original)
                                     .interpolation(.high)
                                     .scaledToFit()
                                     .frame(width: 300, height: 300)
-                                    .transition(.scale.combined(with: .opacity))
                             } else {
-                                // No image available - show placeholder
                                 Image("empty")
                                     .resizable()
                                     .renderingMode(.original)
                                     .scaledToFit()
                                     .frame(width: 300, height: 300)
                             }
-                        } else {
-                            // Show lock icon when not collected
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(Color.gray.opacity(0.1))
-                                .frame(width: 300, height: 300)
-                            
-                            Image(systemName: "lock.fill")
-                                .font(.system(size: 80))
-                                .foregroundColor(.gray)
                         }
+                        .scaleEffect(imageScale)
+                        .opacity(showStampImage ? 1.0 : 0.0)
                         
                         // Copy confirmation checkmark overlay
                         if showCopyConfirmation {
@@ -167,6 +170,7 @@ struct StampDetailView: View {
                             .transition(.scale.combined(with: .opacity))
                         }
                     }
+                    .frame(width: 300, height: 300)
                     .contextMenu {
                         if isCollected {
                             Button(action: {
@@ -176,7 +180,6 @@ struct StampDetailView: View {
                             }
                         }
                     }
-                    .animation(.spring(response: 0.4, dampingFraction: 1.0), value: isCollected)
                     .animation(.spring(response: 0.3, dampingFraction: 0.8), value: showCopyConfirmation)
                     .padding(.bottom, 36)
                     
@@ -323,7 +326,7 @@ struct StampDetailView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 24)
                         .padding(.bottom, 36)
-                        .transition(.scale.combined(with: .opacity))
+                        .transition(.opacity)
                     }
                     
                     // Divider
@@ -484,21 +487,23 @@ struct StampDetailView: View {
                 } else if !isCollected {
                     Button(action: {
                         if isWithinRange, let userId = authManager.userId {
-                            stampsManager.collectStamp(stamp, userId: userId)
+                                Task {
+                                await collectStampWithAnimation(userId: userId)
+                            }
                         }
                     }) {
-                        Text(isWithinRange ? "Collect Stamp" : "You are too far")
-                            .fontWeight(.semibold)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 18)
-                            .background(isWithinRange ? Color.blue : Color.clear)
-                            .foregroundColor(isWithinRange ? .white : .secondary)
-                            .cornerRadius(12)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
-                                    .opacity(isWithinRange ? 0 : 1)
-                            )
+                            Text(isWithinRange ? "Collect Stamp" : "You are too far")
+                                .fontWeight(.semibold)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 18)
+                        .background(isWithinRange ? Color.blue : Color.clear)
+                        .foregroundColor(isWithinRange ? .white : .secondary)
+                        .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
+                                .opacity(isWithinRange ? 0 : 1)
+                        )
                     }
                     .disabled(!isWithinRange)
                     .padding(.horizontal, 16)
@@ -559,8 +564,32 @@ struct StampDetailView: View {
         .toolbarBackground(.hidden, for: .navigationBar)
         .presentationDetents([.fraction(0.75), .large])
         .onAppear {
+            // Initialize states for already collected stamps
+            if isCollected {
+                showStampImage = true
+                showLockIcon = false
+                imageScale = 1.0  // Already collected stamps show at normal size
+            }
+            
             // Single task to load data sequentially (prevents race conditions)
             Task {
+                // 0. Preload stamp image if not collected yet (so it's ready when user taps collect)
+                // Don't block - just start downloading in background
+                if !isCollected, let storagePath = stamp.imageStoragePath {
+                    Task {
+                    do {
+                        _ = try await ImageManager.shared.downloadAndCacheThumbnail(
+                            storagePath: storagePath,
+                            stampId: stamp.id,
+                            imageUrl: stamp.imageUrl
+                        )
+                        print("✅ Preloaded stamp image for: \(stamp.name)")
+                    } catch {
+                        print("⚠️ Failed to preload image: \(error.localizedDescription)")
+                    }
+                    }
+                }
+                
                 // 1. Always fetch stamp statistics first (needed for "X people have this stamp")
                 // Only fetch if cache is stale (older than 5 minutes) or doesn't exist
                 if stampStats == nil || stampStats?.isCacheStale() == true {
@@ -585,15 +614,11 @@ struct StampDetailView: View {
         }
         .onChange(of: isCollected) { _, newValue in
             if newValue {
-                withAnimation(.spring(response: 0.4, dampingFraction: 1.0)) {
-                    showMemorySection = true
-                }
+                // Memory section and stats will be shown by collectStampWithAnimation()
+                // with proper delay and animation (don't update immediately here)
                 
-                // Fetch fresh data when just collected
+                // Fetch other data when just collected
                 Task {
-                    // Get latest collector count (important: user just became a collector!)
-                    _ = await stampsManager.fetchStampStatistics(stampId: stamp.id)
-                    
                     // Rank should already be cached by collectStamp(), but fallback just in case
                     if cachedUserRank == nil, let userId = authManager.userId {
                         let fetchedRank = await stampsManager.getUserRankForStamp(stampId: stamp.id, userId: userId)
@@ -606,6 +631,16 @@ struct StampDetailView: View {
             } else {
                 showMemorySection = false
                 userRank = nil
+            }
+        }
+        .onChange(of: stampsManager.userCollection.collectedStamps.count) { _, _ in
+            // Recalculate collection progress whenever the user collects any stamp
+            // This ensures the collection counts stay up-to-date even when viewing one stamp
+            // while collecting others in the same collection
+            if isCollected {
+                Task {
+                    await calculateCollectionProgress()
+                }
             }
         }
         .fullScreenCover(isPresented: $showNotesEditor) {
@@ -701,6 +736,63 @@ struct StampDetailView: View {
             .padding(.top, 32)
             .presentationDetents([.height(340)])
             .presentationDragIndicator(.visible)
+        }
+    }
+    
+    // MARK: - Collection Animation
+    
+    private func collectStampWithAnimation(userId: String) async {
+        // 1. IN-MEMORY UPDATE & HIDE LOCK (instant, button re-enables immediately)
+        await MainActor.run {
+            // Freeze current stats so they don't update during animation
+            displayStats = stampsManager.stampStatistics[stamp.id]
+            isAnimatingCollection = true
+            
+            stampsManager.userCollection.addStampToCollection(stamp.id, userId: userId, userRank: nil)
+            
+            // Hide lock immediately (no animation needed)
+            showLockIcon = false
+        }
+        
+        // 2. Let SwiftUI render the 1.5 scale state (wait one frame)
+        try? await Task.sleep(nanoseconds: 16_000_000) // 16ms = 1 frame at 60fps
+        
+        // 3. NOW animate to 1.0
+        await MainActor.run {
+            // Animate stamp in: fade + scale down
+            withAnimation(.easeInOut(duration: 0.6)) {
+                showStampImage = true  // Fade in (opacity 0 → 1)
+                imageScale = 1.0       // Scale down (1.5 → 1.0)
+            }
+        }
+        // Button is already re-enabled, animation is playing
+        
+        // 4. SAVE TO DISK (still on main thread, but doesn't block button)
+        await MainActor.run {
+            stampsManager.userCollection.saveCollectedStamps()
+        }
+        
+        // 5. FIREBASE SYNC (background, best effort)
+        Task.detached(priority: .userInitiated) {
+            await stampsManager.syncStampCollectionToFirebase(stampId: stamp.id, userId: userId)
+        }
+        
+        // 6. WAIT FOR ANIMATION + PAUSE (0.6s animation + 0.3s pause = 0.9s total)
+        try? await Task.sleep(for: .seconds(0.9))
+        
+        // 7. UPDATE UI ELEMENTS SMOOTHLY (together, at the same time)
+        await MainActor.run {
+            isAnimatingCollection = false // Unfreeze - allow stats to update now
+            
+            // Fetch fresh statistics (updates "X people have this stamp")
+            Task {
+                _ = await stampsManager.fetchStampStatistics(stampId: stamp.id)
+            }
+            
+            // Show memory section with gentle fade
+            withAnimation(.easeInOut(duration: 0.6)) {
+                showMemorySection = true
+            }
         }
     }
     

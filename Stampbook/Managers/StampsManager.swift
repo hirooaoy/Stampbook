@@ -188,9 +188,7 @@ class StampsManager: ObservableObject {
         for id in ids {
             if let cached = stampCache.get(id) {
                 results.append(cached)
-                if DEBUG_STAMPS {
-                    print("💾 [StampsManager] Cache HIT: \(id)")
-                }
+                // Cache hits are working perfectly - no need to log every single one
             } else {
                 uncachedIds.append(id)
             }
@@ -220,8 +218,9 @@ class StampsManager: ObservableObject {
             }
         }
         
-        if DEBUG_STAMPS {
-            print("✅ [StampsManager] fetchStamps complete: \(results.count)/\(ids.count) stamps (includeRemoved: \(includeRemoved))")
+        // Stamps fetched successfully - only log if there were cache misses
+        if DEBUG_STAMPS && !uncachedIds.isEmpty {
+            print("✅ [StampsManager] fetchStamps complete: \(results.count)/\(ids.count) stamps (\(uncachedIds.count) from Firebase, \(results.count - uncachedIds.count) from cache)")
         }
         
         // Filter based on context
@@ -534,6 +533,59 @@ class StampsManager: ObservableObject {
         }
     }
     
+    /// Sync stamp collection to Firebase (background Firebase work only)
+    /// Called after local state is already updated for instant UI response
+    func syncStampCollectionToFirebase(stampId: String, userId: String) async {
+        // Notify feed that a stamp was collected
+        NotificationCenter.default.post(name: .stampDidCollect, object: nil)
+        
+        // Update Firebase statistics in the background
+        do {
+            // CRITICAL: Save the collected stamp to Firestore first
+            if let collectedStamp = await MainActor.run(body: { 
+                userCollection.collectedStamps.first(where: { $0.stampId == stampId })
+            }) {
+                try await firebaseService.saveCollectedStamp(collectedStamp, for: userId)
+                print("✅ Stamp synced to Firestore: \(stampId)")
+            }
+            
+            // Then update statistics
+            try await firebaseService.incrementStampCollectors(stampId: stampId, userId: userId)
+            
+            let userRank = await getUserRankForStamp(stampId: stampId, userId: userId)
+            
+            if let rank = userRank {
+                await MainActor.run {
+                    userCollection.updateUserRank(for: stampId, rank: rank)
+                }
+            }
+            
+            let totalStamps = await MainActor.run { userCollection.collectedStamps.count }
+            let collectedStampIds = await MainActor.run { userCollection.collectedStamps.map { $0.stampId } }
+            let uniqueCountries = await calculateUniqueCountries(from: collectedStampIds)
+            
+            try await firebaseService.updateUserStampStats(
+                userId: userId,
+                totalStamps: totalStamps,
+                uniqueCountriesVisited: uniqueCountries
+            )
+            
+            let updatedStats = try await firebaseService.fetchStampStatistics(stampId: stampId)
+            await MainActor.run {
+                stampStatistics[stampId] = updatedStats
+            }
+            
+            print("✅ Updated stamp statistics for \(stampId): \(updatedStats.totalCollectors) collectors (user rank: \(userRank ?? -1))")
+            print("✅ Updated user stats: \(totalStamps) stamps, \(uniqueCountries) countries")
+        } catch {
+            Logger.error("Failed to sync stamp collection to Firebase", error: error, category: "StampsManager")
+            // Local state is saved - will auto-sync on next app launch
+            await MainActor.run {
+                _ = stampStatistics.removeValue(forKey: stampId)
+            }
+        }
+    }
+    
     // MARK: - Development/Testing Functions Only
     // ⚠️ These functions are for DEVELOPMENT PURPOSES ONLY
     // They are NOT accessible from the UI and should only be used for testing/debugging
@@ -628,16 +680,28 @@ class StampsManager: ObservableObject {
         guard !collectedStampIds.isEmpty else { return 0 }
         
         // Fetch the actual stamps from Firebase (uses cache if available)
-        let collectedStamps = await fetchStamps(ids: collectedStampIds)
+        // Use includeRemoved: true because we count countries from ALL collected stamps,
+        // even if they were later removed from the map
+        let collectedStamps = await fetchStamps(ids: collectedStampIds, includeRemoved: true)
         
-        let countries = Set(collectedStamps.compactMap { stamp -> String? in
+        return calculateUniqueCountries(from: collectedStamps)
+    }
+    
+    /// Calculate unique countries from an array of Stamp objects
+    /// - Parameter stamps: The stamps to analyze
+    /// - Returns: Number of unique countries
+    func calculateUniqueCountries(from stamps: [Stamp]) -> Int {
+        let countries = Set(stamps.compactMap { stamp -> String? in
             // Parse country from address
             // Supported formats:
             // - "Street\nCity, State, Country PostalCode" (US format)
             // - "Street\nCity, Country" (International format)
             let lines = stamp.address.components(separatedBy: "\n")
             guard lines.count >= 2 else {
-                Logger.warning("Invalid address format for stamp \(stamp.id): \(stamp.address)", category: "StampsManager")
+                // Skip warning for special first stamp with intentional format
+                if stamp.id != "your-first-stamp" {
+                    Logger.warning("Invalid address format for stamp \(stamp.id): \(stamp.address)", category: "StampsManager")
+                }
                 return nil
             }
             
@@ -660,6 +724,24 @@ class StampsManager: ObservableObject {
         })
         
         return countries.count
+    }
+    
+    // MARK: - Testing Support
+    
+    /// Add a stamp to the cache (for testing purposes)
+    /// - Parameter stamp: The stamp to add to the cache
+    func addStampToCache(_ stamp: Stamp) {
+        stampCache.set(stamp.id, stamp)
+    }
+    
+    /// Get all cached stamp IDs (for testing/debugging)
+    func getCachedStampIds() -> [String] {
+        return stampCache.allKeys()
+    }
+    
+    /// Get the number of stamps in cache (for testing/debugging)
+    func getCacheCount() -> Int {
+        return stampCache.count
     }
 }
 

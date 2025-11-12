@@ -5,50 +5,14 @@ import PhotosUI
 /// Allows users to edit their display name, username, bio, and profile picture
 /// 
 /// Features:
+/// - Server-side content moderation via Firebase Cloud Functions
 /// - Username uniqueness validation (checks Firebase before saving)
 /// - Profile photo upload with automatic old photo deletion
 /// - Real-time input validation and sanitization
 /// - Character limits: 20 for name/username, 70 for bio
 /// - Username format: lowercase, alphanumeric + underscore only
-/// - Reserved words & profanity filtering (usernames and display names only)
+/// - Profanity & reserved words filtering (server-side, cannot be bypassed)
 struct ProfileEditView: View {
-    
-    // MARK: - Restricted Words List
-    
-    /// Reserved words that cannot be used in usernames or display names
-    /// Includes: admin terms, brand names, and common profanity
-    /// Note: Comments and bios are NOT filtered (free expression)
-    private static let restrictedWords: Set<String> = [
-        // Reserved system/brand terms
-        "admin", "administrator", "support", "help", "official", "verified",
-        "stampbook", "stamp_book", "stamp", "moderator", "mod", "staff",
-        
-        // Common profanity (basic list to prevent obvious offensive usernames)
-        "fuck", "shit", "ass", "bitch", "dick", "cock", "pussy", "cunt",
-        "damn", "hell", "bastard", "asshole", "fag", "nigger", "nigga",
-        "retard", "whore", "slut", "piss", "nazi", "hitler"
-    ]
-    
-    /// Check if a string contains restricted words
-    /// Case-insensitive check against username/display name
-    private static func containsRestrictedWord(_ text: String) -> Bool {
-        let lowercased = text.lowercased()
-        
-        // Check for exact matches
-        if restrictedWords.contains(lowercased) {
-            return true
-        }
-        
-        // Check if any restricted word is contained within the text
-        // e.g., "adminuser" contains "admin"
-        for word in restrictedWords {
-            if lowercased.contains(word) {
-                return true
-            }
-        }
-        
-        return false
-    }
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var networkMonitor: NetworkMonitor
@@ -63,9 +27,14 @@ struct ProfileEditView: View {
     // UI state
     @State private var isLoading = false
     @State private var errorMessage: String?
+    @State private var errorTitle = "Error"
     @State private var showError = false
     @State private var isCheckingUsername = false
     @State private var usernameError: String?
+    @State private var displayNameError: String?
+    
+    // Content moderation service
+    private let moderationService = ContentModerationService.shared
     
     let currentProfile: UserProfile
     let onSave: (UserProfile) -> Void
@@ -175,11 +144,20 @@ struct ProfileEditView: View {
                             if newValue.count > 20 {
                                 displayName = String(newValue.prefix(20))
                             }
+                            // Clear error when user starts typing
+                            if displayNameError != nil {
+                                displayNameError = nil
+                            }
                         }
                 } header: {
                     Text("Name")
                 } footer: {
-                    if displayName.count >= 20 {
+                    // Show validation errors first, then character limit
+                    if let error = displayNameError {
+                        Text(error)
+                            .foregroundColor(.red)
+                            .font(.caption)
+                    } else if displayName.count >= 20 {
                         Text("Max characters reached")
                             .foregroundColor(.red)
                             .font(.caption)
@@ -256,19 +234,25 @@ struct ProfileEditView: View {
                     }
                 }
             }
-            .alert("Error", isPresented: $showError) {
+            .alert(errorTitle, isPresented: $showError) {
                 Button("OK") {}
             } message: {
                 Text(errorMessage ?? "An error occurred")
             }
             .onChange(of: selectedPhoto) { oldValue, newValue in
                 // MARK: - Photo Selection Handler
-                // Load selected photo from PhotosPicker
+                // Load and immediately resize selected photo for efficient UI rendering
                 Task {
                     if let data = try? await newValue?.loadTransferable(type: Data.self),
                        let image = UIImage(data: data) {
+                        // ⚡ OPTIMIZATION: Resize immediately to avoid decoding huge images in UI
+                        // This prevents 3+ second decode delays when displaying the preview
+                        // The image will be resized again on upload (to 200x200), but this
+                        // intermediate resize (to 800px) makes the UI smooth
+                        let resizedImage = ImageManager.shared.resizeImageToFit(image, maxDimension: 800) ?? image
+                        
                         await MainActor.run {
-                            profileImage = image
+                            profileImage = resizedImage
                         }
                     }
                 }
@@ -281,42 +265,39 @@ struct ProfileEditView: View {
     /// 
     /// Process:
     /// 1. Validate input fields
-    /// 2. Check username uniqueness (if changed)
-    /// 3. Upload new photo to Storage (if selected) and delete old one
-    /// 4. Update profile in Firestore
-    /// 5. Fetch updated profile to confirm changes
-    /// 6. Call onSave callback and dismiss sheet
+    /// 2. Server-side content validation via Cloud Function
+    /// 3. Check username uniqueness (if changed)
+    /// 4. Upload new photo to Storage (if selected) and delete old one
+    /// 5. Update profile in Firestore
+    /// 6. Fetch updated profile to confirm changes
+    /// 7. Call onSave callback and dismiss sheet
     private func saveProfile() {
         // Step 1: Check network connection
         guard networkMonitor.isConnected else {
-            errorMessage = "No internet connection. Please connect and try again."
+            errorTitle = "No Connection"
+            errorMessage = "Please connect to the internet and try again."
             showError = true
             return
         }
         
         // Step 2: Check authentication
         guard let userId = authManager.userId else {
-            errorMessage = "Not signed in"
+            errorTitle = "Sign In Required"
+            errorMessage = "Please sign in to save your profile."
             showError = true
             return
         }
         
-        // Step 3: Validate display name
+        // Step 3: Validate display name (basic check)
         let trimmedName = displayName.trimmingCharacters(in: .whitespaces)
         guard !trimmedName.isEmpty else {
-            errorMessage = "Display name cannot be empty"
+            errorTitle = "Display Name Required"
+            errorMessage = "Please enter a display name."
             showError = true
             return
         }
         
-        // Check for restricted words in display name
-        if Self.containsRestrictedWord(trimmedName) {
-            errorMessage = "Display name contains restricted words"
-            showError = true
-            return
-        }
-        
-        // Step 4: Validate username
+        // Step 4: Validate username (basic check)
         let trimmedUsername = username.trimmingCharacters(in: .whitespaces)
         guard !trimmedUsername.isEmpty else {
             usernameError = "Username cannot be empty"
@@ -325,12 +306,6 @@ struct ProfileEditView: View {
         
         guard trimmedUsername.count >= 3 else {
             usernameError = "Username must be at least 3 characters"
-            return
-        }
-        
-        // Check for restricted words in username
-        if Self.containsRestrictedWord(trimmedUsername) {
-            usernameError = "Username contains restricted words"
             return
         }
         
@@ -350,26 +325,55 @@ struct ProfileEditView: View {
         
         Task {
             do {
-                // Step 6: Check username uniqueness (only if username changed)
-                // Query Firestore to ensure no other user has this username
+                // Step 6: Server-side content validation via Cloud Function
+                // This checks for profanity, reserved words, and format validation
+                print("🔒 [ProfileEditView] Validating content via Cloud Function...")
+                let validationResult = try await moderationService.validateContent(
+                    username: trimmedUsername != currentProfile.username ? trimmedUsername : nil,
+                    displayName: trimmedName
+                )
+                
+                if !validationResult.isValid {
+                    await MainActor.run {
+                        isLoading = false
+                        // Set specific field errors
+                        if let usernameErr = validationResult.usernameError {
+                            usernameError = usernameErr
+                        }
+                        if let displayNameErr = validationResult.displayNameError {
+                            displayNameError = displayNameErr
+                        }
+                    }
+                    print("❌ [ProfileEditView] Validation failed")
+                    return
+                }
+                
+                print("✅ [ProfileEditView] Content validation passed")
+                
+                // Step 7: Check username availability (if changed)
+                // This checks uniqueness AND validates against server-side rules
                 if trimmedUsername != currentProfile.username {
-                    let isAvailable = try await FirebaseService.shared.isUsernameAvailable(
-                        trimmedUsername,
-                        excludingUserId: userId
+                    print("🔒 [ProfileEditView] Checking username availability via Cloud Function...")
+                    let availabilityResult = try await moderationService.checkUsernameAvailability(
+                        username: trimmedUsername,
+                        excludeUserId: userId
                     )
                     
-                    if !isAvailable {
+                    if !availabilityResult.isAvailable {
                         await MainActor.run {
                             isLoading = false
-                            usernameError = "Username '\(trimmedUsername)' is already taken"
+                            usernameError = availabilityResult.reason ?? "Username is not available"
                         }
+                        print("❌ [ProfileEditView] Username not available: \(availabilityResult.reason ?? "unknown")")
                         return
                     }
+                    
+                    print("✅ [ProfileEditView] Username available")
                 }
                 
                 var avatarUrl = currentProfile.avatarUrl
                 
-                // Step 7: Upload new profile photo (if user selected one)
+                // Step 8: Upload new profile photo (if user selected one)
                 // This also automatically deletes the old photo to save storage
                 if let image = profileImage {
                     avatarUrl = try await FirebaseService.shared.uploadProfilePhoto(
@@ -393,9 +397,8 @@ struct ProfileEditView: View {
                         )
                     }
                 }
-
                 
-                // Step 8: Update profile document in Firestore
+                // Step 9: Update profile document in Firestore
                 try await FirebaseService.shared.updateUserProfile(
                     userId: userId,
                     displayName: trimmedName,
@@ -404,10 +407,10 @@ struct ProfileEditView: View {
                     username: trimmedUsername != currentProfile.username ? trimmedUsername : nil
                 )
                 
-                // Step 9: Fetch the updated profile to ensure we have latest data
+                // Step 10: Fetch the updated profile to ensure we have latest data
                 let updatedProfile = try await FirebaseService.shared.fetchUserProfile(userId: userId)
                 
-                // Step 10: Success! Update UI and dismiss
+                // Step 11: Success! Update UI and dismiss
                 await MainActor.run {
                     isLoading = false
                     onSave(updatedProfile) // Notify parent view of changes
@@ -420,6 +423,7 @@ struct ProfileEditView: View {
                 // Handle any errors during the save process
                 await MainActor.run {
                     isLoading = false
+                    errorTitle = "Save Failed"
                     errorMessage = "Couldn't save profile. Please try again."
                     showError = true
                 }

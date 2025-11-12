@@ -144,6 +144,13 @@ class AuthManager: NSObject, ObservableObject {
     /// Async version of Sign in with Apple for invite flow
     /// Returns AuthDataResult without creating Firestore profile (invite flow handles that)
     func signInWithAppleAsync() async throws -> AuthDataResult {
+        // Prevent multiple simultaneous sign in attempts (race condition protection)
+        guard signInContinuation == nil else {
+            Logger.warning("Sign in already in progress, rejecting duplicate attempt", category: "AuthManager")
+            throw NSError(domain: "AuthManager", code: 100, 
+                         userInfo: [NSLocalizedDescriptionKey: "Sign in already in progress. Please wait."])
+        }
+        
         return try await withCheckedThrowingContinuation { continuation in
             self.signInContinuation = continuation
             

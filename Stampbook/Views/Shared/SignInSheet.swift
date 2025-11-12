@@ -77,6 +77,12 @@ struct SignInSheet: View {
             InviteCodeSheet(isAuthenticated: $authManager.isSignedIn)
                 .environmentObject(authManager)
         }
+        .onChange(of: authManager.isSignedIn) { oldValue, newValue in
+            // Dismiss this sheet when user successfully signs in
+            if newValue == true {
+                dismiss()
+            }
+        }
     }
 }
 

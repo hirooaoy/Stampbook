@@ -376,17 +376,28 @@ struct FeedView: View {
             }
         }
         .onAppear {
-            // Listen for profile updates to refresh feed with new avatar/name
+            // Listen for profile updates to refresh feed immediately
             profileUpdateListener = NotificationCenter.default.publisher(for: .profileDidUpdate)
                 .sink { _ in
-                    print("🔔 [FeedView] Received profile update notification - will refresh on next view")
-                    // Feed will be automatically refreshed next time tab is visited
-                    // FeedManager already cleared the cache, so next load will fetch fresh data
+                    print("🔔 [FeedView] Profile updated - refreshing feed now")
+                    // ProfileManager has loaded/updated, now load feed with fresh profile data
+                    if let userId = authManager.userId, authManager.isSignedIn {
+                        Task {
+                            await feedManager.loadFeed(userId: userId, stampsManager: stampsManager, forceRefresh: false)
+                        }
+                    }
                 }
             
             // Hook up comment count updates to feed
             commentManager.onCommentCountChanged = { [weak feedManager] postId, newCount in
                 feedManager?.updatePostCommentCount(postId: postId, newCount: newCount)
+            }
+            
+            // If user is already signed in when view appears (handles first launch + returning user)
+            if let userId = authManager.userId, authManager.isSignedIn, profileManager.currentUserProfile != nil {
+                Task {
+                    await feedManager.loadFeed(userId: userId, stampsManager: stampsManager, forceRefresh: false)
+                }
             }
         }
     }

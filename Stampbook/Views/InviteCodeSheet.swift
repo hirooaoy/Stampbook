@@ -1,6 +1,5 @@
 import SwiftUI
 import FirebaseAuth
-import AuthenticationServices
 
 /// Two-page sheet for invite code entry and Sign in with Apple
 struct InviteCodeSheet: View {
@@ -18,8 +17,11 @@ struct InviteCodeSheet: View {
     @State private var isValidating = false
     @State private var isCreatingAccount = false
     @State private var errorMessage: String?
+    @State private var errorTitle: String = "Error"
     @State private var showError = false
     @State private var showInlineError = false // Show error inline instead of alert
+    @State private var showProfileLoadError = false
+    @State private var pendingUserId: String? // Store userId for retry
     
     enum Page {
         case codeEntry
@@ -27,51 +29,66 @@ struct InviteCodeSheet: View {
     }
     
     var body: some View {
-        NavigationStack {
-            Group {
-                switch currentPage {
-                case .codeEntry:
-                    codeEntryPage
-                case .signIn:
-                    signInPage
-                }
-            }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                // Page 1: X button on right to dismiss
-                // Page 2: Back chevron on left to go back
-                if currentPage == .codeEntry {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button(action: {
-                            dismiss()
-                        }) {
-                            Image(systemName: "xmark")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.primary)
-                        }
-                    }
-                } else {
-                    ToolbarItem(placement: .topBarLeading) {
-                        Button(action: {
-                            withAnimation {
-                                currentPage = .codeEntry
-                            }
-                        }) {
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.primary)
-                        }
-                    }
-                }
-            }
-            .alert("Error", isPresented: $showError) {
-                Button("OK", role: .cancel) { }
-            } message: {
-                Text(errorMessage ?? "Something went wrong")
+        Group {
+            switch currentPage {
+            case .codeEntry:
+                codeEntryPage
+            case .signIn:
+                signInPage
             }
         }
-        .presentationDetents([.height(480), .large])
+        .toolbar {
+            // X button on page 1, Back button on page 2
+            if currentPage == .codeEntry {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(action: {
+                        dismiss()
+                    }) {
+                        Image(systemName: "xmark")
+                            .font(.title3)
+                            .symbolRenderingMode(.hierarchical)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            } else {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button(action: {
+                        // Clear validated code when going back
+                        validatedCode = ""
+                        withAnimation {
+                            currentPage = .codeEntry
+                        }
+                    }) {
+                        Image(systemName: "chevron.left")
+                            .font(.title3)
+                            .symbolRenderingMode(.hierarchical)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+        }
+        .alert(errorTitle, isPresented: $showError) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(errorMessage ?? "Something went wrong")
+        }
+        .alert("Connection Issue", isPresented: $showProfileLoadError) {
+            Button("Try Again") {
+                retryProfileLoad()
+            }
+            Button("Sign Out", role: .cancel) {
+                try? Auth.auth().signOut()
+                authManager.isSignedIn = false
+                authManager.userId = nil
+                pendingUserId = nil
+                dismiss()
+            }
+        } message: {
+            Text("Your account was created successfully, but we couldn't load your profile due to a connection issue. Check your internet and try again.")
+        }
+        .presentationDetents(currentPage == .codeEntry ? [.height(480), .large] : [.height(360)])
         .presentationDragIndicator(.visible)
+        .interactiveDismissDisabled(isCreatingAccount || isValidating)
     }
     
     // MARK: - Page 1: Code Entry
@@ -94,7 +111,7 @@ struct InviteCodeSheet: View {
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
-            .padding(.top, 32)
+            .padding(.top, 64)
             .padding(.bottom, 20)
             
             // Code Input (Plain style)
@@ -146,11 +163,11 @@ struct InviteCodeSheet: View {
                 }
                 .frame(maxWidth: .infinity)
                 .frame(height: 50)
-                .background(inviteCode.count >= 4 ? Color.blue : Color.gray)
+                .background(inviteCode.isEmpty ? Color.gray : Color.blue)
                 .foregroundColor(.white)
                 .cornerRadius(12)
             }
-            .disabled(inviteCode.count < 4 || isValidating)
+            .disabled(inviteCode.isEmpty || isValidating)
             .padding(.horizontal)
             
             Spacer()
@@ -162,11 +179,18 @@ struct InviteCodeSheet: View {
                     .foregroundColor(.secondary)
                 
                 Button(action: handleReturningUser) {
-                    Text("Sign in with Apple")
-                        .font(.footnote)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.blue)
+                    HStack(spacing: 4) {
+                        if isCreatingAccount {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                        }
+                        Text("Sign in with Apple")
+                            .font(.footnote)
+                            .fontWeight(.semibold)
+                    }
+                    .foregroundColor(isCreatingAccount ? .gray : .blue)
                 }
+                .disabled(isCreatingAccount)
             }
             .padding(.bottom, 20)
         }
@@ -194,24 +218,35 @@ struct InviteCodeSheet: View {
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
             }
-            .padding(.bottom, 32)
+            .padding(.bottom, 24)
             
-            // Sign in with Apple Button (Native)
+            // Custom Sign in with Apple Button
             Button(action: signInWithApple) {
-                SignInWithAppleButton(.signIn) { _ in }
-                    onCompletion: { _ in }
-                    .signInWithAppleButtonStyle(.white)
-                    .frame(height: 54)
-                    .cornerRadius(12)
-                    .allowsHitTesting(false)
+                HStack(spacing: 8) {
+                    if isCreatingAccount {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .black))
+                    } else {
+                        Image(systemName: "applelogo")
+                            .font(.system(size: 20, weight: .medium))
+                        Text("Sign in with Apple")
+                            .font(.system(size: 17, weight: .semibold))
+                    }
+                }
+                .foregroundColor(.black)
+                .frame(height: 54)
+                .frame(maxWidth: .infinity)
+                .background(Color.white)
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.black.opacity(0.1), lineWidth: 1)
+                )
             }
             .disabled(isCreatingAccount)
             .padding(.horizontal)
             
             Spacer()
-            
-            // Extra bottom padding
-            Color.clear.frame(height: 40)
         }
     }
     
@@ -254,13 +289,43 @@ struct InviteCodeSheet: View {
         Task {
             isCreatingAccount = true
             errorMessage = nil
+            showError = false
+            showInlineError = false
+            
+            Logger.info("🔐 Starting Sign in with Apple (new account flow)", category: "InviteCodeSheet")
             
             do {
                 // Perform Sign in with Apple using AuthManager
+                Logger.debug("Step 1: Calling signInWithAppleAsync")
                 let result = try await authManager.signInWithAppleAsync()
+                
+                Logger.success("Step 1 Complete: Firebase Auth successful for \(result.user.uid)", category: "InviteCodeSheet")
+                
+                // SAFETY CHECK: Verify user doesn't already have a profile (orphaned auth protection)
+                Logger.debug("Step 2: Checking if user profile already exists")
+                let profileExists = await inviteManager.userProfileExists(userId: result.user.uid)
+                
+                if profileExists {
+                    Logger.warning("User profile already exists - redirecting to returning user flow", category: "InviteCodeSheet")
+                    try? Auth.auth().signOut()
+                    
+                    errorTitle = "You already have an account"
+                    errorMessage = "Please use 'Already have an account?' to sign in."
+                    showError = true
+                    withAnimation {
+                        currentPage = .codeEntry
+                        inviteCode = ""
+                        validatedCode = ""
+                    }
+                    isCreatingAccount = false
+                    return
+                }
+                
+                Logger.success("Step 2 Complete: No existing profile found", category: "InviteCodeSheet")
                 
                 // Generate username from user ID
                 let username = "user_\(result.user.uid.prefix(8))"
+                Logger.info("Step 3: Creating account with username: \(username)", category: "InviteCodeSheet")
                 
                 // Create account with invite code
                 try await inviteManager.createAccountWithInviteCode(
@@ -269,54 +334,128 @@ struct InviteCodeSheet: View {
                     code: validatedCode
                 )
                 
+                Logger.success("Step 3 Complete: Account created successfully", category: "InviteCodeSheet")
+                
                 // Success! Update AuthManager state
                 await MainActor.run {
                     authManager.isSignedIn = true
                     authManager.userId = result.user.uid
                 }
                 
+                Logger.info("Step 4: Loading user profile", category: "InviteCodeSheet")
+                
                 // Load the newly created profile via ProfileManager
-                Task {
-                    if let profile = try? await FirebaseService.shared.fetchUserProfile(userId: result.user.uid) {
-                        await MainActor.run {
-                            authManager.profileManager?.updateProfile(profile)
-                        }
+                do {
+                    let profile = try await FirebaseService.shared.fetchUserProfile(userId: result.user.uid)
+                    await MainActor.run {
+                        authManager.profileManager?.updateProfile(profile)
                     }
+                    Logger.success("Step 4 Complete: Profile loaded and cached", category: "InviteCodeSheet")
+                    
+                    isAuthenticated = true
+                    dismiss()
+                    
+                    Logger.success("✅ Account creation flow completed successfully", category: "InviteCodeSheet")
+                } catch {
+                    // Profile load failed - account exists but profile couldn't be fetched
+                    Logger.error("Profile load failed after account creation", error: error, category: "InviteCodeSheet")
+                    pendingUserId = result.user.uid
+                    showProfileLoadError = true
+                    isCreatingAccount = false
+                    return
                 }
                 
-                isAuthenticated = true
-                dismiss()
-                
             } catch let error as InviteManager.InviteError {
-                // Handle invite-specific errors
-                errorMessage = error.localizedDescription
-                showError = true
+                Logger.error("Invite error occurred", error: error, category: "InviteCodeSheet")
                 
-                // If code was fully used or account already exists, go back to code entry
-                if case .codeFullyUsed = error {
+                // Handle invite-specific errors with descriptive titles
+                switch error {
+                case .codeFullyUsed:
+                    // Sign out since the code became unavailable after validation
+                    try? Auth.auth().signOut()
+                    
+                    errorTitle = "Code Unavailable"
+                    errorMessage = error.localizedDescription
+                    showError = true
                     withAnimation {
                         currentPage = .codeEntry
                         inviteCode = ""
                         validatedCode = ""
                     }
-                } else if case .accountAlreadyExists = error {
-                    // User already has account - send them back to use the "Already have account" button
+                    
+                case .accountAlreadyExists:
+                    // Sign out the Firebase Auth user since they shouldn't use this flow
+                    try? Auth.auth().signOut()
+                    
+                    errorTitle = "You already have an account"
+                    errorMessage = "Please use 'Already have an account?' to sign in."
+                    showError = true
                     withAnimation {
                         currentPage = .codeEntry
                         inviteCode = ""
                         validatedCode = ""
                     }
+                    
+                case .accountCreationFailed:
+                    // Sign out on account creation failure
+                    try? Auth.auth().signOut()
+                    
+                    errorTitle = "Account Creation Failed"
+                    errorMessage = "Something went wrong. Please try again."
+                    showError = true
+                    
+                case .invalidCode, .codeExpired, .networkError:
+                    // These should be caught during validation (inline errors)
+                    // But handle them just in case
+                    // Sign out if we got here with an invalid code
+                    try? Auth.auth().signOut()
+                    
+                    errorTitle = "Error"
+                    errorMessage = error.localizedDescription
+                    showError = true
                 }
             } catch {
                 // Check if user cancelled Apple Sign In
                 let nsError = error as NSError
                 if nsError.domain == "com.apple.AuthenticationServices.AuthorizationError" && nsError.code == 1001 {
-                    // User cancelled - just dismiss silently, no error needed
+                    Logger.info("User cancelled Apple Sign In", category: "InviteCodeSheet")
+                    // User cancelled - reset state and dismiss silently
+                    isCreatingAccount = false
                     return
                 }
                 
-                // Handle auth errors
-                errorMessage = "Sign in failed: \(error.localizedDescription)"
+                // Check for duplicate sign in attempt (race condition)
+                if nsError.domain == "AuthManager" && nsError.code == 100 {
+                    Logger.warning("Duplicate sign in attempt blocked", category: "InviteCodeSheet")
+                    // Silent fail - UI is already showing processing state
+                    isCreatingAccount = false
+                    return
+                }
+                
+                // Check for transaction errors that indicate account already exists
+                if nsError.domain == "InviteError" && nsError.code == 5 {
+                    Logger.error("Account already exists (transaction error)", category: "InviteCodeSheet")
+                    try? Auth.auth().signOut()
+                    
+                    errorTitle = "You already have an account"
+                    errorMessage = "Please use 'Already have an account?' to sign in."
+                    showError = true
+                    withAnimation {
+                        currentPage = .codeEntry
+                        inviteCode = ""
+                        validatedCode = ""
+                    }
+                    isCreatingAccount = false
+                    return
+                }
+                
+                Logger.error("Unexpected error during sign in", error: error, category: "InviteCodeSheet")
+                
+                // Handle auth errors - sign out on failure
+                try? Auth.auth().signOut()
+                
+                errorTitle = "Sign In Failed"
+                errorMessage = "Unable to sign in. Please try again."
                 showError = true
             }
             
@@ -328,52 +467,116 @@ struct InviteCodeSheet: View {
         Task {
             isCreatingAccount = true
             errorMessage = nil
+            showError = false
+            showInlineError = false
+            
+            Logger.info("🔐 Starting Sign in with Apple (returning user flow)", category: "InviteCodeSheet")
             
             do {
                 // Sign in with Apple using AuthManager
+                Logger.debug("Step 1: Calling signInWithAppleAsync")
                 let result = try await authManager.signInWithAppleAsync()
                 
+                Logger.success("Step 1 Complete: Firebase Auth successful for \(result.user.uid)", category: "InviteCodeSheet")
+                
                 // Check if user profile exists
+                Logger.debug("Step 2: Checking if user profile exists")
                 let profileExists = await inviteManager.userProfileExists(userId: result.user.uid)
                 
                 if profileExists {
+                    Logger.success("Step 2 Complete: Profile found - returning user verified", category: "InviteCodeSheet")
+                    
                     // Returning user - update AuthManager and let them in
                     await MainActor.run {
                         authManager.isSignedIn = true
                         authManager.userId = result.user.uid
                     }
                     
-                    // Load their profile via ProfileManager
-                    Task {
-                        if let profile = try? await FirebaseService.shared.fetchUserProfile(userId: result.user.uid) {
-                            await MainActor.run {
-                                authManager.profileManager?.updateProfile(profile)
-                            }
-                        }
-                    }
+                    Logger.info("Step 3: Loading user profile", category: "InviteCodeSheet")
                     
-                    isAuthenticated = true
-                    dismiss()
+                    // Load their profile via ProfileManager
+                    do {
+                        let profile = try await FirebaseService.shared.fetchUserProfile(userId: result.user.uid)
+                        await MainActor.run {
+                            authManager.profileManager?.updateProfile(profile)
+                        }
+                        Logger.success("Step 3 Complete: Profile loaded and cached", category: "InviteCodeSheet")
+                        
+                        isAuthenticated = true
+                        dismiss()
+                        
+                        Logger.success("✅ Returning user sign in completed successfully", category: "InviteCodeSheet")
+                    } catch {
+                        // Profile load failed - user exists but profile couldn't be fetched
+                        Logger.error("Profile load failed for returning user", error: error, category: "InviteCodeSheet")
+                        pendingUserId = result.user.uid
+                        showProfileLoadError = true
+                        isCreatingAccount = false
+                        return
+                    }
                 } else {
+                    Logger.warning("Step 2: No profile found - new user trying to bypass", category: "InviteCodeSheet")
+                    
                     // New user trying to bypass - sign them out
                     try Auth.auth().signOut()
-                    errorMessage = "No account found. You need an invite code to create a new account."
+                    errorTitle = "No Account Found"
+                    errorMessage = "You need an invite code to create a new account."
                     showError = true
                 }
             } catch {
                 // Check if user cancelled Apple Sign In
                 let nsError = error as NSError
                 if nsError.domain == "com.apple.AuthenticationServices.AuthorizationError" && nsError.code == 1001 {
-                    // User cancelled - just dismiss silently, no error needed
+                    Logger.info("User cancelled Apple Sign In", category: "InviteCodeSheet")
+                    // User cancelled - reset state and dismiss silently
+                    isCreatingAccount = false
                     return
                 }
                 
+                // Check for duplicate sign in attempt (race condition)
+                if nsError.domain == "AuthManager" && nsError.code == 100 {
+                    Logger.warning("Duplicate sign in attempt blocked", category: "InviteCodeSheet")
+                    // Silent fail - UI is already showing processing state
+                    isCreatingAccount = false
+                    return
+                }
+                
+                Logger.error("Error during returning user sign in", error: error, category: "InviteCodeSheet")
+                
                 // Show error for actual failures
-                errorMessage = "Sign in failed: \(error.localizedDescription)"
+                errorTitle = "Sign In Failed"
+                errorMessage = "Unable to sign in. Please try again."
                 showError = true
             }
             
             isCreatingAccount = false
+        }
+    }
+    
+    private func retryProfileLoad() {
+        guard let userId = pendingUserId else { return }
+        
+        Task {
+            isCreatingAccount = true
+            
+            do {
+                Logger.info("Retrying profile load for userId: \(userId)", category: "InviteCodeSheet")
+                let profile = try await FirebaseService.shared.fetchUserProfile(userId: userId)
+                
+                await MainActor.run {
+                    authManager.profileManager?.updateProfile(profile)
+                }
+                
+                Logger.success("Profile loaded successfully on retry", category: "InviteCodeSheet")
+                
+                isAuthenticated = true
+                dismiss()
+            } catch {
+                Logger.error("Profile load retry failed", error: error, category: "InviteCodeSheet")
+                // Show error again
+                showProfileLoadError = true
+                isCreatingAccount = false
+            }
         }
     }
 }

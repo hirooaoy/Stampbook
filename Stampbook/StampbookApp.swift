@@ -82,6 +82,12 @@ struct StampbookApp: App {
                 .environmentObject(networkMonitor)
                 .environmentObject(followManager)
                 .environmentObject(profileManager)
+                .onAppear {
+                    // Link ProfileManager to AuthManager as soon as WindowGroup appears
+                    // This happens after @StateObjects are initialized but before deferred auth check completes
+                    authManager.profileManager = profileManager
+                    Logger.debug("Linked ProfileManager to AuthManager in WindowGroup")
+                }
         }
         .onChange(of: scenePhase) { oldPhase, newPhase in
             handleScenePhaseChange(from: oldPhase, to: newPhase)

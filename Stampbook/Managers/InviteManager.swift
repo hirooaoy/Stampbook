@@ -4,6 +4,7 @@ import FirebaseAuth
 import FirebaseFirestore
 
 /// Manages invite code validation and account creation with invite codes
+/// Note: Auto-generated usernames are safe by design and skip validation
 @MainActor
 class InviteManager: ObservableObject {
     private let db = Firestore.firestore()
@@ -86,7 +87,13 @@ class InviteManager: ObservableObject {
     
     /// Creates user account with invite code
     /// This performs atomic transaction: create user profile + mark code as used
+    /// 
+    /// NOTE: Auto-generated usernames (user_abc12345) are NOT validated via Cloud Functions
+    /// because they are safe by design (no profanity, not reserved, unique by Firebase UID).
+    /// Validation only happens when users manually change their username in profile settings.
     func createAccountWithInviteCode(userId: String, username: String, code: String) async throws {
+        print("✅ [InviteManager] Creating account with auto-generated username: \(username)")
+        
         let codeString = code.uppercased().trimmingCharacters(in: .whitespaces)
         let codeRef = db.collection("invite_codes").document(codeString)
         let userRef = db.collection("users").document(userId)
@@ -158,14 +165,18 @@ class InviteManager: ObservableObject {
                 let createdBy = data["createdBy"] as? String ?? "admin"
                 transaction.setData([
                     "username": username,
+                    "displayName": username,  // Default to username, user can change later
                     "inviteCodeUsed": codeString,
                     "invitedBy": createdBy,
                     "invitesRemaining": 0,  // Phase 2: set to 5 for user invites
-                    "accountCreatedAt": FieldValue.serverTimestamp(),
+                    "createdAt": FieldValue.serverTimestamp(),
+                    "lastActiveAt": FieldValue.serverTimestamp(),
                     "totalStamps": 0,
-                    "totalCountries": 0,
+                    "uniqueCountriesVisited": 0,
                     "bio": "",
-                    "profilePhotoURL": ""
+                    "avatarUrl": "",
+                    "followerCount": 0,
+                    "followingCount": 0
                 ], forDocument: userRef)
                 
                 // Update code usage
