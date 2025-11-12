@@ -180,6 +180,21 @@ class StampsManager: ObservableObject {
     /// - Parameter includeRemoved: If true, returns removed stamps (for user's collected stamps/feed)
     ///                              If false, filters out removed stamps (for map/collections)
     /// - Returns: Array of stamps matching the IDs
+    ///
+    /// **NOTE ON CONCURRENT REQUESTS (Instagram Prefetch Pattern):**
+    /// FeedView prefetches individual stamps while FeedManager batches all stamps.
+    /// This causes concurrent requests that may all see empty cache (race condition).
+    /// Result: 6 individual + 1 batch = 7 Firebase queries instead of 1.
+    ///
+    /// **Why this is acceptable at MVP scale:**
+    /// - Test artifact amplified by following yourself (real users see less duplication)
+    /// - Cache prevents duplicate *data* from reaching UI (no broken UX)
+    /// - Costs ~600 reads/day vs 50,000 free tier (1.2% usage)
+    /// - Instagram prefetch gives <0.5s perceived load time (worth the cost)
+    /// - Adding in-flight tracking risks breaking optimized loading pattern
+    ///
+    /// **When to fix:** Post-MVP at 1000+ daily active users or if Firebase costs become concern.
+    /// **How to fix:** Add in-flight request tracking (see ProfileImageView pattern).
     func fetchStamps(ids: [String], includeRemoved: Bool = false) async -> [Stamp] {
         var results: [Stamp] = []
         var uncachedIds: [String] = []

@@ -1077,6 +1077,11 @@ class FirebaseService {
         let profileStart = CFAbsoluteTimeGetCurrent()
         #endif
         
+        // NOTE: AuthManager also fetches currentUserProfile on app launch
+        // This creates 2 fetches of same profile (AuthManager + FeedManager)
+        // Test scenario (following yourself) creates 3rd fetch in followingProfiles
+        // Deduplication happens in profileMap Dictionary below (prevents UI issues)
+        // Not worth fixing at MVP scale - costs 1-2 extra reads per feed load
         let currentUserProfile = try await fetchUserProfile(userId: userId)
         let followingProfiles = try await fetchFollowing(userId: userId, useCache: true)
         
