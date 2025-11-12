@@ -267,57 +267,29 @@ struct CommentRow: View {
             
             Spacer()
             
-            // For your own comments: show both delete icon AND triple dot
-            if isOwnComment {
-                HStack(spacing: 12) {
-                    // Triple dot menu (just for consistency/future options)
-                    Menu {
-                        Button(role: .destructive, action: onDelete) {
-                            Label("Delete", systemImage: "trash")
-                        }
-                    } label: {
-                        Image(systemName: "ellipsis")
-                            .font(.system(size: 18))
-                            .foregroundColor(.gray)
-                            .frame(width: 44, height: 44)
-                            .contentShape(Rectangle())
+            // Triple dot menu for all comments
+            Menu {
+                // Delete option (for own comments OR own post)
+                if canDelete {
+                    Button(role: .destructive, action: onDelete) {
+                        Label("Delete comment", systemImage: "trash")
                     }
-                    .buttonStyle(PlainButtonStyle())
-                    
-                    // Direct delete button for quick access
-                    Button(action: onDelete) {
-                        Image(systemName: "trash")
-                            .font(.system(size: 18))
-                            .foregroundColor(.gray)
-                            .frame(width: 44, height: 44)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(PlainButtonStyle())
                 }
-            }
-            // For other people's comments
-            else {
-                Menu {
-                    // Delete option (only if it's your post)
-                    if isOwnPost {
-                        Button(role: .destructive, action: onDelete) {
-                            Label("Delete", systemImage: "trash")
-                        }
-                    }
-                    
-                    // Report option (always available for others' comments)
+                
+                // Report option (only for OTHER people's comments)
+                if !isOwnComment {
                     Button(action: { showingReportSheet = true }) {
-                        Label("Report", systemImage: "exclamationmark.triangle")
+                        Label("Report comment", systemImage: "exclamationmark.triangle")
                     }
-                } label: {
-                    Image(systemName: "ellipsis")
-                        .font(.system(size: 18))
-                        .foregroundColor(.gray)
-                        .frame(width: 44, height: 44)
-                        .contentShape(Rectangle())
                 }
-                .buttonStyle(PlainButtonStyle())
+            } label: {
+                Image(systemName: "ellipsis")
+                    .font(.system(size: 18))
+                    .foregroundColor(.gray)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
             }
+            .buttonStyle(PlainButtonStyle())
         }
         .sheet(item: $selectedUserId) { identifiableString in
             UserProfileView(userId: identifiableString.value, username: comment.userUsername, displayName: comment.userDisplayName)
