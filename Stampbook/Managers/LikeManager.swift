@@ -21,7 +21,7 @@ class LikeManager: ObservableObject {
         // Load cache synchronously during init (safe timing, before any views render)
         loadCachedLikes()
         isCacheLoaded = true
-        print("⏱️ [LikeManager] init() completed with \(likedPosts.count) cached likes")
+        print("⏱️ [LikeManager] init() completed with \(likedPosts.count) cached likes and \(likeCounts.count) cached counts")
     }
     
     /// Toggle like on a post with optimistic UI update
@@ -159,6 +159,8 @@ class LikeManager: ObservableObject {
     /// Set initial like counts (called when feed loads)
     func setLikeCounts(_ counts: [String: Int]) {
         likeCounts = counts
+        // Save updated counts to cache for next session
+        saveCachedLikes()
     }
     
     /// Update like count for a specific post
@@ -188,18 +190,31 @@ class LikeManager: ObservableObject {
         pendingLikes.removeAll()
         pendingUnlikes.removeAll()
         UserDefaults.standard.removeObject(forKey: "likedPosts")
+        UserDefaults.standard.removeObject(forKey: "likeCounts")
     }
     
     // MARK: - Persistence
     
     private func saveCachedLikes() {
+        // Save liked post IDs
         let likedArray = Array(likedPosts)
         UserDefaults.standard.set(likedArray, forKey: "likedPosts")
+        
+        // Save like counts for instant display on cold start
+        // This prevents the "❤️ 0" → "❤️ 1" flash when app restarts
+        UserDefaults.standard.set(likeCounts, forKey: "likeCounts")
     }
     
     private func loadCachedLikes() {
+        // Load liked post IDs
         if let cached = UserDefaults.standard.array(forKey: "likedPosts") as? [String] {
             likedPosts = Set(cached)
+        }
+        
+        // Load like counts for instant display on cold start
+        if let cachedCounts = UserDefaults.standard.dictionary(forKey: "likeCounts") as? [String: Int] {
+            likeCounts = cachedCounts
+            print("📊 [LikeManager] Loaded \(cachedCounts.count) cached like counts")
         }
     }
 }
