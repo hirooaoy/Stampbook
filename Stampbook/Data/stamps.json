@@ -599,9 +599,7 @@
     "latitude": 44.27582873952332,
     "longitude": -68.31262860701447,
     "address": "182 Clark Point Rd\nSouthwest Harbor, ME, USA 04679",
-    "collectionIds": [
-      "acadia-must-visits"
-    ],
+    "collectionIds": [],
     "about": "Classic Maine seafood shack serving fresh lobster rolls with harbor views since 1985.",
     "thingsToDoFromEditors": [
       "Order the warm buttered lobster roll over cold mayo version",
@@ -616,9 +614,7 @@
     "latitude": 44.385989414466714,
     "longitude": -68.20437601454792,
     "address": "231 Main St\nBar Harbor, ME, USA 04609",
-    "collectionIds": [
-      "acadia-must-visits"
-    ],
+    "collectionIds": [],
     "about": "Beloved seasonal Irish-style pub known for cozy atmosphere and craft beers.",
     "thingsToDoFromEditors": [
       "Order fish & chips with a local Maine beer like Allagash or Shipyard",
@@ -636,7 +632,7 @@
     "collectionIds": [
       "airports-of-the-world"
     ],
-    "about": "SFO pioneered the airport-as-destination concept. It was the first US airport with a museum (1980) and yoga room. The iconic Terminal 2 renovation won architectural awards for sustainability, featuring a living roof and locally-sourced materials.",
+    "about": "SFO was the first US airport with a museum (1980) and yoga room. The iconic Terminal 2 renovation with its locally-sourced materials won architectural awards for sustainability.",
     "thingsToDoFromEditors": [
       "Explore the SFO Museum's rotating exhibits in all terminals - completely free",
       "Try local favorites: Tony's Pizza Napoletana (Terminal 1) and Tartine (Terminal A)"
@@ -653,7 +649,7 @@
     "collectionIds": [
       "libraries-that-make-you-forget-time"
     ],
-    "about": "Award-winning 1966 library nestled among towering redwoods with handcrafted walnut furniture, floor-to-ceiling windows, and a wood-burning fireplace.",
+    "about": "Award-winning 1966 library nestled among towering redwoods with floor-to-ceiling windows and a wood-burning fireplace.",
     "thingsToDoFromEditors": [
       "Sit by the large windows overlooking the creek and redwood groves",
       "Walk around behind the library into the woods and breathe in the fresh air"
@@ -683,7 +679,7 @@
     "longitude": -122.8936648972723,
     "address": "20215 Shoreline Hwy\nMarshall, CA, USA 94940",
     "collectionIds": [],
-    "about": "Founded by two marine biologists in the early 1980s, this farm supplies fresh oysters to many Bay Area restaurants including their popular Ferry Building oyster bar.",
+    "about": "Founded in the 1980s by marine biologists, this farm supplies fresh oysters to Bay Area restaurants including their Ferry Building oyster bar.",
     "thingsToDoFromEditors": [
       "Dine outside and enjoy fresh oysters while looking out at Tomales Bay",
       "Book a farm tour to learn about sustainable aquaculture and taste signature Sweetwater oysters"
@@ -700,7 +696,7 @@
     "collectionIds": [
       "discover-central-park"
     ],
-    "about": "This iconic Central Park fountain features the Angel of the Waters statue by Emma Stebbins, who in 1863 became the first woman to receive a public art commission in NYC.",
+    "about": "Iconic Central Park fountain featuring Angel of the Waters by Emma Stebbins, the first woman to receive a public art commission in NYC in 1863.",
     "thingsToDoFromEditors": [
       "Listen to street musicians who perform around the fountain",
       "Walk through the arcade to see the restored Minton tile ceiling"
@@ -717,7 +713,7 @@
     "collectionIds": [
       "discover-central-park"
     ],
-    "about": "This 106-acre reservoir was renamed in 1994 to honor former First Lady Jacqueline Kennedy Onassis, who lived nearby and frequently jogged around it. The 1.58-mile running track offers stunning views of the Manhattan skyline.",
+    "about": "Renamed in 1994 for Jackie Kennedy Onassis, who jogged here regularly. The 1.58-mile track offers stunning Manhattan skyline views.",
     "thingsToDoFromEditors": [
       "Walk or run the 1.58-mile path around the reservoir for beautiful skyline views",
       "Visit at sunrise or sunset for the most spectacular light on the water"
@@ -734,7 +730,7 @@
     "collectionIds": [
       "discover-central-park"
     ],
-    "about": "This 36-acre wilderness with rocky outcroppings and winding paths is one of the best birdwatching spots in North America, with over 230 species spotted here throughout the year.",
+    "about": "36-acre wilderness and one of North America's best birdwatching spots with over 230 species spotted here.",
     "thingsToDoFromEditors": [
       "Bring binoculars during spring migration (April-May) for incredible birdwatching",
       "Let yourself get lost on the winding paths - it's designed to feel like you've left the city"
@@ -751,7 +747,7 @@
     "collectionIds": [
       "discover-central-park"
     ],
-    "about": "Central Park's only formal garden, featuring 6 acres divided into three distinct styles: Italian, French, and English. Free to visit and a peaceful escape with seasonal blooms and elegant fountains.",
+    "about": "Central Park's only formal garden with 6 acres divided into Italian, French, and English styles.",
     "thingsToDoFromEditors": [
       "Visit in spring (April-May) to see the famous Tulip Festival with 20,000+ tulips",
       "Enter through the Vanderbilt Gate at 105th Street, one of Central Park's most ornate entrances"
@@ -768,7 +764,7 @@
     "collectionIds": [
       "discover-central-park"
     ],
-    "about": "One of Central Park's most iconic and photographed bridges, built in 1862. This elegant cast iron bridge spans the Lake and offers stunning views of the Manhattan skyline and surrounding woodlands.",
+    "about": "One of Central Park's most iconic bridges, built in 1862 with stunning Manhattan skyline views.",
     "thingsToDoFromEditors": [
       "Visit at sunrise or golden hour for the best photos with soft light reflecting off the water",
       "Walk to the center of the bridge for the classic view looking north toward the San Remo towers"
@@ -785,7 +781,7 @@
     "collectionIds": [
       "discover-central-park"
     ],
-    "about": "The only straight path in Central Park, featuring a majestic canopy of American elm trees. \"The Mall\" comes from an old English term meaning a tree-lined promenade for walking or social gatherings.",
+    "about": "The only straight path in Central Park with a majestic canopy of American elm trees.",
     "thingsToDoFromEditors": [
       "Visit Literary Walk at the southern end to see statues of famous writers like Shakespeare",
       "Walk under the elm canopy in fall when the golden leaves create a natural tunnel"
@@ -815,7 +811,7 @@
     "longitude": -73.96792078995901,
     "address": "15 River St\nBrooklyn, NY 11249",
     "collectionIds": [],
-    "about": "Waterfront park built on the historic Domino Sugar Refinery site with stunning Manhattan skyline views, preserved industrial artifacts, and innovative playground features.",
+    "about": "Waterfront park built on the historic Domino Sugar Refinery site with Manhattan skyline views and preserved industrial artifacts.",
     "thingsToDoFromEditors": [
       "Walk the elevated walkway for panoramic views of the Manhattan skyline and Williamsburg Bridge",
       "Explore the preserved industrial artifacts scattered throughout the park"
@@ -830,7 +826,7 @@
     "longitude": -74.01062815667991,
     "address": "Pier 55 at Hudson River Park, Hudson River Greenway\nNew York, NY 10014",
     "collectionIds": [],
-    "about": "Opened in 2021, this floating park is built on 132 tulip-shaped concrete pillars rising from the Hudson River, featuring landscaped gardens, an amphitheater, and stunning city views.",
+    "about": "Floating park built on 132 tulip-shaped pillars rising from the Hudson River, opened in 2021.",
     "thingsToDoFromEditors": [
       "Walk the undulating pathways through over 350 species of trees, shrubs, and perennials",
       "Bring a blanket and relax on the grassy hills while watching boats pass by on the Hudson"
@@ -845,7 +841,7 @@
     "longitude": -118.4744750174548,
     "address": "1200 Getty Center Dr\nLos Angeles, CA 90049",
     "collectionIds": [],
-    "about": "This art museum opened in 1997 and is home to masterpieces like Van Gogh's \"Irises\". The museum also features stunning outdoor spaces and gardens, including the famous Central Garden designed by artist Robert Irwin.",
+    "about": "Art museum opened in 1997, home to Van Gogh's \"Irises\" and the stunning Central Garden designed by Robert Irwin.",
     "thingsToDoFromEditors": [
       "Admission is always free (only parking costs $20, or $15 after 3pm)",
       "Take in panoramic views of Los Angeles from various viewpoints around the hilltop campus"
@@ -905,12 +901,102 @@
     "longitude": -155.4729126144228,
     "address": "Mauna Kea Access Rd, Hilo, HI 96720",
     "collectionIds": ["stargazing-spots"],
-    "about": "Mauna Kea is the highest point in Hawaii at 13,796 feet. It is home to the Keck Observatory that helped astronomers win the 2020 Nobel Prize in Physics by proving the existence of a supermassive black hole at the center of our Milky Way galaxy.",
+    "about": "Hawaii's highest peak at 13,796 feet. The Keck Observatory here helped discover the supermassive black hole at our galaxy's center, earning a 2020 Nobel Prize.",
     "thingsToDoFromEditors": [
       "Drive to the summit for sunset with a 4WD vehicle (required for the steep unpaved road) and witness one of the most spectacular sunset in the world.",
       "Join the free nightly stargazing programs at the Visitor Information Station with telescopes and expert staff"
     ],
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-hi-the-big-island-mauna-kea.png?alt=media&token=730a6d7c-3863-4348-b4ff-958faa2c91db",
+    "collectionRadius": "regular"
+  },
+  {
+    "id": "us-ca-sequoia-national-park-general-sherman-tree",
+    "name": "General Sherman Tree",
+    "latitude": 36.581719950244235,
+    "longitude": -118.75144760233867,
+    "address": "Three Rivers, CA 93262",
+    "collectionIds": ["sequoia-giants"],
+    "about": "The General Sherman Tree is the world's largest living tree by volume at 52,508 cubic feet. It is estimated to be between 2,300 and 2,700 years old.",
+    "thingsToDoFromEditors": [
+      "Walk the paved half-mile Congress Trail loop to see the General Sherman Tree and other giant sequoias",
+      "Hike the Big Trees Trail, an easy 1.2-mile loop through the Giant Forest grove"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sequoia-national-park-general-sherman-tree.png?alt=media&token=ce19ab40-1a89-4980-a18d-e1baca074979",
+    "collectionRadius": "regular"
+  },
+  {
+    "id": "us-ca-tahoe-heavenly",
+    "name": "Heavenly Mountain Resort",
+    "latitude": 38.93744594803447,
+    "longitude": -119.92229922230797,
+    "address": "South Lake Tahoe, CA",
+    "collectionIds": [],
+    "about": "You can ski across two states at Heavenly—California and Nevada—making it one of the few resorts where you can literally cross state lines on skis and snowboards.",
+    "thingsToDoFromEditors": [
+      "Take the Heavenly Gondola to the summit for panoramic Lake Tahoe views",
+      "Enjoy terrain for all skill levels from beginner runs like First Ride to challenging expert runs like Gunbarrel"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-tahoe-heavenly.png?alt=media&token=b53576e1-f7a9-4e31-8150-089fae3de5f2",
+    "collectionRadius": "xlarge"
+  },
+  {
+    "id": "us-ca-sequoia-national-park-moro-rock",
+    "name": "Moro Rock",
+    "latitude": 36.544441076624544,
+    "longitude": -118.76554928048425,
+    "address": "Sequoia National Park, CA 93262",
+    "collectionIds": ["sequoia-giants"],
+    "about": "The dome formed over 100 million years ago during the Cretaceous period. The 400-step stairway was built by the Civilian Conservation Corps in 1931 and is carved directly into the granite.",
+    "thingsToDoFromEditors": [
+      "Hike the quarter-mile trail to the summit",
+      "Watch the sunset with the unique granite formations from the top"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sequoia-national-park-moro-rock.png?alt=media&token=b8c4c607-c4e4-4665-a87f-8443c00d65f5",
+    "collectionRadius": "regularplus"
+  },
+  {
+    "id": "us-ca-sequoia-national-park-tunnel-log",
+    "name": "Tunnel Log",
+    "latitude": 36.552567585037096,
+    "longitude": -118.76138131482963,
+    "address": "Crescent Meadow Rd, Sequoia National Park, CA 93262",
+    "collectionIds": ["sequoia-giants"],
+    "about": "This fallen giant sequoia crashed across Crescent Meadow Road in 1937. Rather than removing it, park workers carved an 8-foot tall tunnel through the 275-foot tree in 1938.",
+    "thingsToDoFromEditors": [
+      "Drive through the iconic tunnel carved into this 2,000-year-old fallen sequoia and snap the classic photo",
+      "Hike to Moro Rock nearby for panoramic views of the Sierra Nevada and collect a stamp"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sequoia-national-park-tunnel-log.png?alt=media&token=cd491e6e-9042-4457-b786-94764a48602d",
+    "collectionRadius": "regular"
+  },
+  {
+    "id": "us-ca-sequoia-national-park-giant-forest-museum",
+    "name": "Giant Forest Museum",
+    "latitude": 36.56472497751813,
+    "longitude": -118.77272384986406,
+    "address": "47050 Generals Hwy, Three Rivers, CA 93271",
+    "collectionIds": ["sequoia-giants"],
+    "about": "Originally built in 1928 as a market, it reopened in 2001 as a museum dedicated to the Giant Forest ecosystem.",
+    "thingsToDoFromEditors": [
+      "Learn about John Muir and early conservation efforts",
+      "Walk the Big Trees Trail loop (starts right outside)"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sequoia-national-park-giant-forest-museum.png?alt=media&token=107dace5-c926-4773-8926-530b4a2e49d3",
+    "collectionRadius": "regular"
+  },
+  {
+    "id": "us-ca-sequoia-national-park-crescent-meadow",
+    "name": "Crescent Meadow",
+    "latitude": 36.558824712542126,
+    "longitude": -118.74846460609943,
+    "address": "Cres Mdw Lp, California 93262",
+    "collectionIds": ["sequoia-giants"],
+    "about": "John Muir called this meadow \"the gem of the Sierra\" for its outstanding natural beauty. It features a 1.5-mile loop trail that's relatively easy and family-friendly.",
+    "thingsToDoFromEditors": [
+      "Hike the 1.5-mile Crescent Meadow Loop Trail through giant sequoias",
+      "Enjoy a peaceful picnic surrounded by ancient trees (pack out what you pack in)"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sequoia-national-park-crescent-meadow.png?alt=media&token=70df6d2f-0e4f-4296-9c25-cf11ecf37b5c",
     "collectionRadius": "regular"
   }
 ]

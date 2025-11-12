@@ -116,10 +116,10 @@ struct StampDetailView: View {
                         if showLockIcon {
                             RoundedRectangle(cornerRadius: 16)
                                 .fill(Color.gray.opacity(0.1))
-                                .frame(width: 240, height: 240)
+                                .frame(width: 260, height: 260)
                             
                             Image(systemName: "lock.fill")
-                                .font(.system(size: 75))
+                                .font(.system(size: 64))
                                 .foregroundColor(.gray)
                         }
                         
@@ -562,7 +562,7 @@ struct StampDetailView: View {
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)
-        .presentationDetents([.fraction(0.75), .large])
+        .presentationDetents([.fraction(0.82), .large])
         .onAppear {
             // Initialize states for already collected stamps
             if isCollected {
@@ -944,7 +944,7 @@ struct StampDetailView: View {
                     }
                 }
             }
-            // Option 2: Bundled image (legacy)
+            // Fallback to bundled image for backward compatibility
             else if !stamp.imageName.isEmpty {
                 imageToCopy = UIImage(named: stamp.imageName)
             }

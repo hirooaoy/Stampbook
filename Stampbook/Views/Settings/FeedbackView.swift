@@ -418,6 +418,115 @@ struct SuggestEditView: View {
     }
 }
 
+/// Suggest edit view for collections - For suggesting edits to collection information
+struct SuggestCollectionEditView: View {
+    let collectionId: String
+    let collectionName: String
+    
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject var authManager: AuthManager
+    @State private var editText = ""
+    @State private var isSending = false
+    @State private var showSuccessAlert = false
+    @State private var showErrorAlert = false
+    @State private var errorMessage = ""
+    
+    var body: some View {
+        NavigationStack {
+            ZStack(alignment: .topLeading) {
+                TextEditor(text: $editText)
+                    .font(.body)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 8)
+                    .scrollContentBackground(.hidden)
+                    .background(Color(.systemBackground))
+                
+                // Placeholder
+                if editText.isEmpty {
+                    Text(authManager.isSignedIn ? "Suggest improvements to collection details (name, description, stamps to add/remove, etc.)..." : "Suggest improvements to collection details (name, description, stamps to add/remove, etc.)...\n(Submitted anonymously)")
+                        .font(.body)
+                        .foregroundColor(.gray.opacity(0.5))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 16)
+                        .allowsHitTesting(false)
+                }
+            }
+            .navigationTitle("Suggest an edit")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                    .disabled(isSending)
+                }
+                
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(action: sendSuggestEdit) {
+                        if isSending {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle())
+                        } else {
+                            Text("Send")
+                                .fontWeight(.semibold)
+                        }
+                    }
+                    .disabled(editText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSending)
+                }
+            }
+            .alert("Success!", isPresented: $showSuccessAlert) {
+                Button("OK") {
+                    dismiss()
+                }
+            } message: {
+                Text("Thank you for your suggestion!")
+            }
+            .alert("Error", isPresented: $showErrorAlert) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(errorMessage)
+            }
+        }
+    }
+    
+    private func sendSuggestEdit() {
+        let trimmedText = editText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedText.isEmpty else { return }
+        
+        isSending = true
+        
+        Task {
+            do {
+                // Submit to Firebase with collection info (works for both signed-in and anonymous users)
+                let userId = authManager.userId ?? "anonymous"
+                let editMessage = """
+                Collection: \(collectionName) (ID: \(collectionId))
+                
+                Suggested Edit:
+                \(trimmedText)
+                """
+                
+                try await FirebaseService.shared.submitFeedback(
+                    userId: userId,
+                    type: "Collection Edit Suggestion",
+                    message: editMessage
+                )
+                
+                await MainActor.run {
+                    isSending = false
+                    showSuccessAlert = true
+                }
+            } catch {
+                await MainActor.run {
+                    isSending = false
+                    errorMessage = "Couldn't send suggestion. Please try again."
+                    showErrorAlert = true
+                }
+            }
+        }
+    }
+}
+
 /// Account deletion request view - For users who want to delete their account
 struct AccountDeletionRequestView: View {
     @Environment(\.dismiss) private var dismiss

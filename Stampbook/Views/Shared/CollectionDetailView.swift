@@ -5,11 +5,13 @@ import SwiftUI
 // Signed-out users can view stamps but see lock icons on uncollected stamps
 struct CollectionDetailView: View {
     @EnvironmentObject var stampsManager: StampsManager
+    @EnvironmentObject var authManager: AuthManager
     @Environment(\.dismiss) private var dismiss
     let collection: Collection
     
     @State private var collectionStamps: [Stamp] = []
     @State private var isLoading = true
+    @State private var showSuggestEdit = false
     
     private let columns = [
         GridItem(.flexible(), spacing: 16),
@@ -88,6 +90,26 @@ struct CollectionDetailView: View {
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarHidden(false)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu {
+                    Button(action: {
+                        showSuggestEdit = true
+                    }) {
+                        Label("Suggest an edit", systemImage: "pencil")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .font(.title3)
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .sheet(isPresented: $showSuggestEdit) {
+            SuggestCollectionEditView(collectionId: collection.id, collectionName: collection.name)
+                .environmentObject(authManager)
+        }
         .onAppear {
             loadCollectionStamps()
         }
