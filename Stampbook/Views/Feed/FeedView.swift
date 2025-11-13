@@ -4,6 +4,13 @@ import PhotosUI
 import MessageUI
 import Combine
 
+struct UserProfileNavigation: Hashable, Identifiable {
+    let id = UUID()
+    let userId: String
+    let username: String
+    let displayName: String
+}
+
 struct FeedView: View {
     // Debug flag - set to true to enable debug logging
     private let DEBUG_FEED = false
@@ -12,9 +19,11 @@ struct FeedView: View {
     @EnvironmentObject var stampsManager: StampsManager
     @EnvironmentObject var profileManager: ProfileManager
     @EnvironmentObject var networkMonitor: NetworkMonitor
+    @EnvironmentObject var followManager: FollowManager // Shared instance from StampbookApp
+    @EnvironmentObject var likeManager: LikeManager // Shared instance from StampbookApp
+    @EnvironmentObject var commentManager: CommentManager // Shared instance from StampbookApp
+    @EnvironmentObject var notificationManager: NotificationManager // Shared instance from StampbookApp
     @StateObject private var feedManager = FeedManager() // Persists across tab switches
-    @StateObject private var likeManager = LikeManager() // Manages likes
-    @StateObject private var commentManager = CommentManager() // Manages comments
     @Environment(\.colorScheme) var colorScheme
     @Binding var selectedTab: Int
     @Binding var shouldResetStampsNavigation: Bool // Binding to reset StampsView navigation
@@ -31,7 +40,21 @@ struct FeedView: View {
     @State private var showSuggestCollection = false
     @State private var showAppStoreUrlCopied = false // Show confirmation when App Store URL is copied
     @State private var profileUpdateListener: AnyCancellable? // Listen for profile updates
+    @State private var cancellables = Set<AnyCancellable>() // Store all notification listeners
     @State private var showInviteCodeSheet = false // Show invite code sheet for new users
+    @State private var showLikes = false // Show likes sheet for a post
+    @State private var selectedPostForLikes: (postId: String, ownerId: String)? = nil // Track which post's likes to show
+    
+    // SHEET MANAGEMENT: This view has 13 sheet modifiers which triggers SwiftUI warnings
+    // ("Currently, only presenting a single sheet is supported"). These warnings are COSMETIC
+    // and can be safely IGNORED. The sheets work correctly - they queue properly and present
+    // one at a time. The activeSheetCount pattern below is intentional and handles feed refresh
+    // timing when sheets with follow buttons are open. Do NOT refactor to coordinator pattern
+    // without careful consideration - it risks breaking the feed refresh logic. Decision made
+    // Nov 2025 to defer this until post-launch. See: CROSS_REFERENCE_RISK_ANALYSIS.md
+    @State private var activeSheetCount = 0 // Track number of sheets with follow buttons currently open
+    @State private var hasPendingRefresh = false // Track if refresh should execute when sheets close
+    @State private var justCompletedPendingRefresh = false // Prevent double-fetch after pending refresh
     
     enum FeedTab: String, CaseIterable {
         case all = "All"
@@ -117,10 +140,39 @@ struct FeedView: View {
         let likeCounts = Dictionary(uniqueKeysWithValues: postsToSync.map { ($0.id, $0.likeCount) })
         likeManager.setLikeCounts(likeCounts)
         
+        // Initialize comment counts from feed data (bulk operation, no race condition)
+        let commentCounts = Dictionary(uniqueKeysWithValues: postsToSync.map { ($0.id, $0.commentCount) })
+        commentManager.setCommentCounts(commentCounts)
+        
         // Fetch like status for all posts to sync with cached state
         let postIds = postsToSync.map { $0.id }
         if !postIds.isEmpty {
             await likeManager.fetchLikeStatus(postIds: postIds, userId: userId)
+        }
+        
+        // Also refresh notifications and badge indicator
+        await notificationManager.fetchNotifications(userId: userId)
+        await notificationManager.checkHasUnreadNotifications(userId: userId)
+    }
+    
+    /// Execute pending refresh if one was queued while sheets were open
+    private func executePendingRefresh() {
+        guard hasPendingRefresh && activeSheetCount == 0 else { return }
+        
+        print("✅ [FeedView] Executing pending refresh after sheet closed")
+        hasPendingRefresh = false
+        justCompletedPendingRefresh = true // Prevent task-triggered double-fetch
+        
+        Task {
+            await refreshFeedData()
+            
+            // Reset flag after a brief delay to allow .task to see it
+            // This prevents the .task modifier from triggering an immediate reload
+            // when it sees empty posts after the pending refresh completes
+            try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+            await MainActor.run {
+                justCompletedPendingRefresh = false
+            }
         }
     }
     
@@ -151,7 +203,7 @@ struct FeedView: View {
                         Spacer()
                         
                         if authManager.isSignedIn {
-                        // Signed-in menu: Search and ellipses
+                        // Signed-in menu: Search, notifications, and ellipses
                             HStack(spacing: 8) {
                                 Button(action: {
                                     showUserSearch = true
@@ -163,16 +215,26 @@ struct FeedView: View {
                                         .contentShape(Rectangle())     // Make entire frame tappable
                                 }
                                 
-                                // TODO: Implement notification system later
-                                // Button(action: {
-                                //     showNotifications = true
-                                // }) {
-                                //     Image(systemName: "bell")
-                                //         .font(.system(size: 24))
-                                //         .foregroundColor(.primary)
-                                //         .frame(width: 44, height: 44)  // Larger tap target
-                                //         .contentShape(Rectangle())     // Make entire frame tappable
-                                // }
+                                // Notification bell with badge
+                                Button(action: {
+                                    showNotifications = true
+                                }) {
+                                    ZStack(alignment: .topTrailing) {
+                                        Image(systemName: "bell")
+                                            .font(.system(size: 24))
+                                            .foregroundColor(.primary)
+                                            .frame(width: 44, height: 44)
+                                            .contentShape(Rectangle())
+                                        
+                                        // Unread badge indicator
+                                        if notificationManager.hasUnreadNotifications {
+                                            Circle()
+                                                .fill(Color.red)
+                                                .frame(width: 10, height: 10)
+                                                .offset(x: 0, y: 0)
+                                        }
+                                    }
+                                }
                                 
                                 Menu {
                                     menuContent
@@ -233,6 +295,13 @@ struct FeedView: View {
                                     feedType: selectedFeedTab,
                                     selectedTab: $selectedTab,
                                     shouldResetStampsNavigation: $shouldResetStampsNavigation,
+                                    activeSheetCount: $activeSheetCount,
+                                    justCompletedPendingRefresh: $justCompletedPendingRefresh,
+                                    onSheetDismiss: executePendingRefresh,
+                                    onShowLikes: { postId, ownerId in
+                                        selectedPostForLikes = (postId: postId, ownerId: ownerId)
+                                        showLikes = true
+                                    },
                                     feedManager: feedManager,
                                     likeManager: likeManager,
                                     commentManager: commentManager,
@@ -291,14 +360,30 @@ struct FeedView: View {
             }
         }
         .toolbar(.hidden, for: .navigationBar)
-        .alert("Notifications", isPresented: $showNotifications) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text("No new notifications")
+        .sheet(isPresented: $showNotifications) {
+            NotificationView()
+                .environmentObject(authManager)
+                .environmentObject(stampsManager)
+                .environmentObject(profileManager)
+                .environmentObject(notificationManager)
+                .onAppear {
+                    activeSheetCount += 1
+                }
+                .onDisappear {
+                    activeSheetCount -= 1
+                    executePendingRefresh()
+                }
         }
         .sheet(isPresented: $showUserSearch) {
             UserSearchView()
                 .environmentObject(authManager)
+                .onAppear {
+                    activeSheetCount += 1
+                }
+                .onDisappear {
+                    activeSheetCount -= 1
+                    executePendingRefresh()
+                }
         }
         .sheet(isPresented: $showFeedback) {
             SimpleFeedbackView()
@@ -330,6 +415,24 @@ struct FeedView: View {
         .sheet(isPresented: $showInviteCodeSheet) {
             InviteCodeSheet(isAuthenticated: $authManager.isSignedIn)
                 .environmentObject(authManager)
+        }
+        .sheet(isPresented: $showLikes) {
+            if let selectedPost = selectedPostForLikes {
+                LikeListView(
+                    postId: selectedPost.postId,
+                    postOwnerId: selectedPost.ownerId
+                )
+                .environmentObject(authManager)
+                .environmentObject(followManager)
+                .environmentObject(profileManager)
+                .onAppear {
+                    activeSheetCount += 1
+                }
+                .onDisappear {
+                    activeSheetCount -= 1
+                    executePendingRefresh()
+                }
+            }
         }
         .alert("Sign Out", isPresented: $showSignOutConfirmation) {
             Button("Cancel", role: .cancel) {}
@@ -388,9 +491,35 @@ struct FeedView: View {
                     }
                 }
             
+            // Listen for following list changes to refresh feed (queue if sheets are open)
+            NotificationCenter.default.publisher(for: .followingListDidChange)
+                .sink { _ in
+                    print("🔔 [FeedView] Following list changed")
+                    
+                    // If sheets with follow buttons are currently open, queue the refresh
+                    if activeSheetCount > 0 {
+                        print("📋 [FeedView] Sheets are open, queuing refresh for later")
+                        hasPendingRefresh = true
+                    } else {
+                        // No sheets open, refresh immediately
+                        print("🔔 [FeedView] No sheets open, refreshing feed now")
+                        if let _ = authManager.userId, authManager.isSignedIn {
+                            Task {
+                                await refreshFeedData()
+                            }
+                        }
+                    }
+                }
+                .store(in: &cancellables)
+            
             // Hook up comment count updates to feed
             commentManager.onCommentCountChanged = { [weak feedManager] postId, newCount in
                 feedManager?.updatePostCommentCount(postId: postId, newCount: newCount)
+            }
+            
+            // Hook up like count updates to feed
+            likeManager.onLikeCountChanged = { [weak feedManager] postId, newCount in
+                feedManager?.updatePostLikeCount(postId: postId, newCount: newCount)
             }
             
             // If user is already signed in when view appears (handles first launch + returning user)
@@ -407,6 +536,10 @@ struct FeedView: View {
         let feedType: FeedTab
         @Binding var selectedTab: Int
         @Binding var shouldResetStampsNavigation: Bool
+        @Binding var activeSheetCount: Int // Track sheets with follow buttons
+        @Binding var justCompletedPendingRefresh: Bool // Prevent double-fetch after pending refresh
+        let onSheetDismiss: () -> Void // Execute pending refresh when sheets close
+        let onShowLikes: (String, String) -> Void // Show likes sheet for a post (postId, ownerId)
         @ObservedObject var feedManager: FeedManager
         @ObservedObject var likeManager: LikeManager
         @ObservedObject var commentManager: CommentManager
@@ -414,6 +547,9 @@ struct FeedView: View {
         @EnvironmentObject var stampsManager: StampsManager
         @EnvironmentObject var authManager: AuthManager
         @State private var hasLoadedOnce = false
+        @State private var selectedStampForDetail: Stamp?
+        @State private var selectedPostForDetail: String?
+        @State private var selectedUserForProfile: UserProfileNavigation?
         
         // Choose data source based on feed type
         // "All" = Instagram-style chronological feed from followed users
@@ -441,10 +577,9 @@ struct FeedView: View {
                 if !authManager.isSignedIn {
                     // Not signed in - show sign-in prompt (handled by parent)
                     EmptyView()
-                } else if posts.isEmpty && (feedManager.isLoading || !hasLoadedOnce) {
+                } else if posts.isEmpty && feedManager.isLoading {
                     // Loading with no content - show skeleton posts
-                    // Show skeleton during first load OR retry attempts to avoid flashing "No posts yet"
-                    // This prevents confusing UX when retries happen after connection issues
+                    // Always show skeleton during loading to prevent jarring "No posts yet" flash
                     ForEach(0..<3, id: \.self) { index in
                         SkeletonPostView()
                         
@@ -472,7 +607,7 @@ struct FeedView: View {
                 } else {
                     // Show posts (from cache or fresh data)
                     ForEach(Array(posts.enumerated()), id: \.element.id) { index, post in
-                        PostView(
+                        FeedPostRow(
                             userId: post.userId,
                             userName: post.displayName,
                             avatarUrl: post.avatarUrl,
@@ -481,14 +616,23 @@ struct FeedView: View {
                             location: post.location,
                             date: post.date,
                             isCurrentUser: feedType == .onlyYou ? true : post.isCurrentUser,
-                            stampId: post.stampId,
+                            stamp: post.stamp,
                             userPhotos: post.userPhotos,
+                            userImagePaths: post.userImagePaths,
                             likeCount: post.likeCount,
                             commentCount: post.commentCount,
                             selectedTab: $selectedTab,
                             shouldResetStampsNavigation: $shouldResetStampsNavigation,
+                            activeSheetCount: $activeSheetCount,
+                            onSheetDismiss: onSheetDismiss,
+                            onShowLikes: onShowLikes,
                             likeManager: likeManager,
-                            commentManager: commentManager
+                            commentManager: commentManager,
+                            onStampTap: { stamp in selectedStampForDetail = stamp },
+                            onPostTap: { postId in selectedPostForDetail = postId },
+                            onUserTap: { userId, username, displayName in 
+                                selectedUserForProfile = UserProfileNavigation(userId: userId, username: username, displayName: displayName)
+                            }
                         )
                         .transition(.opacity)
                         .onAppear {
@@ -523,6 +667,24 @@ struct FeedView: View {
             .padding(.horizontal, 20)
             .padding(.top, 8)
             .padding(.bottom, 32)
+            .navigationDestination(item: $selectedStampForDetail) { stamp in
+                StampDetailView(
+                    stamp: stamp,
+                    userLocation: nil,
+                    showBackButton: true
+                )
+            }
+            .navigationDestination(item: $selectedPostForDetail) { postId in
+                PostDetailView(postId: postId)
+                    // Environment objects propagate automatically from parent
+            }
+            .navigationDestination(item: $selectedUserForProfile) { userInfo in
+                UserProfileView(
+                    userId: userInfo.userId,
+                    username: userInfo.username,
+                    displayName: userInfo.displayName
+                )
+            }
             .task(id: feedType) {
                 // Load feed when tab is selected (runs when feedType changes)
                 loadFeedIfNeeded()
@@ -536,6 +698,15 @@ struct FeedView: View {
             }
             guard let userId = authManager.userId else { return }
             guard authManager.isSignedIn else { return }
+            
+            // Skip if we just completed a pending refresh (prevents double-fetch)
+            // The pending refresh already loaded the latest feed data
+            if justCompletedPendingRefresh {
+                if debugEnabled {
+                    print("🔍 [DEBUG] FeedContent skipping load - pending refresh just completed")
+                }
+                return
+            }
             
             // Check if we already have data for this tab (prevent duplicate loads)
             let currentPosts = feedType == .all ? feedManager.feedPosts : feedManager.myPosts
@@ -569,6 +740,10 @@ struct FeedView: View {
                 let postsToSync = feedType == .all ? feedManager.feedPosts : feedManager.myPosts
                 let likeCounts = Dictionary(uniqueKeysWithValues: postsToSync.map { ($0.id, $0.likeCount) })
                 likeManager.setLikeCounts(likeCounts)
+                
+                // Initialize comment counts from feed data (bulk operation, no race condition)
+                let commentCounts = Dictionary(uniqueKeysWithValues: postsToSync.map { ($0.id, $0.commentCount) })
+                commentManager.setCommentCounts(commentCounts)
                 
                 // Fetch like status for all posts to sync with cached state
                 let postIds = postsToSync.map { $0.id }
@@ -612,6 +787,10 @@ struct FeedView: View {
                 let likeCounts = Dictionary(uniqueKeysWithValues: postsToSync.map { ($0.id, $0.likeCount) })
                 likeManager.setLikeCounts(likeCounts)
                 
+                // Update comment counts for new posts
+                let commentCounts = Dictionary(uniqueKeysWithValues: postsToSync.map { ($0.id, $0.commentCount) })
+                commentManager.setCommentCounts(commentCounts)
+                
                 // Fetch like status for new posts
                 let postIds = postsToSync.map { $0.id }
                 if !postIds.isEmpty {
@@ -621,7 +800,7 @@ struct FeedView: View {
         }
     }
     
-    struct PostView: View {
+    struct FeedPostRow: View {
         let userId: String
         let userName: String
         let avatarUrl: String?
@@ -630,27 +809,39 @@ struct FeedView: View {
         let location: String
         let date: String
         let isCurrentUser: Bool // true if this is the current user's post
-        let stampId: String // The stamp ID to fetch from manager
+        let stamp: Stamp // Full stamp object (no need to fetch)
         let userPhotos: [String] // Additional user photos (can be empty)
+        let userImagePaths: [String] // Firebase Storage paths for user photos
         let likeCount: Int
         let commentCount: Int
         @Binding var selectedTab: Int
         @Binding var shouldResetStampsNavigation: Bool // Binding to reset StampsView navigation
+        @Binding var activeSheetCount: Int // Track sheets with follow buttons
+        let onSheetDismiss: () -> Void // Execute pending refresh when sheets close
+        let onShowLikes: (String, String) -> Void // Show likes sheet for this post (postId, ownerId)
         @ObservedObject var likeManager: LikeManager
         @ObservedObject var commentManager: CommentManager
-        @State private var navigateToStampDetail: Bool = false
+        let onStampTap: (Stamp) -> Void
+        let onPostTap: (String) -> Void
+        let onUserTap: (String, String, String) -> Void
+        
+        // NESTED SHEETS: This row has 2 sheet modifiers (NotesEditor, Comments).
+        // Likes sheet has been moved to FeedView level to prevent dismissal on follow state changes.
+        // Multiple FeedPostRow instances (one per post) trigger SwiftUI warnings about
+        // multiple sheets. These warnings are COSMETIC - sheets work correctly. The
+        // showComments sheet uses activeSheetCount tracking for feed refresh timing.
+        // IGNORE warnings. See: CROSS_REFERENCE_RISK_ANALYSIS.md
         @State private var showNotesEditor: Bool = false
         @State private var showComments: Bool = false
         @State private var editingNotes: String = ""
-        @State private var stamp: Stamp? // Lazy-loaded stamp
-        @State private var isLoadingStamp = false
         @EnvironmentObject var stampsManager: StampsManager
         @EnvironmentObject var authManager: AuthManager
         @EnvironmentObject var profileManager: ProfileManager
+        @EnvironmentObject var followManager: FollowManager
         
         // Computed properties for real-time updates
         private var postId: String {
-            "\(userId)-\(stampId)"
+            "\(userId)-\(stamp.id)"
         }
         
         private var isLiked: Bool {
@@ -669,7 +860,7 @@ struct FeedView: View {
         // This ensures notes update instantly when edited, consistent with other features
         private var currentNote: String? {
             let notes = stampsManager.userCollection.collectedStamps
-                .first(where: { $0.stampId == stampId })?
+                .first(where: { $0.stampId == stamp.id })?
                 .userNotes ?? ""
             return notes.isEmpty ? nil : notes
         }
@@ -699,7 +890,9 @@ struct FeedView: View {
                         .buttonStyle(PlainButtonStyle())
                     } else {
                         // Other user - navigate to their profile
-                        NavigationLink(destination: UserProfileView(userId: userId, username: "", displayName: userName)) {
+                        Button(action: {
+                            onUserTap(userId, "", userName)
+                        }) {
                             ProfileImageView(
                                 avatarUrl: computedAvatarUrl,
                                 userId: userId,
@@ -713,7 +906,7 @@ struct FeedView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         // First line: "Hiroo collected Golden Gate Park" - tappable to view stamp
                         Button(action: {
-                            loadStampAndNavigate()
+                            onStampTap(stamp)
                         }) {
                             Text("\(Text(userName).fontWeight(.bold)) collected \(Text(stampName).fontWeight(.bold))")
                                 .font(.body)
@@ -739,13 +932,16 @@ struct FeedView: View {
                 
                 // Photos section - stamp + user photos using PhotoGalleryView
                 PhotoGalleryView(
-                    stampId: stampId,
+                    stampId: stamp.id,
                     maxPhotos: 5,
                     showStampImage: true,  // Always show stamp image section on feed (shows placeholder if empty)
                     stampImageName: stampImageName,
                     onStampImageTap: {
-                        loadStampAndNavigate()
-                    }
+                        onStampTap(stamp)
+                    },
+                    userId: isCurrentUser ? nil : userId,  // Only pass userId for other users' posts
+                    userPhotos: isCurrentUser ? nil : userPhotos,  // Only pass userPhotos for other users' posts
+                    userPhotoPaths: isCurrentUser ? nil : userImagePaths  // Only pass paths for other users' posts
                 )
                 .environmentObject(stampsManager)
                 .environmentObject(authManager)
@@ -777,27 +973,34 @@ struct FeedView: View {
                 
                 // Like and Comment row
                 HStack(spacing: 16) {
-                    // Like button
-                    Button(action: {
-                        guard let currentUserId = authManager.userId else { return }
-                        likeManager.toggleLike(
-                            postId: postId,
-                            stampId: stampId,
-                            userId: currentUserId,
-                            postOwnerId: userId
-                        )
-                    }) {
-                        HStack(spacing: 4) {
+                    // Like button (heart + count)
+                    HStack(spacing: 4) {
+                        // Heart icon - toggles like
+                        Button(action: {
+                            guard let currentUserId = authManager.userId else { return }
+                            likeManager.toggleLike(
+                                postId: postId,
+                                stampId: stamp.id,
+                                userId: currentUserId,
+                                postOwnerId: userId
+                            )
+                        }) {
                             Image(systemName: isLiked ? "heart.fill" : "heart")
                                 .font(.system(size: 18))
                                 .foregroundColor(isLiked ? .red : .primary)
-                            
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        
+                        // Count - shows likes list
+                        Button(action: {
+                            onShowLikes(postId, userId)
+                        }) {
                             Text("\(currentLikeCount)")
                                 .font(.subheadline)
                                 .foregroundColor(.primary)
                         }
+                        .buttonStyle(PlainButtonStyle())
                     }
-                    .buttonStyle(PlainButtonStyle())
                     
                     // Comment button
                     Button(action: {
@@ -819,88 +1022,32 @@ struct FeedView: View {
                 }
             }
             .padding(.vertical, 8)
-            .onAppear {
-                // Initialize comment count from feed data
-                // (Like counts are initialized in bulk after feed load to prevent race conditions)
-                commentManager.updateCommentCount(postId: postId, count: commentCount, forceUpdate: true)
-                
-                // PREFETCH: Load stamp data in background when post appears
-                // Makes navigation instant when user taps (Instagram pattern)
-                prefetchStampData()
-            }
-            .navigationDestination(isPresented: $navigateToStampDetail) {
-                if let stamp = stamp {
-                    StampDetailView(
-                        stamp: stamp,
-                        userLocation: nil,
-                        showBackButton: true
-                    )
-                }
+            .contentShape(Rectangle()) // Make entire area tappable for background tap
+            .onTapGesture {
+                // Background tap - open PostView
+                // Specific buttons (profile, stamp, like, comment) will override this
+                onPostTap(postId)
             }
             .sheet(isPresented: $showNotesEditor) {
                 NotesEditorView(notes: $editingNotes) { savedNotes in
-                    stampsManager.userCollection.updateNotes(for: stampId, notes: savedNotes)
+                    stampsManager.userCollection.updateNotes(for: stamp.id, notes: savedNotes)
                 }
             }
             .sheet(isPresented: $showComments) {
                 CommentView(
                     postId: postId,
                     postOwnerId: userId,
-                    stampId: stampId,
+                    stampId: stamp.id,
                     commentManager: commentManager
                 )
                 .environmentObject(authManager)
                 .environmentObject(profileManager)
-            }
-        }
-        
-        private func prefetchStampData() {
-            // Skip if already loaded or loading
-            guard stamp == nil, !isLoadingStamp else { return }
-            
-            // FAST PATH: Check cache synchronously first (instant if cached)
-            // Avoids Task overhead and network delays when stamp is already in memory
-            if let cached = stampsManager.getCachedStamp(id: stampId) {
-                stamp = cached
-                return
-            }
-            
-            // SLOW PATH: Fetch from network in background
-            // This prefetch makes navigation instant when user taps (Instagram pattern)
-            isLoadingStamp = true
-            Task {
-                // Include removed stamps - users can view stamps they already collected
-                let stamps = await stampsManager.fetchStamps(ids: [stampId], includeRemoved: true)
-                await MainActor.run {
-                    stamp = stamps.first
-                    isLoadingStamp = false
+                .onAppear {
+                    activeSheetCount += 1
                 }
-            }
-        }
-        
-        private func loadStampAndNavigate() {
-            // If stamp is already prefetched, navigate immediately
-            if let _ = stamp {
-                navigateToStampDetail = true
-                return
-            }
-            
-            guard !isLoadingStamp else { return }
-            
-            isLoadingStamp = true
-            
-            Task {
-                // FALLBACK: Fetch stamp only if prefetch didn't complete
-                // Include removed stamps - users can view stamps they already collected
-                let stamps = await stampsManager.fetchStamps(ids: [stampId], includeRemoved: true)
-                
-                await MainActor.run {
-                    stamp = stamps.first
-                    isLoadingStamp = false
-                    
-                    if stamp != nil {
-                        navigateToStampDetail = true
-                    }
+                .onDisappear {
+                    activeSheetCount -= 1
+                    onSheetDismiss()
                 }
             }
         }

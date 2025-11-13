@@ -18,21 +18,21 @@ enum Logger {
     /// Info logs - general informational messages
     /// Use for important state changes and flow tracking
     nonisolated static func info(_ message: String, category: String? = nil) {
-        let prefix = category != nil ? "ℹ️ [\(category!)]" : "ℹ️"
+        let prefix = category.map { "ℹ️ [\($0)]" } ?? "ℹ️"
         print("\(prefix) \(message)")
     }
     
     /// Warning logs - something unexpected but not critical
     /// Use for recoverable errors or deprecated code paths
     nonisolated static func warning(_ message: String, category: String? = nil) {
-        let prefix = category != nil ? "⚠️ [\(category!)]" : "⚠️"
+        let prefix = category.map { "⚠️ [\($0)]" } ?? "⚠️"
         print("\(prefix) \(message)")
     }
     
     /// Error logs - something went wrong
     /// Use for failures that affect functionality
     nonisolated static func error(_ message: String, error: Error? = nil, category: String? = nil) {
-        let prefix = category != nil ? "❌ [\(category!)]" : "❌"
+        let prefix = category.map { "❌ [\($0)]" } ?? "❌"
         print("\(prefix) \(message)")
         if let error = error {
             print("   → \(error.localizedDescription)")
@@ -42,7 +42,7 @@ enum Logger {
     /// Success logs - important successful operations
     /// Use sparingly for key milestones
     nonisolated static func success(_ message: String, category: String? = nil) {
-        let prefix = category != nil ? "✅ [\(category!)]" : "✅"
+        let prefix = category.map { "✅ [\($0)]" } ?? "✅"
         print("\(prefix) \(message)")
     }
     
@@ -50,7 +50,7 @@ enum Logger {
     
     /// Log operation timing for performance monitoring
     nonisolated static func timing(_ operation: String, duration: TimeInterval, category: String? = nil) {
-        let prefix = category != nil ? "⏱️ [\(category!)]" : "⏱️"
+        let prefix = category.map { "⏱️ [\($0)]" } ?? "⏱️"
         print("\(prefix) \(operation): \(String(format: "%.3f", duration))s")
     }
     

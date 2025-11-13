@@ -45,6 +45,15 @@ class FeedManager: ObservableObject {
             name: .stampDidCollect,
             object: nil
         )
+        
+        // Listen for following list changes to invalidate feed cache
+        // When user follows/unfollows someone, we need to refresh feed to show/hide their posts
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleFollowingListChange),
+            name: .followingListDidChange,
+            object: nil
+        )
     }
     
     deinit {
@@ -85,6 +94,25 @@ class FeedManager: ObservableObject {
         }
     }
     
+    /// Handle following list change notification
+    /// Immediately clears and forces reload of "All" feed - "Only Yours" doesn't depend on who you follow
+    @objc private func handleFollowingListChange(_ notification: Notification) {
+        print("🔔 [FeedManager] Received following list change notification - clearing and reloading 'All' feed")
+        
+        // Clear disk cache (which stores "All" feed)
+        clearDiskCache()
+        
+        // Post to main actor to ensure published properties update on main thread
+        DispatchQueue.main.async {
+            // IMMEDIATE CLEAR: Remove posts from unfollowed users immediately
+            // This gives instant visual feedback that unfollow worked
+            self.feedPosts = []
+            self.lastRefreshTime = nil
+            self.lastFetchedPostDate = nil // Reset "All" feed pagination cursor
+            print("✅ [FeedManager] 'All' feed cleared - posts from unfollowed users removed")
+        }
+    }
+    
     // MARK: - Disk Cache (Instagram-style warm start)
     
     /// Maximum posts to persist to disk (keep recent feed for instant cold start)
@@ -109,7 +137,9 @@ class FeedManager: ObservableObject {
         let actualDate: Date
         let isCurrentUser: Bool
         let stampId: String
+        let stamp: Stamp // Full stamp object to avoid duplicate fetches
         let userPhotos: [String]
+        let userImagePaths: [String] // Firebase Storage paths for user photos
         let note: String?
         let likeCount: Int
         let commentCount: Int
@@ -220,7 +250,9 @@ class FeedManager: ObservableObject {
                     actualDate: collectedStamp.collectedDate,
                     isCurrentUser: true,
                     stampId: stamp.id,
+                    stamp: stamp, // Pass full stamp object
                     userPhotos: collectedStamp.userImageNames,
+                    userImagePaths: collectedStamp.userImagePaths,
                     note: collectedStamp.userNotes.isEmpty ? nil : collectedStamp.userNotes,
                     likeCount: collectedStamp.likeCount,
                     commentCount: collectedStamp.commentCount
@@ -325,7 +357,9 @@ class FeedManager: ObservableObject {
                     actualDate: collectedStamp.collectedDate,
                     isCurrentUser: true,
                     stampId: stamp.id,
+                    stamp: stamp, // Pass full stamp object
                     userPhotos: collectedStamp.userImageNames,
+                    userImagePaths: collectedStamp.userImagePaths,
                     note: collectedStamp.userNotes.isEmpty ? nil : collectedStamp.userNotes,
                     likeCount: collectedStamp.likeCount,
                     commentCount: collectedStamp.commentCount
@@ -448,7 +482,9 @@ class FeedManager: ObservableObject {
                     actualDate: collectedStamp.collectedDate,
                     isCurrentUser: profile.id == userId,
                     stampId: stamp.id,
+                    stamp: stamp, // Pass full stamp object
                     userPhotos: collectedStamp.userImageNames,
+                    userImagePaths: collectedStamp.userImagePaths,
                     note: collectedStamp.userNotes.isEmpty ? nil : collectedStamp.userNotes,
                     likeCount: collectedStamp.likeCount,
                     commentCount: collectedStamp.commentCount
@@ -573,7 +609,9 @@ class FeedManager: ObservableObject {
                     actualDate: collectedStamp.collectedDate,
                     isCurrentUser: profile.id == userId,
                     stampId: stamp.id,
+                    stamp: stamp, // Pass full stamp object
                     userPhotos: collectedStamp.userImageNames,
+                    userImagePaths: collectedStamp.userImagePaths,
                     note: collectedStamp.userNotes.isEmpty ? nil : collectedStamp.userNotes,
                     likeCount: collectedStamp.likeCount,
                     commentCount: collectedStamp.commentCount
@@ -653,7 +691,9 @@ class FeedManager: ObservableObject {
                 actualDate: updatedPost.actualDate,
                 isCurrentUser: updatedPost.isCurrentUser,
                 stampId: updatedPost.stampId,
+                stamp: updatedPost.stamp, // Preserve stamp object
                 userPhotos: updatedPost.userPhotos,
+                userImagePaths: updatedPost.userImagePaths,
                 note: updatedPost.note,
                 likeCount: updatedPost.likeCount,
                 commentCount: newCount // Update only the comment count
@@ -677,12 +717,69 @@ class FeedManager: ObservableObject {
                 actualDate: updatedPost.actualDate,
                 isCurrentUser: updatedPost.isCurrentUser,
                 stampId: updatedPost.stampId,
+                stamp: updatedPost.stamp, // Preserve stamp object
                 userPhotos: updatedPost.userPhotos,
+                userImagePaths: updatedPost.userImagePaths,
                 note: updatedPost.note,
                 likeCount: updatedPost.likeCount,
                 commentCount: newCount // Update only the comment count
             )
             print("✅ [FeedManager] Updated comment count for post \(postId) in 'Only Yours' feed: \(newCount)")
+        }
+    }
+    
+    /// Update like count for a specific post (called after like/unlike)
+    func updatePostLikeCount(postId: String, newCount: Int) {
+        // Update in "All" feed
+        if let index = feedPosts.firstIndex(where: { $0.id == postId }) {
+            let updatedPost = feedPosts[index]
+            feedPosts[index] = FeedPost(
+                id: updatedPost.id,
+                userId: updatedPost.userId,
+                userName: updatedPost.userName,
+                displayName: updatedPost.displayName,
+                avatarUrl: updatedPost.avatarUrl,
+                stampName: updatedPost.stampName,
+                stampImageName: updatedPost.stampImageName,
+                location: updatedPost.location,
+                date: updatedPost.date,
+                actualDate: updatedPost.actualDate,
+                isCurrentUser: updatedPost.isCurrentUser,
+                stampId: updatedPost.stampId,
+                stamp: updatedPost.stamp, // Preserve stamp object
+                userPhotos: updatedPost.userPhotos,
+                userImagePaths: updatedPost.userImagePaths,
+                note: updatedPost.note,
+                likeCount: newCount, // Update only the like count
+                commentCount: updatedPost.commentCount
+            )
+            print("✅ [FeedManager] Updated like count for post \(postId) in 'All' feed: \(newCount)")
+        }
+        
+        // Update in "Only Yours" feed
+        if let index = myPosts.firstIndex(where: { $0.id == postId }) {
+            let updatedPost = myPosts[index]
+            myPosts[index] = FeedPost(
+                id: updatedPost.id,
+                userId: updatedPost.userId,
+                userName: updatedPost.userName,
+                displayName: updatedPost.displayName,
+                avatarUrl: updatedPost.avatarUrl,
+                stampName: updatedPost.stampName,
+                stampImageName: updatedPost.stampImageName,
+                location: updatedPost.location,
+                date: updatedPost.date,
+                actualDate: updatedPost.actualDate,
+                isCurrentUser: updatedPost.isCurrentUser,
+                stampId: updatedPost.stampId,
+                stamp: updatedPost.stamp, // Preserve stamp object
+                userPhotos: updatedPost.userPhotos,
+                userImagePaths: updatedPost.userImagePaths,
+                note: updatedPost.note,
+                likeCount: newCount, // Update only the like count
+                commentCount: updatedPost.commentCount
+            )
+            print("✅ [FeedManager] Updated like count for post \(postId) in 'Only Yours' feed: \(newCount)")
         }
     }
     
@@ -806,6 +903,100 @@ class FeedManager: ObservableObject {
         let totalPrefetchTime = CFAbsoluteTimeGetCurrent() - prefetchStart
         print("⏱️ [FeedManager] Total profile pic prefetch: \(String(format: "%.3f", totalPrefetchTime))s")
         #endif
+    }
+    
+    // MARK: - Single Post Fetching
+    
+    /// Fetch a single post by postId (for deep linking, notifications)
+    /// 
+    /// This is more efficient than loading the entire feed when you just need one post.
+    /// PostId format: "userId-stampId"
+    /// 
+    /// - Parameters:
+    ///   - postId: The post ID in format "userId-stampId"
+    ///   - stampsManager: StampsManager instance for fetching stamp data
+    /// - Returns: FeedPost object
+    /// - Throws: Error if post not found or fetch fails
+    func fetchSinglePost(postId: String, stampsManager: StampsManager) async throws -> FeedPost {
+        print("🔍 [FeedManager] Fetching single post: \(postId)")
+        
+        // Parse postId to extract userId and stampId
+        let components = postId.components(separatedBy: "-")
+        guard components.count >= 2 else {
+            throw NSError(
+                domain: "FeedManager",
+                code: 400,
+                userInfo: [NSLocalizedDescriptionKey: "Invalid post ID format. Expected 'userId-stampId'"]
+            )
+        }
+        
+        let userId = components[0]
+        let stampId = components.dropFirst().joined(separator: "-") // Handle stamp IDs with dashes
+        
+        // Check if post exists in current feed cache first (optimization)
+        if let cachedPost = feedPosts.first(where: { $0.id == postId }) {
+            print("✅ [FeedManager] Found post in feed cache")
+            return cachedPost
+        }
+        
+        if let cachedPost = myPosts.first(where: { $0.id == postId }) {
+            print("✅ [FeedManager] Found post in myPosts cache")
+            return cachedPost
+        }
+        
+        // Fetch from Firebase
+        do {
+            // 1. Fetch user profile
+            let userProfile = try await firebaseService.fetchUserProfile(userId: userId)
+            
+            // 2. Fetch specific collected stamp document (1 read instead of collection query)
+            guard let collectedStamp = try await firebaseService.fetchCollectedStamp(userId: userId, stampId: stampId) else {
+                throw NSError(
+                    domain: "FeedManager",
+                    code: 404,
+                    userInfo: [NSLocalizedDescriptionKey: "Post not found. It may have been deleted."]
+                )
+            }
+            
+            // 3. Fetch stamp metadata
+            let stamps = await stampsManager.fetchStamps(ids: [stampId], includeRemoved: true)
+            guard let stamp = stamps.first else {
+                throw NSError(
+                    domain: "FeedManager",
+                    code: 404,
+                    userInfo: [NSLocalizedDescriptionKey: "Stamp not found"]
+                )
+            }
+            
+            // 4. Construct FeedPost
+            let post = FeedPost(
+                id: postId,
+                userId: userId,
+                userName: userProfile.username,
+                displayName: userProfile.displayName,
+                avatarUrl: userProfile.avatarUrl,
+                stampName: stamp.name,
+                stampImageName: stamp.imageUrl ?? "",
+                location: stamp.cityCountry,
+                date: collectedStamp.collectedDate.formattedMedium(),
+                actualDate: collectedStamp.collectedDate,
+                isCurrentUser: false, // Will be updated by caller if needed
+                stampId: stamp.id,
+                stamp: stamp, // Pass full stamp object
+                userPhotos: collectedStamp.userImageNames,
+                userImagePaths: collectedStamp.userImagePaths,
+                note: collectedStamp.userNotes.isEmpty ? nil : collectedStamp.userNotes,
+                likeCount: collectedStamp.likeCount,
+                commentCount: collectedStamp.commentCount
+            )
+            
+            print("✅ [FeedManager] Successfully fetched post: \(postId)")
+            return post
+            
+        } catch {
+            print("❌ [FeedManager] Failed to fetch post: \(error.localizedDescription)")
+            throw error
+        }
     }
 }
 

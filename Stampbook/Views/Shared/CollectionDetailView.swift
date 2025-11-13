@@ -106,6 +106,7 @@ struct CollectionDetailView: View {
                 }
             }
         }
+        .toolbar(.hidden, for: .tabBar)
         .sheet(isPresented: $showSuggestEdit) {
             SuggestCollectionEditView(collectionId: collection.id, collectionName: collection.name)
                 .environmentObject(authManager)

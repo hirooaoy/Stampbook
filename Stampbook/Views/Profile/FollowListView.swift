@@ -6,7 +6,6 @@ struct FollowListView: View {
     @EnvironmentObject var followManager: FollowManager // Shared instance
     @EnvironmentObject var authManager: AuthManager
     @State private var selectedTab: FollowTab
-    @State private var searchText = ""
     
     init(userId: String, userDisplayName: String, initialTab: FollowTab = .followers) {
         self.userId = userId
@@ -19,17 +18,8 @@ struct FollowListView: View {
         case following = "Following"
     }
     
-    var filteredUsers: [UserProfile] {
-        let users = selectedTab == .followers ? followManager.followers : followManager.following
-        
-        if searchText.isEmpty {
-            return users
-        } else {
-            return users.filter { user in
-                user.displayName.localizedCaseInsensitiveContains(searchText) ||
-                user.username.localizedCaseInsensitiveContains(searchText)
-            }
-        }
+    var users: [UserProfile] {
+        selectedTab == .followers ? followManager.followers : followManager.following
     }
     
     var body: some View {
@@ -57,45 +47,22 @@ struct FollowListView: View {
                 }
             }
             
-            // Search bar
-            HStack {
-                Image(systemName: "magnifyingglass")
-                    .foregroundColor(.gray)
-                
-                TextField("Search", text: $searchText)
-                    .textFieldStyle(.plain)
-                
-                if !searchText.isEmpty {
-                    Button(action: {
-                        searchText = ""
-                    }) {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundColor(.gray)
-                    }
-                }
-            }
-            .padding(10)
-            .background(Color(.systemGray6))
-            .cornerRadius(10)
-            .padding(.horizontal, 20)
-            .padding(.bottom, 16)
-            
             // List of users
             if followManager.isLoading {
                 Spacer()
                 ProgressView()
                     .scaleEffect(1.2)
                 Spacer()
-            } else if filteredUsers.isEmpty {
+            } else if users.isEmpty {
                 Spacer()
-                Text(searchText.isEmpty ? "No \(selectedTab.rawValue.lowercased()) yet" : "No results")
+                Text("No \(selectedTab.rawValue.lowercased()) yet")
                     .foregroundColor(.secondary)
                     .font(.body)
                 Spacer()
             } else {
                 ScrollView {
                     LazyVStack(spacing: 16) {
-                        ForEach(filteredUsers) { user in
+                        ForEach(users) { user in
                             NavigationLink(destination: UserProfileView(userId: user.id, username: user.username, displayName: user.displayName)) {
                                 UserRow(user: user)
                             }
@@ -109,6 +76,7 @@ struct FollowListView: View {
         }
         .navigationTitle(userDisplayName)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.hidden, for: .tabBar)
         .onAppear {
             // Load both followers and following data to show accurate counts
             // Pass current user ID to batch check follow statuses

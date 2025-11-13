@@ -14,6 +14,12 @@ struct PhotoGalleryView: View {
     let stampImageName: String?
     let onStampImageTap: (() -> Void)?
     
+    // Optional: For viewing other users' posts (Feed)
+    // When provided, use these instead of fetching from stampsManager
+    let userId: String?
+    let userPhotos: [String]?
+    let userPhotoPaths: [String]?
+    
     @State private var selectedItems: [PhotosPickerItem] = []
     @State private var selectedPhotoIndex: PhotoIndex?
     
@@ -22,13 +28,19 @@ struct PhotoGalleryView: View {
         maxPhotos: Int = 5,
         showStampImage: Bool = false,
         stampImageName: String? = nil,
-        onStampImageTap: (() -> Void)? = nil
+        onStampImageTap: (() -> Void)? = nil,
+        userId: String? = nil,
+        userPhotos: [String]? = nil,
+        userPhotoPaths: [String]? = nil
     ) {
         self.stampId = stampId
         self.maxPhotos = maxPhotos
         self.showStampImage = showStampImage
         self.stampImageName = stampImageName
         self.onStampImageTap = onStampImageTap
+        self.userId = userId
+        self.userPhotos = userPhotos
+        self.userPhotoPaths = userPhotoPaths
     }
     
     // Wrapper to make Int Identifiable
@@ -37,20 +49,39 @@ struct PhotoGalleryView: View {
         var index: Int { id }
     }
     
-    // Compute imageNames dynamically from stampsManager
+    // Compute imageNames dynamically
+    // If viewing another user's post (userPhotos provided), use those
+    // Otherwise fetch from current user's collection (stampsManager)
     private var imageNames: [String] {
-        stampsManager.userCollection.collectedStamps
-            .first(where: { $0.stampId == stampId })?
-            .userImageNames ?? []
+        if let userPhotos = userPhotos {
+            // Viewing another user's post - use provided photos
+            return userPhotos
+        } else {
+            // Viewing own collection - fetch from stampsManager
+            return stampsManager.userCollection.collectedStamps
+                .first(where: { $0.stampId == stampId })?
+                .userImageNames ?? []
+        }
     }
     
-    // Get uploading photos from stampsManager
+    // Get uploading photos from stampsManager (only for current user)
     private var uploadingPhotos: Set<String> {
-        stampsManager.userCollection.getUploadingPhotos(for: stampId)
+        // Only show uploading state for current user's stamps
+        if userPhotos != nil {
+            return [] // Viewing someone else's post - no uploading state
+        }
+        return stampsManager.userCollection.getUploadingPhotos(for: stampId)
     }
     
+    // Check if current user can add more photos
+    // Only allow adding for current user's own stamps
     var canAddMore: Bool {
-        imageNames.count < maxPhotos
+        userPhotos == nil && imageNames.count < maxPhotos
+    }
+    
+    // Check if this is viewing another user's post (read-only mode)
+    private var isViewingOtherUser: Bool {
+        userPhotos != nil
     }
     
     var body: some View {
@@ -86,7 +117,10 @@ struct PhotoGalleryView: View {
                 FullScreenPhotoView(
                     stampId: stampId,
                     imageNames: imageNames,
-                    startIndex: photoIndex.index
+                    startIndex: photoIndex.index,
+                    userId: userId,
+                    userPhotos: userPhotos,
+                    userPhotoPaths: userPhotoPaths
                 )
                 .environmentObject(stampsManager)
                 .presentationBackground(.black)
@@ -128,7 +162,7 @@ struct PhotoGalleryView: View {
                                     imageName: nil, // Don't have imageName in feed, will fetch from Firebase
                                     storagePath: storagePath,
                                     stampId: stampId,
-                                    size: CGSize(width: 120, height: 120),
+                                    size: CGSize(width: 106, height: 106),
                                     cornerRadius: 12,
                                     imageUrl: stampImageName
                                 )
@@ -138,7 +172,7 @@ struct PhotoGalleryView: View {
                                     .resizable()
                                     .renderingMode(.original)
                                     .aspectRatio(contentMode: .fill)
-                                    .frame(width: 120, height: 120)
+                                    .frame(width: 106, height: 106)
                                     .clipped()
                                     .cornerRadius(12)
                             }
@@ -148,7 +182,7 @@ struct PhotoGalleryView: View {
                                 .resizable()
                                 .renderingMode(.original)
                                 .aspectRatio(contentMode: .fill)
-                                .frame(width: 120, height: 120)
+                                .frame(width: 106, height: 106)
                                 .clipped()
                                 .cornerRadius(12)
                         }
@@ -168,7 +202,7 @@ struct PhotoGalleryView: View {
                                     storagePath: getStoragePath(for: imageName),
                                     stampId: stampId
                                 )
-                                .frame(width: 120, height: 120)
+                                .frame(width: 106, height: 106)
                                 .cornerRadius(12)
                                 .id(imageName) // 🔧 FIX: Force view recreation when imageName changes
                                 
@@ -176,7 +210,7 @@ struct PhotoGalleryView: View {
                                 if uploadingPhotos.contains(imageName) {
                                     RoundedRectangle(cornerRadius: 12)
                                         .fill(Color.black.opacity(0.5))
-                                        .frame(width: 120, height: 120)
+                                        .frame(width: 106, height: 106)
                                     
                                     ProgressView()
                                         .tint(.white)
@@ -191,7 +225,7 @@ struct PhotoGalleryView: View {
                     ForEach(Array(uploadingPhotos.subtracting(Set(imageNames))), id: \.self) { _ in
                         RoundedRectangle(cornerRadius: 12)
                             .fill(Color.gray.opacity(0.3))
-                            .frame(width: 120, height: 120)
+                            .frame(width: 106, height: 106)
                             .overlay(
                                 ProgressView()
                                     .tint(.gray)
@@ -207,7 +241,7 @@ struct PhotoGalleryView: View {
                         ) {
                             RoundedRectangle(cornerRadius: 12)
                                 .fill(Color.gray.opacity(0.3))
-                                .frame(width: 120, height: 120)
+                                .frame(width: 106, height: 106)
                                 .overlay(
                                     Image(systemName: "plus")
                                         .font(.system(size: 30))
@@ -227,7 +261,10 @@ struct PhotoGalleryView: View {
                 FullScreenPhotoView(
                     stampId: stampId,
                     imageNames: imageNames,
-                    startIndex: photoIndex.index
+                    startIndex: photoIndex.index,
+                    userId: userId,
+                    userPhotos: userPhotos,
+                    userPhotoPaths: userPhotoPaths
                 )
                 .environmentObject(stampsManager)
                 .presentationBackground(.black)
@@ -334,6 +371,16 @@ struct PhotoGalleryView: View {
     
     /// Get the storage path for a given image name
     private func getStoragePath(for imageName: String) -> String? {
+        // If viewing another user's post, use provided paths
+        if let userPhotos = userPhotos,
+           let userPhotoPaths = userPhotoPaths,
+           let index = userPhotos.firstIndex(of: imageName),
+           index < userPhotoPaths.count {
+            let path = userPhotoPaths[index]
+            return path.isEmpty ? nil : path
+        }
+        
+        // Otherwise, fetch from current user's collection
         guard let collectedStamp = stampsManager.userCollection.collectedStamps
             .first(where: { $0.stampId == stampId }),
               let index = collectedStamp.userImageNames.firstIndex(of: imageName),

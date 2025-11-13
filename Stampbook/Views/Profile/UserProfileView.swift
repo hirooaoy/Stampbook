@@ -313,6 +313,7 @@ struct UserProfileView: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.hidden, for: .tabBar) // Hide bottom navigation when viewing profile
         .toolbar {
             // Triple dot menu in top right (only for other users)
             if !isCurrentUser {
@@ -365,10 +366,17 @@ struct UserProfileView: View {
             // Load user's collected stamps
             loadUserStamps()
             
-            // Cache initial counts in FollowManager
+            // Cache initial counts in FollowManager (merge with optimistic updates if they exist)
             if let profile = userProfile {
-                print("📊 [UserProfileView] Caching initial counts: followers=\(profile.followerCount), following=\(profile.followingCount)")
-                followManager.updateFollowCounts(userId: userId, followerCount: profile.followerCount, followingCount: profile.followingCount)
+                if let optimisticCounts = followManager.followCounts[userId] {
+                    // Merge: keep optimistic followers, but update following from profile
+                    print("📊 [UserProfileView] Merging optimistic followers=\(optimisticCounts.followers) with profile following=\(profile.followingCount)")
+                    followManager.updateFollowCounts(userId: userId, followerCount: optimisticCounts.followers, followingCount: profile.followingCount)
+                } else {
+                    // No optimistic counts, use profile data
+                    print("📊 [UserProfileView] Caching initial counts: followers=\(profile.followerCount), following=\(profile.followingCount)")
+                    followManager.updateFollowCounts(userId: userId, followerCount: profile.followerCount, followingCount: profile.followingCount)
+                }
             }
             
             // Check follow status if not current user
@@ -382,7 +390,13 @@ struct UserProfileView: View {
             if let profile = profile {
                 print("📊 [UserProfileView] Profile loaded: \(profile.username)")
                 print("📊 [UserProfileView] Counts: followers=\(profile.followerCount), following=\(profile.followingCount)")
-                followManager.updateFollowCounts(userId: userId, followerCount: profile.followerCount, followingCount: profile.followingCount)
+                // Merge: keep optimistic followers if they exist, but always update following from profile
+                if let optimisticCounts = followManager.followCounts[userId] {
+                    print("📊 [UserProfileView] Merging optimistic followers=\(optimisticCounts.followers) with profile following=\(profile.followingCount)")
+                    followManager.updateFollowCounts(userId: userId, followerCount: optimisticCounts.followers, followingCount: profile.followingCount)
+                } else {
+                    followManager.updateFollowCounts(userId: userId, followerCount: profile.followerCount, followingCount: profile.followingCount)
+                }
                 
                 // TODO: POST-MVP - Rank fetch disabled
                 // if userRank == nil {

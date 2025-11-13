@@ -14,6 +14,10 @@ class FollowManager: ObservableObject {
     // Cache for follow counts (userId -> (followerCount, followingCount))
     @Published var followCounts: [String: (followers: Int, following: Int)] = [:]
     
+    // Debouncing: Prevent rapid-fire follow/unfollow (Instagram-style UX)
+    private var lastFollowAction: [String: Date] = [:] // userId -> last action time
+    private let debounceInterval: TimeInterval = 0.5 // 500ms cooldown
+    
     private let firebaseService = FirebaseService.shared
     
     // MARK: - Follow Status Checking
@@ -74,6 +78,14 @@ class FollowManager: ObservableObject {
     func followUser(currentUserId: String, targetUserId: String, profileManager: ProfileManager? = nil, onSuccess: ((UserProfile?) -> Void)? = nil) {
         print("🔵 [FollowManager] followUser called: \(currentUserId) -> \(targetUserId)")
         
+        // Debounce: Prevent rapid follow/unfollow (Instagram-style - silently ignore)
+        if let lastTime = lastFollowAction[targetUserId],
+           Date().timeIntervalSince(lastTime) < debounceInterval {
+            print("🚫 [FollowManager] Debounced: Too soon to toggle follow for \(targetUserId)")
+            return
+        }
+        lastFollowAction[targetUserId] = Date()
+        
         // Set processing state
         isProcessingFollow[targetUserId] = true
         
@@ -93,6 +105,12 @@ class FollowManager: ObservableObject {
             targetCounts.followers += 1
             followCounts[targetUserId] = targetCounts
             print("✅ [FollowManager] Optimistic count update: \(targetUserId) followers: \(targetCounts.followers)")
+        } else {
+            // Initialize count if not cached yet
+            // We only know followers changed (0→1), don't know their following count yet
+            // Profile load will fill in the following count
+            followCounts[targetUserId] = (followers: 1, following: 0)
+            print("✅ [FollowManager] Optimistic count init: \(targetUserId) followers: 1 (following will be filled by profile)")
         }
         
         Task {
@@ -107,12 +125,12 @@ class FollowManager: ObservableObject {
                     if didFollow {
                         print("✅ [FollowManager] Successfully followed user \(targetUserId)")
                         
-                        // Refresh counts from Firebase to get accurate numbers
-                        Task {
-                            await self.refreshFollowCounts(userId: currentUserId)
-                            await self.refreshFollowCounts(userId: targetUserId)
-                            print("✅ [FollowManager] Refreshed counts from Firebase after follow")
-                        }
+                        // Optimistic updates are already applied above
+                        // Cloud Function will update denormalized counts in background
+                        // Next profile load will fetch correct counts (eventual consistency)
+                        
+                        // Notify observers that following list changed (triggers feed refresh)
+                        NotificationCenter.default.post(name: .followingListDidChange, object: nil)
                         
                         // Try to fetch the target user's profile to add to list
                         Task {
@@ -168,6 +186,14 @@ class FollowManager: ObservableObject {
     func unfollowUser(currentUserId: String, targetUserId: String, profileManager: ProfileManager? = nil, onSuccess: ((UserProfile?) -> Void)? = nil) {
         print("🔴 [FollowManager] unfollowUser called: \(currentUserId) -> \(targetUserId)")
         
+        // Debounce: Prevent rapid follow/unfollow (Instagram-style - silently ignore)
+        if let lastTime = lastFollowAction[targetUserId],
+           Date().timeIntervalSince(lastTime) < debounceInterval {
+            print("🚫 [FollowManager] Debounced: Too soon to toggle follow for \(targetUserId)")
+            return
+        }
+        lastFollowAction[targetUserId] = Date()
+        
         // Set processing state
         isProcessingFollow[targetUserId] = true
         
@@ -187,6 +213,12 @@ class FollowManager: ObservableObject {
             targetCounts.followers = max(0, targetCounts.followers - 1)
             followCounts[targetUserId] = targetCounts
             print("✅ [FollowManager] Optimistic count update: \(targetUserId) followers: \(targetCounts.followers)")
+        } else {
+            // Initialize count if not cached yet
+            // We only know followers changed (1→0), don't know their following count yet
+            // Profile load will fill in the following count
+            followCounts[targetUserId] = (followers: 0, following: 0)
+            print("✅ [FollowManager] Optimistic count init: \(targetUserId) followers: 0 (following will be filled by profile)")
         }
         
         // Remove from following list immediately (optimistic)
@@ -205,12 +237,12 @@ class FollowManager: ObservableObject {
                 if didUnfollow {
                     print("✅ [FollowManager] Successfully unfollowed user \(targetUserId)")
                     
-                    // Refresh counts from Firebase to get accurate numbers
-                    Task {
-                        await self.refreshFollowCounts(userId: currentUserId)
-                        await self.refreshFollowCounts(userId: targetUserId)
-                        print("✅ [FollowManager] Refreshed counts from Firebase after unfollow")
-                    }
+                    // Optimistic updates are already applied above
+                    // Cloud Function will update denormalized counts in background
+                    // Next profile load will fetch correct counts (eventual consistency)
+                    
+                    // Notify observers that following list changed (triggers feed refresh)
+                    NotificationCenter.default.post(name: .followingListDidChange, object: nil)
                     
                     onSuccess?(nil)
                 } else {
@@ -337,19 +369,25 @@ class FollowManager: ObservableObject {
     /// Legacy method - kept for backwards compatibility
     /// For MVP scale, fetch counts directly using FirebaseService.fetchFollowerCount/fetchFollowingCount
     func updateFollowCounts(userId: String, followerCount: Int, followingCount: Int) {
-        print("📊 [FollowManager] updateFollowCounts: \(userId) -> followers=\(followerCount), following=\(followingCount)")
+        print("📊 [FollowManager] updateFollowCounts called")
+        print("📊 [FollowManager]   userId: \(userId)")
+        print("📊 [FollowManager]   NEW followers: \(followerCount), following: \(followingCount)")
+        print("📊 [FollowManager]   OLD followers: \(followCounts[userId]?.followers ?? -1), following: \(followCounts[userId]?.following ?? -1)")
         followCounts[userId] = (followerCount, followingCount)
+        print("📊 [FollowManager]   Cache updated. Current cache count: \(followCounts.count) users")
+        print("📊 [FollowManager]   Verified cache for \(userId): followers=\(followCounts[userId]?.followers ?? -1), following=\(followCounts[userId]?.following ?? -1)")
     }
     
-    /// Fetch and cache follow counts for a user (on-demand from subcollections)
+    /// Fetch and cache follow counts for a user (from denormalized profile data)
     func refreshFollowCounts(userId: String) async {
         print("🔄 [FollowManager] refreshFollowCounts called for userId: \(userId)")
         do {
-            let followerCount = try await firebaseService.fetchFollowerCount(userId: userId)
-            let followingCount = try await firebaseService.fetchFollowingCount(userId: userId)
+            // IMPORTANT: Force refresh to bypass cache and get latest counts from Firebase
+            // This ensures optimistic updates don't get overwritten by stale cached data
+            let profile = try await firebaseService.fetchUserProfile(userId: userId, forceRefresh: true)
             await MainActor.run {
-                self.followCounts[userId] = (followerCount, followingCount)
-                print("✅ [FollowManager] Updated counts for \(userId): followers=\(followerCount), following=\(followingCount)")
+                self.followCounts[userId] = (profile.followerCount, profile.followingCount)
+                print("✅ [FollowManager] Updated counts for \(userId): followers=\(profile.followerCount), following=\(profile.followingCount)")
             }
         } catch {
             Logger.error("Failed to refresh follow counts", error: error, category: "FollowManager")

@@ -7,22 +7,40 @@ struct FullScreenPhotoView: View {
     let stampId: String
     let startIndex: Int
     
+    // Optional: For viewing other users' posts (read-only mode)
+    let userId: String?
+    let providedUserPhotos: [String]?
+    let providedUserPhotoPaths: [String]?
+    
     @State private var currentIndex: Int
     @State private var showDeleteConfirmation = false
     @State private var showDeleteError = false
     @State private var deleteErrorMessage = ""
     @State private var isDeleting = false
     
-    // Computed property to get live image names from stampsManager
+    // Computed property to get image names
+    // If viewing another user's post, use provided photos; otherwise fetch from stampsManager
     private var imageNames: [String] {
-        stampsManager.userCollection.collectedStamps
-            .first(where: { $0.stampId == stampId })?
-            .userImageNames ?? []
+        if let providedUserPhotos = providedUserPhotos {
+            return providedUserPhotos
+        } else {
+            return stampsManager.userCollection.collectedStamps
+                .first(where: { $0.stampId == stampId })?
+                .userImageNames ?? []
+        }
     }
     
-    init(stampId: String, imageNames: [String], startIndex: Int = 0) {
+    // Check if this is viewing another user's post (read-only mode)
+    private var isViewingOtherUser: Bool {
+        providedUserPhotos != nil
+    }
+    
+    init(stampId: String, imageNames: [String], startIndex: Int = 0, userId: String? = nil, userPhotos: [String]? = nil, userPhotoPaths: [String]? = nil) {
         self.stampId = stampId
         self.startIndex = startIndex
+        self.userId = userId
+        self.providedUserPhotos = userPhotos
+        self.providedUserPhotoPaths = userPhotoPaths
         _currentIndex = State(initialValue: startIndex)
     }
     
@@ -73,8 +91,8 @@ struct FullScreenPhotoView: View {
                     
                     Spacer()
                     
-                    // Menu button
-                    if !imageNames.isEmpty {
+                    // Menu button (only show for current user's photos)
+                    if !imageNames.isEmpty && !isViewingOtherUser {
                         Menu {
                             Button(role: .destructive, action: {
                                 showDeleteConfirmation = true
@@ -217,6 +235,16 @@ struct FullScreenPhotoView: View {
     
     /// Get the storage path for a given image name
     private func getStoragePath(for imageName: String) -> String? {
+        // If viewing another user's post, use provided paths
+        if let providedUserPhotos = providedUserPhotos,
+           let providedUserPhotoPaths = providedUserPhotoPaths,
+           let index = providedUserPhotos.firstIndex(of: imageName),
+           index < providedUserPhotoPaths.count {
+            let path = providedUserPhotoPaths[index]
+            return path.isEmpty ? nil : path
+        }
+        
+        // Otherwise, fetch from current user's collection
         guard let collectedStamp = stampsManager.userCollection.collectedStamps
             .first(where: { $0.stampId == stampId }),
               let index = collectedStamp.userImageNames.firstIndex(of: imageName),

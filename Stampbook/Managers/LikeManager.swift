@@ -9,9 +9,16 @@ class LikeManager: ObservableObject {
     
     private let firebaseService = FirebaseService.shared
     
+    // Callback to notify FeedManager when like count changes
+    var onLikeCountChanged: ((String, Int) -> Void)?
+    
     // Optimistic update tracking
     private var pendingLikes: Set<String> = [] // Posts being liked (optimistic)
     private var pendingUnlikes: Set<String> = [] // Posts being unliked (optimistic)
+    
+    // Debouncing: Prevent rapid-fire taps (Instagram-style UX)
+    private var lastLikeTime: [String: Date] = [:] // postId -> last like time
+    private let debounceInterval: TimeInterval = 0.5 // 500ms cooldown
     
     private var isCacheLoaded = false
     
@@ -30,6 +37,14 @@ class LikeManager: ObservableObject {
     ///   - userId: Current user's ID
     ///   - postOwnerId: Owner of the post
     func toggleLike(postId: String, stampId: String, userId: String, postOwnerId: String) {
+        // Debounce: Prevent rapid taps (Instagram-style - silently ignore)
+        if let lastTime = lastLikeTime[postId],
+           Date().timeIntervalSince(lastTime) < debounceInterval {
+            print("🚫 [LikeManager] Debounced: Too soon to toggle like on \(postId)")
+            return
+        }
+        lastLikeTime[postId] = Date()
+        
         let isCurrentlyLiked = likedPosts.contains(postId)
         
         // Optimistic update (instant UI response)
@@ -45,8 +60,14 @@ class LikeManager: ObservableObject {
             pendingLikes.insert(postId)
         }
         
+        let updatedCount = likeCounts[postId, default: 0]
+        
         // Save to cache immediately
         saveCachedLikes()
+        
+        // Notify FeedManager of count change (critical for UI sync)
+        onLikeCountChanged?(postId, updatedCount)
+        print("📢 [LikeManager] Notified FeedManager: post \(postId) now has \(updatedCount) likes")
         
         // Sync to Firebase in background
         Task {
@@ -73,7 +94,12 @@ class LikeManager: ObservableObject {
                             likedPosts.remove(postId)
                             likeCounts[postId, default: 0] = max(0, likeCounts[postId, default: 0] - 1)
                         }
+                        let correctedCount = likeCounts[postId, default: 0]
                         saveCachedLikes()
+                        
+                        // Notify FeedManager of corrected count
+                        onLikeCountChanged?(postId, correctedCount)
+                        print("📢 [LikeManager] Corrected count notification: post \(postId) now has \(correctedCount) likes")
                     }
                 }
                 
@@ -93,9 +119,15 @@ class LikeManager: ObservableObject {
                         likeCounts[postId, default: 0] = max(0, likeCounts[postId, default: 0] - 1)
                     }
                     
+                    let revertedCount = likeCounts[postId, default: 0]
+                    
                     pendingLikes.remove(postId)
                     pendingUnlikes.remove(postId)
                     saveCachedLikes()
+                    
+                    // Notify FeedManager of reverted count
+                    onLikeCountChanged?(postId, revertedCount)
+                    print("📢 [LikeManager] Reverted count notification: post \(postId) now has \(revertedCount) likes")
                     
                     // Show user-friendly error message
                     errorMessage = "Couldn't sync like. Check your connection."

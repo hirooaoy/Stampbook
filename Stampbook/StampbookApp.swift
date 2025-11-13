@@ -73,6 +73,27 @@ struct StampbookApp: App {
         return manager
     }()
     
+    @StateObject private var likeManager: LikeManager = {
+        Logger.debug("Creating LikeManager...")
+        let manager = LikeManager()
+        Logger.debug("LikeManager created")
+        return manager
+    }()
+    
+    @StateObject private var commentManager: CommentManager = {
+        Logger.debug("Creating CommentManager...")
+        let manager = CommentManager()
+        Logger.debug("CommentManager created")
+        return manager
+    }()
+    
+    @StateObject private var notificationManager: NotificationManager = {
+        Logger.debug("Creating NotificationManager...")
+        let manager = NotificationManager()
+        Logger.debug("NotificationManager created")
+        return manager
+    }()
+    
     @Environment(\.scenePhase) private var scenePhase
     
     var body: some Scene {
@@ -82,6 +103,9 @@ struct StampbookApp: App {
                 .environmentObject(networkMonitor)
                 .environmentObject(followManager)
                 .environmentObject(profileManager)
+                .environmentObject(likeManager)
+                .environmentObject(commentManager)
+                .environmentObject(notificationManager)
                 .onAppear {
                     // Link ProfileManager to AuthManager as soon as WindowGroup appears
                     // This happens after @StateObjects are initialized but before deferred auth check completes
@@ -101,11 +125,16 @@ struct StampbookApp: App {
     
     /// Handle authentication state changes
     private func handleAuthStateChange(isSignedIn: Bool) {
-        // Currently no specific actions needed on auth state change
         if isSignedIn {
             Logger.debug("User signed in")
+            // Start notification polling if app is active
+            if scenePhase == .active, let userId = authManager.userId {
+                notificationManager.startPollingForUnreadNotifications(userId: userId)
+            }
         } else {
             Logger.debug("User signed out")
+            // Stop notification polling
+            notificationManager.stopPollingForUnreadNotifications()
         }
     }
     
@@ -119,6 +148,12 @@ struct StampbookApp: App {
             if oldPhase == .inactive || oldPhase == .background {
                 Logger.debug("App became active")
                 // Network monitor will automatically check connectivity
+                
+                // Start notification polling if user is signed in
+                // Polls every 5 minutes - 98% cheaper than real-time listeners
+                if authManager.isSignedIn, let userId = authManager.userId {
+                    notificationManager.startPollingForUnreadNotifications(userId: userId)
+                }
             }
             
         case .inactive:
@@ -129,6 +164,9 @@ struct StampbookApp: App {
             // App moved to background
             Logger.debug("App moved to background")
             // ImageCacheManager automatically clears full images via notification
+            
+            // Stop notification polling to save battery and Firestore reads
+            notificationManager.stopPollingForUnreadNotifications()
             
         @unknown default:
             break

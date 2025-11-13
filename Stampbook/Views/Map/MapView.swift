@@ -23,11 +23,11 @@ struct MapView: View {
     static let stampCollectionRadius: Double = AppConfig.stampCollectionRadius
     
     @StateObject private var locationManager = LocationManager()
-    @StateObject private var networkMonitor = NetworkMonitor()
     @StateObject private var searchCompleter = LocationSearchCompleter()
     @EnvironmentObject var stampsManager: StampsManager
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var mapCoordinator: MapCoordinator
+    @EnvironmentObject var networkMonitor: NetworkMonitor
     @State private var selectedStamp: Stamp?
     @State private var shouldRecenterMap = false
     @State private var searchText = ""
@@ -557,11 +557,17 @@ struct NativeMapView: UIViewRepresentable {
                 // Remove old subviews to prevent stacking
                 clusterView?.subviews.forEach { $0.removeFromSuperview() }
                 
+                // Safely unwrap before configuring
+                guard let unwrappedClusterView = clusterView else {
+                    Logger.error("Failed to create cluster view", category: "MapView")
+                    return nil
+                }
+                
                 // Create custom cluster pin view
                 let clusterPinView = ClusterPin(count: cluster.memberAnnotations.count, isCollected: isCollectedCluster)
-                _ = configureHostingController(with: clusterPinView, in: clusterView!)
+                _ = configureHostingController(with: clusterPinView, in: unwrappedClusterView)
                 
-                return clusterView
+                return unwrappedClusterView
             }
             
             // Custom view for stamp annotations
@@ -603,6 +609,12 @@ struct NativeMapView: UIViewRepresentable {
             // Remove old subviews to prevent stacking
             annotationView?.subviews.forEach { $0.removeFromSuperview() }
             
+            // Safely unwrap before configuring
+            guard let unwrappedAnnotationView = annotationView else {
+                Logger.error("Failed to create annotation view", category: "MapView")
+                return nil
+            }
+            
             // Create the stamp pin view
             let stampPinView = StampPin(
                 stamp: stampAnnotation.stamp,
@@ -612,10 +624,10 @@ struct NativeMapView: UIViewRepresentable {
             
             // Store the hosting controller so we can update it later
             let annotationId = ObjectIdentifier(stampAnnotation)
-            let hostingController = configureHostingController(with: stampPinView, in: annotationView!)
+            let hostingController = configureHostingController(with: stampPinView, in: unwrappedAnnotationView)
             hostingControllers[annotationId] = hostingController
             
-            return annotationView
+            return unwrappedAnnotationView
         }
         
         // Handle annotation selection

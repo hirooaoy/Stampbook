@@ -13,6 +13,10 @@ class CommentManager: ObservableObject {
     // Callback to notify FeedManager when comment count changes
     var onCommentCountChanged: ((String, Int) -> Void)?
     
+    // Debouncing: Prevent rapid-fire comment posting
+    private var lastCommentTime: Date?
+    private let debounceInterval: TimeInterval = 0.5 // 500ms cooldown
+    
     init() {
         print("⏱️ [CommentManager] init() started")
         // Load cached comment counts for instant display on cold start
@@ -68,6 +72,14 @@ class CommentManager: ObservableObject {
     /// Add a comment to a post with optimistic UI update
     @MainActor
     func addComment(postId: String, stampId: String, postOwnerId: String, userId: String, text: String, userProfile: UserProfile) {
+        // Debounce: Prevent rapid comment posting (Instagram-style - silently ignore)
+        if let lastTime = lastCommentTime,
+           Date().timeIntervalSince(lastTime) < debounceInterval {
+            print("🚫 [CommentManager] Debounced: Too soon to post another comment")
+            return
+        }
+        lastCommentTime = Date()
+        
         // Create optimistic comment
         let optimisticComment = Comment(
             userId: userId,
@@ -87,9 +99,14 @@ class CommentManager: ObservableObject {
         }
         comments[postId]?.append(optimisticComment)
         commentCounts[postId, default: 0] += 1
+        let updatedCount = commentCounts[postId, default: 0]
         
         // Save to cache immediately
         saveCachedCommentCounts()
+        
+        // Notify FeedManager of count change (critical for UI sync)
+        onCommentCountChanged?(postId, updatedCount)
+        print("📢 [CommentManager] Notified FeedManager: post \(postId) now has \(updatedCount) comments")
         
         // Sync to Firebase in background
         Task {
@@ -122,9 +139,14 @@ class CommentManager: ObservableObject {
                         $0.createdAt == optimisticComment.createdAt && $0.userId == userId 
                     })
                     commentCounts[postId, default: 1] = max(0, commentCounts[postId, default: 1] - 1)
+                    let revertedCount = commentCounts[postId, default: 0]
                     
                     // Save reverted state to cache
                     saveCachedCommentCounts()
+                    
+                    // Notify FeedManager of reverted count
+                    onCommentCountChanged?(postId, revertedCount)
+                    print("📢 [CommentManager] Reverted count notification: post \(postId) now has \(revertedCount) comments")
                     
                     // Show user-friendly error message
                     errorMessage = "Couldn't post comment. Check your connection."
@@ -156,9 +178,14 @@ class CommentManager: ObservableObject {
         }
         
         commentCounts[postId, default: 1] = max(0, commentCounts[postId, default: 1] - 1)
+        let updatedCount = commentCounts[postId, default: 0]
         
         // Save to cache immediately
         saveCachedCommentCounts()
+        
+        // Notify FeedManager of count change (critical for UI sync)
+        onCommentCountChanged?(postId, updatedCount)
+        print("📢 [CommentManager] Notified FeedManager: post \(postId) now has \(updatedCount) comments")
         
         // Sync to Firebase in background
         Task {
@@ -204,12 +231,18 @@ class CommentManager: ObservableObject {
     
     /// Get comment count for a post
     func getCommentCount(postId: String) -> Int {
-        return commentCounts[postId, default: 0]
+        // Never return negative counts (defensive programming against bad data)
+        return max(0, commentCounts[postId, default: 0])
     }
     
     /// Set initial comment counts (called when feed loads)
+    /// Overwrites existing counts with authoritative data from Firestore
     func setCommentCounts(_ counts: [String: Int]) {
+        #if DEBUG
+        print("📊 [CommentManager] setCommentCounts called with \(counts.count) posts")
+        #endif
         commentCounts = counts
+        saveCachedCommentCounts() // Persist to disk so cache stays fresh
     }
     
     /// Update comment count for a specific post
@@ -217,7 +250,8 @@ class CommentManager: ObservableObject {
     /// When false, only updates if count doesn't exist (preserves optimistic updates)
     func updateCommentCount(postId: String, count: Int, forceUpdate: Bool = false) {
         if forceUpdate || commentCounts[postId] == nil {
-            commentCounts[postId] = count
+            // Validate count - never allow negative values (defensive programming)
+            commentCounts[postId] = max(0, count)
             // Save updated count to cache
             saveCachedCommentCounts()
         }
@@ -242,7 +276,8 @@ class CommentManager: ObservableObject {
     private func loadCachedCommentCounts() {
         // Load comment counts for instant display on cold start
         if let cachedCounts = UserDefaults.standard.dictionary(forKey: "commentCounts") as? [String: Int] {
-            commentCounts = cachedCounts
+            // Validate cached counts - fix any negative values (defensive programming)
+            commentCounts = cachedCounts.mapValues { max(0, $0) }
             print("📊 [CommentManager] Loaded \(cachedCounts.count) cached comment counts")
         }
     }

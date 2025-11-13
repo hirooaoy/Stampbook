@@ -39,18 +39,25 @@ struct CommentView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if comments.isEmpty {
                     // Empty state
-                    VStack(spacing: 16) {
-                        Image(systemName: "message")
-                            .font(.system(size: 50))
-                            .foregroundColor(.gray)
+                    VStack {
+                        Spacer()
                         
-                        Text("No comments yet")
-                            .font(.title3)
-                            .fontWeight(.semibold)
+                        VStack(spacing: 16) {
+                            Image(systemName: "message")
+                                .font(.system(size: 50))
+                                .foregroundColor(.gray)
+                            
+                            Text("No comments yet")
+                                .font(.title3)
+                                .fontWeight(.semibold)
+                            
+                            Text("Be the first to comment!")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        }
                         
-                        Text("Be the first to comment!")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
+                        Spacer()
+                        Spacer()
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
@@ -121,15 +128,15 @@ struct CommentView: View {
                     await commentManager.fetchComments(postId: postId)
                 }
             }
-            .alert("Delete Comment", isPresented: $showingDeleteAlert) {
+            .alert(commentToDelete?.userId == authManager.userId ? "Delete Comment" : "Remove Comment", isPresented: $showingDeleteAlert) {
                 Button("Cancel", role: .cancel) {}
-                Button("Delete", role: .destructive) {
+                Button(commentToDelete?.userId == authManager.userId ? "Delete" : "Remove", role: .destructive) {
                     if let comment = commentToDelete {
                         deleteComment(comment)
                     }
                 }
             } message: {
-                Text("Are you sure you want to delete this comment?")
+                Text(commentToDelete?.userId == authManager.userId ? "Are you sure you want to delete this comment?" : "Are you sure you want to remove this comment?")
             }
             .overlay(alignment: .top) {
                 // Toast for comment errors
@@ -272,7 +279,7 @@ struct CommentRow: View {
                 // Delete option (for own comments OR own post)
                 if canDelete {
                     Button(role: .destructive, action: onDelete) {
-                        Label("Delete comment", systemImage: "trash")
+                        Label(isOwnComment ? "Delete comment" : "Remove comment", systemImage: "trash")
                     }
                 }
                 
@@ -308,7 +315,7 @@ struct CommentRow: View {
 // MARK: - Helper Types
 
 /// Wrapper to make String identifiable for sheet presentation
-struct IdentifiableString: Identifiable {
+struct IdentifiableString: Identifiable, Hashable {
     let id = UUID()
     let value: String
 }

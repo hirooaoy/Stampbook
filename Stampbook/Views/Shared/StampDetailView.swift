@@ -562,6 +562,7 @@ struct StampDetailView: View {
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)
+        .toolbar(.hidden, for: .tabBar)
         .presentationDetents([.fraction(0.82), .large])
         .onAppear {
             // Initialize states for already collected stamps

@@ -10,6 +10,12 @@ struct StampsView: View {
     @Environment(\.colorScheme) var colorScheme
     @Binding var shouldResetNavigation: Bool // Binding to reset navigation when tab is selected
     @State private var selectedTab: StampTab = .all
+    
+    // SHEET MANAGEMENT: This view has 12 sheet modifiers which triggers SwiftUI warnings
+    // ("Currently, only presenting a single sheet is supported"). These warnings are COSMETIC
+    // and can be safely IGNORED. The sheets work correctly - they present one at a time as
+    // expected. Decision made Nov 2025 to defer coordinator pattern refactor until post-launch
+    // to avoid unnecessary risk at MVP stage. See: CROSS_REFERENCE_RISK_ANALYSIS.md
     @State private var showEditProfile = false
     @State private var showFeedback = false
     @State private var showProblemReport = false
@@ -41,6 +47,24 @@ struct StampsView: View {
     
     var body: some View {
         content
+            .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+                // Refresh profile when app becomes active to get latest follow counts
+                // This handles the case where someone else followed/unfollowed you
+                if authManager.isSignedIn, let userId = authManager.userId {
+                    print("📱 [StampsView] App became active - refreshing profile for latest follow counts")
+                    Task {
+                        do {
+                            let profile = try await FirebaseService.shared.fetchUserProfile(userId: userId, forceRefresh: true)
+                            await MainActor.run {
+                                profileManager.currentUserProfile = profile
+                                print("✅ [StampsView] Profile refreshed: followers=\(profile.followerCount), following=\(profile.followingCount)")
+                            }
+                        } catch {
+                            print("⚠️ [StampsView] Failed to refresh profile on app active: \(error)")
+                        }
+                    }
+                }
+            }
     }
     
     // MARK: - Top Bar
@@ -378,8 +402,19 @@ struct StampsView: View {
     
     // MARK: - Followers Card
     private var followersCard: some View {
-        NavigationLink(value: FollowListDestination(
-            userId: authManager.userId ?? "",
+        let userId = authManager.userId ?? ""
+        let cachedCount = followManager.followCounts[userId]?.followers
+        let profileCount = profileManager.currentUserProfile?.followerCount
+        let displayCount = cachedCount ?? profileCount ?? 0
+        
+        let _ = print("🎨 [StampsView.followersCard] Rendering...")
+        let _ = print("🎨 [StampsView.followersCard]   userId: \(userId)")
+        let _ = print("🎨 [StampsView.followersCard]   cachedCount: \(cachedCount ?? -1)")
+        let _ = print("🎨 [StampsView.followersCard]   profileCount: \(profileCount ?? -1)")
+        let _ = print("🎨 [StampsView.followersCard]   displayCount: \(displayCount)")
+        
+        return NavigationLink(value: FollowListDestination(
+            userId: userId,
             userDisplayName: profileManager.currentUserProfile?.displayName ?? "User",
             initialTab: .followers
         )) {
@@ -393,7 +428,7 @@ struct StampsView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                     // Use cached count if available, fallback to profile
-                    Text("\(followManager.followCounts[authManager.userId ?? ""]?.followers ?? profileManager.currentUserProfile?.followerCount ?? 0)")
+                    Text("\(displayCount)")
                         .font(.body)
                         .fontWeight(.semibold)
                         .foregroundColor(.primary)
@@ -415,8 +450,19 @@ struct StampsView: View {
     
     // MARK: - Following Card
     private var followingCard: some View {
-        NavigationLink(value: FollowListDestination(
-            userId: authManager.userId ?? "",
+        let userId = authManager.userId ?? ""
+        let cachedCount = followManager.followCounts[userId]?.following
+        let profileCount = profileManager.currentUserProfile?.followingCount
+        let displayCount = cachedCount ?? profileCount ?? 0
+        
+        let _ = print("🎨 [StampsView.followingCard] Rendering...")
+        let _ = print("🎨 [StampsView.followingCard]   userId: \(userId)")
+        let _ = print("🎨 [StampsView.followingCard]   cachedCount: \(cachedCount ?? -1)")
+        let _ = print("🎨 [StampsView.followingCard]   profileCount: \(profileCount ?? -1)")
+        let _ = print("🎨 [StampsView.followingCard]   displayCount: \(displayCount)")
+        
+        return NavigationLink(value: FollowListDestination(
+            userId: userId,
             userDisplayName: profileManager.currentUserProfile?.displayName ?? "User",
             initialTab: .following
         )) {
@@ -430,7 +476,7 @@ struct StampsView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                     // Use cached count if available, fallback to profile
-                    Text("\(followManager.followCounts[authManager.userId ?? ""]?.following ?? profileManager.currentUserProfile?.followingCount ?? 0)")
+                    Text("\(displayCount)")
                         .font(.body)
                         .fontWeight(.semibold)
                         .foregroundColor(.primary)
@@ -527,6 +573,25 @@ struct StampsView: View {
         // MARK: - Cache Follow Counts
         // Initialize cache when profile loads (only if cache is empty)
         .onAppear {
+            print("📱 [StampsView] onAppear - checking if profile needs refresh")
+            
+            // Refresh profile when view appears to get latest follow counts
+            // This handles case where someone followed/unfollowed you while you were away
+            if authManager.isSignedIn, let userId = authManager.userId {
+                print("📱 [StampsView] Refreshing profile for latest follow counts")
+                Task {
+                    do {
+                        let profile = try await FirebaseService.shared.fetchUserProfile(userId: userId, forceRefresh: true)
+                        await MainActor.run {
+                            profileManager.currentUserProfile = profile
+                            print("✅ [StampsView] Profile refreshed on appear: followers=\(profile.followerCount), following=\(profile.followingCount)")
+                        }
+                    } catch {
+                        print("⚠️ [StampsView] Failed to refresh profile on appear: \(error)")
+                    }
+                }
+            }
+            
             if let profile = profileManager.currentUserProfile, let userId = authManager.userId {
                 // Only initialize cache if it's not already set (to avoid overwriting fresh counts from follow actions)
                 if followManager.followCounts[userId] == nil {
@@ -538,22 +603,49 @@ struct StampsView: View {
                 }
             }
         }
-        // Update cache when profile changes (only if new counts are different)
+        // Update cache when profile changes
         .onChange(of: profileManager.currentUserProfile) { oldProfile, newProfile in
+            print("📊 [StampsView] ========================================")
+            print("📊 [StampsView] onChange(profileManager.currentUserProfile) FIRED")
+            print("📊 [StampsView] Old profile: \(oldProfile?.username ?? "nil")")
+            print("📊 [StampsView]   Old followers: \(oldProfile?.followerCount ?? -1)")
+            print("📊 [StampsView]   Old following: \(oldProfile?.followingCount ?? -1)")
+            print("📊 [StampsView] New profile: \(newProfile?.username ?? "nil")")
+            print("📊 [StampsView]   New followers: \(newProfile?.followerCount ?? -1)")
+            print("📊 [StampsView]   New following: \(newProfile?.followingCount ?? -1)")
+            
             if let profile = newProfile, let userId = authManager.userId {
-                let currentCachedCounts = followManager.followCounts[userId]
-                // Only update if profile has newer counts (higher values or not cached)
-                if currentCachedCounts == nil ||
-                   profile.followerCount != currentCachedCounts?.followers ||
-                   profile.followingCount != currentCachedCounts?.following {
-                    print("📊 [StampsView] Profile changed - updating follow counts cache")
-                    print("📊 [StampsView] Old: followers=\(oldProfile?.followerCount ?? 0), following=\(oldProfile?.followingCount ?? 0)")
+                print("📊 [StampsView] Auth userId: \(userId)")
+                print("📊 [StampsView] Current followManager.followCounts cache:")
+                for (cachedUserId, counts) in followManager.followCounts {
+                    print("📊 [StampsView]   \(cachedUserId): followers=\(counts.followers), following=\(counts.following)")
+                }
+                
+                // Check if follow counts actually changed (indicating a follow/unfollow occurred)
+                let oldFollowerCount = oldProfile?.followerCount ?? 0
+                let oldFollowingCount = oldProfile?.followingCount ?? 0
+                let countsChanged = profile.followerCount != oldFollowerCount || profile.followingCount != oldFollowingCount
+                
+                print("📊 [StampsView] Counts changed? \(countsChanged)")
+                
+                if countsChanged {
+                    // Follow counts changed - always update cache with fresh Firebase data
+                    print("📊 [StampsView] ✅ Profile follow counts CHANGED - updating cache")
+                    print("📊 [StampsView] Old: followers=\(oldFollowerCount), following=\(oldFollowingCount)")
                     print("📊 [StampsView] New: followers=\(profile.followerCount), following=\(profile.followingCount)")
                     followManager.updateFollowCounts(userId: userId, followerCount: profile.followerCount, followingCount: profile.followingCount)
+                    print("📊 [StampsView] Cache update complete")
+                } else if followManager.followCounts[userId] == nil {
+                    // No change in counts, but cache is empty - initialize it
+                    print("📊 [StampsView] ✅ No count change, but cache empty - initializing")
+                    followManager.updateFollowCounts(userId: userId, followerCount: profile.followerCount, followingCount: profile.followingCount)
                 } else {
-                    print("📊 [StampsView] Profile counts match cache, not updating")
+                    print("📊 [StampsView] ⏭️  No count change and cache exists - skipping update")
                 }
+            } else {
+                print("📊 [StampsView] ⚠️  Missing profile or userId - skipping")
             }
+            print("📊 [StampsView] ========================================")
         }
         // MARK: - Profile Edit Sheet
         // Shows ProfileEditView when user taps pencil icon

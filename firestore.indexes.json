@@ -1,17 +1,6 @@
 {
   "indexes": [
     {
-      "collectionGroup": "users",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "totalStamps",
-          "order": "ASCENDING"
-        }
-      ],
-      "_comment": "TODO: POST-MVP - This index was for rank calculation. Can be removed if rank feature stays disabled. See RANK_FEATURE_DISABLED.md"
-    },
-    {
       "collectionGroup": "stamps",
       "queryScope": "COLLECTION",
       "fields": [
@@ -52,6 +41,25 @@
           "order": "ASCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "notifications",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "recipientId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isRead",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ],
+      "_comment": "For fetching user notifications (newest first) and counting unread notifications efficiently"
     },
     {
       "collectionGroup": "following",

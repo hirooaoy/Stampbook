@@ -9,6 +9,9 @@ Essential tests for MVP - covers the most critical functionality to prevent emba
 3. **StampVisibilityTests.swift** - Moderation and visibility system
 4. **CountryParsingTests.swift** - Address parsing for profile stats
 5. **LikeManagerTests.swift** - Like/unlike logic (prevents count bugs)
+6. **CommentManagerTests.swift** - Comment count persistence (prevents stale counts after deletion)
+7. **FollowManagerTests.swift** - Follow count management (prevents negative counts, rollback logic)
+8. **ProfileStatsTests.swift** - Profile statistics calculations (unique countries)
 
 ## Setup in Xcode
 
@@ -17,7 +20,7 @@ Essential tests for MVP - covers the most critical functionality to prevent emba
 1. Open `Stampbook.xcodeproj` in Xcode
 2. In the Project Navigator (left sidebar), find the `StampbookTests` folder/group
 3. Right-click `StampbookTests` → Add Files to "Stampbook"...
-4. Select all 5 `.swift` files in the `StampbookTests` directory
+4. Select all `.swift` test files in the `StampbookTests` directory
 5. Make sure "Add to targets: StampbookTests" is checked
 6. Click "Add"
 
@@ -25,7 +28,7 @@ Essential tests for MVP - covers the most critical functionality to prevent emba
 
 **Run all tests:**
 - Press `Cmd+U` (or Product → Test)
-- All 5 test files will run (~2 seconds)
+- All 8 test files will run (~3 seconds)
 - You'll see green checkmarks for passing tests
 
 **Run a single test file:**
@@ -47,16 +50,19 @@ Essential tests for MVP - covers the most critical functionality to prevent emba
 **After making changes to:**
 - Distance/location calculations
 - Like/unlike logic
+- Comment count management
+- Follow/unfollow logic
 - Invite code validation
 - Stamp visibility/moderation
 - Address parsing
+- Profile statistics
 
 **When adding user #11, #12, etc.:**
 - Run tests to catch any bugs before they affect real users
 
 ## Test Coverage
 
-These 5 files cover:
+These 8 files cover:
 - ✅ 150m collection radius accuracy
 - ✅ All 4 radius types (regular, regularplus, large, xlarge)
 - ✅ Invite code formatting (uppercase, trim)
@@ -65,9 +71,11 @@ These 5 files cover:
 - ✅ Date-based availability (future events)
 - ✅ Country extraction from addresses (US, Japan, UK, France)
 - ✅ Like count logic (never negative, optimistic updates)
-- ✅ Multiple likes across different posts
+- ✅ Comment count persistence (survives app restarts)
+- ✅ Follow count management (never negative, rollback on errors)
+- ✅ Profile stats (unique countries, total stamps)
 
-Total: **~50 tests** covering your most critical bugs.
+Total: **~90 tests** covering your most critical bugs.
 
 ## What's NOT tested (intentionally)
 

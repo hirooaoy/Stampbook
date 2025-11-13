@@ -26,11 +26,6 @@ service cloud.firestore {
       allow write: if isAdmin();  // Only admins can add/edit/delete collections
     }
     
-    // Content pages - rich content for local businesses, creators, and app info
-    match /contentPages/{contentPageId} {
-      allow read: if true;  // Public
-    }
-    
     // Stamp statistics - how many people collected each stamp
     match /stamp_statistics/{stampId} {
       allow read: if true;  // Public
@@ -52,18 +47,33 @@ service cloud.firestore {
       allow create, delete: if request.auth.uid == userId;
       // Username validation: Basic format check (server validates profanity via Cloud Function)
       // Enforce 3-20 chars, alphanumeric + underscore only, lowercase
+      // Bio validation: Max 70 chars (matches UI limit)
+      // DisplayName validation: Max 20 chars (matches UI limit)
       allow update: if request.auth.uid == userId
         && (!('username' in request.resource.data) ||  // If not updating username
             (request.resource.data.username is string
              && request.resource.data.username.size() >= 3
              && request.resource.data.username.size() <= 20
-             && request.resource.data.username.matches('^[a-z0-9_]+$')));
+             && request.resource.data.username.matches('^[a-z0-9_]+$')))
+        && (!('bio' in request.resource.data) ||  // If not updating bio
+            (request.resource.data.bio is string
+             && request.resource.data.bio.size() <= 70))
+        && (!('displayName' in request.resource.data) ||  // If not updating displayName
+            (request.resource.data.displayName is string
+             && request.resource.data.displayName.size() <= 20));
     }
     
     // User's collected stamps (their posts)
     match /users/{userId}/collected_stamps/{stampId} {
       allow read: if request.auth != null;
-      allow write: if request.auth.uid == userId;
+      // Users can only create/delete their own collected stamps
+      allow create, delete: if request.auth.uid == userId;
+      // Users can fully update their own posts
+      allow update: if request.auth.uid == userId;
+      // ANYONE can update likeCount and commentCount (for social interactions)
+      // This allows other users to like/comment on your posts
+      allow update: if request.auth != null
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likeCount', 'commentCount']);
     }
     
     // IMPORTANT: Allow collectionGroup queries for Instagram-style feed
@@ -114,6 +124,25 @@ service cloud.firestore {
                         resource.data.postOwnerId == request.auth.uid);  // Or your post
     }
     
+    // Notifications - users see engagement on their content
+    match /notifications/{notificationId} {
+      // Users can only read their own notifications
+      allow read: if request.auth != null 
+        && resource.data.recipientId == request.auth.uid;
+      
+      // Only Cloud Functions can create notifications
+      allow create: if false;
+      
+      // Users can update only the isRead field on their own notifications
+      allow update: if request.auth != null 
+        && resource.data.recipientId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead']);
+      
+      // Users can delete their own notifications
+      allow delete: if request.auth != null 
+        && resource.data.recipientId == request.auth.uid;
+    }
+    
     // ==================== INVITE SYSTEM ====================
     
     // Invite codes - control app growth
@@ -125,9 +154,15 @@ service cloud.firestore {
       // CANNOT list/query all codes (prevents scraping valid codes)
       allow list: if false;
       
-      // Only admin service account can create/update codes (via generate_invite_codes.js)
-      // Regular users cannot write codes
-      allow write: if false;
+      // Users can update codes ONLY to mark them as used during signup transaction
+      // They can ONLY increment usedCount, append to usedBy array, and update status
+      allow update: if request.auth != null
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['usedCount', 'usedBy', 'status'])
+        && request.resource.data.usedBy.hasAll(resource.data.usedBy)  // Can only ADD to usedBy array
+        && request.resource.data.usedCount == resource.data.usedCount + 1;  // Must increment by exactly 1
+      
+      // Only admin service account can create/delete codes (via generate_invite_codes.js)
+      allow create, delete: if false;
     }
     
     // ==================== FEEDBACK ====================

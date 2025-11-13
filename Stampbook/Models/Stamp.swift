@@ -1,7 +1,7 @@
 import Foundation
 import CoreLocation
 
-struct Stamp: Identifiable, Codable, Equatable {
+struct Stamp: Identifiable, Codable, Equatable, Hashable {
     let id: String
     let name: String
     let latitude: Double

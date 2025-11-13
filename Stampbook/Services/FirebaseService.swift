@@ -9,6 +9,19 @@ class FirebaseService {
     private let db = Firestore.firestore()
     private let storage = Storage.storage()
     
+    // MARK: - Request Deduplication & Caching
+    
+    /// Track in-flight profile fetches to prevent duplicate requests
+    /// When multiple views request the same profile simultaneously, only one Firebase read occurs
+    private var inFlightProfileFetches: [String: Task<UserProfile, Error>] = [:]
+    private let profileFetchQueue = DispatchQueue(label: "com.stampbook.profileFetchQueue")
+    
+    /// Time-based profile cache to prevent redundant fetches
+    /// Profiles fetched within the last 5 minutes are returned from cache
+    /// Cache invalidation happens automatically on profile updates
+    private var profileCache: [String: (profile: UserProfile, timestamp: Date)] = [:]
+    private let profileCacheExpiration: TimeInterval = 300 // 5 minutes (optimized from 60s)
+    
     private init() {
         // Configure offline persistence
         // NOTE: For fresh installs with no cache, offline persistence can cause
@@ -19,128 +32,6 @@ class FirebaseService {
         db.settings = settings
         
         Logger.info("Offline persistence enabled (cache will populate on first sync)", category: "FirebaseService")
-        
-        // Run connectivity diagnostics in background (non-blocking)
-        // NOTE: This should NOT block app initialization
-        Task.detached(priority: .background) {
-            // Add delay to not block startup
-            try? await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
-            await self.runConnectivityDiagnostics()
-        }
-    }
-    
-    // MARK: - Connectivity Diagnostics
-    
-    /// Run comprehensive connectivity diagnostics for Firebase
-    func runConnectivityDiagnostics() async {
-        Logger.debug("\nStarting connectivity tests...\n")
-        
-        // Test 1: Basic network connectivity
-        Logger.debug("Testing basic network connectivity...")
-        await testNetworkConnectivity()
-        
-        // Test 2: Firestore connection
-        Logger.debug("\nTesting Firestore connection...")
-        await testFirestoreConnection()
-        
-        // Test 3: Firebase Storage connection
-        Logger.debug("\nTesting Firebase Storage connection...")
-        await testStorageConnection()
-        
-        Logger.debug("\nConnectivity tests complete\n")
-    }
-    
-    private func testNetworkConnectivity() async {
-        // Try to reach Google's DNS server
-        guard let url = URL(string: "https://www.google.com") else {
-            Logger.error("Failed to create URL", category: "FirebaseService")
-            return
-        }
-        
-        do {
-            let startTime = CFAbsoluteTimeGetCurrent()
-            let (_, response) = try await URLSession.shared.data(from: url)
-            let duration = CFAbsoluteTimeGetCurrent() - startTime
-            
-            if let httpResponse = response as? HTTPURLResponse {
-                if httpResponse.statusCode == 200 {
-                    Logger.success("Internet connection OK (\(String(format: "%.3f", duration))s)", category: "FirebaseService")
-                } else {
-                    Logger.warning("Internet reachable but returned status code \(httpResponse.statusCode)", category: "FirebaseService")
-                }
-            }
-        } catch {
-            Logger.error("No internet connection", error: error, category: "FirebaseService")
-        }
-    }
-    
-    private func testFirestoreConnection() async {
-        // Try to fetch a single stamp (lightweight query)
-        // NOTE: Use default source (cache first, then server if needed)
-        // This allows offline usage and doesn't block on slow connections
-        do {
-            let startTime = CFAbsoluteTimeGetCurrent()
-            
-            // Try with timeout using withThrowingTaskGroup
-            let snapshot = try await withThrowingTaskGroup(of: QuerySnapshot?.self) { group in
-                // Add fetch task
-                group.addTask {
-                    return try await self.db.collection("stamps")
-                        .limit(to: 1)
-                        .getDocuments() // Default source: cache + server (non-blocking)
-                }
-                
-                // Add timeout task
-                group.addTask {
-                    try await Task.sleep(nanoseconds: 5_000_000_000) // 5 seconds
-                    return nil // Timeout indicator
-                }
-                
-                // Wait for first result
-                if let result = try await group.next() {
-                    group.cancelAll()
-                    return result
-                }
-                throw NSError(domain: "FirebaseService", code: -1, userInfo: [NSLocalizedDescriptionKey: "No result"])
-            }
-            
-            let duration = CFAbsoluteTimeGetCurrent() - startTime
-            
-            if let snapshot = snapshot {
-                // Success
-                print("✅ Firestore connection OK (\(String(format: "%.3f", duration))s, \(snapshot.documents.count) doc)")
-                print("   Project: stampbook-app")
-            } else {
-                // Timeout occurred
-                Logger.warning("Firestore connection slow/timed out after \(String(format: "%.3f", duration))s", category: "FirebaseService")
-                Logger.info("   → Using offline cache if available", category: "FirebaseService")
-            }
-        } catch let error as NSError {
-            Logger.error("Firestore connection FAILED (\(error.domain), code: \(error.code))", category: "FirebaseService")
-            Logger.error("   Message: \(error.localizedDescription)", category: "FirebaseService")
-            
-            // Common error codes
-            if error.domain == "FIRFirestoreErrorDomain" {
-                switch error.code {
-                case 14: // UNAVAILABLE
-                    print("   → Backend unavailable. Using offline cache.")
-                case 7: // PERMISSION_DENIED
-                    print("   → Permission denied. Check Firestore security rules.")
-                case 16: // UNAUTHENTICATED
-                    print("   → Not authenticated. Check Firebase Auth setup.")
-                default:
-                    print("   → Error code \(error.code)")
-                }
-            }
-        }
-    }
-    
-    private func testStorageConnection() async {
-        // Try to get a storage reference
-        let storageRef = storage.reference()
-        let bucket = storageRef.bucket
-        print("✅ Firebase Storage connected")
-        print("   Bucket: \(bucket)")
     }
     
     // MARK: - Collected Stamps Sync
@@ -177,6 +68,28 @@ class FirebaseService {
         }
         
         return stamps
+    }
+    
+    /// Fetch a single collected stamp by stampId (for notifications/deep links)
+    /// - Parameter userId: The user ID who collected the stamp
+    /// - Parameter stampId: The stamp ID to fetch
+    /// - Returns: The collected stamp, or nil if not found
+    ///
+    /// **PERFORMANCE:** Direct document read (1 read) instead of collection query
+    func fetchCollectedStamp(userId: String, stampId: String) async throws -> CollectedStamp? {
+        let docRef = db
+            .collection("users")
+            .document(userId)
+            .collection("collected_stamps")
+            .document(stampId)
+        
+        let document = try await docRef.getDocument()
+        
+        guard document.exists else {
+            return nil
+        }
+        
+        return try? document.data(as: CollectedStamp.self)
     }
     
     /// Save a single collected stamp to Firestore
@@ -469,41 +382,120 @@ class FirebaseService {
     
     /// Fetch user profile from Firestore
     /// Used when loading a user's profile data
-    func fetchUserProfile(userId: String) async throws -> UserProfile {
+    func fetchUserProfile(userId: String, forceRefresh: Bool = false) async throws -> UserProfile {
         #if DEBUG
         let startTime = CFAbsoluteTimeGetCurrent()
         print("🔍 [FirebaseService] fetchUserProfile(\(userId)) started")
         #endif
         
-        let docRef = db.collection("users").document(userId)
-        
-        #if DEBUG
-        print("📡 [FirebaseService] Calling getDocument()...")
-        #endif
-        
-        let document = try await docRef.getDocument()
-        
-        #if DEBUG
-        let fetchTime = CFAbsoluteTimeGetCurrent() - startTime
-        print("⏱️ [FirebaseService] User profile fetch: \(String(format: "%.3f", fetchTime))s")
-        #endif
-        
-        if let profile = try? document.data(as: UserProfile.self) {
-            #if DEBUG
-            print("✅ [FirebaseService] Profile parsed successfully: @\(profile.username)")
-            #endif
-            return profile
+        // Check time-based cache first (unless forcing refresh)
+        if !forceRefresh {
+            let cachedProfile = profileFetchQueue.sync { () -> UserProfile? in
+                guard let cached = profileCache[userId] else { return nil }
+                let age = Date().timeIntervalSince(cached.timestamp)
+                
+                // Return cached profile if fresh (< 5 minutes old)
+                if age < profileCacheExpiration {
+                    #if DEBUG
+                    print("⚡️ [FirebaseService] Using cached profile (age: \(String(format: "%.1f", age))s / 300s)")
+                    #endif
+                    return cached.profile
+                }
+                
+                // Cache expired, remove it
+                #if DEBUG
+                print("🗑️ [FirebaseService] Cache expired (age: \(String(format: "%.1f", age))s > 300s), fetching fresh profile")
+                #endif
+                profileCache.removeValue(forKey: userId)
+                return nil
+            }
+            
+            if let profile = cachedProfile {
+                return profile
+            }
         } else {
-            Logger.error("Profile document exists but failed to parse", category: "FirebaseService")
-            throw NSError(domain: "FirebaseService", code: 404, userInfo: [NSLocalizedDescriptionKey: "User profile not found"])
+            #if DEBUG
+            print("🔄 [FirebaseService] Force refresh requested, bypassing cache")
+            #endif
         }
+        
+        // ATOMIC: Check for existing task AND create new task if needed
+        // This prevents race condition where multiple callers create duplicate tasks
+        let fetchTask: Task<UserProfile, Error> = profileFetchQueue.sync {
+            // Check if there's already a fetch in progress
+            if let existingTask = inFlightProfileFetches[userId] {
+                #if DEBUG
+                print("⏱️ [FirebaseService] Waiting for in-flight profile fetch")
+                #endif
+                return existingTask
+            }
+            
+            // Create and store new task atomically
+            let newTask = Task<UserProfile, Error> {
+                let docRef = self.db.collection("users").document(userId)
+                
+                #if DEBUG
+                print("📡 [FirebaseService] Calling getDocument()...")
+                #endif
+                
+                let document = try await docRef.getDocument()
+                
+                #if DEBUG
+                let fetchTime = CFAbsoluteTimeGetCurrent() - startTime
+                print("⏱️ [FirebaseService] User profile fetch: \(String(format: "%.3f", fetchTime))s")
+                #endif
+                
+                if let profile = try? document.data(as: UserProfile.self) {
+                    // Cache immediately after parsing, inside the task (runs only once)
+                    self.profileFetchQueue.sync {
+                        self.profileCache[userId] = (profile: profile, timestamp: Date())
+                        self.inFlightProfileFetches.removeValue(forKey: userId)
+                    }
+                    
+                    #if DEBUG
+                    print("💾 [FirebaseService] Profile cached for \(userId)")
+                    print("✅ [FirebaseService] Profile parsed successfully: @\(profile.username)")
+                    #endif
+                    
+                    return profile
+                } else {
+                    // Clean up on parse failure
+                    _ = self.profileFetchQueue.sync {
+                        self.inFlightProfileFetches.removeValue(forKey: userId)
+                    }
+                    Logger.error("Profile document exists but failed to parse", category: "FirebaseService")
+                    throw NSError(domain: "FirebaseService", code: 404, userInfo: [NSLocalizedDescriptionKey: "User profile not found"])
+                }
+            }
+            
+            inFlightProfileFetches[userId] = newTask
+            return newTask
+        }
+        
+        // Wait for fetch to complete and return (caching already done inside Task)
+        return try await fetchTask.value
+    }
+    
+    /// Invalidate cached profile for a user
+    /// Call this when a profile is updated to force fresh fetch next time
+    func invalidateProfileCache(userId: String) {
+        profileFetchQueue.sync {
+            _ = profileCache.removeValue(forKey: userId)
+        }
+        #if DEBUG
+        print("🗑️ [FirebaseService] Invalidated profile cache for \(userId)")
+        #endif
     }
     
     /// Create or update user profile in Firestore
     /// Uses merge:true to only update provided fields
+    /// Automatically invalidates cache after update
     func saveUserProfile(_ profile: UserProfile) async throws {
         let docRef = db.collection("users").document(profile.id)
         try docRef.setData(from: profile, merge: true)
+        
+        // Invalidate cache so next fetch gets fresh data
+        invalidateProfileCache(userId: profile.id)
     }
     
     /// Create initial user profile (called on first sign-in)
@@ -568,6 +560,9 @@ class FirebaseService {
         }
         
         try await docRef.updateData(updates)
+        
+        // Invalidate cache so next fetch gets fresh data
+        invalidateProfileCache(userId: userId)
     }
     
     /// Check if a username is available (not taken by another user)
@@ -792,8 +787,10 @@ class FirebaseService {
     // MARK: - Following List Cache
     
     // Cache following list to avoid repeated fetches
+    // Following list rarely changes (only on follow/unfollow), so longer TTL is safe
+    // Cache invalidation happens automatically via invalidateFollowingCache()
     private var followingCache: [String: (profiles: [UserProfile], timestamp: Date)] = [:]
-    private let followingCacheExpiration: TimeInterval = 1800 // 30 minutes
+    private let followingCacheExpiration: TimeInterval = 7200 // 2 hours (optimized from 30min)
     
     // MARK: - Follow/Unfollow System
     
@@ -874,9 +871,13 @@ class FirebaseService {
         return document.exists
     }
     
-    /// Count how many followers a user has (on-demand counting for MVP)
-    /// Queries all users' following subcollections to count how many follow this user
-    /// 🎯 POST-MVP: Denormalize to user.followersCount field when > 500 users (saves N reads per profile view)
+    /// Count how many followers a user has (DEPRECATED - use denormalized count instead)
+    /// 
+    /// ⚠️ DEPRECATED: This expensive collection group query is no longer needed
+    /// Use profile.followerCount instead (synced by Cloud Function updateFollowCounts)
+    /// 
+    /// Kept for backwards compatibility and reconciliation scripts only
+    @available(*, deprecated, message: "Use profile.followerCount instead - counts are now denormalized by Cloud Function")
     func fetchFollowerCount(userId: String) async throws -> Int {
         // Query across all users who follow this user
         // This is efficient for <100 users
@@ -888,7 +889,13 @@ class FirebaseService {
         return snapshot.documents.count
     }
     
-    /// Count how many users someone is following (on-demand counting for MVP)
+    /// Count how many users someone is following (DEPRECATED - use denormalized count instead)
+    /// 
+    /// ⚠️ DEPRECATED: This query is no longer needed
+    /// Use profile.followingCount instead (synced by Cloud Function updateFollowCounts)
+    /// 
+    /// Kept for backwards compatibility and reconciliation scripts only
+    @available(*, deprecated, message: "Use profile.followingCount instead - counts are now denormalized by Cloud Function")
     func fetchFollowingCount(userId: String) async throws -> Int {
         let snapshot = try await db
             .collection("users")
@@ -976,7 +983,14 @@ class FirebaseService {
     /// Splits IDs into chunks of 10 (Firestore limit) and fetches in parallel
     /// - Parameter userIds: Array of user IDs to fetch
     /// - Returns: Array of user profiles (order not guaranteed)
-    private func fetchProfilesBatched(userIds: [String]) async throws -> [UserProfile] {
+    ///
+    /// **USAGE:**
+    /// - Following/followers lists (efficient batch loading)
+    /// - Notification actor profiles (94% cost reduction vs individual fetches)
+    /// - Any scenario requiring multiple profiles at once
+    ///
+    /// **COST:** ~1 read per 10 profiles (vs 1 read per profile individually)
+    func fetchProfilesBatched(userIds: [String]) async throws -> [UserProfile] {
         // Split into batches of 10 (Firestore `in` operator limit)
         let batches = stride(from: 0, to: userIds.count, by: 10).map {
             Array(userIds[$0..<min($0 + 10, userIds.count)])
@@ -1268,13 +1282,20 @@ class FirebaseService {
         return snapshot.documents.count
     }
     
-    /// Fetch users who liked a post
-    func fetchPostLikes(postId: String, limit: Int = 50) async throws -> [UserProfile] {
-        let snapshot = try await db.collection("likes")
+    /// Fetch users who liked a post (ordered by most recent first)
+    /// TODO: POST-MVP - Add pagination support (limit + offset) when posts regularly get 100+ likes
+    /// Note: Requires composite index on likes collection (postId + createdAt)
+    ///       Firebase will provide a link to create it automatically when you run this query
+    func fetchPostLikes(postId: String, limit: Int? = nil) async throws -> [UserProfile] {
+        var query: Query = db.collection("likes")
             .whereField("postId", isEqualTo: postId)
             .order(by: "createdAt", descending: true)
-            .limit(to: limit)
-            .getDocuments()
+        
+        if let limit = limit {
+            query = query.limit(to: limit)
+        }
+        
+        let snapshot = try await query.getDocuments()
         
         let userIds = snapshot.documents.compactMap { doc -> String? in
             try? doc.data(as: Like.self).userId
@@ -1324,31 +1345,8 @@ class FirebaseService {
             .getDocuments()
         
         let comments = snapshot.documents.compactMap { doc -> Comment? in
-            // NOTE: @DocumentID property wrapper doesn't reliably populate when using doc.data(as:)
-            // Workaround: manually decode and set the document ID
-            guard let comment = try? doc.data(as: Comment.self) else {
-                return nil
-            }
-            
-            // Manually set the document ID if it's nil (workaround for @DocumentID issue)
-            if comment.id == nil {
-                // Create a new Comment with the ID from Firestore
-                let commentWithId = Comment(
-                    id: doc.documentID,
-                    userId: comment.userId,
-                    postId: comment.postId,
-                    stampId: comment.stampId,
-                    postOwnerId: comment.postOwnerId,
-                    text: comment.text,
-                    userDisplayName: comment.userDisplayName,
-                    userUsername: comment.userUsername,
-                    userAvatarUrl: comment.userAvatarUrl,
-                    createdAt: comment.createdAt
-                )
-                return commentWithId
-            }
-            
-            return comment
+            // @DocumentID will automatically populate when decoding
+            try? doc.data(as: Comment.self)
         }
         
         return comments
@@ -1361,13 +1359,29 @@ class FirebaseService {
         // Delete the comment document
         try await commentRef.delete()
         
-        // Then, decrement comment count on post
+        // Then, decrement comment count on post (using transaction to prevent negative counts)
         let postRef = db.collection("users").document(postOwnerId).collection("collected_stamps").document(stampId)
         
         do {
-            try await postRef.updateData([
-                "commentCount": FieldValue.increment(Int64(-1))
-            ])
+            _ = try await db.runTransaction({ (transaction, errorPointer) -> Any? in
+                let postSnapshot: DocumentSnapshot
+                do {
+                    postSnapshot = try transaction.getDocument(postRef)
+                } catch let fetchError as NSError {
+                    errorPointer?.pointee = fetchError
+                    return nil
+                }
+                
+                // Get current count and decrement, but never go below 0
+                let currentCount = postSnapshot.data()?["commentCount"] as? Int ?? 0
+                let newCount = max(0, currentCount - 1)
+                
+                transaction.updateData([
+                    "commentCount": newCount
+                ], forDocument: postRef)
+                
+                return nil
+            })
         } catch {
             Logger.warning("Failed to decrement comment count (comment was deleted but count may be off): \(error.localizedDescription)", category: "FirebaseService")
             // Don't throw here - comment deletion succeeded, count decrement is less critical
