@@ -305,12 +305,6 @@ struct UserProfileView: View {
                     AllStampsContent(userCollectedStamps: userCollectedStamps, isLoadingStamps: isLoadingStamps)
                 }
             }
-            .refreshable {
-                // Pull-to-refresh to get latest profile data
-                await profileManager.refresh()
-                // Also refresh stamps
-                loadUserStamps()
-            }
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .tabBar) // Hide bottom navigation when viewing profile
@@ -610,18 +604,18 @@ struct UserProfileView: View {
                         imageName: stamp.imageName.isEmpty ? nil : stamp.imageName,
                         storagePath: stamp.imageStoragePath,
                         stampId: stamp.id,
-                        size: CGSize(width: 160, height: 160),
+                        size: CGSize(width: 148, height: 148),
                         cornerRadius: 12,
                         imageUrl: imageUrl
                     )
-                    .frame(height: 160)
+                    .frame(height: 148)
                 } else if !stamp.imageName.isEmpty {
                     // Fallback to bundled image for backward compatibility
                     Image(stamp.imageName)
                         .resizable()
                         .renderingMode(.original)
                         .aspectRatio(contentMode: .fit)
-                        .frame(height: 160)
+                        .frame(height: 148)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                 } else {
                     // No image - show placeholder
@@ -629,7 +623,7 @@ struct UserProfileView: View {
                         .resizable()
                         .renderingMode(.original)
                         .aspectRatio(contentMode: .fit)
-                        .frame(height: 160)
+                        .frame(height: 148)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
                 

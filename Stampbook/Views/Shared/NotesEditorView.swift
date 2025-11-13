@@ -49,6 +49,7 @@ struct NotesEditorView: View {
                 // Can focus immediately
                 isTextFieldFocused = true
             }
+            .toolbar(.visible, for: .tabBar)
         }
         .presentationDragIndicator(.visible)
     }

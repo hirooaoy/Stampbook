@@ -150,18 +150,18 @@ struct CollectionStampItem: View {
                         imageName: stamp.imageName.isEmpty ? nil : stamp.imageName,
                         storagePath: stamp.imageStoragePath,
                         stampId: stamp.id,
-                        size: CGSize(width: 160, height: 160),
+                        size: CGSize(width: 148, height: 148),
                         cornerRadius: 12,
                         imageUrl: imageUrl
                     )
-                    .frame(height: 160)
+                    .frame(width: 148, height: 148)
                 } else if !stamp.imageName.isEmpty {
                     // Fallback to bundled image for backward compatibility
                     Image(stamp.imageName)
                         .resizable()
                         .renderingMode(.original)
                         .aspectRatio(contentMode: .fill)
-                        .frame(height: 160)
+                        .frame(width: 148, height: 148)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                 } else {
                     // No image - show placeholder
@@ -169,7 +169,7 @@ struct CollectionStampItem: View {
                         .resizable()
                         .renderingMode(.original)
                         .aspectRatio(contentMode: .fill)
-                        .frame(height: 160)
+                        .frame(width: 148, height: 148)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
             } else {
@@ -177,7 +177,7 @@ struct CollectionStampItem: View {
                 ZStack {
                     RoundedRectangle(cornerRadius: 12)
                         .fill(Color.gray.opacity(0.3))
-                        .frame(height: 160)
+                        .frame(width: 148, height: 148)
                     
                     Image(systemName: "lock.fill")
                         .font(.system(size: 40))

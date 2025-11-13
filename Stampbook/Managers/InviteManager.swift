@@ -164,6 +164,7 @@ class InviteManager: ObservableObject {
                 // Create user profile
                 let createdBy = data["createdBy"] as? String ?? "admin"
                 transaction.setData([
+                    "id": userId,  // Required field for UserProfile decoder
                     "username": username,
                     "displayName": username,  // Default to username, user can change later
                     "inviteCodeUsed": codeString,
@@ -176,7 +177,8 @@ class InviteManager: ObservableObject {
                     "bio": "",
                     "avatarUrl": "",
                     "followerCount": 0,
-                    "followingCount": 0
+                    "followingCount": 0,
+                    "hasSeenOnboarding": false  // Show profile setup sheet to new users
                 ], forDocument: userRef)
                 
                 // Update code usage

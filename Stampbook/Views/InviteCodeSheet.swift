@@ -114,7 +114,7 @@ struct InviteCodeSheet: View {
             .padding(.top, 64)
             .padding(.bottom, 20)
             
-            // Code Input (Plain style)
+            // Code Input
             VStack(alignment: .leading, spacing: 8) {
                 TextField("Invite code", text: $inviteCode)
                     .textInputAutocapitalization(.characters)
@@ -122,7 +122,10 @@ struct InviteCodeSheet: View {
                     .textFieldStyle(.plain)
                     .font(.body)
                     .padding()
-                    .background(Color(.systemBackground))
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color(.systemBackground))
+                    )
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
                             .stroke(showInlineError ? Color.red : Color(.systemGray4), lineWidth: 1)
@@ -310,7 +313,7 @@ struct InviteCodeSheet: View {
                     try? Auth.auth().signOut()
                     
                     errorTitle = "You already have an account"
-                    errorMessage = "Please use 'Already have an account?' to sign in."
+                    errorMessage = "Please use 'Already have an account' to sign in."
                     showError = true
                     withAnimation {
                         currentPage = .codeEntry
@@ -323,9 +326,32 @@ struct InviteCodeSheet: View {
                 
                 Logger.success("Step 2 Complete: No existing profile found", category: "InviteCodeSheet")
                 
-                // Generate username from user ID
-                let username = "user_\(result.user.uid.prefix(8))"
-                Logger.info("Step 3: Creating account with username: \(username)", category: "InviteCodeSheet")
+                // Generate username: firstname + random 5-digit number
+                let firstName = authManager.appleSignInGivenName ?? result.user.displayName?.components(separatedBy: " ").first ?? "user"
+                let cleanFirstName = firstName.lowercased()
+                    .filter { $0.isLetter || $0.isNumber }
+                let randomNumber = Int.random(in: AppConfig.usernameRandomNumberRange)
+                var username = cleanFirstName + "\(randomNumber)"
+                
+                // Validate auto-generated username for profanity (safety check)
+                // If it contains inappropriate content, use safe fallback
+                do {
+                    let moderationService = ContentModerationService.shared
+                    let validationResult = try await moderationService.validateContent(username: username)
+                    
+                    if !validationResult.isValid {
+                        Logger.warning("Auto-generated username '\(username)' failed validation: \(validationResult.usernameError ?? "unknown error")", category: "InviteCodeSheet")
+                        // Use safe fallback: "user" + random number
+                        username = "user\(randomNumber)"
+                        Logger.info("Using fallback username: \(username)", category: "InviteCodeSheet")
+                    }
+                } catch {
+                    Logger.error("Username validation failed, using as-is", error: error, category: "InviteCodeSheet")
+                    // If validation service fails, proceed with generated username
+                    // User will see ProfileSetupSheet immediately where they can change it
+                }
+                
+                Logger.info("Step 3: Creating account with username: \(username) (from name: \(firstName))", category: "InviteCodeSheet")
                 
                 // Create account with invite code
                 try await inviteManager.createAccountWithInviteCode(
@@ -340,6 +366,7 @@ struct InviteCodeSheet: View {
                 await MainActor.run {
                     authManager.isSignedIn = true
                     authManager.userId = result.user.uid
+                    authManager.appleSignInGivenName = nil // Clear stored name after use
                 }
                 
                 Logger.info("Step 4: Loading user profile", category: "InviteCodeSheet")
@@ -388,7 +415,7 @@ struct InviteCodeSheet: View {
                     try? Auth.auth().signOut()
                     
                     errorTitle = "You already have an account"
-                    errorMessage = "Please use 'Already have an account?' to sign in."
+                    errorMessage = "Please use 'Already have an account' to sign in."
                     showError = true
                     withAnimation {
                         currentPage = .codeEntry
@@ -438,7 +465,7 @@ struct InviteCodeSheet: View {
                     try? Auth.auth().signOut()
                     
                     errorTitle = "You already have an account"
-                    errorMessage = "Please use 'Already have an account?' to sign in."
+                    errorMessage = "Please use 'Already have an account' to sign in."
                     showError = true
                     withAnimation {
                         currentPage = .codeEntry

@@ -209,9 +209,9 @@ struct PostDetailView: View {
                 onStampImageTap: {
                     loadStampAndNavigate()
                 },
-                userId: post.userId,
-                userPhotos: post.userPhotos,
-                userPhotoPaths: post.userImagePaths
+                userId: post.isCurrentUser ? nil : post.userId,
+                userPhotos: post.isCurrentUser ? nil : post.userPhotos,
+                userPhotoPaths: post.isCurrentUser ? nil : post.userImagePaths
             )
             .environmentObject(stampsManager)
             .environmentObject(authManager)
@@ -327,10 +327,15 @@ struct PostDetailView: View {
             
             do {
                 // Fetch single post from FeedManager
-                let fetchedPost = try await feedManager.fetchSinglePost(
+                var fetchedPost = try await feedManager.fetchSinglePost(
                     postId: postId,
                     stampsManager: stampsManager
                 )
+                
+                // Update isCurrentUser flag based on current user
+                if let currentUserId = await MainActor.run(body: { authManager.userId }) {
+                    fetchedPost.isCurrentUser = (fetchedPost.userId == currentUserId)
+                }
                 
                 await MainActor.run {
                     self.post = fetchedPost

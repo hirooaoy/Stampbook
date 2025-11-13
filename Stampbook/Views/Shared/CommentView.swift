@@ -168,6 +168,7 @@ struct CommentView: View {
                         .animation(.spring(response: 0.3), value: errorMessage)
                 }
             }
+            .toolbar(.visible, for: .tabBar)
         }
     }
     
@@ -408,6 +409,7 @@ struct SimpleCommentReportView: View {
             } message: {
                 Text(errorMessage)
             }
+            .toolbar(.visible, for: .tabBar)
         }
     }
     

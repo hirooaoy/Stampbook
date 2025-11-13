@@ -143,6 +143,7 @@ struct SuggestCollectionView: View {
             } message: {
                 Text(errorMessage)
             }
+            .toolbar(.visible, for: .tabBar)
         }
     }
     

@@ -34,6 +34,8 @@ struct MapView: View {
     @State private var searchRegion: MKCoordinateRegion?
     @State private var isShowingSearch = false
     @State private var showSignInSheet = false  // Shows sign-in bottom sheet
+    @State private var showSuggestStamp = false
+    @State private var showSuggestCollection = false
     
     // MARK: - Map Loading Strategy
     
@@ -114,6 +116,41 @@ struct MapView: View {
             
             // Floating buttons stack
             VStack(spacing: 12) {
+                // Add button with menu (ONLY for signed-in users)
+                if authManager.isSignedIn {
+                    Menu {
+                        Button(action: {
+                            showSuggestStamp = true
+                        }) {
+                            Label("Suggest a stamp", systemImage: "plus.app")
+                        }
+                        
+                        Button(action: {
+                            showSuggestCollection = true
+                        }) {
+                            Label("Suggest a collection", systemImage: "rectangle.stack.badge.plus")
+                        }
+                    } label: {
+                        Image(systemName: "plus")
+                            .font(.system(size: 20))
+                            .foregroundColor(.primary)
+                            .frame(width: 50, height: 50)
+                            .background(.ultraThinMaterial)
+                            .background(Color.white.opacity(0.25))
+                            .clipShape(Circle())
+                            .overlay(
+                                Circle()
+                                    .strokeBorder(Color.white.opacity(0.3), lineWidth: 1)
+                            )
+                            .shadow(
+                                color: .black.opacity(0.2),
+                                radius: 4,
+                                x: 0,
+                                y: 2
+                            )
+                    }
+                }
+                
                 // Search button
                 Button(action: {
                     isShowingSearch = true
@@ -182,6 +219,7 @@ struct MapView: View {
                     userLocation: locationManager.location,
                     showBackButton: false
                 )
+                .toolbar(.visible, for: .tabBar)
             }
         }
         .onAppear {
@@ -255,6 +293,14 @@ struct MapView: View {
             )
             .environmentObject(authManager)
         }
+        .sheet(isPresented: $showSuggestStamp) {
+            SuggestStampView()
+                .environmentObject(authManager)
+        }
+        .sheet(isPresented: $showSuggestCollection) {
+            SuggestCollectionView()
+                .environmentObject(authManager)
+        }
     }
     
     // MARK: - Simple Stamp Loading
@@ -272,13 +318,16 @@ struct MapView: View {
         
         let stamps = await stampsManager.fetchAllStamps()
         
+        // Filter out the welcome stamp from map view
+        let filteredStamps = stamps.filter { $0.id != "your-first-stamp" }
+        
         #if DEBUG
         let duration = Date().timeIntervalSince(startTime)
-        print("✅ [MapView] Loaded \(stamps.count) stamps in \(String(format: "%.2f", duration))s")
+        print("✅ [MapView] Loaded \(filteredStamps.count) stamps in \(String(format: "%.2f", duration))s")
         #endif
         
         await MainActor.run {
-            allStamps = stamps
+            allStamps = filteredStamps
             isLoadingStamps = false
         }
     }

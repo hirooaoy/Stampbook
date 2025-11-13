@@ -18,6 +18,10 @@ class NotificationManager: ObservableObject {
     // NEW: Polling-based badge updates (98% cost reduction)
     private var pollingTask: Task<Void, Never>?
     
+    // Throttling for on-demand checks (prevent excessive reads)
+    private var lastCheckTime: Date?
+    private let throttleInterval: TimeInterval = 30 // Check at most once per 30 seconds
+    
     /// Fetch notifications for the current user (newest first, limit to 50)
     func fetchNotifications(userId: String) async {
         isLoading = true
@@ -67,10 +71,27 @@ class NotificationManager: ObservableObject {
                 .getDocuments()
             
             hasUnreadNotifications = !snapshot.documents.isEmpty
+            lastCheckTime = Date() // Update last check time
         } catch {
             print("❌ Error checking unread notifications: \(error.localizedDescription)")
             // Silently fail for badge - not critical
         }
+    }
+    
+    /// Check for unread notifications if throttle allows (used for feed view/refresh)
+    /// Throttled to once per 30 seconds to prevent excessive reads
+    func checkHasUnreadNotificationsIfNeeded(userId: String) async {
+        // Check if we're within throttle interval
+        if let lastCheck = lastCheckTime {
+            let timeSinceLastCheck = Date().timeIntervalSince(lastCheck)
+            if timeSinceLastCheck < throttleInterval {
+                print("⏭️ [NotificationManager] Skipping check - throttled (\(Int(timeSinceLastCheck))s ago, need \(Int(throttleInterval))s)")
+                return
+            }
+        }
+        
+        print("🔔 [NotificationManager] Checking for unread notifications (on-demand)")
+        await checkHasUnreadNotifications(userId: userId)
     }
     
     // MARK: - Polling-Based Badge Updates (Cost Optimized)

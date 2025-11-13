@@ -65,6 +65,7 @@ struct SimpleFeedbackView: View {
             } message: {
                 Text(errorMessage)
             }
+            .toolbar(.visible, for: .tabBar)
         }
     }
     
@@ -165,6 +166,7 @@ struct SimpleProblemReportView: View {
             } message: {
                 Text(errorMessage)
             }
+            .toolbar(.visible, for: .tabBar)
         }
     }
     
@@ -268,6 +270,7 @@ struct SimpleUserReportView: View {
             } message: {
                 Text(errorMessage)
             }
+            .toolbar(.visible, for: .tabBar)
         }
     }
     
@@ -377,6 +380,7 @@ struct SuggestEditView: View {
             } message: {
                 Text(errorMessage)
             }
+            .toolbar(.visible, for: .tabBar)
         }
     }
     
@@ -486,6 +490,7 @@ struct SuggestCollectionEditView: View {
             } message: {
                 Text(errorMessage)
             }
+            .toolbar(.visible, for: .tabBar)
         }
     }
     
@@ -592,6 +597,7 @@ struct AccountDeletionRequestView: View {
             } message: {
                 Text(errorMessage)
             }
+            .toolbar(.visible, for: .tabBar)
         }
     }
     
@@ -698,6 +704,7 @@ struct DataDownloadRequestView: View {
             } message: {
                 Text(errorMessage)
             }
+            .toolbar(.visible, for: .tabBar)
         }
     }
     

@@ -62,6 +62,32 @@
       "_comment": "For fetching user notifications (newest first) and counting unread notifications efficiently"
     },
     {
+      "collectionGroup": "notifications",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "isRead",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "ASCENDING"
+        }
+      ],
+      "_comment": "For cleanup function: delete read notifications older than 30 days"
+    },
+    {
+      "collectionGroup": "notifications",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "createdAt",
+          "order": "ASCENDING"
+        }
+      ],
+      "_comment": "For cleanup function: delete all notifications older than 90 days"
+    },
+    {
       "collectionGroup": "following",
       "queryScope": "COLLECTION_GROUP",
       "fields": [
@@ -73,7 +99,7 @@
       "_comment": "For fetching followers via collection group query (MVP on-demand counting)"
     },
     {
-      "collectionGroup": "collected_stamps",
+      "collectionGroup": "collectedStamps",
       "queryScope": "COLLECTION_GROUP",
       "fields": [
         {

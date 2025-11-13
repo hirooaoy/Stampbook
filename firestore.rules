@@ -7,8 +7,8 @@ service cloud.firestore {
     // Define admin users who can manage stamps and collections
     function isAdmin() {
       return request.auth != null && request.auth.uid in [
-        'LGp7cMqB2tSEVU1O7NEvR0Xib7y2',  // hiroo (primary admin)
-        'mpd4k2n13adMFMY52nksmaQTbMQ2'   // watagumostudio (secondary admin)
+        'mpd4k2n13adMFMY52nksmaQTbMQ2'   // hiroo (primary admin)
+        // Note: watagumostudio account was deleted for fresh start
       ];
     }
     
@@ -64,7 +64,7 @@ service cloud.firestore {
     }
     
     // User's collected stamps (their posts)
-    match /users/{userId}/collected_stamps/{stampId} {
+    match /users/{userId}/collectedStamps/{stampId} {
       allow read: if request.auth != null;
       // Users can only create/delete their own collected stamps
       allow create, delete: if request.auth.uid == userId;
@@ -77,8 +77,8 @@ service cloud.firestore {
     }
     
     // IMPORTANT: Allow collectionGroup queries for Instagram-style feed
-    // This enables fetchFollowingFeed() to search across all users' collected_stamps chronologically
-    match /{path=**}/collected_stamps/{stampId} {
+    // This enables fetchFollowingFeed() to search across all users' collectedStamps chronologically
+    match /{path=**}/collectedStamps/{stampId} {
       allow read: if request.auth != null;
     }
     

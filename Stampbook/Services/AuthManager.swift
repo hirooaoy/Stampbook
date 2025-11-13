@@ -22,6 +22,9 @@ class AuthManager: NSObject, ObservableObject {
     // For async/await Sign in with Apple (invite flow)
     private var signInContinuation: CheckedContinuation<AuthDataResult, Error>?
     
+    // Store the user's name from Apple Sign In for username generation
+    @Published var appleSignInGivenName: String?
+    
     override init() {
         super.init()
         Logger.debug("AuthManager init() started")
@@ -182,6 +185,7 @@ class AuthManager: NSObject, ObservableObject {
             try Auth.auth().signOut()
             isSignedIn = false
             userId = nil
+            appleSignInGivenName = nil // Clear stored name
             profileManager?.clearProfile() // Clear ProfileManager state on sign out
             Logger.success("User signed out successfully", category: "AuthManager")
             // Don't set isCheckingAuth = true here - we know the state immediately
@@ -268,6 +272,14 @@ extension AuthManager: ASAuthorizationControllerDelegate {
                 let user = authResult.user
                 Logger.success("Firebase sign in successful for user: \(user.uid)", category: "AuthManager")
                 
+                // Store the given name for username generation (first sign in only)
+                if let givenName = appleIDCredential.fullName?.givenName {
+                    Task { @MainActor in
+                        self.appleSignInGivenName = givenName
+                        Logger.info("Captured given name from Apple Sign In: \(givenName)", category: "AuthManager")
+                    }
+                }
+                
                 // If this is the async flow (invite), resume continuation and DON'T create profile
                 if self.signInContinuation != nil {
                     Logger.debug("Async sign in - returning AuthDataResult without profile creation")
@@ -310,7 +322,32 @@ extension AuthManager: ASAuthorizationControllerDelegate {
         Logger.info("Creating/updating user profile for userId: \(userId)", category: "AuthManager")
         do {
             // Try to fetch existing profile
-            if let existingProfile = try? await firebaseService.fetchUserProfile(userId: userId) {
+            if var existingProfile = try? await firebaseService.fetchUserProfile(userId: userId) {
+                // Validate existing username for profanity (safety check for legacy profiles)
+                do {
+                    let moderationService = ContentModerationService.shared
+                    let validationResult = try await moderationService.validateContent(username: existingProfile.username)
+                    
+                    if !validationResult.isValid {
+                        Logger.warning("Existing username '\(existingProfile.username)' failed validation: \(validationResult.usernameError ?? "unknown error")", category: "AuthManager")
+                        // Generate safe fallback username
+                        let randomNumber = Int.random(in: AppConfig.usernameRandomNumberRange)
+                        let newUsername = "user\(randomNumber)"
+                        Logger.info("Replacing with safe username: \(newUsername)", category: "AuthManager")
+                        
+                        // Update profile with new username
+                        try await firebaseService.updateUserProfile(userId: userId, username: newUsername)
+                        
+                        // Fetch updated profile
+                        if let updatedProfile = try? await firebaseService.fetchUserProfile(userId: userId) {
+                            existingProfile = updatedProfile
+                        }
+                    }
+                } catch {
+                    Logger.error("Username validation failed for existing profile", error: error, category: "AuthManager")
+                    // Continue with existing username if validation service fails
+                }
+                
                 // Profile exists, sync it to ProfileManager
                 profileManager?.updateProfile(existingProfile)
                 
@@ -330,7 +367,24 @@ extension AuthManager: ASAuthorizationControllerDelegate {
                 
                 // Generate random 5-digit number
                 let randomNumber = Int.random(in: AppConfig.usernameRandomNumberRange)
-                let initialUsername = cleanFirstName + "\(randomNumber)"
+                var initialUsername = cleanFirstName + "\(randomNumber)"
+                
+                // Validate auto-generated username for profanity (safety check)
+                // If it contains inappropriate content, use safe fallback
+                do {
+                    let moderationService = ContentModerationService.shared
+                    let validationResult = try await moderationService.validateContent(username: initialUsername)
+                    
+                    if !validationResult.isValid {
+                        Logger.warning("Auto-generated username '\(initialUsername)' failed validation: \(validationResult.usernameError ?? "unknown error")", category: "AuthManager")
+                        // Use safe fallback: "user" + random number
+                        initialUsername = "user\(randomNumber)"
+                        Logger.info("Using fallback username: \(initialUsername)", category: "AuthManager")
+                    }
+                } catch {
+                    Logger.error("Username validation failed, using as-is", error: error, category: "AuthManager")
+                    // If validation service fails, proceed with generated username
+                }
                 
                 Logger.info("Creating profile with username: @\(initialUsername)", category: "AuthManager")
                 

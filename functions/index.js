@@ -1,5 +1,6 @@
 const {onCall} = require('firebase-functions/v2/https');
 const {onDocumentWritten, onDocumentCreated} = require('firebase-functions/v2/firestore');
+const {onSchedule} = require('firebase-functions/v2/scheduler');
 const admin = require('firebase-admin');
 const Filter = require('bad-words');
 
@@ -448,6 +449,91 @@ exports.updateFollowCounts = onDocumentWritten('users/{followerId}/following/{fo
     console.error(`❌ Failed to update counts:`, error);
     // Don't throw - follow/unfollow already succeeded
     // Count will be fixed by reconciliation script if needed
+  }
+  
+  return null;
+});
+
+// ==================== SCHEDULED CLEANUP ====================
+
+/**
+ * Scheduled Function: Clean up old notifications
+ * 
+ * Runs daily at midnight (Pacific Time) to keep notification database lean
+ * 
+ * Deletion policy:
+ * - Read notifications older than 30 days: Deleted
+ * - All notifications older than 90 days: Deleted
+ * 
+ * Benefits:
+ * - Keeps database performant and costs low
+ * - Reduces read operations when users check notifications
+ * - Matches user expectations (like Instagram/Twitter)
+ * 
+ * Cost: Essentially free at MVP scale (well within free tier)
+ */
+exports.cleanupOldNotifications = onSchedule('0 0 * * *', async (event) => {
+  console.log('🧹 Starting daily notification cleanup...');
+  
+  const db = admin.firestore();
+  const now = admin.firestore.Timestamp.now();
+  
+  // Calculate cutoff dates
+  const thirtyDaysAgo = new Date(now.toDate());
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  
+  const ninetyDaysAgo = new Date(now.toDate());
+  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+  
+  let totalDeleted = 0;
+  
+  try {
+    // Step 1: Delete read notifications older than 30 days
+    console.log('📋 Deleting read notifications older than 30 days...');
+    const readOldQuery = db.collection('notifications')
+      .where('isRead', '==', true)
+      .where('createdAt', '<', admin.firestore.Timestamp.fromDate(thirtyDaysAgo))
+      .limit(500); // Firestore batch limit
+    
+    const readOldSnapshot = await readOldQuery.get();
+    
+    if (!readOldSnapshot.empty) {
+      const batch1 = db.batch();
+      readOldSnapshot.docs.forEach(doc => {
+        batch1.delete(doc.ref);
+      });
+      await batch1.commit();
+      console.log(`✅ Deleted ${readOldSnapshot.size} read notifications (30+ days old)`);
+      totalDeleted += readOldSnapshot.size;
+    } else {
+      console.log('✓ No read notifications older than 30 days');
+    }
+    
+    // Step 2: Delete all notifications older than 90 days (regardless of read status)
+    console.log('📋 Deleting all notifications older than 90 days...');
+    const allOldQuery = db.collection('notifications')
+      .where('createdAt', '<', admin.firestore.Timestamp.fromDate(ninetyDaysAgo))
+      .limit(500);
+    
+    const allOldSnapshot = await allOldQuery.get();
+    
+    if (!allOldSnapshot.empty) {
+      const batch2 = db.batch();
+      allOldSnapshot.docs.forEach(doc => {
+        batch2.delete(doc.ref);
+      });
+      await batch2.commit();
+      console.log(`✅ Deleted ${allOldSnapshot.size} notifications (90+ days old)`);
+      totalDeleted += allOldSnapshot.size;
+    } else {
+      console.log('✓ No notifications older than 90 days');
+    }
+    
+    console.log(`🎉 Cleanup complete! Total deleted: ${totalDeleted} notifications`);
+    
+  } catch (error) {
+    console.error('❌ Error during notification cleanup:', error);
+    throw error; // Re-throw so Cloud Functions logs the failure
   }
   
   return null;

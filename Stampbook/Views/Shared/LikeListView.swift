@@ -83,6 +83,7 @@ struct LikeListView: View {
                 print("✅ [LikeListView] onAppear fired")
                 loadLikes()
             }
+            .toolbar(.visible, for: .tabBar)
         }
     }
     

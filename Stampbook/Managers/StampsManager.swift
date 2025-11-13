@@ -639,7 +639,7 @@ class StampsManager: ObservableObject {
     /// **FUTURE UPGRADE PATH:**
     /// When scaling beyond 10K+ users or adding multiple platforms (Android/Web),
     /// migrate this logic to Firebase Cloud Functions for server-side counting:
-    /// - Trigger: onCreate/onDelete of users/{userId}/collected_stamps/{stampId}
+    /// - Trigger: onCreate/onDelete of users/{userId}/collectedStamps/{stampId}
     /// - Action: Automatically update totalStamps & uniqueCountriesVisited
     /// - Benefits: Single source of truth, handles all edge cases, multi-platform support
     /// - Cost: ~$0 until 100K+ users (2M free invocations/month)

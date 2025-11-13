@@ -79,6 +79,7 @@ struct SuggestStampView: View {
             } message: {
                 Text(errorMessage)
             }
+            .toolbar(.visible, for: .tabBar)
         }
     }
     

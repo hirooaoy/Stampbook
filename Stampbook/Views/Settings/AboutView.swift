@@ -83,6 +83,7 @@ struct AboutStampbookView: View {
                     }
                 }
             }
+            .toolbar(.visible, for: .tabBar)
         }
     }
 }
@@ -103,7 +104,7 @@ struct ForLocalBusinessView: View {
         "",
         "I'd love to partner with you to feature your business with its own unique stamp that visitors can collect when they stop by. I'll work with you to design your custom stamp art and write a short description that reflects your style and story.",
         "",
-        "This app is still in its early stages and growing. For now, I'm asking for a **$25 contribution for a 6-month listing** to help fund development and expand its reach. As always, I'd also love to hear any feedback or ideas you might have.",
+        "This app is still in its early stages and growing. For now, I'm asking for a **$25 contribution for a 3-month listing** to help fund development and expand its reach. As always, I'd also love to hear any feedback or ideas you might have.",
         "",
         "Let's chat!"
     ]
@@ -158,6 +159,7 @@ struct ForLocalBusinessView: View {
                     }
                 }
             }
+            .toolbar(.visible, for: .tabBar)
         }
         .sheet(isPresented: $showEmailOptions) {
             EmailOptionsSheet(email: email) {
@@ -234,6 +236,7 @@ struct ForCreatorsView: View {
                     }
                 }
             }
+            .toolbar(.visible, for: .tabBar)
         }
     }
 }

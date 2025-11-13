@@ -132,7 +132,7 @@ class FeedManager: ObservableObject {
         let location: String
         let date: String
         let actualDate: Date
-        let isCurrentUser: Bool
+        var isCurrentUser: Bool  // var to allow updating in PostDetailView
         let stampId: String
         let stamp: Stamp // Full stamp object to avoid duplicate fetches
         let userPhotos: [String]
@@ -280,6 +280,18 @@ class FeedManager: ObservableObject {
             }
             
         } catch {
+            #if DEBUG
+            print("❌ [FeedManager] 'Only Yours' feed fetch error details:")
+            print("   Error: \(error)")
+            print("   Localized: \(error.localizedDescription)")
+            print("   Type: \(type(of: error))")
+            if let nsError = error as NSError? {
+                print("   Domain: \(nsError.domain)")
+                print("   Code: \(nsError.code)")
+                print("   UserInfo: \(nsError.userInfo)")
+            }
+            #endif
+            
             Logger.error("Failed to load 'Only Yours' feed", error: error, category: "FeedManager")
             await MainActor.run {
                 self.isLoading = false
@@ -417,6 +429,8 @@ class FeedManager: ObservableObject {
             return "Unable to load feed. Please try again."
         } else if errorString.contains("timeout") {
             return "Request timed out. Please check your connection."
+        } else if errorString.contains("unavailable") || errorString.contains("offline") {
+            return "Server unavailable. Please try again later."
         } else {
             return "Couldn't load feed. Pull to refresh to try again."
         }
@@ -648,6 +662,18 @@ class FeedManager: ObservableObject {
             // Save to disk for next cold start
             saveToDiskCache(posts: posts)
         } catch {
+            #if DEBUG
+            print("❌ [FeedManager] Feed fetch error details:")
+            print("   Error: \(error)")
+            print("   Localized: \(error.localizedDescription)")
+            print("   Type: \(type(of: error))")
+            if let nsError = error as NSError? {
+                print("   Domain: \(nsError.domain)")
+                print("   Code: \(nsError.code)")
+                print("   UserInfo: \(nsError.userInfo)")
+            }
+            #endif
+            
             Logger.error("Failed to load feed", error: error, category: "FeedManager")
             await MainActor.run {
                 self.isLoading = false

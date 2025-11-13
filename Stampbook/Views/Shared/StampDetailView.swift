@@ -130,7 +130,7 @@ struct StampDetailView: View {
                                     imageName: stamp.imageName.isEmpty ? nil : stamp.imageName,
                                     storagePath: stamp.imageStoragePath,
                                     stampId: stamp.id,
-                                    size: CGSize(width: 300, height: 300),
+                                    size: CGSize(width: 260, height: 260),
                                     cornerRadius: 16,
                                     useFullResolution: true,
                                     imageUrl: imageUrl
@@ -141,13 +141,13 @@ struct StampDetailView: View {
                                     .renderingMode(.original)
                                     .interpolation(.high)
                                     .scaledToFit()
-                                    .frame(width: 300, height: 300)
+                                    .frame(width: 260, height: 260)
                             } else {
                                 Image("empty")
                                     .resizable()
                                     .renderingMode(.original)
                                     .scaledToFit()
-                                    .frame(width: 300, height: 300)
+                                    .frame(width: 260, height: 260)
                             }
                         }
                         .scaleEffect(imageScale)
@@ -157,7 +157,7 @@ struct StampDetailView: View {
                         if showCopyConfirmation {
                             RoundedRectangle(cornerRadius: 16)
                                 .fill(Color.black.opacity(0.6))
-                                .frame(width: 300, height: 300)
+                                .frame(width: 260, height: 260)
                             
                             VStack(spacing: 8) {
                                 Image(systemName: "checkmark.circle.fill")
@@ -170,7 +170,7 @@ struct StampDetailView: View {
                             .transition(.scale.combined(with: .opacity))
                         }
                     }
-                    .frame(width: 300, height: 300)
+                    .frame(width: 260, height: 260)
                     .contextMenu {
                         if isCollected {
                             Button(action: {
@@ -563,7 +563,7 @@ struct StampDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)
         .toolbar(.hidden, for: .tabBar)
-        .presentationDetents([.fraction(0.82), .large])
+        .presentationDetents([.fraction(0.78), .large])
         .onAppear {
             // Initialize states for already collected stamps
             if isCollected {

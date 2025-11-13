@@ -15,6 +15,7 @@ struct UserProfile: Codable, Identifiable, Equatable, Sendable {
     var createdAt: Date
     var lastActiveAt: Date
     var usernameLastChanged: Date? // Tracks when username was last changed - enforces 14-day cooldown between changes
+    var hasSeenOnboarding: Bool // Tracks if user has seen the profile setup sheet (for first-time username customization)
     
     // TODO: Future enhancement for preventing username squatting
     // var previousUsername: String? // Stores previous username - reserved for 14 days to prevent squatting/impersonation
@@ -32,9 +33,10 @@ struct UserProfile: Codable, Identifiable, Equatable, Sendable {
         case createdAt
         case lastActiveAt
         case usernameLastChanged
+        case hasSeenOnboarding
     }
     
-    init(id: String, username: String, displayName: String, bio: String = "", avatarUrl: String? = nil, totalStamps: Int = 0, uniqueCountriesVisited: Int = 0, followerCount: Int = 0, followingCount: Int = 0, createdAt: Date = Date(), lastActiveAt: Date = Date(), usernameLastChanged: Date? = nil) {
+    init(id: String, username: String, displayName: String, bio: String = "", avatarUrl: String? = nil, totalStamps: Int = 0, uniqueCountriesVisited: Int = 0, followerCount: Int = 0, followingCount: Int = 0, createdAt: Date = Date(), lastActiveAt: Date = Date(), usernameLastChanged: Date? = nil, hasSeenOnboarding: Bool = false) {
         self.id = id
         self.username = username
         self.displayName = displayName
@@ -47,6 +49,7 @@ struct UserProfile: Codable, Identifiable, Equatable, Sendable {
         self.createdAt = createdAt
         self.lastActiveAt = lastActiveAt
         self.usernameLastChanged = usernameLastChanged
+        self.hasSeenOnboarding = hasSeenOnboarding
     }
     
     init(from decoder: Decoder) throws {
@@ -92,6 +95,10 @@ struct UserProfile: Codable, Identifiable, Equatable, Sendable {
         } else {
             usernameLastChanged = nil
         }
+        
+        // Handle hasSeenOnboarding (optional field for backward compatibility)
+        // For existing users without this field, treat as true (they already onboarded)
+        hasSeenOnboarding = try container.decodeIfPresent(Bool.self, forKey: .hasSeenOnboarding) ?? true
     }
     
     func encode(to encoder: Encoder) throws {
@@ -110,6 +117,7 @@ struct UserProfile: Codable, Identifiable, Equatable, Sendable {
         if let usernameLastChanged = usernameLastChanged {
             try container.encode(Timestamp(date: usernameLastChanged), forKey: .usernameLastChanged)
         }
+        try container.encode(hasSeenOnboarding, forKey: .hasSeenOnboarding)
     }
 }
 
