@@ -14,7 +14,18 @@ struct LikeListView: View {
     @State private var isLoading = true  // Start loading immediately to show spinner
     @Environment(\.dismiss) var dismiss
     
+    init(postId: String, postOwnerId: String) {
+        self.postId = postId
+        self.postOwnerId = postOwnerId
+        print("🏗️ [LikeListView] init() called for postId: \(postId)")
+    }
+    
     var body: some View {
+        print("🎨 [LikeListView] body rendering - isLoading: \(isLoading), users count: \(users.count)")
+        return content
+    }
+    
+    private var content: some View {
         NavigationStack {
             VStack(spacing: 0) {
                 // List of users
@@ -58,37 +69,51 @@ struct LikeListView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
+                    Button(action: {
+                        print("👆 [LikeListView] Done button tapped")
                         dismiss()
+                    }) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.primary)
                     }
                 }
             }
             .onAppear {
+                print("✅ [LikeListView] onAppear fired")
                 loadLikes()
             }
         }
     }
     
     private func loadLikes() {
+        print("👆 [LikeListView] loadLikes() called for postId: \(postId)")
         isLoading = true
         Task {
             do {
+                print("📡 [LikeListView] Fetching likes from Firebase...")
                 // Fetch all users who liked this post (no limit for MVP scale)
                 // At 100-user MVP scale, posts will typically have 0-20 likes
                 let fetchedUsers = try await FirebaseService.shared.fetchPostLikes(postId: postId)
                 
+                print("✅ [LikeListView] Fetched \(fetchedUsers.count) users who liked the post")
+                
                 await MainActor.run {
                     users = fetchedUsers
                     isLoading = false
+                    print("🎨 [LikeListView] Updated UI with \(fetchedUsers.count) users")
                 }
                 
                 // Batch check follow statuses for all users who liked this post
                 if let currentUserId = authManager.userId {
                     let userIds = fetchedUsers.map { $0.id }
+                    print("🔍 [LikeListView] Checking follow statuses for \(userIds.count) users...")
                     await followManager.checkFollowStatuses(currentUserId: currentUserId, targetUserIds: userIds)
+                    print("✅ [LikeListView] Follow statuses checked")
                 }
             } catch {
-                print("⚠️ Failed to fetch likes: \(error.localizedDescription)")
+                print("⚠️ [LikeListView] Failed to fetch likes: \(error.localizedDescription)")
+                print("⚠️ [LikeListView] Error details: \(error)")
                 await MainActor.run {
                     isLoading = false
                 }

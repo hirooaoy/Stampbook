@@ -20,6 +20,7 @@ struct PostDetailView: View {
     @State private var editingNotes = ""
     @State private var navigateToStampDetail = false
     @State private var stamp: Stamp? = nil
+    @State private var selectedUserId: IdentifiableString? // For navigation to user profile from comments
     @Environment(\.dismiss) var dismiss
     
     // Computed properties for real-time updates
@@ -138,6 +139,15 @@ struct PostDetailView: View {
                     showBackButton: true
                 )
             }
+        }
+        // ✅ FIXED: Navigation destination for comment profile taps (moved from PostCommentRow)
+        // Prevents "navigationDestination inside lazy container" warning
+        .navigationDestination(item: $selectedUserId) { identifiableUser in
+            UserProfileView(
+                userId: identifiableUser.value,
+                username: identifiableUser.username,
+                displayName: identifiableUser.displayName
+            )
         }
     }
     
@@ -298,7 +308,10 @@ struct PostDetailView: View {
                         comment: comment,
                         postId: postId,
                         postOwnerId: post?.userId ?? "",
-                        commentManager: commentManager
+                        commentManager: commentManager,
+                        onProfileTap: { userId, username, displayName in
+                            selectedUserId = IdentifiableString(value: userId, username: username, displayName: displayName)
+                        }
                     )
                 }
             }
@@ -379,10 +392,10 @@ private struct CommentRowView: View {
     let postId: String
     let postOwnerId: String
     @ObservedObject var commentManager: CommentManager
+    let onProfileTap: (String, String, String) -> Void // (userId, username, displayName)
     
     @EnvironmentObject var authManager: AuthManager
     @State private var showDeleteAlert = false
-    @State private var selectedUserId: IdentifiableString?
     
     private var isOwnComment: Bool {
         comment.userId == authManager.userId
@@ -400,7 +413,7 @@ private struct CommentRowView: View {
         HStack(alignment: .center, spacing: 12) {
             // Profile picture
             Button(action: {
-                selectedUserId = IdentifiableString(value: comment.userId)
+                onProfileTap(comment.userId, comment.userUsername, comment.userDisplayName)
             }) {
                 ProfileImageView(
                     avatarUrl: comment.userAvatarUrl,
@@ -455,13 +468,6 @@ private struct CommentRowView: View {
             }
         } message: {
             Text(isOwnComment ? "Are you sure you want to delete this comment?" : "Are you sure you want to remove this comment?")
-        }
-        .navigationDestination(item: $selectedUserId) { identifiable in
-            UserProfileView(
-                userId: identifiable.value,
-                username: "",
-                displayName: comment.userDisplayName
-            )
         }
     }
 }
@@ -527,5 +533,15 @@ private struct CommentInputView: View {
         commentText = ""
         isTextFieldFocused = false
     }
+}
+
+// MARK: - Helper Types
+
+/// Wrapper to make String identifiable for navigation (PostDetailView version)
+private struct IdentifiableString: Identifiable, Hashable {
+    let id = UUID()
+    let value: String
+    let username: String
+    let displayName: String
 }
 

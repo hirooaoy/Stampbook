@@ -1,0 +1,128 @@
+[
+  {
+    "stampId": "us-ca-sf-ggp-conservatory-of-flowers",
+    "stampName": "Conservatory of Flowers",
+    "matchedFile": "us-ca-sf-conservatory-of-flowers",
+    "confidence": "88.9"
+  },
+  {
+    "stampId": "us-ca-sf-garden-for-environment",
+    "stampName": "Garden for the Environment",
+    "matchedFile": "us-ca-sf-garden-for-the-environment",
+    "confidence": "88.6"
+  },
+  {
+    "stampId": "us-ca-sf-ggp-japanese-tea-garden",
+    "stampName": "Japanese Tea Garden",
+    "matchedFile": "us-ca-sf-japanese-tea-garden",
+    "confidence": "87.5"
+  },
+  {
+    "stampId": "us-ca-sf-coffee-movement",
+    "stampName": "The Coffee Movement",
+    "matchedFile": "us-ca-sf-the-coffee-movement",
+    "confidence": "85.7"
+  },
+  {
+    "stampId": "us-ca-sf-ggp-bison-paddock",
+    "stampName": "Bison Paddock",
+    "matchedFile": "us-ca-sf-bison-paddock",
+    "confidence": "84.6"
+  },
+  {
+    "stampId": "us-ca-sf-ggp-portals-of-the-past",
+    "stampName": "Portals of the Past",
+    "matchedFile": "us-ca-sf-portal-of-the-past",
+    "confidence": "84.4"
+  },
+  {
+    "stampId": "us-ca-sf-bernal-heights-garden",
+    "stampName": "Bernal Heights Community Garden",
+    "matchedFile": "us-ca-sf-bernal-heights-community-garden",
+    "confidence": "75.0"
+  },
+  {
+    "stampId": "us-ca-sf-saint-frank",
+    "stampName": "Saint Frank Coffee",
+    "matchedFile": "us-ca-sf-saint-frank-coffee",
+    "confidence": "74.1"
+  },
+  {
+    "stampId": "us-ca-sf-sightglass",
+    "stampName": "Sightglass Coffee",
+    "matchedFile": "us-ca-sf-sightglass-coffee",
+    "confidence": "73.1"
+  },
+  {
+    "stampId": "us-ca-sf-clipper-terrace-garden",
+    "stampName": "Clipper Community Garden",
+    "matchedFile": "us-ca-sf-clipper-community-garden",
+    "confidence": "72.7"
+  },
+  {
+    "stampId": "us-ca-sf-fort-mason-garden",
+    "stampName": "Fort Mason Community Garden",
+    "matchedFile": "us-ca-sf-fort-mason-community-garden",
+    "confidence": "72.2"
+  },
+  {
+    "stampId": "us-me-acadia-bubble-rock",
+    "stampName": "Bubble Rock",
+    "matchedFile": "us-me-bar-harbor-bubble-rock",
+    "confidence": "71.4"
+  },
+  {
+    "stampId": "us-ca-sf-potrero-hill-garden",
+    "stampName": "Potrero Hill Community Garden",
+    "matchedFile": "us-ca-sf-potero-hill-community-garden",
+    "confidence": "70.3"
+  },
+  {
+    "stampId": "us-ca-sf-pinhole",
+    "stampName": "Pinhole Coffee",
+    "matchedFile": "us-ca-sf-pinhole-coffee",
+    "confidence": "95.0"
+  },
+  {
+    "stampId": "us-ca-sf-ballast",
+    "stampName": "Ballast Coffee",
+    "matchedFile": "us-ca-sf-ballast-coffee",
+    "confidence": "95.0"
+  },
+  {
+    "stampId": "us-ca-sf-neighbor",
+    "stampName": "Neighbor's Corner",
+    "matchedFile": "us-ca-sf-neighbors-corner",
+    "confidence": "95.0"
+  },
+  {
+    "stampId": "us-me-acadia-beehive-trail",
+    "stampName": "Beehive Trail Summit",
+    "matchedFile": "us-me-bar-harbor-beehive-trail-summit",
+    "confidence": "95.0"
+  },
+  {
+    "stampId": "us-ca-sfo-airport",
+    "stampName": "San Francisco International Airport",
+    "matchedFile": "us-ca-sf-san-francisco-airport",
+    "confidence": "95.0"
+  },
+  {
+    "stampId": "us-ca-sf-ggp-three-gems",
+    "stampName": "Three Gems by James Turrell",
+    "matchedFile": "us-ca-sf-three-gems-by-james-turrell",
+    "confidence": "95.0"
+  },
+  {
+    "stampId": "us-ca-sf-andytown",
+    "stampName": "Andytown Coffee Roasters",
+    "matchedFile": "us-ca-sf-andytown-coffee-roasters",
+    "confidence": "95.0"
+  },
+  {
+    "stampId": "us-me-acadia-beals-lobster-pier",
+    "stampName": "Beal's Lobster Pier",
+    "matchedFile": "us-me-bar-harbor-beals",
+    "confidence": "95.0"
+  }
+]

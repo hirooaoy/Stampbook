@@ -13,6 +13,7 @@ struct CommentView: View {
     @State private var newCommentText: String = ""
     @State private var showingDeleteAlert = false
     @State private var commentToDelete: Comment?
+    @State private var selectedUserId: IdentifiableString? // For navigation to user profile
     @FocusState private var isTextFieldFocused: Bool
     
     // Changed to directly observe the published property to trigger view updates
@@ -72,6 +73,9 @@ struct CommentView: View {
                                     onDelete: {
                                         commentToDelete = comment
                                         showingDeleteAlert = true
+                                    },
+                                    onProfileTap: { userId, username, displayName in
+                                        selectedUserId = IdentifiableString(value: userId, username: username, displayName: displayName)
                                     }
                                 )
                             }
@@ -117,10 +121,21 @@ struct CommentView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
-                        dismiss()
+                    Button(action: { dismiss() }) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.primary)
                     }
                 }
+            }
+            // ✅ FIXED: Navigation destination moved outside LazyVStack (was causing SwiftUI warning)
+            // Placed on NavigationStack content (VStack) to prevent "navigationDestination inside lazy container" warning
+            .navigationDestination(item: $selectedUserId) { identifiableUser in
+                UserProfileView(
+                    userId: identifiableUser.value,
+                    username: identifiableUser.username,
+                    displayName: identifiableUser.displayName
+                )
             }
             .onAppear {
                 // Fetch comments when view appears
@@ -161,12 +176,24 @@ struct CommentView: View {
         guard !trimmedText.isEmpty,
               let userId = authManager.userId else { return }
         
-        // Get current user profile for comment metadata
+        // ✅ OPTIMIZATION: Use cached profile from ProfileManager (saves 1 Firebase read per comment)
+        // ProfileManager already has current user's profile loaded - no need to fetch again
+        guard let userProfile = profileManager.currentUserProfile else {
+            print("⚠️ Cannot post comment - current user profile not loaded")
+            commentManager.errorMessage = "Couldn't post comment. Try again."
+            
+            // Clear message after 3 seconds
         Task {
-            do {
-                let userProfile = try await FirebaseService.shared.fetchUserProfile(userId: userId)
-                
+                try? await Task.sleep(nanoseconds: 3_000_000_000)
                 await MainActor.run {
+                    if commentManager.errorMessage == "Couldn't post comment. Try again." {
+                        commentManager.errorMessage = nil
+                    }
+                }
+            }
+            return
+        }
+        
                     // Add comment with optimistic update
                     commentManager.addComment(
                         postId: postId,
@@ -180,26 +207,6 @@ struct CommentView: View {
                     // Clear input
                     newCommentText = ""
                     isTextFieldFocused = false
-                }
-            } catch {
-                print("⚠️ Failed to fetch user profile for comment: \(error.localizedDescription)")
-                
-                // Show user-friendly error message
-                await MainActor.run {
-                    commentManager.errorMessage = "Couldn't post comment. Try again."
-                    
-                    // Clear message after 3 seconds
-                    Task {
-                        try? await Task.sleep(nanoseconds: 3_000_000_000)
-                        await MainActor.run {
-                            if commentManager.errorMessage == "Couldn't post comment. Try again." {
-                                commentManager.errorMessage = nil
-                            }
-                        }
-                    }
-                }
-            }
-        }
     }
     
     private func deleteComment(_ comment: Comment) {
@@ -223,7 +230,7 @@ struct CommentRow: View {
     let currentUserId: String?
     let postOwnerId: String
     let onDelete: () -> Void
-    @State private var selectedUserId: IdentifiableString?
+    let onProfileTap: (String, String, String) -> Void // (userId, username, displayName)
     @State private var showingMenu = false
     @State private var showingReportSheet = false
     
@@ -246,7 +253,7 @@ struct CommentRow: View {
         HStack(alignment: .center, spacing: 12) {
             // Profile picture - tappable to navigate to profile
             Button(action: {
-                selectedUserId = IdentifiableString(value: comment.userId)
+                onProfileTap(comment.userId, comment.userUsername, comment.userDisplayName)
             }) {
                 ProfileImageView(
                     avatarUrl: comment.userAvatarUrl,
@@ -298,9 +305,6 @@ struct CommentRow: View {
             }
             .buttonStyle(PlainButtonStyle())
         }
-        .sheet(item: $selectedUserId) { identifiableString in
-            UserProfileView(userId: identifiableString.value, username: comment.userUsername, displayName: comment.userDisplayName)
-        }
         .sheet(isPresented: $showingReportSheet) {
             SimpleCommentReportView(
                 commentId: comment.id ?? "",
@@ -314,10 +318,12 @@ struct CommentRow: View {
 
 // MARK: - Helper Types
 
-/// Wrapper to make String identifiable for sheet presentation
-struct IdentifiableString: Identifiable, Hashable {
+/// Wrapper to make String identifiable for navigation (CommentView version)
+private struct IdentifiableString: Identifiable, Hashable {
     let id = UUID()
     let value: String
+    let username: String
+    let displayName: String
 }
 
 // MARK: - Date Extension for "time ago" display

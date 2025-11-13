@@ -369,12 +369,27 @@ class FirebaseService {
     
     /// Check if a user profile exists in Firestore
     /// Used to detect orphaned auth states or verify profile existence
-    func userProfileExists(userId: String) async -> Bool {
+    /// 
+    /// - Returns: Optional Bool
+    ///   - `true`: Profile exists
+    ///   - `false`: Profile definitely doesn't exist (verified with server)
+    ///   - `nil`: Couldn't determine (network error, offline, etc.)
+    func userProfileExists(userId: String) async -> Bool? {
         do {
             let docRef = db.collection("users").document(userId)
             let document = try await docRef.getDocument()
             return document.exists
-        } catch {
+        } catch let error as NSError {
+            // Check if this is a network/offline error
+            // Domain: NSURLErrorDomain (network) or FIRFirestoreErrorDomain
+            if error.domain == NSURLErrorDomain || 
+               error.domain == "FIRFirestoreErrorDomain" && (error.code == 14 || error.code == 8) {
+                // 14 = UNAVAILABLE (offline), 8 = DEADLINE_EXCEEDED (timeout)
+                Logger.warning("Cannot check profile existence - network unavailable (offline or timeout)", category: "FirebaseService")
+                return nil // Can't determine - network issue
+            }
+            
+            // Other errors (permissions, invalid data, etc.) - treat as not exists
             Logger.error("Error checking user profile existence", error: error, category: "FirebaseService")
             return false
         }
@@ -1287,6 +1302,11 @@ class FirebaseService {
     /// Note: Requires composite index on likes collection (postId + createdAt)
     ///       Firebase will provide a link to create it automatically when you run this query
     func fetchPostLikes(postId: String, limit: Int? = nil) async throws -> [UserProfile] {
+        #if DEBUG
+        let startTime = CFAbsoluteTimeGetCurrent()
+        print("🔍 [fetchPostLikes] Starting fetch for postId: \(postId)")
+        #endif
+        
         var query: Query = db.collection("likes")
             .whereField("postId", isEqualTo: postId)
             .order(by: "createdAt", descending: true)
@@ -1295,16 +1315,48 @@ class FirebaseService {
             query = query.limit(to: limit)
         }
         
+        #if DEBUG
+        let queryStartTime = CFAbsoluteTimeGetCurrent()
+        #endif
+        
         let snapshot = try await query.getDocuments()
+        
+        #if DEBUG
+        let queryTime = CFAbsoluteTimeGetCurrent() - queryStartTime
+        print("📊 [fetchPostLikes] Query completed in \(String(format: "%.3f", queryTime))s - found \(snapshot.documents.count) likes")
+        #endif
         
         let userIds = snapshot.documents.compactMap { doc -> String? in
             try? doc.data(as: Like.self).userId
         }
         
-        guard !userIds.isEmpty else { return [] }
+        #if DEBUG
+        print("👥 [fetchPostLikes] Extracted \(userIds.count) user IDs: \(userIds)")
+        #endif
+        
+        guard !userIds.isEmpty else {
+            #if DEBUG
+            let totalTime = CFAbsoluteTimeGetCurrent() - startTime
+            print("✅ [fetchPostLikes] No likes found - completed in \(String(format: "%.3f", totalTime))s")
+            #endif
+            return []
+        }
         
         // Batch fetch user profiles
-        return try await fetchProfilesBatched(userIds: userIds)
+        #if DEBUG
+        let batchStartTime = CFAbsoluteTimeGetCurrent()
+        #endif
+        
+        let profiles = try await fetchProfilesBatched(userIds: userIds)
+        
+        #if DEBUG
+        let batchTime = CFAbsoluteTimeGetCurrent() - batchStartTime
+        let totalTime = CFAbsoluteTimeGetCurrent() - startTime
+        print("✅ [fetchPostLikes] Fetched \(profiles.count) profiles in \(String(format: "%.3f", batchTime))s")
+        print("⏱️ [fetchPostLikes] Total time: \(String(format: "%.3f", totalTime))s")
+        #endif
+        
+        return profiles
     }
     
     /// Add a comment to a post

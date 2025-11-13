@@ -46,14 +46,10 @@ class FeedManager: ObservableObject {
             object: nil
         )
         
-        // Listen for following list changes to invalidate feed cache
-        // When user follows/unfollows someone, we need to refresh feed to show/hide their posts
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(handleFollowingListChange),
-            name: .followingListDidChange,
-            object: nil
-        )
+        // ⚠️ REMOVED (Nov 13, 2025): .followingListDidChange listener
+        // FeedView now handles follow/unfollow refreshes directly (simpler & more reliable)
+        // This listener was causing "No posts yet" flicker behind sheets
+        // See FeedView.swift sheet .onDisappear handlers for new refresh logic
     }
     
     deinit {
@@ -94,23 +90,24 @@ class FeedManager: ObservableObject {
         }
     }
     
+    
     /// Handle following list change notification
-    /// Immediately clears and forces reload of "All" feed - "Only Yours" doesn't depend on who you follow
+    /// 
+    /// ⚠️ DEPRECATED (Nov 13, 2025): This handler is no longer called
+    /// FeedView now handles follow/unfollow refreshes directly on sheet dismiss
+    /// This approach is simpler and prevents "No posts yet" flicker behind sheets
+    /// 
+    /// OLD BEHAVIOR: Cleared feed immediately when follow/unfollow happened
+    /// NEW BEHAVIOR: FeedView refreshes when sheets close (see FeedView.swift)
+    /// 
+    /// Keeping this method for reference/documentation purposes only
+    @available(*, deprecated, message: "FeedView handles refreshes directly now")
     @objc private func handleFollowingListChange(_ notification: Notification) {
-        print("🔔 [FeedManager] Received following list change notification - clearing and reloading 'All' feed")
+        print("⚠️ [FeedManager] DEPRECATED: handleFollowingListChange called (should not happen)")
+        print("⚠️ [FeedManager] FeedView now handles refreshes directly on sheet dismiss")
         
-        // Clear disk cache (which stores "All" feed)
-        clearDiskCache()
-        
-        // Post to main actor to ensure published properties update on main thread
-        DispatchQueue.main.async {
-            // IMMEDIATE CLEAR: Remove posts from unfollowed users immediately
-            // This gives instant visual feedback that unfollow worked
-            self.feedPosts = []
-            self.lastRefreshTime = nil
-            self.lastFetchedPostDate = nil // Reset "All" feed pagination cursor
-            print("✅ [FeedManager] 'All' feed cleared - posts from unfollowed users removed")
-        }
+        // NO-OP: Don't clear feed anymore, FeedView handles the refresh
+        // This prevents the jarring "No posts yet" flash behind sheets
     }
     
     // MARK: - Disk Cache (Instagram-style warm start)

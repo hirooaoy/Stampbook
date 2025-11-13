@@ -52,9 +52,17 @@ struct FeedView: View {
     // timing when sheets with follow buttons are open. Do NOT refactor to coordinator pattern
     // without careful consideration - it risks breaking the feed refresh logic. Decision made
     // Nov 2025 to defer this until post-launch. See: CROSS_REFERENCE_RISK_ANALYSIS.md
+    //
+    // REFRESH STRATEGY (Nov 13, 2025): 
+    // All sheets now use direct refresh on dismiss (simple, reliable, consistent)
+    // Each sheet calls refreshFeedData() directly when it closes
     @State private var activeSheetCount = 0 // Track number of sheets with follow buttons currently open
-    @State private var hasPendingRefresh = false // Track if refresh should execute when sheets close
-    @State private var justCompletedPendingRefresh = false // Prevent double-fetch after pending refresh
+    
+    // ⚠️ DEPRECATED (Nov 13, 2025): Pending refresh system removed
+    // These variables are kept for backwards compatibility but no longer used
+    // All sheets now refresh directly on dismiss instead of queuing
+    @State private var hasPendingRefresh = false // UNUSED - kept for compatibility
+    @State private var justCompletedPendingRefresh = false // UNUSED - kept for compatibility
     
     enum FeedTab: String, CaseIterable {
         case all = "All"
@@ -156,6 +164,12 @@ struct FeedView: View {
     }
     
     /// Execute pending refresh if one was queued while sheets were open
+    /// 
+    /// ⚠️ DEPRECATED (Nov 13, 2025): Replaced with direct refresh on sheet dismiss for simplicity
+    /// This complex queuing system caused race conditions and was hard to debug.
+    /// Now all sheets just call refreshFeedData() directly when they close.
+    /// Keeping this function for backwards compatibility in case it's called elsewhere.
+    @available(*, deprecated, message: "Use direct Task { await refreshFeedData() } instead")
     private func executePendingRefresh() {
         guard hasPendingRefresh && activeSheetCount == 0 else { return }
         
@@ -297,11 +311,11 @@ struct FeedView: View {
                                     shouldResetStampsNavigation: $shouldResetStampsNavigation,
                                     activeSheetCount: $activeSheetCount,
                                     justCompletedPendingRefresh: $justCompletedPendingRefresh,
-                                    onSheetDismiss: executePendingRefresh,
                                     onShowLikes: { postId, ownerId in
                                         selectedPostForLikes = (postId: postId, ownerId: ownerId)
                                         showLikes = true
                                     },
+                                    refreshFeed: refreshFeedData,  // Pass refresh function directly
                                     feedManager: feedManager,
                                     likeManager: likeManager,
                                     commentManager: commentManager,
@@ -368,10 +382,17 @@ struct FeedView: View {
                 .environmentObject(notificationManager)
                 .onAppear {
                     activeSheetCount += 1
+                    print("🔔 [FeedView] Notifications sheet opened - activeSheetCount: \(activeSheetCount)")
                 }
                 .onDisappear {
                     activeSheetCount -= 1
-                    executePendingRefresh()
+                    print("🔔 [FeedView] Notifications sheet closed - activeSheetCount: \(activeSheetCount)")
+                    print("🔄 [FeedView] Refreshing feed after notifications close")
+                    
+                    // Direct refresh (consistent with all sheets at MVP scale)
+                    Task {
+                        await refreshFeedData()
+                    }
                 }
         }
         .sheet(isPresented: $showUserSearch) {
@@ -379,10 +400,20 @@ struct FeedView: View {
                 .environmentObject(authManager)
                 .onAppear {
                     activeSheetCount += 1
+                    print("🔍 [FeedView] Search sheet opened - activeSheetCount: \(activeSheetCount)")
                 }
                 .onDisappear {
                     activeSheetCount -= 1
-                    executePendingRefresh()
+                    print("🔍 [FeedView] Search sheet closed - activeSheetCount: \(activeSheetCount)")
+                    print("🔄 [FeedView] Refreshing feed after search close (simple & reliable)")
+                    
+                    // SIMPLE FIX: Always refresh feed when search closes
+                    // This ensures following/unfollowing from search always updates the feed
+                    // Cost: One extra fetch even if user didn't follow anyone (negligible at MVP scale)
+                    // Benefit: 100% reliable, no complex state tracking needed
+                    Task {
+                        await refreshFeedData()
+                    }
                 }
         }
         .sheet(isPresented: $showFeedback) {
@@ -426,12 +457,37 @@ struct FeedView: View {
                 .environmentObject(followManager)
                 .environmentObject(profileManager)
                 .onAppear {
+                    print("❤️ [FeedView] Like sheet appeared with postId: \(selectedPost.postId)")
                     activeSheetCount += 1
                 }
                 .onDisappear {
+                    print("❤️ [FeedView] Like sheet disappeared")
                     activeSheetCount -= 1
-                    executePendingRefresh()
+                    print("🔄 [FeedView] Refreshing feed after likes close")
+                    
+                    // Direct refresh (consistent with all sheets at MVP scale)
+                    Task {
+                        await refreshFeedData()
+                    }
                 }
+            } else {
+                // Debug: This should never happen, but let's catch it
+                VStack {
+                    Text("Error: No post selected")
+                        .foregroundColor(.red)
+                    Button("Close") {
+                        showLikes = false
+                    }
+                }
+                .onAppear {
+                    print("⚠️ [FeedView] Like sheet opened but selectedPostForLikes is NIL!")
+                }
+            }
+        }
+        .onChange(of: showLikes) { oldValue, newValue in
+            print("📋 [FeedView] showLikes changed: \(oldValue) → \(newValue)")
+            if newValue {
+                print("📋 [FeedView] Opening like sheet for post: \(selectedPostForLikes?.postId ?? "NIL")")
             }
         }
         .alert("Sign Out", isPresented: $showSignOutConfirmation) {
@@ -491,26 +547,10 @@ struct FeedView: View {
                     }
                 }
             
-            // Listen for following list changes to refresh feed (queue if sheets are open)
-            NotificationCenter.default.publisher(for: .followingListDidChange)
-                .sink { _ in
-                    print("🔔 [FeedView] Following list changed")
-                    
-                    // If sheets with follow buttons are currently open, queue the refresh
-                    if activeSheetCount > 0 {
-                        print("📋 [FeedView] Sheets are open, queuing refresh for later")
-                        hasPendingRefresh = true
-                    } else {
-                        // No sheets open, refresh immediately
-                        print("🔔 [FeedView] No sheets open, refreshing feed now")
-                        if let _ = authManager.userId, authManager.isSignedIn {
-                            Task {
-                                await refreshFeedData()
-                            }
-                        }
-                    }
-                }
-                .store(in: &cancellables)
+            // ⚠️ REMOVED (Nov 13, 2025): .followingListDidChange listener
+            // Sheets now handle feed refresh directly on dismiss (simpler & more reliable)
+            // This prevents the complex pending refresh queue system
+            // See individual sheet .onDisappear handlers for direct refresh logic
             
             // Hook up comment count updates to feed
             commentManager.onCommentCountChanged = { [weak feedManager] postId, newCount in
@@ -538,8 +578,8 @@ struct FeedView: View {
         @Binding var shouldResetStampsNavigation: Bool
         @Binding var activeSheetCount: Int // Track sheets with follow buttons
         @Binding var justCompletedPendingRefresh: Bool // Prevent double-fetch after pending refresh
-        let onSheetDismiss: () -> Void // Execute pending refresh when sheets close
         let onShowLikes: (String, String) -> Void // Show likes sheet for a post (postId, ownerId)
+        let refreshFeed: () async -> Void // Direct refresh function (replaces complex pending system)
         @ObservedObject var feedManager: FeedManager
         @ObservedObject var likeManager: LikeManager
         @ObservedObject var commentManager: CommentManager
@@ -624,8 +664,8 @@ struct FeedView: View {
                             selectedTab: $selectedTab,
                             shouldResetStampsNavigation: $shouldResetStampsNavigation,
                             activeSheetCount: $activeSheetCount,
-                            onSheetDismiss: onSheetDismiss,
                             onShowLikes: onShowLikes,
+                            refreshFeed: refreshFeed,  // Pass refresh function directly
                             likeManager: likeManager,
                             commentManager: commentManager,
                             onStampTap: { stamp in selectedStampForDetail = stamp },
@@ -817,8 +857,8 @@ struct FeedView: View {
         @Binding var selectedTab: Int
         @Binding var shouldResetStampsNavigation: Bool // Binding to reset StampsView navigation
         @Binding var activeSheetCount: Int // Track sheets with follow buttons
-        let onSheetDismiss: () -> Void // Execute pending refresh when sheets close
         let onShowLikes: (String, String) -> Void // Show likes sheet for this post (postId, ownerId)
+        let refreshFeed: () async -> Void // Direct refresh function (replaces complex pending system)
         @ObservedObject var likeManager: LikeManager
         @ObservedObject var commentManager: CommentManager
         let onStampTap: (Stamp) -> Void
@@ -1044,10 +1084,17 @@ struct FeedView: View {
                 .environmentObject(profileManager)
                 .onAppear {
                     activeSheetCount += 1
+                    print("💬 [FeedView] Comment sheet opened - activeSheetCount: \(activeSheetCount)")
                 }
                 .onDisappear {
                     activeSheetCount -= 1
-                    onSheetDismiss()
+                    print("💬 [FeedView] Comment sheet closed - activeSheetCount: \(activeSheetCount)")
+                    print("🔄 [FeedView] Refreshing feed after comments close")
+                    
+                    // Direct refresh (consistent with all sheets at MVP scale)
+                    Task {
+                        await refreshFeed()
+                    }
                 }
             }
         }

@@ -50,7 +50,9 @@ class AuthManager: NSObject, ObservableObject {
         // Check if user profile exists (orphaned auth state protection)
         let profileExists = await checkUserProfileExists(userId: currentUser.uid)
         
-        if !profileExists {
+        // Only sign out if we KNOW the profile doesn't exist (false)
+        // If nil (network error/offline), allow user to stay signed in
+        if profileExists == false {
             Logger.warning("Orphaned auth state detected - user authenticated but no profile exists", category: "AuthManager")
             Logger.info("Signing user out to restart onboarding", category: "AuthManager")
             
@@ -65,6 +67,9 @@ class AuthManager: NSObject, ObservableObject {
                 self.isCheckingAuth = false
             }
             return
+        } else if profileExists == nil {
+            Logger.info("Cannot verify profile existence (offline/network error) - allowing sign in", category: "AuthManager")
+            // Continue to sign in - Firebase offline persistence will work
         }
         
         // Update auth state on main thread
@@ -87,7 +92,8 @@ class AuthManager: NSObject, ObservableObject {
     }
     
     /// Check if user profile exists in Firestore
-    private func checkUserProfileExists(userId: String) async -> Bool {
+    /// Returns: true = exists, false = doesn't exist, nil = couldn't determine (network error)
+    private func checkUserProfileExists(userId: String) async -> Bool? {
         return await firebaseService.userProfileExists(userId: userId)
     }
     
