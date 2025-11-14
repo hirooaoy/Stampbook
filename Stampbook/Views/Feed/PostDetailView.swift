@@ -174,15 +174,15 @@ struct PostDetailView: View {
                 
                 // Text content
                 VStack(alignment: .leading, spacing: 4) {
-                    // First line: "Username collected Stamp Name"
-                    Button(action: {
-                        loadStampAndNavigate()
-                    }) {
-                        Text("\(Text(post.displayName).fontWeight(.bold)) collected \(Text(post.stampName).fontWeight(.bold))")
-                            .font(.body)
-                            .foregroundColor(.primary)
-                    }
-                    .buttonStyle(PlainButtonStyle())
+                    // First line: "Username collected Stamp Name" - username and stamp separately tappable with AttributedString
+                    Text(buildAttributedText(displayName: post.displayName, stampName: post.stampName, userId: post.userId, stampId: post.stampId))
+                        .font(.body)
+                        .foregroundColor(.primary)
+                        .tint(.primary)
+                        .environment(\.openURL, OpenURLAction { url in
+                            handlePostTap(url: url, post: post)
+                            return .handled
+                        })
                     
                     // Second line: Location
                     if post.location != "Location not included" {
@@ -384,6 +384,47 @@ struct PostDetailView: View {
                     stamp = fetchedStamp
                     navigateToStampDetail = true
                 }
+            }
+        }
+    }
+    
+    // Build attributed string with tappable links for username and stamp name
+    private func buildAttributedText(displayName: String, stampName: String, userId: String, stampId: String) -> AttributedString {
+        var result = AttributedString()
+        
+        // Username (bold, tappable, no underline)
+        var userText = AttributedString(displayName)
+        userText.font = .body.weight(.bold)
+        userText.foregroundColor = .primary
+        userText.underlineStyle = nil
+        userText.link = URL(string: "stampbook://profile/\(userId)")
+        
+        // Middle text (regular)
+        var middleText = AttributedString(" collected ")
+        middleText.font = .body
+        middleText.foregroundColor = .primary
+        
+        // Stamp name (bold, tappable, no underline)
+        var stampText = AttributedString(stampName)
+        stampText.font = .body.weight(.bold)
+        stampText.foregroundColor = .primary
+        stampText.underlineStyle = nil
+        stampText.link = URL(string: "stampbook://stamp/\(stampId)")
+        
+        result.append(userText)
+        result.append(middleText)
+        result.append(stampText)
+        
+        return result
+    }
+    
+    // Handle URL taps from attributed string
+    private func handlePostTap(url: URL, post: FeedManager.FeedPost) {
+        if url.scheme == "stampbook" {
+            if url.host == "profile" {
+                selectedUserId = IdentifiableString(value: post.userId, username: post.userName, displayName: post.displayName)
+            } else if url.host == "stamp" {
+                loadStampAndNavigate()
             }
         }
     }

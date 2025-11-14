@@ -985,6 +985,47 @@ struct FeedView: View {
             avatarUrl
         }
         
+        // Build attributed string with tappable links for username and stamp name
+        private func buildAttributedText(userName: String, stampName: String, userId: String, stampId: String) -> AttributedString {
+            var result = AttributedString()
+            
+            // Username (bold, tappable, no underline)
+            var userText = AttributedString(userName)
+            userText.font = .body.weight(.bold)
+            userText.foregroundColor = .primary
+            userText.underlineStyle = nil
+            userText.link = URL(string: "stampbook://profile/\(userId)")
+            
+            // Middle text (regular)
+            var middleText = AttributedString(" collected ")
+            middleText.font = .body
+            middleText.foregroundColor = .primary
+            
+            // Stamp name (bold, tappable, no underline)
+            var stampText = AttributedString(stampName)
+            stampText.font = .body.weight(.bold)
+            stampText.foregroundColor = .primary
+            stampText.underlineStyle = nil
+            stampText.link = URL(string: "stampbook://stamp/\(stampId)")
+            
+            result.append(userText)
+            result.append(middleText)
+            result.append(stampText)
+            
+            return result
+        }
+        
+        // Handle URL taps from attributed string
+        private func handleTap(url: URL) {
+            if url.scheme == "stampbook" {
+                if url.host == "profile", let userId = url.pathComponents.last {
+                    onUserTap(userId, "", userName)
+                } else if url.host == "stamp" {
+                    onStampTap(stamp)
+                }
+            }
+        }
+        
         var body: some View {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(alignment: .top, spacing: 12) {
@@ -1018,15 +1059,15 @@ struct FeedView: View {
                     
                     // Text content on the right (top-aligned)
                     VStack(alignment: .leading, spacing: 4) {
-                        // First line: "Hiroo collected Golden Gate Park" - tappable to view stamp
-                        Button(action: {
-                            onStampTap(stamp)
-                        }) {
-                            Text("\(Text(userName).fontWeight(.bold)) collected \(Text(stampName).fontWeight(.bold))")
-                                .font(.body)
-                                .foregroundColor(.primary)
-                        }
-                        .buttonStyle(PlainButtonStyle())
+                        // First line: "Hiroo collected Golden Gate Park" - username and stamp separately tappable with AttributedString
+                        Text(buildAttributedText(userName: userName, stampName: stampName, userId: userId, stampId: stamp.id))
+                            .font(.body)
+                            .foregroundColor(.primary)
+                            .tint(.primary)
+                            .environment(\.openURL, OpenURLAction { url in
+                                handleTap(url: url)
+                                return .handled
+                            })
                         
                         // Second line: Location (only show if not "Location not included")
                         if location != "Location not included" {
