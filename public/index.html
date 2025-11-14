@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stampbook - Collect stamps around the world</title>
+    <meta name="description" content="Stampbook is a location-based stamp collection app that turns exploring the real world into a rewarding adventure.">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #000000;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+            animation: fadeIn 0.8s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .logo {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 30px;
+            border-radius: 26px;
+            background: transparent;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        h1 {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            letter-spacing: -1px;
+        }
+
+        .subtitle {
+            font-size: 22px;
+            font-weight: 300;
+            margin-bottom: 30px;
+            opacity: 0.95;
+        }
+
+        .stamps-preview {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 35px;
+        }
+
+        .stamp-example {
+            width: 80px;
+            height: 80px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .stamp-example img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .qr-section {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px 80px;
+            margin-top: 0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: inline-block;
+            max-width: 100%;
+        }
+
+        .qr-code {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            display: inline-block;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .qr-code img {
+            width: 100%;
+            max-width: 200px;
+            height: auto;
+            display: block;
+        }
+
+        .invite-text {
+            font-size: 16px;
+            margin-top: 25px;
+            margin-bottom: 0;
+            opacity: 0.9;
+        }
+
+        .invite-code-block {
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+            letter-spacing: 1px;
+            font-size: 18px;
+            margin-top: 10px;
+        }
+
+        .testflight-link {
+            margin-top: 0;
+            padding-top: 0;
+        }
+
+        .disclaimer {
+            margin-top: 40px;
+            font-size: 13px;
+            opacity: 0.6;
+            line-height: 1.6;
+        }
+
+        .disclaimer a {
+            color: white;
+            text-decoration: underline;
+            opacity: 0.7;
+            transition: opacity 0.3s;
+        }
+
+        .disclaimer a:hover {
+            opacity: 1;
+        }
+
+        @media (max-width: 600px) {
+            .logo {
+                width: 90px;
+                height: 90px;
+                margin-bottom: 20px;
+            }
+
+            h1 {
+                font-size: 36px;
+            }
+
+            .subtitle {
+                font-size: 18px;
+            }
+
+            .stamps-preview {
+                gap: 10px;
+                margin-bottom: 30px;
+            }
+
+            .stamp-example {
+                width: 70px;
+                height: 70px;
+            }
+
+            .qr-section {
+                padding: 30px 40px;
+            }
+
+            .disclaimer {
+                font-size: 12px;
+                margin-top: 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <img src="logo.png" alt="Stampbook Logo">
+        </div>
+        
+        <h1>Stampbook</h1>
+        <p class="subtitle">Download on TestFlight and collect stamps around the world</p>
+        
+        <div class="stamps-preview">
+            <div class="stamp-example">
+                <img src="https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-japantown.png?alt=media&token=6a2d1d5c-2d67-479b-b124-fc97c22e7b6e" alt="Japantown">
+            </div>
+            <div class="stamp-example">
+                <img src="https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-dolores-park.png?alt=media&token=a38384a5-a529-4790-bc1d-5edf58a4626f" alt="Dolores Park">
+            </div>
+            <div class="stamp-example">
+                <img src="https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-ballast-coffee.png?alt=media&token=35e8ae9d-78ed-4e9b-8c1e-0985f871f8ff" alt="Ballast Coffee">
+            </div>
+        </div>
+        
+        <div class="qr-section">
+            <div class="qr-code">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://testflight.apple.com/join/tFseAr5C" alt="TestFlight QR Code">
+            </div>
+            
+            <div class="invite-text">
+                Use this invite code in the app
+            </div>
+            <div class="invite-code-block">
+                STAMPBOOKBETA
+            </div>
+        </div>
+        
+        <div class="disclaimer">
+            TestFlight (iOS) only. Stamps are primarily in San Francisco. <a href="#">Privacy policy</a>.
+        </div>
+    </div>
+</body>
+</html>
+

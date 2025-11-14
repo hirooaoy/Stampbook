@@ -75,6 +75,7 @@ struct ProfileSetupSheet: View {
                         // Clear errors when user types
                         usernameErrorMessage = nil
                         errorMessage = nil
+                        usernameAvailable = nil
                         
                         // Trigger validation
                         validateUsernameDebounced()
@@ -154,6 +155,7 @@ struct ProfileSetupSheet: View {
             .disabled(isSaving)
             .padding(.bottom, 32)
         }
+        .presentationDetents([.large])  // Proper sheet size on iPad, no effect on iPhone (already default)
     }
     
     private var canSave: Bool {
@@ -286,8 +288,3 @@ struct ProfileSetupSheet: View {
     }
 }
 
-#Preview {
-    ProfileSetupSheet()
-        .environmentObject(AuthManager())
-        .environmentObject(ProfileManager())
-}

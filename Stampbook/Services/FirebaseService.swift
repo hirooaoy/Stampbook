@@ -22,6 +22,11 @@ class FirebaseService {
     private var profileCache: [String: (profile: UserProfile, timestamp: Date)] = [:]
     private let profileCacheExpiration: TimeInterval = 300 // 5 minutes (optimized from 60s)
     
+    /// Time-based collected stamps cache
+    /// Collected stamps change rarely (requires physical visit), so longer cache is appropriate
+    private var collectedStampsCache: [String: (stamps: [CollectedStamp], timestamp: Date)] = [:]
+    private let collectedStampsCacheExpiration: TimeInterval = 600 // 10 minutes
+    
     private init() {
         // Configure offline persistence
         // NOTE: For fresh installs with no cache, offline persistence can cause
@@ -40,11 +45,48 @@ class FirebaseService {
     /// - Parameter userId: The user ID to fetch stamps for
     /// - Parameter limit: Maximum number of stamps to fetch (default: 50, nil = all)
     /// - Parameter afterDate: Optional cursor for pagination (fetch stamps before this date)
+    /// - Parameter forceRefresh: If true, bypass cache and fetch from server
     /// - Returns: Array of collected stamps, sorted by collection date (most recent first)
     ///
     /// **PERFORMANCE NOTE:** Always use a limit when fetching for feed/social features.
     /// Fetching all stamps is only needed for the user's own stamp collection view.
-    func fetchCollectedStamps(for userId: String, limit: Int? = nil, afterDate: Date? = nil) async throws -> [CollectedStamp] {
+    ///
+    /// **CACHING:** Cached for 10 minutes. Longer than profiles (5 min) because stamps require
+    /// physical visits and change rarely. Clears on app restart.
+    func fetchCollectedStamps(for userId: String, limit: Int? = nil, afterDate: Date? = nil, forceRefresh: Bool = false) async throws -> [CollectedStamp] {
+        // Create cache key (include limit/afterDate to avoid cache collision)
+        let cacheKey = "\(userId)_\(limit?.description ?? "all")_\(afterDate?.timeIntervalSince1970.description ?? "none")"
+        
+        // Check time-based cache first (unless forcing refresh or using pagination)
+        if !forceRefresh && afterDate == nil {
+            let cachedStamps = profileFetchQueue.sync { () -> [CollectedStamp]? in
+                guard let cached = collectedStampsCache[cacheKey] else { return nil }
+                let age = Date().timeIntervalSince(cached.timestamp)
+                
+                // Return cached stamps if fresh (< 10 minutes old)
+                if age < collectedStampsCacheExpiration {
+                    #if DEBUG
+                    print("⚡️ [FirebaseService] Using cached collected stamps for \(userId) (age: \(String(format: "%.1f", age))s / 600s)")
+                    #endif
+                    return cached.stamps
+                }
+                
+                // Cache expired, remove it
+                #if DEBUG
+                print("🗑️ [FirebaseService] Collected stamps cache expired (age: \(String(format: "%.1f", age))s > 600s)")
+                #endif
+                collectedStampsCache.removeValue(forKey: cacheKey)
+                return nil
+            }
+            
+            if let stamps = cachedStamps {
+                return stamps
+            }
+        }
+        
+        // Fetch from Firestore
+        let source: FirestoreSource = forceRefresh ? .server : .default
+        
         var query = db
             .collection("users")
             .document(userId)
@@ -61,10 +103,17 @@ class FirebaseService {
             query = query.limit(to: limit)
         }
         
-        let snapshot = try await query.getDocuments()
+        let snapshot = try await query.getDocuments(source: source)
         
         let stamps = snapshot.documents.compactMap { doc -> CollectedStamp? in
             try? doc.data(as: CollectedStamp.self)
+        }
+        
+        // Cache the result (only if not using pagination)
+        if afterDate == nil {
+            profileFetchQueue.sync {
+                collectedStampsCache[cacheKey] = (stamps: stamps, timestamp: Date())
+            }
         }
         
         return stamps

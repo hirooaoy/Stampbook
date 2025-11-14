@@ -414,6 +414,7 @@ struct UserProfileView: View {
         Task {
             do {
                 // Fetch stamps from Firebase for this specific user
+                // Uses 10-minute cache (see FirebaseService.fetchCollectedStamps)
                 let stamps = try await FirebaseService.shared.fetchCollectedStamps(for: userId)
                 await MainActor.run {
                     self.userCollectedStamps = stamps
@@ -467,9 +468,9 @@ struct UserProfileView: View {
         @State private var isLoadingLazyStamps = false
         @State private var hasLoadedOnce = false // Prevent multiple initial loads
         
+        // Adaptive grid: iPhone shows 2 columns, iPad shows 4-6 columns
         private let columns = [
-            GridItem(.flexible(), spacing: 16),
-            GridItem(.flexible(), spacing: 16)
+            GridItem(.adaptive(minimum: 160), spacing: 16)
         ]
         
         // Get collected stamps sorted by date (latest first)

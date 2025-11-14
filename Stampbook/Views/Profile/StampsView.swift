@@ -98,26 +98,6 @@ struct StampsView: View {
     // MARK: - Signed-in Menu Buttons
     private var signedInMenuButtons: some View {
         HStack(spacing: 8) {
-            // Gift icon - only show if user hasn't claimed welcome stamp
-            if !stampsManager.hasClaimedWelcomeStamp() {
-                Button(action: {
-                    // Fetch welcome stamp and show it
-                    Task {
-                        let stamps = await stampsManager.fetchStamps(ids: ["your-first-stamp"])
-                        await MainActor.run {
-                            // Setting welcomeStamp automatically opens the sheet
-                            welcomeStamp = stamps.first
-                        }
-                    }
-                }) {
-                    Image(systemName: "gift.fill")
-                        .font(.system(size: 24))
-                        .foregroundColor(.red)
-                        .frame(width: 44, height: 44)  // Larger tap target
-                        .contentShape(Rectangle())     // Make entire frame tappable
-                }
-            }
-            
             // Edit Profile Button - Opens ProfileEditView sheet
             Button(action: {
                 showEditProfile = true
@@ -232,7 +212,7 @@ struct StampsView: View {
                 
                 // Content based on selected tab
                 if selectedTab == .all {
-                    AllStampsContent()
+                    AllStampsContent(welcomeStamp: $welcomeStamp)
                 } else {
                     CollectionsContent()
                 }
@@ -735,13 +715,14 @@ struct StampsView: View {
     
     struct AllStampsContent: View {
         @EnvironmentObject var stampsManager: StampsManager
+        @Binding var welcomeStamp: Stamp? // Access to parent's welcomeStamp state
         @State private var displayedCount = 20 // Initial load
         @State private var userStamps: [Stamp] = [] // Lazy-loaded user stamps
         @State private var hasLoadedOnce = false // Prevent multiple initial loads
         
+        // Adaptive grid: iPhone shows 2 columns, iPad shows 4-6 columns
         private let columns = [
-            GridItem(.flexible(), spacing: 16),
-            GridItem(.flexible(), spacing: 16)
+            GridItem(.adaptive(minimum: 160), spacing: 16)
         ]
         
         // Get collected stamps sorted by date (latest first)
@@ -775,28 +756,66 @@ struct StampsView: View {
                     .padding(.horizontal, 20)
                     .padding(.bottom, 32)
                 } else if sortedCollectedStamps.isEmpty && !stampsManager.isLoadingUserStamps {
-                    // Empty state - only show if not loading and truly empty
-                    VStack {
-                        Spacer()
-                        
-                        Image(systemName: "book.closed.fill")
-                            .font(.system(size: 60))
-                            .foregroundColor(.gray)
-                            .padding(.bottom, 20)
-                        
-                        Text("Your Stamps")
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                        
-                        Text("Your stamp collection will appear here")
-                            .font(.subheadline)
-                            .foregroundColor(.gray)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 40)
-                        
-                        Spacer()
+                    // Empty state - show gift icon if welcome stamp not claimed
+                    if !stampsManager.hasClaimedWelcomeStamp() {
+                        VStack(spacing: 16) {
+                            Spacer()
+                            
+                            // Gift icon button
+                            Button(action: {
+                                // Fetch welcome stamp and show it
+                                Task {
+                                    let stamps = await stampsManager.fetchStamps(ids: ["your-first-stamp"])
+                                    await MainActor.run {
+                                        // Setting welcomeStamp automatically opens the sheet
+                                        welcomeStamp = stamps.first
+                                    }
+                                }
+                            }) {
+                                Image(systemName: "gift.fill")
+                                    .font(.system(size: 80))
+                                    .foregroundColor(.red)
+                                    .frame(width: 120, height: 120)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            
+                            Text("Claim your first stamp")
+                                .font(.title2)
+                                .fontWeight(.semibold)
+                            
+                            Text("Tap the icon to collect your first stamp")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 40)
+                            
+                            Spacer()
+                        }
+                        .frame(height: 300)
+                    } else {
+                        // Generic empty state (if they somehow have no stamps after claiming welcome stamp)
+                        VStack {
+                            Spacer()
+                            
+                            Image(systemName: "book.closed.fill")
+                                .font(.system(size: 60))
+                                .foregroundColor(.gray)
+                                .padding(.bottom, 20)
+                            
+                            Text("Your Stamps")
+                                .font(.title2)
+                                .fontWeight(.semibold)
+                            
+                            Text("Your stamp collection will appear here")
+                                .font(.subheadline)
+                                .foregroundColor(.gray)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 40)
+                            
+                            Spacer()
+                        }
+                        .frame(height: 300)
                     }
-                    .frame(height: 300)
                 } else {
                     // Grid view
                     LazyVGrid(columns: columns, spacing: 24) {

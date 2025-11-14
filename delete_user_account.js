@@ -228,8 +228,36 @@ async function deleteUserAccount(userId) {
       log(`   ✅ Removed from ${count} stamp statistics`, 'green');
     }
     
-    // Step 10: Delete notifications (if collection exists)
-    log('\n📋 Step 10: Deleting notifications...', 'blue');
+    // Step 10: Free up invite code slot
+    log('\n📋 Step 10: Freeing up invite code slot...', 'blue');
+    if (userDoc.exists) {
+      const userData = userDoc.data();
+      const inviteCodeUsed = userData.inviteCodeUsed;
+      
+      if (inviteCodeUsed) {
+        try {
+          const inviteCodeRef = db.collection('invite_codes').doc(inviteCodeUsed);
+          const inviteCodeDoc = await inviteCodeRef.get();
+          
+          if (inviteCodeDoc.exists) {
+            await inviteCodeRef.update({
+              usedCount: admin.firestore.FieldValue.increment(-1),
+              usedBy: admin.firestore.FieldValue.arrayRemove(userId)
+            });
+            log(`   ✅ Freed up slot in invite code: ${inviteCodeUsed}`, 'green');
+          } else {
+            log(`   ⚠️  Invite code "${inviteCodeUsed}" not found`, 'yellow');
+          }
+        } catch (error) {
+          log(`   ⚠️  Could not update invite code: ${error.message}`, 'yellow');
+        }
+      } else {
+        log('   ⚠️  User has no inviteCodeUsed field', 'yellow');
+      }
+    }
+    
+    // Step 11: Delete notifications (if collection exists)
+    log('\n📋 Step 11: Deleting notifications...', 'blue');
     try {
       const notificationsRef = db.collection('users').doc(userId).collection('notifications');
       const notifications = await notificationsRef.get();
@@ -251,7 +279,7 @@ async function deleteUserAccount(userId) {
     }
     
     // Step 11: Delete Firebase Storage files
-    log('\n📋 Step 11: Deleting storage files...', 'blue');
+    log('\n📋 Step 12: Deleting storage files...', 'blue');
     const [files] = await storage.getFiles({ prefix: `users/${userId}/` });
     
     if (files.length === 0) {
@@ -266,12 +294,12 @@ async function deleteUserAccount(userId) {
     }
     
     // Step 12: Delete user profile document
-    log('\n📋 Step 12: Deleting user profile...', 'blue');
+    log('\n📋 Step 13: Deleting user profile...', 'blue');
     await db.collection('users').doc(userId).delete();
     log('   ✅ User profile deleted', 'green');
     
     // Step 13: Delete Firebase Authentication account
-    log('\n📋 Step 13: Deleting authentication account...', 'blue');
+    log('\n📋 Step 14: Deleting authentication account...', 'blue');
     try {
       await auth.deleteUser(userId);
       log('   ✅ Authentication account deleted', 'green');
