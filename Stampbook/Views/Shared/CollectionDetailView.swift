@@ -71,6 +71,7 @@ struct CollectionDetailView: View {
                                 NavigationLink(destination: 
                                     StampDetailView(
                                         stamp: stamp,
+                                        isCollected: stampsManager.isCollected(stamp),
                                         userLocation: nil,
                                         showBackButton: true
                                     )
@@ -151,7 +152,7 @@ struct CollectionStampItem: View {
                         storagePath: stamp.imageStoragePath,
                         stampId: stamp.id,
                         size: CGSize(width: 148, height: 148),
-                        cornerRadius: 12,
+                        cornerRadius: 0,  // No rounded corners for stamps (prevents clipping edges)
                         imageUrl: imageUrl
                     )
                     .frame(width: 148, height: 148)
@@ -160,17 +161,15 @@ struct CollectionStampItem: View {
                     Image(stamp.imageName)
                         .resizable()
                         .renderingMode(.original)
-                        .aspectRatio(contentMode: .fill)
+                        .aspectRatio(contentMode: .fit)
                         .frame(width: 148, height: 148)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
                 } else {
                     // No image - show placeholder
                     Image("empty")
                         .resizable()
                         .renderingMode(.original)
-                        .aspectRatio(contentMode: .fill)
+                        .aspectRatio(contentMode: .fit)
                         .frame(width: 148, height: 148)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
             } else {
                 // Show gray box with lock icon if not collected

@@ -1,8 +1,8 @@
 import SwiftUI
 
-/// First-time profile setup sheet shown after sign-up
+/// First-time profile setup page shown after sign-up
 /// Matches InviteCodeSheet design for visual consistency
-struct ProfileSetupSheet: View {
+struct ProfileSetupPage: View {
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var profileManager: ProfileManager
     
@@ -155,7 +155,6 @@ struct ProfileSetupSheet: View {
             .disabled(isSaving)
             .padding(.bottom, 32)
         }
-        .presentationDetents([.large])  // Proper sheet size on iPad, no effect on iPhone (already default)
     }
     
     private var canSave: Bool {
@@ -236,7 +235,7 @@ struct ProfileSetupSheet: View {
                     hasSeenOnboarding: true
                 )
                 
-                Logger.success("Profile setup completed: @\(username)", category: "ProfileSetupSheet")
+                Logger.success("Profile setup completed: @\(username)", category: "ProfileSetupPage")
                 
                 // Refresh profile in ProfileManager
                 if let updatedProfile = try? await firebaseService.fetchUserProfile(userId: userId) {
@@ -254,7 +253,7 @@ struct ProfileSetupSheet: View {
                     isSaving = false
                     errorMessage = "Failed to save profile. Please try again."
                 }
-                Logger.error("Profile setup failed", error: error, category: "ProfileSetupSheet")
+                Logger.error("Profile setup failed", error: error, category: "ProfileSetupPage")
             }
         }
     }
@@ -272,7 +271,7 @@ struct ProfileSetupSheet: View {
                 hasSeenOnboarding: true
             )
             
-            Logger.info("User skipped profile setup", category: "ProfileSetupSheet")
+            Logger.info("User skipped profile setup", category: "ProfileSetupPage")
             
             // Refresh profile to get updated hasSeenOnboarding flag
             if let updatedProfile = try? await firebaseService.fetchUserProfile(userId: userId) {

@@ -106,7 +106,7 @@ class UserStampCollection: ObservableObject {
     
     /// Refresh collected stamps from server (pull-to-refresh)
     func refresh(userId: String) async {
-        await syncFromFirestore(userId: userId)
+        await syncFromFirestore(userId: userId, forceRefresh: true)
         await retryPendingDeletions()
         await syncLocalOnlyStamps(userId: userId)
     }
@@ -522,9 +522,9 @@ class UserStampCollection: ObservableObject {
     }
     
     /// Fetch stamps from Firestore and merge with local data
-    private func syncFromFirestore(userId: String) async {
+    private func syncFromFirestore(userId: String, forceRefresh: Bool = false) async {
         do {
-            let firestoreStamps = try await firebaseService.fetchCollectedStamps(for: userId)
+            let firestoreStamps = try await firebaseService.fetchCollectedStamps(for: userId, forceRefresh: forceRefresh)
             
             await MainActor.run {
                 // Merge strategy: Firestore is source of truth

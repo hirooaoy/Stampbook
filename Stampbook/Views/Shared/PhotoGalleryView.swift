@@ -163,7 +163,7 @@ struct PhotoGalleryView: View {
                                     storagePath: storagePath,
                                     stampId: stampId,
                                     size: CGSize(width: 106, height: 106),
-                                    cornerRadius: 12,
+                                    cornerRadius: 0,  // No rounded corners for stamps (prevents clipping edges)
                                     imageUrl: stampImageName
                                 )
                             } else {
@@ -171,20 +171,16 @@ struct PhotoGalleryView: View {
                                 Image(stampImageName)
                                     .resizable()
                                     .renderingMode(.original)
-                                    .aspectRatio(contentMode: .fill)
+                                    .aspectRatio(contentMode: .fit)
                                     .frame(width: 106, height: 106)
-                                    .clipped()
-                                    .cornerRadius(12)
                             }
                         } else {
                             // No stamp image available - show "empty" placeholder (same as StampsView)
                             Image("empty")
                                 .resizable()
                                 .renderingMode(.original)
-                                .aspectRatio(contentMode: .fill)
+                                .aspectRatio(contentMode: .fit)
                                 .frame(width: 106, height: 106)
-                                .clipped()
-                                .cornerRadius(12)
                         }
                         }
                         .buttonStyle(PlainButtonStyle())

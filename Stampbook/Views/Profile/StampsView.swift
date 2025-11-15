@@ -219,9 +219,13 @@ struct StampsView: View {
             }
         }
         .refreshable {
-            // Just refresh profile stats - user's stamps are already synced
-            // No need to refetch all collected stamps from Firestore every time
+            // Refresh both profile stats and collected stamps
             await profileManager.refresh()
+            
+            // Force refresh stamps from Firestore (bypasses cache)
+            if let userId = authManager.userId {
+                await stampsManager.userCollection.refresh(userId: userId)
+            }
         }
     }
     
@@ -313,6 +317,7 @@ struct StampsView: View {
                     .redacted(reason: .placeholder)
                 }
             }
+            .frame(height: profileManager.currentUserProfile?.bio.isEmpty == true ? 64 : nil)
             
             Spacer()
         }
@@ -666,6 +671,7 @@ struct StampsView: View {
             NavigationStack {
                 StampDetailView(
                     stamp: stamp,
+                    isCollected: stampsManager.isCollected(stamp),
                     userLocation: nil,
                     showBackButton: false
                 )
@@ -823,6 +829,7 @@ struct StampsView: View {
                             NavigationLink(destination:
                                             StampDetailView(
                                                 stamp: item.stamp,
+                                                isCollected: true,  // All stamps in StampsView are collected
                                                 userLocation: nil,
                                                 showBackButton: true
                                             )
@@ -914,18 +921,16 @@ struct StampsView: View {
                         storagePath: stamp.imageStoragePath,
                         stampId: stamp.id,
                         size: CGSize(width: 148, height: 148),
-                        cornerRadius: 12,
+                        cornerRadius: 0,  // No rounded corners for stamps (prevents clipping edges)
                         imageUrl: imageUrl
                     )
-                    .frame(height: 148)
                 } else if !stamp.imageName.isEmpty {
                     // Fallback to bundled image for backward compatibility
                     Image(stamp.imageName)
                         .resizable()
                         .renderingMode(.original)
                         .aspectRatio(contentMode: .fit)
-                        .frame(height: 148)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .frame(width: 148, height: 148)
                 } else {
                     // No image - show placeholder
                     Image("empty")
@@ -933,7 +938,6 @@ struct StampsView: View {
                         .renderingMode(.original)
                         .aspectRatio(contentMode: .fit)
                         .frame(height: 148)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
                 
                 // Stamp name (centered, fixed height for 2 lines)

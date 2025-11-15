@@ -135,6 +135,7 @@ struct PostDetailView: View {
             if let stamp = stamp {
                 StampDetailView(
                     stamp: stamp,
+                    isCollected: stampsManager.isCollected(stamp),
                     userLocation: nil,
                     showBackButton: true
                 )

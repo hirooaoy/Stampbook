@@ -18,8 +18,8 @@ struct ContentView: View {
     @State private var isLoadingMissingProfile = false
     @State private var profileLoadError: String? = nil
     
-    // Profile setup sheet for first-time users
-    @State private var showProfileSetupSheet = false
+    // Profile setup page for first-time users
+    @State private var showProfileSetupPage = false
     @State private var hasShownProfileSetup = false
     
     var body: some View {
@@ -74,14 +74,15 @@ struct ContentView: View {
                 .buttonStyle(.bordered)
             }
             .padding()
-        } else if showProfileSetupSheet {
+        } else if showProfileSetupPage {
             // Show profile setup for new users (full page, not a sheet)
-            ProfileSetupSheet(onDismiss: {
-                showProfileSetupSheet = false
+            ProfileSetupPage(onDismiss: {
+                showProfileSetupPage = false
                 selectedTab = 2  // Take new users to StampsView to explore collections
             })
             .environmentObject(authManager)
             .environmentObject(profileManager)
+            .transition(.opacity)  // Fade in smoothly
         } else {
             // Auth check complete - show main app (TabBar always visible)
         TabView(selection: $selectedTab) {
@@ -108,6 +109,7 @@ struct ContentView: View {
         }
         .environmentObject(stampsManager)
         .environmentObject(mapCoordinator)
+        .transition(.opacity)  // Fade in smoothly when appearing
         .onChange(of: selectedTab) { oldValue, newValue in
             previousTab = oldValue
         }
@@ -166,7 +168,7 @@ struct ContentView: View {
     
     // MARK: - Profile Setup Check
     
-    /// Check if we should show the profile setup sheet for new users
+    /// Check if we should show the profile setup page for new users
     private func checkIfShouldShowProfileSetup() {
         // Only check once per session
         guard !hasShownProfileSetup else { return }
@@ -185,9 +187,13 @@ struct ContentView: View {
         
         // New users: show if they haven't seen onboarding
         if !profile.hasSeenOnboarding {
-                showProfileSetupSheet = true
+            Logger.info("🎯 [ContentView] Showing profile setup for new user", category: "ContentView")
+            
+            // Animate the transition smoothly
+            withAnimation(.easeInOut(duration: 0.3)) {
+                showProfileSetupPage = true
                 hasShownProfileSetup = true
-            Logger.info("Showing profile setup page for new user", category: "ContentView")
+            }
         }
     }
     

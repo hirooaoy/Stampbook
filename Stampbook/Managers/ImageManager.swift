@@ -552,9 +552,12 @@ class ImageManager: ObservableObject {
     }
     
     /// Generate thumbnail for feed display
-    /// Uses aspectFill to crop (not squish) the image to fill the square
+    /// ALWAYS returns a square image (512×512) with the original image aspect-fitted inside
+    /// and transparent padding around it. This ensures:
+    /// - No cropping of tall/wide stamps
+    /// - Perfect grid alignment (all thumbnails are same size)
+    /// - No double letterboxing in UI
     /// Forces scale = 1.0 so that points = pixels (no retina scaling)
-    /// Default 512x512 provides crisp quality on 3x retina displays (iPhone Pro)
     /// Preserves alpha channel for transparent images (like PNG stamps)
     func generateThumbnail(_ image: UIImage, size: CGSize = CGSize(width: 512, height: 512)) -> UIImage? {
         let format = UIGraphicsImageRendererFormat()
@@ -562,31 +565,31 @@ class ImageManager: ObservableObject {
         format.opaque = false  // Support transparency (for PNG stamps)
         format.preferredRange = .standard  // Use standard color range
         
-        // Calculate aspect fill rect (crop to fill square, maintaining aspect ratio)
+        // Calculate aspect fit rect (fit entire image within square, maintaining aspect ratio)
         let imageAspect = image.size.width / image.size.height
         let targetAspect = size.width / size.height
         
         let drawRect: CGRect
         if imageAspect > targetAspect {
-            // Image is wider - crop sides
-            let drawHeight = size.height
-            let drawWidth = drawHeight * imageAspect
-            let xOffset = (size.width - drawWidth) / 2
-            drawRect = CGRect(x: xOffset, y: 0, width: drawWidth, height: drawHeight)
-        } else {
-            // Image is taller - crop top/bottom
+            // Image is wider - fit to width, add transparent padding top/bottom
             let drawWidth = size.width
             let drawHeight = drawWidth / imageAspect
             let yOffset = (size.height - drawHeight) / 2
             drawRect = CGRect(x: 0, y: yOffset, width: drawWidth, height: drawHeight)
+        } else {
+            // Image is taller - fit to height, add transparent padding left/right
+            let drawHeight = size.height
+            let drawWidth = drawHeight * imageAspect
+            let xOffset = (size.width - drawWidth) / 2
+            drawRect = CGRect(x: xOffset, y: 0, width: drawWidth, height: drawHeight)
         }
         
+        // Always render to full size (512×512) with transparent padding
         let renderer = UIGraphicsImageRenderer(size: size, format: format)
         return renderer.image { context in
-            // Clear the context to ensure transparency is preserved
+            // Clear the context to transparent (this is the padding)
             context.cgContext.clear(CGRect(origin: .zero, size: size))
-            // Clip to bounds so we only see the center portion
-            UIRectClip(CGRect(origin: .zero, size: size))
+            // Draw image centered within the square
             image.draw(in: drawRect)
         }
     }

@@ -1,239 +1,319 @@
 [
   {
-    "id": "your-first-stamp",
-    "name": "Welcome Stamp",
-    "latitude": 0,
-    "longitude": 0,
-    "address": "Anywhere in the world",
+    "id": "stamp-desert-view-watchtower-1763169394644",
+    "name": "Desert View Watchtower",
+    "latitude": 36.04409790919088,
+    "longitude": -111.82623223113129,
+    "geohash": "9w2mp3ds",
+    "address": "Desert View Watchtower\nGrand Canyon Village, AZ USA 86023",
+    "collectionIds": [
+      "grand-canyon-must-visits"
+    ],
+    "about": "This 70-feet tall watchtower is the tallest major structure on the South Rim. On clear days, visitors can see over 100 miles toward the Painted Desert.",
+    "thingsToDoFromEditors": [
+      "Climb the Watchtower for one of the widest panoramic views on the South Rim",
+      "Visit the Hopi Room to see murals painted by Fred Kabotie"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-az-grand-canyon-desert-view-watchtower.png?alt=media&token=a49cfbe6-b2b9-4b7d-80ac-648f13c5a826",
+    "collectionRadius": "regular",
+    "aspectRatio": 0.63
+  },
+  {
+    "id": "stamp-hopi-point-1763170300361",
+    "name": "Hopi Point",
+    "latitude": 36.07443973052488,
+    "longitude": -112.15499016118565,
+    "geohash": "9w2jpz5h",
+    "address": "Grand Canyon Village, AZ USA 86023",
+    "collectionIds": [
+      "grand-canyon-must-visits"
+    ],
+    "about": "The point is named after the Hopi Tribe, whose cultural stories link the Grand Canyon to their ancestral migrations.",
+    "thingsToDoFromEditors": [
+      "Watch the iconic Hopi Point sunset with glowing canyon layers",
+      "Visit at night for stargazing and wide open sky views"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-az-grand-canyon-hopi-point.png?alt=media&token=c3f6d1cf-28ef-464d-b57d-4d59c9326826",
+    "aspectRatio": 0.64,
+    "collectionRadius": "regular"
+  },
+  {
+    "id": "stamp-mather-point-1763169028097",
+    "name": "Mather Point",
+    "latitude": 36.06172387448706,
+    "longitude": -112.10771149393501,
+    "geohash": "9w2m0uvd",
+    "address": "Rim Trail\nGrand Canyon Village, AZ USA 86023",
+    "about": "Mather Point is named after Stephen Tyng Mather, the first director of the U.S. National Park Service from 1917. It's a short walk from the Visitor Center.",
+    "thingsToDoFromEditors": [
+      "Walk from the Visitor Center plaza to the Mather Point overlook for instant canyon view",
+      "Arrive at sunrise or sunset to experience dramatic light across the canyon"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-az-grand-canyon-mather-point.png?alt=media&token=984ff58a-d8d7-4be7-97d1-dbd0504d5919",
+    "collectionRadius": "regular",
+    "collectionIds": [
+      "grand-canyon-must-visits"
+    ],
+    "aspectRatio": 0.62
+  },
+  {
+    "id": "stamp-moran-point-1763171078215",
+    "name": "Moran Point",
+    "latitude": 36.00513627967556,
+    "longitude": -111.92427741315812,
+    "geohash": "9w2kv4e1",
+    "address": "Grand Canyon Village, AZ USA 86023",
+    "collectionIds": [
+      "grand-canyon-must-visits"
+    ],
+    "about": "Moran Point is named after Thomas Moran, the painter whose 19th-century artworks helped convince Congress to protect American landscapes like Yellowstone and the Grand Canyon.",
+    "thingsToDoFromEditors": [
+      "Watch sunrise from Moran Point to see pastel canyon colors",
+      "Look for Cardenas and Escalante Buttes from the overlook",
+      "Visit during golden hour for vivid color layering"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-az-grand-canyon-moran-point.png?alt=media&token=01f38d04-d9f1-486f-b2c9-e3c1d131dc28",
+    "aspectRatio": 0.6,
+    "collectionRadius": "regular"
+  },
+  {
+    "id": "stamp-yavapai-point-1763164622206",
+    "name": "Yavapai Point",
+    "latitude": 36.06373166414744,
+    "longitude": -112.11838633000048,
+    "address": "Grand Canyon Village\nAZ, USA 86023",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-az-grand-canyon-yavapai-point.png?alt=media&token=f7d68308-110c-4509-b5f0-3ac85b004a77",
+    "collectionIds": [
+      "grand-canyon-must-visits"
+    ],
+    "about": "From Yavapai Point you can see deep into the canyon and catch glimpses of the Colorado River channel across vast terrain.",
+    "thingsToDoFromEditors": [
+      "Walk the Rim Trail from the visitor center to Yavapai Point for unobstructed views",
+      "Visit the Yavapai Geology Museum to learn about the canyon's formation"
+    ],
+    "geohash": "9w2m0tjy",
+    "collectionRadius": "regular",
+    "aspectRatio": 0.61
+  },
+  {
+    "id": "us-ca-calistoga-castello-di-amorosa",
+    "name": "Castello di Amorosa",
+    "latitude": 38.558445168687285,
+    "longitude": -122.54261329799944,
+    "address": "4045 St Helena Hwy\nCalistoga, CA, USA 94515",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-calistoga-castello-di-amorosa.png?alt=media&token=f5191a99-1cb6-44e4-b0d7-f720ed6fd368",
     "collectionIds": [],
-    "about": "Welcome to Stampbook!\nThis is your first special stamp that you can claim from anywhere.",
+    "about": "Authentic 13th century Tuscan castle winery built over 15 years with 107 rooms, moat, and drawbridge.",
     "thingsToDoFromEditors": [
-      "Tap \"Collect Stamp\"",
-      "Go out there and explore the world!"
+      "Book the Diamond Estate Tour for a guided walk through the Great Hall and wine caves",
+      "Book the Seated Tasting Experience to sample five wines while exploring the castle at your own pace"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fyour-first-stamp.png?alt=media&token=dfc7e1a5-b6e9-4320-a97f-00c2c9ad016c",
-    "collectionRadius": "regular"
+    "geohash": "9qbg77r5",
+    "collectionRadius": "regular",
+    "aspectRatio": 0.69
   },
   {
-    "id": "us-ca-sf-baker-beach",
-    "name": "Baker Beach",
-    "latitude": 37.79359523479041,
-    "longitude": -122.48363371070475,
-    "address": "1504 Pershing Dr\nSan Francisco, CA, USA 94129",
-    "collectionIds": [
-      "sf-must-visits"
-    ],
-    "about": "A former military site that became a public beach in 1897. It has one of the most iconic Golden Gate Bridge views.",
+    "id": "us-ca-fern-canyon",
+    "name": "Fern Canyon",
+    "latitude": 41.40169431327207,
+    "longitude": -124.06501199403411,
+    "address": "Fern Canyon\nOrick, CA, USA 95555",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-fern-canyon.png?alt=media&token=ee569636-23e9-4f5a-87b9-43ca4de141a4",
+    "collectionIds": [],
+    "about": "The unique landscape features 50-foot high walls covered in lush ferns and mosses. It served as a filming location for 1997 film The Lost World: Jurassic Park.",
     "thingsToDoFromEditors": [
-      "Bring a picnic blanket and relax with the Golden Gate",
-      "Hike Batteries to Bluffs Trail along the cliffs"
+      "Be prepared to get wet and hike a moderate 1-mile loop through the heart of the canyon",
+      "Observe wildlife including Roosevelt elk and various bird species that inhabit the canyon and surrounding area"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-baker-beach.png?alt=media&token=01d9e448-950e-45a1-b50c-cb94a287a33e",
-    "collectionRadius": "regularplus"
+    "geohash": "9prg8bfw",
+    "collectionRadius": "regular",
+    "aspectRatio": 1.48
   },
   {
-    "id": "us-ca-sf-dolores-park",
-    "name": "Dolores Park",
-    "latitude": 37.75976910914757,
-    "longitude": -122.42712380019294,
-    "address": "Dolores St & 19th St\nSan Francisco, CA, USA 94114",
+    "id": "us-ca-la-griffith-observatory",
+    "name": "Griffith Observatory",
+    "latitude": 34.11834831363419,
+    "longitude": -118.30042827173688,
+    "address": "2800 E Observatory Rd, Los Angeles, CA 90027",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-la-griffith-observatory.png?alt=media&token=2e79adae-9aca-4816-a6fd-b764bdb54819",
     "collectionIds": [
-      "sf-must-visits"
+      "stargazing-spots"
     ],
-    "about": "Once a Jewish cemetery and 1906 earthquake refugee camp, this beloved 16-acre park now hosts picnics, cultural events, and stunning skyline views.",
+    "about": "Built on land donated by Griffith J. Griffith in 1896 to be \"a place where everyone could access the stars,\" the observatory opened in 1935.",
     "thingsToDoFromEditors": [
-      "Grab Crème Brûlée ice cream from Bi-Rite",
-      "Visit the southwest corner at sunset"
+      "Stargaze through the public telescopes",
+      "Photograph the Hollywood Sign"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-dolores-park.png?alt=media&token=a38384a5-a529-4790-bc1d-5edf58a4626f",
-    "collectionRadius": "regularplus"
+    "geohash": "9q5fh503",
+    "collectionRadius": "regular",
+    "aspectRatio": 0.79
   },
   {
-    "id": "us-ca-sf-pier-39",
-    "name": "Pier 39",
-    "latitude": 37.80867636213306,
-    "longitude": -122.40982017804298,
-    "address": "Beach St & The Embarcadero\nSan Francisco, CA, USA 94133",
-    "collectionIds": [
-      "sf-must-visits"
-    ],
-    "about": "Waterfront marketplace opened in 1978 that became famous when California sea lions arrived in 1990 after the Loma Prieta earthquake and stayed.",
+    "id": "us-ca-la-the-getty-museum",
+    "name": "The Getty Museum",
+    "latitude": 34.07779958540805,
+    "longitude": -118.4744750174548,
+    "address": "1200 Getty Center Dr\nLos Angeles, CA, USA 90049",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-la-the-getty-museum.png?alt=media&token=5245048f-79f2-4f2b-a3cd-4d2a0baf848b",
+    "collectionIds": [],
+    "about": "Art museum opened in 1997, home to Van Gogh's \"Irises\" and the stunning Central Garden designed by Robert Irwin.",
     "thingsToDoFromEditors": [
-      "Go to the end and smell the sea lions",
-      "Walk to Fisherman's Wharf and Ghirardelli Chocolate"
+      "Admission is always free (only parking costs $20, or $15 after 3pm)",
+      "Take in panoramic views of Los Angeles from various viewpoints around the hilltop campus"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-pier-39.png?alt=media&token=67272d49-24c8-4b52-a389-bfcb6ef20032",
-    "collectionRadius": "regularplus"
+    "geohash": "9q5cb59t",
+    "collectionRadius": "regular",
+    "aspectRatio": 0.98
   },
   {
-    "id": "us-ca-sf-ferry-building",
-    "name": "Ferry Building",
-    "latitude": 37.795501817721586,
-    "longitude": -122.39361360344144,
-    "address": "1 Ferry Building\nSan Francisco, CA, USA 94111",
-    "collectionIds": [
-      "sf-must-visits"
-    ],
-    "about": "Completed in 1898, this Beaux-Arts terminal survived the 1906 earthquake and now houses a gourmet marketplace with a renowned farmers' market.",
+    "id": "us-ca-marshall-hog-island-oyster-farm",
+    "name": "Hog Island Oyster Farm",
+    "latitude": 38.16232827714116,
+    "longitude": -122.8936648972723,
+    "address": "20215 Shoreline Hwy\nMarshall, CA, USA 94940",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-marshall-hog-island-oyster-farm.png?alt=media&token=bf92ba08-24f2-4a52-bec5-88d9d5a2c7f0",
+    "collectionIds": [],
+    "about": "Founded in the 1980s by marine biologists, this farm supplies fresh oysters to Bay Area restaurants including their Ferry Building oyster bar.",
     "thingsToDoFromEditors": [
-      "Find porchetta sandwich during the Saturday farmers' market (8am-2pm)",
-      "Taste Vietnamese Coffee ice cream from Humphry Slocombe"
+      "Dine outside and enjoy fresh oysters while looking out at Tomales Bay",
+      "Book a farm tour to learn about sustainable aquaculture and taste signature Sweetwater oysters"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-ferry-building.png?alt=media&token=04f4c81b-face-430f-ad8c-835e75c3737b",
-    "collectionRadius": "regular"
+    "geohash": "9qb957px",
+    "collectionRadius": "regular",
+    "aspectRatio": 1
   },
   {
-    "id": "us-ca-sf-oracle-park",
-    "name": "Oracle Park",
-    "latitude": 37.77836740581089,
-    "longitude": -122.38967830446195,
-    "address": "24 Willie Mays Plaza\nSan Francisco, CA, USA 94107",
+    "id": "us-ca-mill-valley-mill-valley-public-library",
+    "name": "Mill Valley Public Library",
+    "latitude": 37.90602492711603,
+    "longitude": -122.5542498818647,
+    "address": "375 Throckmorton Ave\nMill Valley, CA, USA 94941",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-mill-valley-mill-valley-public-library.png?alt=media&token=9ce791ba-7428-4457-9f30-03704c7ca002",
     "collectionIds": [
-      "sf-must-visits"
+      "libraries-that-make-you-forget-time"
     ],
-    "about": "Opened in 2000 as the first privately financed MLB ballpark since Dodger Stadium, home to the Giants and McCovey Cove's kayaking \"splash hit\" fans.",
+    "about": "Award-winning 1966 library nestled among towering redwoods with floor-to-ceiling windows and a wood-burning fireplace.",
     "thingsToDoFromEditors": [
-      "Order garlic fries and crab sandwich - two ballpark food legends",
-      "Walk along the San Francisco Bay Trail to see under the Bay Bridge"
+      "Sit by the large windows overlooking the creek and redwood groves",
+      "Walk around behind the library into the woods and breathe in the fresh air"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-oracle-park.png?alt=media&token=17ccfb52-07d6-4837-b01d-604365212e49",
-    "collectionRadius": "regularplus"
+    "geohash": "9q8zehwd",
+    "collectionRadius": "regular",
+    "aspectRatio": 1.52
   },
   {
-    "id": "us-ca-sf-twin-peaks",
-    "name": "Twin Peaks",
-    "latitude": 37.75342416835136,
-    "longitude": -122.44737929240276,
-    "address": "501 Twin Peaks Blvd\nSan Francisco, CA, USA 94114",
+    "id": "us-ca-sequoia-national-park-crescent-meadow",
+    "name": "Crescent Meadow",
+    "latitude": 36.558824712542126,
+    "longitude": -118.74846460609943,
+    "address": "Cres Mdw Lp, California 93262",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sequoia-national-park-crescent-meadow.png?alt=media&token=6bf0e3fd-b805-4103-8b2e-1cc191cb45fb",
     "collectionIds": [
-      "sf-must-visits"
+      "sequoia-giants"
     ],
-    "about": "Rising 925 feet above sea level, these summits offer breathtaking 360-degree views and host the endangered Mission Blue Butterfly.",
+    "about": "John Muir called this \"the gem of the Sierra\" for its natural beauty. The 1.5-mile loop trail is easy and family-friendly.",
     "thingsToDoFromEditors": [
-      "Arrive 30 minutes before sunset",
-      "Bring layers - it gets windy and cold"
+      "Hike the 1.5-mile Crescent Meadow Loop Trail through giant sequoias",
+      "Enjoy a peaceful picnic surrounded by ancient trees (pack out what you pack in)"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-twin-peaks.png?alt=media&token=8cd38197-19e3-47da-9476-189ce3eaf5d6",
-    "collectionRadius": "regularplus"
+    "geohash": "9q7xcz64",
+    "collectionRadius": "regular",
+    "aspectRatio": 1.19
   },
   {
-    "id": "us-ca-sf-japantown",
-    "name": "Japantown",
-    "latitude": 37.785073880854185,
-    "longitude": -122.42987282230602,
-    "address": "1610 Geary Blvd\nSan Francisco, CA, USA 94115",
+    "id": "us-ca-sequoia-national-park-general-sherman-tree",
+    "name": "General Sherman Tree",
+    "latitude": 36.581719950244235,
+    "longitude": -118.75144760233867,
+    "address": "Three Rivers, CA 93262",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sequoia-national-park-general-sherman-tree.png?alt=media&token=a8c41e7e-5110-4e58-bab6-b86b6eeb3c88",
     "collectionIds": [
-      "sf-must-visits"
+      "sequoia-giants"
     ],
-    "about": "One of only three remaining Japantowns in America, centered around Japan Center with its iconic Peace Pagoda gifted by Japan in 1968.",
+    "about": "The General Sherman Tree is the world's largest living tree by volume at 52,508 cubic feet. It is estimated to be between 2,300 and 2,700 years old.",
     "thingsToDoFromEditors": [
-      "Browse Japanese snacks, drinks, and bento at Nijiya Market",
-      "Eat amazing udon, yakitori, takoyaki, matcha ice cream, and mochi donuts"
+      "Walk the paved half-mile Congress Trail loop to see the General Sherman Tree and other giant sequoias",
+      "Hike the Big Trees Trail, an easy 1.2-mile loop through the Giant Forest grove"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-japantown.png?alt=media&token=6a2d1d5c-2d67-479b-b124-fc97c22e7b6e",
-    "collectionRadius": "regular"
+    "geohash": "9qe81erz",
+    "collectionRadius": "regular",
+    "aspectRatio": 1.29
   },
   {
-    "id": "us-ca-sf-powell-hyde-cable-car",
-    "name": "Powell-Hyde Cable Car",
-    "latitude": 37.78477446697081,
-    "longitude": -122.40771095243076,
-    "address": "Cable Car Turnaround Powell St\nSan Francisco, CA, USA 94102",
+    "id": "us-ca-sequoia-national-park-giant-forest-museum",
+    "name": "Giant Forest Museum",
+    "latitude": 36.56472497751813,
+    "longitude": -118.77272384986406,
+    "address": "47050 Generals Hwy, Three Rivers, CA 93271",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sequoia-national-park-giant-forest-museum.png?alt=media&token=cc7efa84-f231-49ba-8c9e-8885eb05f24e",
     "collectionIds": [
-      "sf-must-visits"
+      "sequoia-giants"
     ],
-    "about": "One of San Francisco's most scenic cable car routes since 1891, climbing steep hills with stunning bay views and passing through Russian Hill.",
+    "about": "Originally built in 1928 as a market, it reopened in 2001 as a museum dedicated to the Giant Forest ecosystem.",
     "thingsToDoFromEditors": [
-      "Board at Powell & Market early morning to avoid 2-hour waits",
-      "Stand on the outer running board going down Hyde Street for thrilling bay views"
+      "Learn about John Muir and early conservation efforts",
+      "Walk the Big Trees Trail loop (starts right outside)"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-powell-hyde-cable-car.png?alt=media&token=7ea5f630-ba13-4a38-8c8c-374a684e2009",
-    "collectionRadius": "regular"
+    "geohash": "9qe8122k",
+    "collectionRadius": "regular",
+    "aspectRatio": 1.15
   },
   {
-    "id": "us-ca-sf-palace-of-fine-arts",
-    "name": "Palace of Fine Arts",
-    "latitude": 37.802929147736506,
-    "longitude": -122.44842353927599,
-    "address": "3301 Lyon St\nSan Francisco, CA, USA 94123",
+    "id": "us-ca-sequoia-national-park-moro-rock",
+    "name": "Moro Rock",
+    "latitude": 36.544441076624544,
+    "longitude": -118.76554928048425,
+    "address": "Sequoia National Park, CA 93262",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sequoia-national-park-moro-rock.png?alt=media&token=afd4fcd5-6313-4e8b-afc1-e983d9a4dfe4",
     "collectionIds": [
-      "sf-must-visits"
+      "sequoia-giants"
     ],
-    "about": "Stunning Greco-Roman monument designed by Bernard Maybeck for the 1915 Panama-Pacific Exposition, featuring a massive rotunda reflected in a lagoon.",
+    "about": "Granite dome formed 100 million years ago. The 400-step stairway was built by the Civilian Conservation Corps in 1931, carved into the rock.",
     "thingsToDoFromEditors": [
-      "Visit at golden hour for stunning light on the rotunda reflected in the lagoon",
-      "Walk around the entire lagoon to find different angles of the columns"
+      "Hike the quarter-mile trail to the summit",
+      "Watch the sunset with the unique granite formations from the top"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-palace-of-fine-arts.png?alt=media&token=8a0cc930-2930-41fb-985e-c3cadd1b3516",
-    "collectionRadius": "regular"
+    "geohash": "9q7xcktw",
+    "collectionRadius": "regularplus",
+    "aspectRatio": 1.19
   },
   {
-    "id": "us-ca-sf-painted-ladies",
-    "name": "Painted Ladies",
-    "latitude": 37.7762629086978,
-    "longitude": -122.43275477855283,
-    "address": "710-720 Steiner St\nSan Francisco, CA, USA 94117",
+    "id": "us-ca-sequoia-national-park-tunnel-log",
+    "name": "Tunnel Log",
+    "latitude": 36.552567585037096,
+    "longitude": -118.76138131482963,
+    "address": "Crescent Meadow Rd, Sequoia National Park, CA 93262",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sequoia-national-park-tunnel-log.png?alt=media&token=13ed1ae4-5e3a-422e-8868-49ddafa3dd8d",
     "collectionIds": [
-      "sf-must-visits"
+      "sequoia-giants"
     ],
-    "about": "Built 1892-1896, these seven Victorian houses (called \"Postcard Row\") survived the 1906 earthquake and became world-famous from Full House's opening credits.",
+    "about": "This giant sequoia fell across Crescent Meadow Road in 1937. Rather than removing it, park workers carved an 8-foot tunnel through it in 1938.",
     "thingsToDoFromEditors": [
-      "Bring a picnic blanket and snacks to enjoy the view from the park",
-      "Take photos from the Alamo Square lawn in late afternoon when the houses glow golden"
+      "Drive through the iconic tunnel carved into this 2,000-year-old fallen sequoia and snap the classic photo",
+      "Hike to Moro Rock nearby for panoramic views of the Sierra Nevada and collect a stamp"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-painted-ladies.png?alt=media&token=4199b3a3-57a1-4db5-bf59-5e1d93de8dcf",
-    "collectionRadius": "regular"
+    "geohash": "9q7xcw0w",
+    "collectionRadius": "regular",
+    "aspectRatio": 1.15
   },
   {
-    "id": "us-ca-sf-golden-gate-viewpoint",
-    "name": "Golden Gate Viewpoint",
-    "latitude": 37.82877635030523,
-    "longitude": -122.48603226554782,
-    "address": "Old Conzelman Rd\nMill Valley, CA, USA 94941",
+    "id": "us-ca-sf-alemany-farm",
+    "name": "Alemany Farm",
+    "latitude": 37.73244001063801,
+    "longitude": -122.41972746552071,
+    "address": "700 Alemany Blvd\nSan Francisco, CA, USA 94110",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-alemany-farm.png?alt=media&token=9e3171ce-0d02-4781-af33-fbfba6287f9e",
     "collectionIds": [
-      "sf-must-visits"
+      "sf-community-gardens"
     ],
-    "about": "Breathtaking elevated viewpoint in the Marin Headlands offering iconic shots of the Golden Gate Bridge with San Francisco behind it.",
+    "about": "San Francisco's largest urban farm at 3.5 acres, operated by volunteers who grow produce distributed free to the community for food security.",
     "thingsToDoFromEditors": [
-      "You need a car to drive up here",
-      "You can see the Golden Gate with San Francisco from the other side"
+      "Join Saturday volunteer mornings (10am) to help with planting and harvesting",
+      "Take in the sweeping city views from this hilltop farm"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-golden-gate-viewpoint.png?alt=media&token=77e5c526-006a-41c2-a637-57ee8a6bd9fb",
-    "collectionRadius": "regularplus"
-  },
-  {
-    "id": "us-ca-sf-equator-coffee",
-    "name": "Equator Coffee",
-    "latitude": 37.80778763546057,
-    "longitude": -122.47566033185458,
-    "address": "Golden Gate Bridge Plaza\nSan Francisco, CA, USA 94129",
-    "collectionIds": [
-      "sf-coffee"
-    ],
-    "about": "This is in the historic Round House building that was originally built for toll collectors who worked the bridge.",
-    "thingsToDoFromEditors": [
-      "Order the single-origin pour-over to taste their roasting expertise",
-      "Walk to Baker Beach to collect another stamp"
-    ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-equator-coffee.png?alt=media&token=292cbe65-2322-48bb-9f88-0637408aaaf5",
-    "collectionRadius": "regular"
-  },
-  {
-    "id": "us-ca-sf-the-coffee-movement",
-    "name": "The Coffee Movement",
-    "latitude": 37.760618102039594,
-    "longitude": -122.4105447517096,
-    "address": "2814 19th St\nSan Francisco, CA, USA 94110",
-    "collectionIds": [
-      "sf-coffee"
-    ],
-    "about": "Intimate Mission District café known for innovative drinks like the \"Dirty Horchata\" (espresso with house-made horchata) and fresh donuts.",
-    "thingsToDoFromEditors": [
-      "Order their donuts with specialty coffee for the perfect pairing",
-      "Note: This location has very short hours - if you want to try their coffee, check out another branch!"
-    ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-the-coffee-movement.png?alt=media&token=0ff12c54-98bf-444b-8be7-6e257feb0f23",
-    "collectionRadius": "regular"
+    "geohash": "9q8ywkbx",
+    "collectionRadius": "regular",
+    "aspectRatio": 1
   },
   {
     "id": "us-ca-sf-andytown-coffee-roasters",
@@ -241,6 +321,7 @@
     "latitude": 37.77277627504386,
     "longitude": -122.51070066915784,
     "address": "800 Great Hwy\nSan Francisco, CA, USA 94121",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-andytown-coffee-roasters.png?alt=media&token=41451c25-0727-45d5-b46c-c32037754c9d",
     "collectionIds": [
       "sf-coffee"
     ],
@@ -249,110 +330,28 @@
       "Order the Snowy Plover (brown sugar ice cream + espresso) - their signature drink",
       "Take your drink to Ocean Beach and relax by the water"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-andytown-coffee-roasters.png?alt=media&token=41451c25-0727-45d5-b46c-c32037754c9d",
-    "collectionRadius": "regular"
+    "geohash": "9q8yuhq6",
+    "collectionRadius": "regular",
+    "aspectRatio": 1.45
   },
   {
-    "id": "us-ca-sf-neighbors-corner",
-    "name": "Neighbor's Corner",
-    "latitude": 37.755580513369075,
-    "longitude": -122.43877098541338,
-    "address": "499 Douglass St\nSan Francisco, CA, USA 94114",
+    "id": "us-ca-sf-baker-beach",
+    "name": "Baker Beach",
+    "latitude": 37.79359523479041,
+    "longitude": -122.48363371070475,
+    "address": "1504 Pershing Dr\nSan Francisco, CA, USA 94129",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-baker-beach.png?alt=media&token=01d9e448-950e-45a1-b50c-cb94a287a33e",
     "collectionIds": [
-      "sf-coffee"
+      "sf-must-visits"
     ],
-    "about": "Tucked in a quiet Castro/Noe Valley corner, this cozy café serves Four Barrel coffee with Japanese-inspired pastries and savory dishes.",
+    "about": "A former military site that became a public beach in 1897. It has one of the most iconic Golden Gate Bridge views.",
     "thingsToDoFromEditors": [
-      "Order their house drip coffee with a fresh pastry",
-      "Grab a seat by the window and watch the neighborhood go by"
+      "Bring a picnic blanket and relax with the Golden Gate",
+      "Hike Batteries to Bluffs Trail along the cliffs"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-neighbors-corner.png?alt=media&token=e3c6725e-d3b8-4a13-8cea-ea2f8eb1ad18",
-    "collectionRadius": "regular"
-  },
-  {
-    "id": "us-ca-sf-the-mill",
-    "name": "The Mill",
-    "latitude": 37.77647812185205,
-    "longitude": -122.43796816418411,
-    "address": "736 Divisadero St\nSan Francisco, CA, USA 94117",
-    "collectionIds": [
-      "sf-coffee"
-    ],
-    "about": "Industrial café opened in 2012 that served a $4 toast, a symbol of SF's food scene in the 2010s.",
-    "thingsToDoFromEditors": [
-      "Order the cinnamon sugar toast - their iconic signature item",
-      "Walk to Alamo Square and the Painted Ladies 10 minutes away"
-    ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-the-mill.png?alt=media&token=59079047-e6a5-465a-8f0f-55178c623b6b",
-    "collectionRadius": "regular"
-  },
-  {
-    "id": "us-ca-sf-saint-frank-coffee",
-    "name": "Saint Frank Coffee",
-    "latitude": 37.79845985628947,
-    "longitude": -122.42215826061671,
-    "address": "2340 Polk St\nSan Francisco, CA, USA 94109",
-    "collectionIds": [
-      "sf-coffee"
-    ],
-    "about": "Minimalist Polk Street café founded in 2013, named after a beloved family dog (Frank), not a saint.",
-    "thingsToDoFromEditors": [
-      "Ask baristas about their rotating single-origin espresso - they love sharing details",
-      "Try the cortado to experience their roasting at its purest"
-    ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-saint-frank-coffee.png?alt=media&token=84e0a68f-71d5-417a-8849-102a3c499ec8",
-    "collectionRadius": "regular"
-  },
-  {
-    "id": "us-ca-sf-sightglass-coffee",
-    "name": "Sightglass Coffee",
-    "latitude": 37.777041665701155,
-    "longitude": -122.40845792491726,
-    "address": "270 7th St\nSan Francisco, CA, USA 94103",
-    "collectionIds": [
-      "sf-coffee"
-    ],
-    "about": "Founded in 2009, this spacious SoMa warehouse features industrial-chic design with on-site roasting visible through glass walls and a \"seed-to-cup\" focus.",
-    "thingsToDoFromEditors": [
-      "Watch them roast coffee through the glass-walled roasting room",
-      "Try the espresso tonic on warm days - refreshing and caffeinated"
-    ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-sightglass-coffee.png?alt=media&token=0a63a212-9fa7-4020-91ae-645b51750e6d",
-    "collectionRadius": "regular"
-  },
-  {
-    "id": "us-ca-sf-four-barrel",
-    "name": "Four Barrel Coffee",
-    "latitude": 37.76702523672126,
-    "longitude": -122.42195009409077,
-    "address": "375 Valencia St\nSan Francisco, CA, USA 94103",
-    "collectionIds": [
-      "sf-coffee"
-    ],
-    "about": "Founded in 2008, this café has no Wi-Fi to encourage conversation and roasts beans on a vintage German Probat machine visible to customers.",
-    "thingsToDoFromEditors": [
-      "Order classic drip coffee to taste their legendary roasting",
-      "Explore Clarion Alley's murals one block away at Valencia & 17th"
-    ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-four-barrel.png?alt=media&token=702744ac-87a5-47a1-bd62-2923f41d3ed8",
-    "collectionRadius": "regular"
-  },
-  {
-    "id": "us-ca-sf-pinhole-coffee",
-    "name": "Pinhole Coffee",
-    "latitude": 37.739620678258134,
-    "longitude": -122.41901983576798,
-    "address": "231 Cortland Ave\nSan Francisco, CA, USA 94110",
-    "collectionIds": [
-      "sf-coffee"
-    ],
-    "about": "Opened in 2014 in an 1880s building, this certified green business features a vibrant rainbow wall and serves \"Masarap\" (Tagalog for \"delicious\").",
-    "thingsToDoFromEditors": [
-      "Order their perfectly crafted flat white at the window bar",
-      "Walk up to Bernal Heights Park for panoramic city views"
-    ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-pinhole-coffee.png?alt=media&token=c9ad8e44-df96-441c-91f2-0e3cac007589",
-    "collectionRadius": "regular"
+    "geohash": "9q8zhb45",
+    "collectionRadius": "regular",
+    "aspectRatio": 1
   },
   {
     "id": "us-ca-sf-ballast-coffee",
@@ -360,6 +359,7 @@
     "latitude": 37.737474930057395,
     "longitude": -122.46940794656437,
     "address": "329 W Portal Ave\nSan Francisco, CA, USA 94127",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-ballast-coffee.png?alt=media&token=35e8ae9d-78ed-4e9b-8c1e-0985f871f8ff",
     "collectionIds": [
       "sf-coffee"
     ],
@@ -368,66 +368,74 @@
       "Order a pour-over and enjoy the relaxed neighborhood vibe",
       "Explore the shops and restaurants along W Portal Avenue"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-ballast-coffee.png?alt=media&token=35e8ae9d-78ed-4e9b-8c1e-0985f871f8ff",
-    "collectionRadius": "regular"
+    "geohash": "9q8ytjuk",
+    "collectionRadius": "regular",
+    "aspectRatio": 0.97
   },
   {
-    "id": "us-ca-sf-japanese-tea-garden",
-    "name": "Japanese Tea Garden",
-    "latitude": 37.77008990002528,
-    "longitude": -122.47034070170011,
-    "address": "75 Hagiwara Tea Garden Dr, San Francisco, CA 94118",
+    "id": "us-ca-sf-bernal-heights-community-garden",
+    "name": "Bernal Heights Community Garden",
+    "latitude": 37.74219499983504,
+    "longitude": -122.41309706731519,
+    "address": "3501-3581 Folsom St\nSan Francisco, CA, USA 94110",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-bernal-heights-community-garden.png?alt=media&token=85a0f58d-a0c5-443a-b637-bb38b39b33ef",
+    "collectionIds": [
+      "sf-community-gardens"
+    ],
+    "about": "Neighborhood activists transformed an abandoned hillside into this thriving garden in 1982, now with 90+ organic plots.",
+    "thingsToDoFromEditors": [
+      "Check the bulletin board for free gardening workshops and events",
+      "Hike up Bernal Hill right after for 360-degree city views"
+    ],
+    "geohash": "9q8ywqv8",
+    "collectionRadius": "regular",
+    "aspectRatio": 0.99
+  },
+  {
+    "id": "us-ca-sf-bison-paddock",
+    "name": "Bison Paddock",
+    "latitude": 37.76968976551815,
+    "longitude": -122.49823606313684,
+    "address": "1237 John F Kennedy Dr, San Francisco, CA 94121",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-bison-paddock.png?alt=media&token=dbc8cd2f-8699-4053-950f-9ed31123a90f",
     "collectionIds": [
       "sf-golden-gate-park"
     ],
-    "about": "The oldest public Japanese garden in the United States, created in 1894, is where the fortune cookie was invented by Makoto Hagiwara in 1914.",
+    "about": "Since 1891, Golden Gate Park has maintained American bison, originally brought to help save the species when only hundreds remained.",
     "thingsToDoFromEditors": [
-      "Arrive right at opening (9am) for serene photos before crowds",
-      "Stop at the tea house for traditional tea and fortune cookies"
+      "Visit early morning (7-9am) when bison are most active and near the fence",
+      "Bring binoculars if they're grazing in the back of the paddock"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-japanese-tea-garden.png?alt=media&token=0ccffec1-3891-4f20-bec9-911536950516",
-    "collectionRadius": "regularplus"
+    "geohash": "9q8yu7z8",
+    "collectionRadius": "regularplus",
+    "aspectRatio": 1
   },
   {
-    "id": "us-ca-sf-three-gems-by-james-turrell",
-    "name": "Three Gems by James Turrell",
-    "latitude": 37.77109659878524,
-    "longitude": -122.46959614379908,
-    "address": "50 Hagiwara Tea Garden Dr, San Francisco, CA 94118",
+    "id": "us-ca-sf-clipper-community-garden",
+    "name": "Clipper Community Garden",
+    "latitude": 37.74786044648981,
+    "longitude": -122.44313454856169,
+    "address": "855 Clipper Terrace\nSan Francisco, CA, USA 94114",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-clipper-community-garden.png?alt=media&token=f19981e6-29d8-4a7d-8e0b-a8fce4e09d22",
     "collectionIds": [
-      "sf-golden-gate-park"
+      "sf-community-gardens"
     ],
-    "about": "James Turrell's 2005 skyspace with stone benches arranged in a circle where you sit, look up through a square opening, and watch the sky.",
+    "about": "Terraced hillside garden established in 1983 with panoramic views from downtown to the bay.",
     "thingsToDoFromEditors": [
-      "Sit, watch the sky, and listen to the world",
-      "No ticket or reservation required"
+      "Walk the terraced paths for unique city views between the garden plots",
+      "Visit in peak summer for the most colorful flower displays"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-three-gems-by-james-turrell.png?alt=media&token=a9d5719f-1efb-44ad-b1ed-55c9d530d4c8",
-    "collectionRadius": "regular"
-  },
-  {
-    "id": "us-ca-sf-portal-of-the-past",
-    "name": "Portals of the Past",
-    "latitude": 37.77076826928884,
-    "longitude": -122.48248596068633,
-    "address": "Golden Gate Park, John F Kennedy Dr, San Francisco, CA 94117",
-    "collectionIds": [
-      "sf-golden-gate-park"
-    ],
-    "about": "Marble doorway from A.N. Towne's Nob Hill mansion, the only remnant left standing after the 1906 earthquake, now a memorial beside Lloyd Lake.",
-    "thingsToDoFromEditors": [
-      "Photograph the columns reflected in Lloyd Lake at sunrise",
-      "Walk around the lake to see the columns from different perspectives"
-    ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-portal-of-the-past.png?alt=media&token=721a75f5-3ae2-474e-936b-051c6df65e3a",
-    "collectionRadius": "regular"
+    "geohash": "9q8ytxz9",
+    "collectionRadius": "regular",
+    "aspectRatio": 0.98
   },
   {
     "id": "us-ca-sf-conservatory-of-flowers",
     "name": "Conservatory of Flowers",
     "latitude": 37.77261499169494,
     "longitude": -122.46023941131006,
-    "address": "100 John F Kennedy Dr\nSan Francisco, CA 94118",
+    "address": "100 John F Kennedy Dr\nSan Francisco, CA, USA 94118",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-conservatory-of-flowers.png?alt=media&token=e03b7994-40fb-4b51-8363-8c9d00bc96e4",
     "collectionIds": [
       "sf-golden-gate-park",
       "sf-must-visits"
@@ -437,25 +445,66 @@
       "Visit the Aquatic Plants room to see giant water lilies and carnivorous plants",
       "Come during holiday season for spectacular light displays on the building"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-conservatory-of-flowers.png?alt=media&token=e03b7994-40fb-4b51-8363-8c9d00bc96e4",
-    "collectionRadius": "regular"
+    "geohash": "9q8yvk71",
+    "collectionRadius": "regular",
+    "aspectRatio": 1.19
   },
   {
-    "id": "us-ca-sf-bison-paddock",
-    "name": "Bison Paddock",
-    "latitude": 37.76968976551815,
-    "longitude": -122.49823606313684,
-    "address": "1237 John F Kennedy Dr, San Francisco, CA 94121",
+    "id": "us-ca-sf-dolores-park",
+    "name": "Dolores Park",
+    "latitude": 37.75976910914757,
+    "longitude": -122.42712380019294,
+    "address": "Dolores St & 19th St\nSan Francisco, CA, USA 94114",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-dolores-park.png?alt=media&token=a38384a5-a529-4790-bc1d-5edf58a4626f",
     "collectionIds": [
-      "sf-golden-gate-park"
+      "sf-must-visits"
     ],
-    "about": "Since 1891, Golden Gate Park has maintained American bison, originally brought to help save the species when only hundreds remained.",
+    "about": "Once a Jewish cemetery and 1906 earthquake refugee camp, this beloved 16-acre park now hosts picnics, cultural events, and stunning skyline views.",
     "thingsToDoFromEditors": [
-      "Visit early morning (7-9am) when bison are most active and near the fence",
-      "Bring binoculars if they're grazing in the back of the paddock"
+      "Grab Crème Brûlée ice cream from Bi-Rite",
+      "Visit the southwest corner at sunset"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-bison-paddock.png?alt=media&token=dbc8cd2f-8699-4053-950f-9ed31123a90f",
-    "collectionRadius": "regularplus"
+    "geohash": "9q8yy1gq",
+    "collectionRadius": "regular",
+    "aspectRatio": 1
+  },
+  {
+    "id": "us-ca-sf-equator-coffee",
+    "name": "Equator Coffee",
+    "latitude": 37.80778763546057,
+    "longitude": -122.47566033185458,
+    "address": "Golden Gate Bridge Plaza\nSan Francisco, CA, USA 94129",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-equator-coffee.png?alt=media&token=292cbe65-2322-48bb-9f88-0637408aaaf5",
+    "collectionIds": [
+      "sf-coffee"
+    ],
+    "about": "This is in the historic Round House building that was originally built for toll collectors who worked the bridge.",
+    "thingsToDoFromEditors": [
+      "Order the single-origin pour-over to taste their roasting expertise",
+      "Walk to Baker Beach to collect another stamp"
+    ],
+    "geohash": "9q8zhfxy",
+    "collectionRadius": "regular",
+    "aspectRatio": 1.36
+  },
+  {
+    "id": "us-ca-sf-ferry-building",
+    "name": "Ferry Building",
+    "latitude": 37.795501817721586,
+    "longitude": -122.39361360344144,
+    "address": "1 Ferry Building\nSan Francisco, CA, USA 94111",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-ferry-building.png?alt=media&token=04f4c81b-face-430f-ad8c-835e75c3737b",
+    "collectionIds": [
+      "sf-must-visits"
+    ],
+    "about": "Completed in 1898, this Beaux-Arts terminal survived the 1906 earthquake and now houses a gourmet marketplace with a renowned farmers' market.",
+    "thingsToDoFromEditors": [
+      "Find porchetta sandwich during the Saturday farmers' market (8am-2pm)",
+      "Taste Vietnamese Coffee ice cream from Humphry Slocombe"
+    ],
+    "geohash": "9q8znb7w",
+    "collectionRadius": "regular",
+    "aspectRatio": 1.03
   },
   {
     "id": "us-ca-sf-fort-mason-community-garden",
@@ -463,6 +512,7 @@
     "latitude": 37.8059854184772,
     "longitude": -122.42785617169,
     "address": "Pope Rd\nSan Francisco, CA, USA 94109",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-fort-mason-community-garden.png?alt=media&token=12ba477e-5ece-4c42-b26f-a08770c1cc73",
     "collectionIds": [
       "sf-community-gardens"
     ],
@@ -471,25 +521,28 @@
       "Walk through the terraced gardens then continue to Fort Mason waterfront",
       "Visit in spring/summer to see the gardens at their most lush"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-fort-mason-community-garden.png?alt=media&token=12ba477e-5ece-4c42-b26f-a08770c1cc73",
-    "collectionRadius": "regular"
+    "geohash": "9q8zn46g",
+    "collectionRadius": "regular",
+    "aspectRatio": 0.99
   },
   {
-    "id": "us-ca-sf-bernal-heights-community-garden",
-    "name": "Bernal Heights Community Garden",
-    "latitude": 37.74219499983504,
-    "longitude": -122.41309706731519,
-    "address": "3501-3581 Folsom St\nSan Francisco, CA, USA 94110",
+    "id": "us-ca-sf-four-barrel",
+    "name": "Four Barrel Coffee",
+    "latitude": 37.76702523672126,
+    "longitude": -122.42195009409077,
+    "address": "375 Valencia St\nSan Francisco, CA, USA 94103",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-four-barrel.png?alt=media&token=702744ac-87a5-47a1-bd62-2923f41d3ed8",
     "collectionIds": [
-      "sf-community-gardens"
+      "sf-coffee"
     ],
-    "about": "Neighborhood activists transformed an abandoned hillside into this thriving garden in 1982, now with 90+ organic plots.",
+    "about": "Founded in 2008, this café has no Wi-Fi to encourage conversation and roasts beans on a vintage German Probat machine visible to customers.",
     "thingsToDoFromEditors": [
-      "Check the bulletin board for free gardening workshops and events",
-      "Hike up Bernal Hill right after for 360-degree city views"
+      "Order classic drip coffee to taste their legendary roasting",
+      "Explore Clarion Alley's murals one block away at Valencia & 17th"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-bernal-heights-community-garden.png?alt=media&token=85a0f58d-a0c5-443a-b637-bb38b39b33ef",
-    "collectionRadius": "regular"
+    "geohash": "9q8yy5r0",
+    "collectionRadius": "regular",
+    "aspectRatio": 0.97
   },
   {
     "id": "us-ca-sf-garden-for-the-environment",
@@ -497,6 +550,7 @@
     "latitude": 37.75922873824694,
     "longitude": -122.46363297974044,
     "address": "1590 7th Ave\nSan Francisco, CA, USA 94122",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-garden-for-the-environment.png?alt=media&token=908e089b-f64a-491e-9a1c-4c334272fb70",
     "collectionIds": [
       "sf-community-gardens"
     ],
@@ -505,25 +559,199 @@
       "Sign up for a free weekend workshop on composting or native plants",
       "Explore the native plant section for California gardening ideas"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-garden-for-the-environment.png?alt=media&token=908e089b-f64a-491e-9a1c-4c334272fb70",
-    "collectionRadius": "regular"
+    "geohash": "9q8yv3be",
+    "collectionRadius": "regular",
+    "aspectRatio": 0.99
   },
   {
-    "id": "us-ca-sf-clipper-community-garden",
-    "name": "Clipper Community Garden",
-    "latitude": 37.74786044648981,
-    "longitude": -122.44313454856169,
-    "address": "855 Clipper Terrace\nSan Francisco, CA, USA 94114",
+    "id": "us-ca-sf-golden-gate-viewpoint",
+    "name": "Golden Gate Viewpoint",
+    "latitude": 37.82877635030523,
+    "longitude": -122.48603226554782,
+    "address": "Old Conzelman Rd\nMill Valley, CA, USA 94941",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-golden-gate-viewpoint.png?alt=media&token=77e5c526-006a-41c2-a637-57ee8a6bd9fb",
     "collectionIds": [
-      "sf-community-gardens"
+      "sf-must-visits"
     ],
-    "about": "Terraced hillside garden established in 1983 with panoramic views from downtown to the bay.",
+    "about": "Breathtaking elevated viewpoint in the Marin Headlands offering iconic shots of the Golden Gate Bridge with San Francisco behind it.",
     "thingsToDoFromEditors": [
-      "Walk the terraced paths for unique city views between the garden plots",
-      "Visit in peak summer for the most colorful flower displays"
+      "You need a car to drive up here",
+      "You can see the Golden Gate with San Francisco from the other side"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-clipper-community-garden.png?alt=media&token=f19981e6-29d8-4a7d-8e0b-a8fce4e09d22",
-    "collectionRadius": "regular"
+    "geohash": "9q8zhy82",
+    "collectionRadius": "regular",
+    "aspectRatio": 0.93
+  },
+  {
+    "id": "us-ca-sf-japanese-tea-garden",
+    "name": "Japanese Tea Garden",
+    "latitude": 37.77008990002528,
+    "longitude": -122.47034070170011,
+    "address": "75 Hagiwara Tea Garden Dr, San Francisco, CA 94118",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-japanese-tea-garden.png?alt=media&token=0ccffec1-3891-4f20-bec9-911536950516",
+    "collectionIds": [
+      "sf-golden-gate-park"
+    ],
+    "about": "The oldest public Japanese garden in the United States, created in 1894, is where the fortune cookie was invented by Makoto Hagiwara in 1914.",
+    "thingsToDoFromEditors": [
+      "Arrive right at opening (9am) for serene photos before crowds",
+      "Stop at the tea house for traditional tea and fortune cookies"
+    ],
+    "geohash": "9q8yv5gf",
+    "collectionRadius": "regular",
+    "aspectRatio": 0.98
+  },
+  {
+    "id": "us-ca-sf-japantown",
+    "name": "Japantown",
+    "latitude": 37.785073880854185,
+    "longitude": -122.42987282230602,
+    "address": "1610 Geary Blvd\nSan Francisco, CA, USA 94115",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-japantown.png?alt=media&token=6a2d1d5c-2d67-479b-b124-fc97c22e7b6e",
+    "collectionIds": [
+      "sf-must-visits"
+    ],
+    "about": "One of only three remaining Japantowns in America, centered around Japan Center with its iconic Peace Pagoda gifted by Japan in 1968.",
+    "thingsToDoFromEditors": [
+      "Browse Japanese snacks, drinks, and bento at Nijiya Market",
+      "Eat amazing udon, yakitori, takoyaki, matcha ice cream, and mochi donuts"
+    ],
+    "geohash": "9q8yyn96",
+    "collectionRadius": "regular",
+    "aspectRatio": 1
+  },
+  {
+    "id": "us-ca-sf-neighbors-corner",
+    "name": "Neighbor's Corner",
+    "latitude": 37.755580513369075,
+    "longitude": -122.43877098541338,
+    "address": "499 Douglass St\nSan Francisco, CA, USA 94114",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-neighbors-corner.png?alt=media&token=e3c6725e-d3b8-4a13-8cea-ea2f8eb1ad18",
+    "collectionIds": [
+      "sf-coffee"
+    ],
+    "about": "Tucked in a quiet Castro/Noe Valley corner, this cozy café serves Four Barrel coffee with Japanese-inspired pastries and savory dishes.",
+    "thingsToDoFromEditors": [
+      "Order their house drip coffee with a fresh pastry",
+      "Grab a seat by the window and watch the neighborhood go by"
+    ],
+    "geohash": "9q8yvc4y",
+    "collectionRadius": "regular",
+    "aspectRatio": 0.97
+  },
+  {
+    "id": "us-ca-sf-oracle-park",
+    "name": "Oracle Park",
+    "latitude": 37.77836740581089,
+    "longitude": -122.38967830446195,
+    "address": "24 Willie Mays Plaza\nSan Francisco, CA, USA 94107",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-oracle-park.png?alt=media&token=17ccfb52-07d6-4837-b01d-604365212e49",
+    "collectionIds": [
+      "sf-must-visits"
+    ],
+    "about": "Opened in 2000 as the first privately financed MLB ballpark since Dodger Stadium, home to the Giants and McCovey Cove's kayaking \"splash hit\" fans.",
+    "thingsToDoFromEditors": [
+      "Order garlic fries and crab sandwich - two ballpark food legends",
+      "Walk along the San Francisco Bay Trail to see under the Bay Bridge"
+    ],
+    "geohash": "9q8yyvqd",
+    "collectionRadius": "regular",
+    "aspectRatio": 1.34
+  },
+  {
+    "id": "us-ca-sf-painted-ladies",
+    "name": "Painted Ladies",
+    "latitude": 37.7762629086978,
+    "longitude": -122.43275477855283,
+    "address": "710-720 Steiner St\nSan Francisco, CA, USA 94117",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-painted-ladies.png?alt=media&token=4199b3a3-57a1-4db5-bf59-5e1d93de8dcf",
+    "collectionIds": [
+      "sf-must-visits"
+    ],
+    "about": "Built 1892-1896, these seven Victorian houses (called \"Postcard Row\") survived the 1906 earthquake and became world-famous from Full House's opening credits.",
+    "thingsToDoFromEditors": [
+      "Bring a picnic blanket and snacks to enjoy the view from the park",
+      "Take photos from the Alamo Square lawn in late afternoon when the houses glow golden"
+    ],
+    "geohash": "9q8yvuzn",
+    "collectionRadius": "regular",
+    "aspectRatio": 1
+  },
+  {
+    "id": "us-ca-sf-palace-of-fine-arts",
+    "name": "Palace of Fine Arts",
+    "latitude": 37.802929147736506,
+    "longitude": -122.44842353927599,
+    "address": "3301 Lyon St\nSan Francisco, CA, USA 94123",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-palace-of-fine-arts.png?alt=media&token=8a0cc930-2930-41fb-985e-c3cadd1b3516",
+    "collectionIds": [
+      "sf-must-visits"
+    ],
+    "about": "Stunning Greco-Roman monument designed by Bernard Maybeck for the 1915 Panama-Pacific Exposition, featuring a massive rotunda reflected in a lagoon.",
+    "thingsToDoFromEditors": [
+      "Visit at golden hour for stunning light on the rotunda reflected in the lagoon",
+      "Walk around the entire lagoon to find different angles of the columns"
+    ],
+    "geohash": "9q8zj9gf",
+    "collectionRadius": "regular",
+    "aspectRatio": 1.22
+  },
+  {
+    "id": "us-ca-sf-pier-39",
+    "name": "Pier 39",
+    "latitude": 37.80867636213306,
+    "longitude": -122.40982017804298,
+    "address": "Beach St & The Embarcadero\nSan Francisco, CA, USA 94133",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-pier-39.png?alt=media&token=67272d49-24c8-4b52-a389-bfcb6ef20032",
+    "collectionIds": [
+      "sf-must-visits"
+    ],
+    "about": "Waterfront marketplace opened in 1978 that became famous when California sea lions arrived in 1990 after the Loma Prieta earthquake and stayed.",
+    "thingsToDoFromEditors": [
+      "Go to the end and smell the sea lions",
+      "Walk to Fisherman's Wharf and Ghirardelli Chocolate"
+    ],
+    "geohash": "9q8zn6zg",
+    "collectionRadius": "regular",
+    "aspectRatio": 1
+  },
+  {
+    "id": "us-ca-sf-pinhole-coffee",
+    "name": "Pinhole Coffee",
+    "latitude": 37.739620678258134,
+    "longitude": -122.41901983576798,
+    "address": "231 Cortland Ave\nSan Francisco, CA, USA 94110",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-pinhole-coffee.png?alt=media&token=c9ad8e44-df96-441c-91f2-0e3cac007589",
+    "collectionIds": [
+      "sf-coffee"
+    ],
+    "about": "Opened in 2014 in an 1880s building, this certified green business features a vibrant rainbow wall and serves \"Masarap\" (Tagalog for \"delicious\").",
+    "thingsToDoFromEditors": [
+      "Order their perfectly crafted flat white at the window bar",
+      "Walk up to Bernal Heights Park for panoramic city views"
+    ],
+    "geohash": "9q8ywq31",
+    "collectionRadius": "regular",
+    "aspectRatio": 1.3
+  },
+  {
+    "id": "us-ca-sf-portal-of-the-past",
+    "name": "Portals of the Past",
+    "latitude": 37.77076826928884,
+    "longitude": -122.48248596068633,
+    "address": "Golden Gate Park, John F Kennedy Dr, San Francisco, CA 94117",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-portal-of-the-past.png?alt=media&token=721a75f5-3ae2-474e-936b-051c6df65e3a",
+    "collectionIds": [
+      "sf-golden-gate-park"
+    ],
+    "about": "Marble doorway from A.N. Towne's Nob Hill mansion, the only remnant left standing after the 1906 earthquake, now a memorial beside Lloyd Lake.",
+    "thingsToDoFromEditors": [
+      "Photograph the columns reflected in Lloyd Lake at sunrise",
+      "Walk around the lake to see the columns from different perspectives"
+    ],
+    "geohash": "9q8yugfy",
+    "collectionRadius": "regular",
+    "aspectRatio": 1.54
   },
   {
     "id": "us-ca-sf-potero-hill-community-garden",
@@ -531,6 +759,7 @@
     "latitude": 37.75980671754864,
     "longitude": -122.40528423979812,
     "address": "780 San Bruno Ave\nSan Francisco, CA, USA 94107",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-potero-hill-community-garden.png?alt=media&token=3bf1c06e-0b68-41cf-a238-271774c687bf",
     "collectionIds": [
       "sf-community-gardens"
     ],
@@ -539,89 +768,47 @@
       "Explore the garden then check out local cafés and restaurants along 18th Street",
       "Visit during monthly open houses to meet gardeners and learn tips"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-potero-hill-community-garden.png?alt=media&token=3bf1c06e-0b68-41cf-a238-271774c687bf",
-    "collectionRadius": "regular"
+    "geohash": "9q8yy9gn",
+    "collectionRadius": "regular",
+    "aspectRatio": 1
   },
   {
-    "id": "us-ca-sf-alemany-farm",
-    "name": "Alemany Farm",
-    "latitude": 37.73244001063801,
-    "longitude": -122.41972746552071,
-    "address": "700 Alemany Blvd\nSan Francisco, CA, USA 94110",
+    "id": "us-ca-sf-powell-hyde-cable-car",
+    "name": "Powell-Hyde Cable Car",
+    "latitude": 37.78477446697081,
+    "longitude": -122.40771095243076,
+    "address": "Cable Car Turnaround Powell St\nSan Francisco, CA, USA 94102",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-powell-hyde-cable-car.png?alt=media&token=7ea5f630-ba13-4a38-8c8c-374a684e2009",
     "collectionIds": [
-      "sf-community-gardens"
+      "sf-must-visits"
     ],
-    "about": "San Francisco's largest urban farm at 3.5 acres, operated by volunteers who grow produce distributed free to the community for food security.",
+    "about": "One of San Francisco's most scenic cable car routes since 1891, climbing steep hills with stunning bay views and passing through Russian Hill.",
     "thingsToDoFromEditors": [
-      "Join Saturday volunteer mornings (10am) to help with planting and harvesting",
-      "Take in the sweeping city views from this hilltop farm"
+      "Board at Powell & Market early morning to avoid 2-hour waits",
+      "Stand on the outer running board going down Hyde Street for thrilling bay views"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-alemany-farm.png?alt=media&token=9e3171ce-0d02-4781-af33-fbfba6287f9e",
-    "collectionRadius": "regularplus"
+    "geohash": "9q8yyw92",
+    "collectionRadius": "regular",
+    "aspectRatio": 1
   },
   {
-    "id": "us-me-bar-harbor-bubble-rock",
-    "name": "Bubble Rock",
-    "latitude": 44.33935709878886,
-    "longitude": -68.25340104731045,
-    "address": "Bubble Rock Trail\nBar Harbor, ME, USA 04609",
+    "id": "us-ca-sf-saint-frank-coffee",
+    "name": "Saint Frank Coffee",
+    "latitude": 37.79845985628947,
+    "longitude": -122.42215826061671,
+    "address": "2340 Polk St\nSan Francisco, CA, USA 94109",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-saint-frank-coffee.png?alt=media&token=84e0a68f-71d5-417a-8849-102a3c499ec8",
     "collectionIds": [
-      "acadia-must-visits"
+      "sf-coffee"
     ],
-    "about": "Massive 50-ton glacial boulder deposited by retreating glaciers 18,000 years ago, precariously perched on the edge of South Bubble Mountain.",
+    "about": "Minimalist Polk Street café founded in 2013, named after a beloved family dog (Frank), not a saint.",
     "thingsToDoFromEditors": [
-      "Take the classic 'pushing the rock' optical illusion photo",
-      "Continue to South Bubble summit for panoramic Jordan Pond views"
+      "Ask baristas about their rotating single-origin espresso - they love sharing details",
+      "Try the cortado to experience their roasting at its purest"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-me-bar-harbor-bubble-rock.png?alt=media&token=ff2a1fcc-baa8-4a1e-813f-6e76771f0a58",
-    "collectionRadius": "regular"
-  },
-  {
-    "id": "us-me-bar-harbor-beehive-trail-summit",
-    "name": "Beehive Trail Summit",
-    "latitude": 44.335420181862744,
-    "longitude": -68.1910357769886,
-    "address": "Beehive Trail\nBar Harbor, ME, USA 04609",
-    "collectionIds": [
-      "acadia-must-visits"
-    ],
-    "about": "Thrilling 1.5-mile climb with iron rungs and ladders bolted into exposed cliff faces, reaching a 520-foot summit with panoramic ocean views.",
-    "thingsToDoFromEditors": [
-      "Arrive before 7am to avoid waiting at the iron rungs sections",
-      "Wear gloves for better grip on the metal rungs and ladders"
-    ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-me-bar-harbor-beehive-trail-summit.png?alt=media&token=b89740aa-96e2-4017-b114-3905817ea24f",
-    "collectionRadius": "regular"
-  },
-  {
-    "id": "us-me-bar-harbor-beals",
-    "name": "Beal's Lobster Pier",
-    "latitude": 44.27582873952332,
-    "longitude": -68.31262860701447,
-    "address": "182 Clark Point Rd\nSouthwest Harbor, ME, USA 04679",
-    "collectionIds": [],
-    "about": "Family-run working pier serving fresh lobster rolls caught daily from their own boats, with picnic tables overlooking the harbor since 1985.",
-    "thingsToDoFromEditors": [
-      "Order the warm buttered lobster roll over cold mayo version",
-      "Bring cash - they don't take cards but have an ATM nearby"
-    ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-me-bar-harbor-beals.png?alt=media&token=1d1bff01-59fb-4de5-be96-1e416b8e4e50",
-    "collectionRadius": "regular"
-  },
-  {
-    "id": "us-me-bar-harbor-mckays-public-house",
-    "name": "McKay's Public House",
-    "latitude": 44.385989414466714,
-    "longitude": -68.20437601454792,
-    "address": "231 Main St\nBar Harbor, ME, USA 04609",
-    "collectionIds": [],
-    "about": "An Irish-style pub named after owner Mike McKay who visited Acadia, fell in love, and never left.",
-    "thingsToDoFromEditors": [
-      "Order fish & chips with a local Maine beer like Allagash or Shipyard",
-      "Peak season May-Oct; check ahead in winter to confirm hours"
-    ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-me-bar-harbor-mckays-public-house.png?alt=media&token=6673d53e-b8e7-46b4-ab5b-d805a72be157",
-    "collectionRadius": "regular"
+    "geohash": "9q8zn0yz",
+    "collectionRadius": "regular",
+    "aspectRatio": 0.97
   },
   {
     "id": "us-ca-sf-san-francisco-airport",
@@ -629,6 +816,7 @@
     "latitude": 37.616311330998435,
     "longitude": -122.38619540440072,
     "address": "San Francisco International Airport\nSan Francisco, CA, USA 94128",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-san-francisco-airport.png?alt=media&token=3d7c59bc-5247-4293-8f26-f7eead61bd68",
     "collectionIds": [
       "airports-of-the-world"
     ],
@@ -637,279 +825,275 @@
       "Explore the SFO Museum's rotating exhibits in all terminals - completely free",
       "Try local favorites: Tony's Pizza Napoletana (Terminal 1) and Tartine (Terminal A)"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-san-francisco-airport.png?alt=media&token=3d7c59bc-5247-4293-8f26-f7eead61bd68",
-    "collectionRadius": "xlarge"
+    "geohash": "9q8vzpc4",
+    "collectionRadius": "xlarge",
+    "aspectRatio": 1
   },
   {
-    "id": "us-ca-mill-valley-mill-valley-public-library",
-    "name": "Mill Valley Public Library",
-    "latitude": 37.90602492711603,
-    "longitude": -122.5542498818647,
-    "address": "375 Throckmorton Ave\nMill Valley, CA 94941",
+    "id": "us-ca-sf-sightglass-coffee",
+    "name": "Sightglass Coffee",
+    "latitude": 37.777041665701155,
+    "longitude": -122.40845792491726,
+    "address": "270 7th St\nSan Francisco, CA, USA 94103",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-sightglass-coffee.png?alt=media&token=0a63a212-9fa7-4020-91ae-645b51750e6d",
     "collectionIds": [
-      "libraries-that-make-you-forget-time"
+      "sf-coffee"
     ],
-    "about": "Award-winning 1966 library nestled among towering redwoods with floor-to-ceiling windows and a wood-burning fireplace.",
+    "about": "Founded in 2009, this spacious SoMa warehouse features industrial-chic design with on-site roasting visible through glass walls and a \"seed-to-cup\" focus.",
     "thingsToDoFromEditors": [
-      "Sit by the large windows overlooking the creek and redwood groves",
-      "Walk around behind the library into the woods and breathe in the fresh air"
+      "Watch them roast coffee through the glass-walled roasting room",
+      "Try the espresso tonic on warm days - refreshing and caffeinated"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-mill-valley-mill-valley-public-library.png?alt=media&token=9ce791ba-7428-4457-9f30-03704c7ca002",
-    "collectionRadius": "regular"
+    "geohash": "9q8yyt0g",
+    "collectionRadius": "regular",
+    "aspectRatio": 0.97
   },
   {
-    "id": "us-ca-calistoga-castello-di-amorosa",
-    "name": "Castello di Amorosa",
-    "latitude": 38.558445168687285,
-    "longitude": -122.54261329799944,
-    "address": "4045 St Helena Hwy\nCalistoga, CA, USA 94515",
-    "collectionIds": [],
-    "about": "Authentic 13th century Tuscan castle winery built over 15 years with 107 rooms, moat, and drawbridge.",
-    "thingsToDoFromEditors": [
-      "Book the Diamond Estate Tour for a guided walk through the Great Hall and wine caves",
-      "Book the Seated Tasting Experience to sample five wines while exploring the castle at your own pace"
-    ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-calistoga-castello-di-amorosa.png?alt=media&token=f5191a99-1cb6-44e4-b0d7-f720ed6fd368",
-    "collectionRadius": "regular"
-  },
-  {
-    "id": "us-ca-marshall-hog-island-oyster-farm",
-    "name": "Hog Island Oyster Farm",
-    "latitude": 38.16232827714116,
-    "longitude": -122.8936648972723,
-    "address": "20215 Shoreline Hwy\nMarshall, CA, USA 94940",
-    "collectionIds": [],
-    "about": "Founded in the 1980s by marine biologists, this farm supplies fresh oysters to Bay Area restaurants including their Ferry Building oyster bar.",
-    "thingsToDoFromEditors": [
-      "Dine outside and enjoy fresh oysters while looking out at Tomales Bay",
-      "Book a farm tour to learn about sustainable aquaculture and taste signature Sweetwater oysters"
-    ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-marshall-hog-island-oyster-farm.png?alt=media&token=bf92ba08-24f2-4a52-bec5-88d9d5a2c7f0",
-    "collectionRadius": "regular"
-  },
-  {
-    "id": "us-ny-nyc-bethesda-fountain",
-    "name": "Bethesda Fountain",
-    "latitude": 40.77432385893823,
-    "longitude": -73.9708430029675,
-    "address": "Bethesda Fountain\nNew York, NY, USA 10024",
+    "id": "us-ca-sf-the-coffee-movement",
+    "name": "The Coffee Movement",
+    "latitude": 37.760618102039594,
+    "longitude": -122.4105447517096,
+    "address": "2814 19th St\nSan Francisco, CA, USA 94110",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-the-coffee-movement.png?alt=media&token=0ff12c54-98bf-444b-8be7-6e257feb0f23",
     "collectionIds": [
-      "discover-central-park"
+      "sf-coffee"
     ],
-    "about": "Iconic Central Park fountain featuring Angel of the Waters by Emma Stebbins, the first woman to receive a public art commission in NYC in 1863.",
+    "about": "Intimate Mission District café known for innovative drinks like the \"Dirty Horchata\" (espresso with house-made horchata) and fresh donuts.",
     "thingsToDoFromEditors": [
-      "Listen to street musicians who perform around the fountain",
-      "Walk through the arcade to see the restored Minton tile ceiling"
+      "Order their donuts with specialty coffee for the perfect pairing",
+      "Note: This location has very short hours - if you want to try their coffee, check out another branch!"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ny-nyc-bethesda-fountain.png?alt=media&token=dd5ed11b-36c5-435b-9c55-1fec9bdc4ad8",
-    "collectionRadius": "regular"
+    "geohash": "9q8yy6p7",
+    "collectionRadius": "regular",
+    "aspectRatio": 1.22
   },
   {
-    "id": "us-ny-nyc-jacqueline-kennedy-onassis",
-    "name": "Jacqueline Kennedy Onassis Reservoir",
-    "latitude": 40.78217342996016,
-    "longitude": -73.96256475545574,
-    "address": "Jacqueline Kennedy Onassis Reservoir\nNew York, NY 10128",
+    "id": "us-ca-sf-the-mill",
+    "name": "The Mill",
+    "latitude": 37.77647812185205,
+    "longitude": -122.43796816418411,
+    "address": "736 Divisadero St\nSan Francisco, CA, USA 94117",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-the-mill.png?alt=media&token=59079047-e6a5-465a-8f0f-55178c623b6b",
     "collectionIds": [
-      "discover-central-park"
+      "sf-coffee"
     ],
-    "about": "Renamed in 1994 for Jackie Kennedy Onassis, who jogged here regularly. The 1.58-mile track offers stunning Manhattan skyline views.",
+    "about": "Industrial café opened in 2012 that served a $4 toast, a symbol of SF's food scene in the 2010s.",
     "thingsToDoFromEditors": [
-      "Walk or run the 1.58-mile path around the reservoir for beautiful skyline views",
-      "Visit at sunrise or sunset for the most spectacular light on the water"
+      "Order the cinnamon sugar toast - their iconic signature item",
+      "Walk to Alamo Square and the Painted Ladies 10 minutes away"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ny-nyc-jacqueline-kennedy-onassis.png?alt=media&token=ac40bd79-5d97-4324-b984-ca0deed745e6",
-    "collectionRadius": "regularplus"
+    "geohash": "9q8yvugr",
+    "collectionRadius": "regular",
+    "aspectRatio": 0.97
   },
   {
-    "id": "us-ny-nyc-the-ramble",
-    "name": "The Ramble",
-    "latitude": 40.77786894698316,
-    "longitude": -73.96971601812602,
-    "address": "79th St Transverse\nNew York, NY 10024",
+    "id": "us-ca-sf-three-gems-by-james-turrell",
+    "name": "Three Gems by James Turrell",
+    "latitude": 37.77109659878524,
+    "longitude": -122.46959614379908,
+    "address": "50 Hagiwara Tea Garden Dr, San Francisco, CA 94118",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-three-gems-by-james-turrell.png?alt=media&token=a9d5719f-1efb-44ad-b1ed-55c9d530d4c8",
     "collectionIds": [
-      "discover-central-park"
+      "sf-golden-gate-park"
     ],
-    "about": "36-acre wilderness and one of North America's best birdwatching spots with over 230 species spotted here.",
+    "about": "James Turrell's 2005 skyspace with stone benches arranged in a circle where you sit, look up through a square opening, and watch the sky.",
     "thingsToDoFromEditors": [
-      "Bring binoculars during spring migration (April-May) for incredible birdwatching",
-      "Let yourself get lost on the winding paths - it's designed to feel like you've left the city"
+      "Sit, watch the sky, and listen to the world",
+      "No ticket or reservation required"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ny-nyc-the-ramble.png?alt=media&token=f8334ef3-db0f-49a4-a0e9-a231015dfdcc",
-    "collectionRadius": "regularplus"
+    "geohash": "9q8yvhh2",
+    "collectionRadius": "regular",
+    "aspectRatio": 1
   },
   {
-    "id": "us-ny-nyc-conservatory-garden",
-    "name": "Conservatory Garden",
-    "latitude": 40.79377772795462,
-    "longitude": -73.95247967437285,
-    "address": "1233 5th Ave\nNew York, NY 10029",
+    "id": "us-ca-sf-twin-peaks",
+    "name": "Twin Peaks",
+    "latitude": 37.75342416835136,
+    "longitude": -122.44737929240276,
+    "address": "501 Twin Peaks Blvd\nSan Francisco, CA, USA 94114",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-twin-peaks.png?alt=media&token=8cd38197-19e3-47da-9476-189ce3eaf5d6",
     "collectionIds": [
-      "discover-central-park"
+      "sf-must-visits"
     ],
-    "about": "Central Park's only formal garden with 6 acres divided into Italian, French, and English styles.",
+    "about": "Rising 925 feet above sea level, these summits offer breathtaking 360-degree views and host the endangered Mission Blue Butterfly.",
     "thingsToDoFromEditors": [
-      "Visit in spring (April-May) to see the famous Tulip Festival with 20,000+ tulips",
-      "Enter through the Vanderbilt Gate at 105th Street, one of Central Park's most ornate entrances"
+      "Arrive 30 minutes before sunset",
+      "Bring layers - it gets windy and cold"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ny-nyc-conservatory-garden.png?alt=media&token=efda1070-7422-4165-a1b9-b876775406ff",
-    "collectionRadius": "regularplus"
+    "geohash": "9q8yv8u9",
+    "collectionRadius": "regular",
+    "aspectRatio": 1.22
   },
   {
-    "id": "us-ny-nyc-bow-bridge",
-    "name": "Bow Bridge",
-    "latitude": 40.77582993707421,
-    "longitude": -73.97184158311308,
-    "address": "Bow Bridge\nNew York, NY 10024",
+    "id": "us-ca-solvang",
+    "name": "Solvang",
+    "latitude": 34.59420224442747,
+    "longitude": -120.13859958918809,
+    "address": "1618 Copenhagen Dr, Solvang, CA 93463",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-solvang.png?alt=media&token=ab7e4046-7ede-4c2c-a16b-7cba47e72485",
+    "collectionIds": [],
+    "about": "This charming Danish village was founded in 1911 by Danish educators seeking to preserve their heritage in sunny California. Solvang means \"sunny field\" in Danish.",
+    "thingsToDoFromEditors": [
+      "Sample authentic Danish pastries and aebleskiver at local bakeries",
+      "Stroll through town to admire half-timbered buildings and windmills"
+    ],
+    "geohash": "9q4sf1tt",
+    "collectionRadius": "regular",
+    "aspectRatio": 1
+  },
+  {
+    "id": "us-ca-tahoe-heavenly",
+    "name": "Heavenly Mountain Resort",
+    "latitude": 38.93744594803447,
+    "longitude": -119.92229922230797,
+    "address": "South Lake Tahoe, CA",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-tahoe-heavenly.png?alt=media&token=3779b04b-3b6b-43a1-a495-9f9f8449594e",
+    "collectionIds": [],
+    "about": "Heavenly is one of the few resorts where you can ski across two states—California and Nevada—literally crossing state lines on skis.",
+    "thingsToDoFromEditors": [
+      "Take the Heavenly Gondola to the summit for panoramic Lake Tahoe views",
+      "Enjoy terrain for all skill levels from beginner runs like First Ride to challenging expert runs like Gunbarrel"
+    ],
+    "geohash": "9qftx075",
+    "collectionRadius": "xlarge",
+    "aspectRatio": 1
+  },
+  {
+    "id": "us-ca-yosemite-bridalveil-fall",
+    "name": "Bridalveil Fall",
+    "latitude": 37.71669112399343,
+    "longitude": -119.64636777883518,
+    "address": "Yosemite National Park, Northside Dr\nTuolumne Meadows, CA, USA 95389",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-yosemite-bridalveil-fall.png?alt=media&token=cb1757e0-a3a7-4d75-aa37-a559dc61ac74",
     "collectionIds": [
-      "discover-central-park"
+      "yosemite-must-visits"
     ],
-    "about": "One of Central Park's most iconic cast-iron bridges, built in 1862 and named for its graceful bow shape, spanning the Lake with stunning skyline views.",
+    "about": "Tumbling 620 feet from a hanging valley formed by glaciers, the mist blows sideways in wind like a bride's veil, giving the waterfall its name.",
     "thingsToDoFromEditors": [
-      "Visit at sunrise or golden hour for the best photos with soft light reflecting off the water",
-      "Walk to the center of the bridge for the classic view looking north toward the San Remo towers"
+      "Feel the cool mist on warm spring and summer days",
+      "Spot rainbows in the mist on sunny afternoons",
+      "Combine with Tunnel View in one stop off Wawona Road"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ny-nyc-bow-bridge.png?alt=media&token=443c4e88-8a36-4a47-841c-dfdf6f22f5b6",
-    "collectionRadius": "regular"
+    "geohash": "9qdyt6h5",
+    "collectionRadius": "regular",
+    "aspectRatio": 1.6
   },
   {
-    "id": "us-ny-nyc-the-mall-and-literary-walk",
-    "name": "The Mall and Literary Walk",
-    "latitude": 40.77254781522678,
-    "longitude": -73.97151193545764,
-    "address": "The Mall\nNew York, NY 10022",
+    "id": "us-ca-yosemite-el-capitan",
+    "name": "El Capitan",
+    "latitude": 37.73412534005297,
+    "longitude": -119.63774771785118,
+    "address": "Northside Dr\nTuolumne Meadows, CA, USA 95389",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-yosemite-el-capitan.png?alt=media&token=6680150b-a2c3-4319-a88b-ee56f68b6eb3",
     "collectionIds": [
-      "discover-central-park"
+      "yosemite-must-visits"
     ],
-    "about": "The only straight path in Central Park, this quarter-mile promenade features a majestic canopy of 150-year-old American elm trees and writer statues.",
+    "about": "El Capitan is one of the world's largest granite monoliths at 3,000 feet tall. Most climbers take 3-5 days; the speed record is under 2 hours.",
     "thingsToDoFromEditors": [
-      "Visit Literary Walk at the southern end to see statues of famous writers like Shakespeare",
-      "Walk under the elm canopy in fall when the golden leaves create a natural tunnel"
+      "Watch climbers ascend from El Capitan Meadow (bring binoculars)",
+      "Hike the El Capitan Trail for closer views of the face",
+      "Photograph it from Tunnel View at sunrise"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ny-nyc-the-mall-and-literary-walk.png?alt=media&token=8a71d7a9-09d9-44fc-8c8a-aa2da0c2a2d7",
-    "collectionRadius": "regular"
+    "geohash": "9qdytt63",
+    "collectionRadius": "regular",
+    "aspectRatio": 1.67
   },
   {
-    "id": "us-ny-nyc-lincoln-center-for-the-performing-arts",
-    "name": "Lincoln Center for the Performing Arts",
-    "latitude": 40.77231303514775,
-    "longitude": -73.9834150425368,
-    "address": "Lincoln Center Plaza\nNew York, NY 10023",
-    "collectionIds": [],
-    "about": "The world's largest performing arts center, built in the 1960s and home to the Met Opera, NY Philharmonic, NYC Ballet, and Juilliard.",
-    "thingsToDoFromEditors": [
-      "Visit the David Rubenstein Atrium for free performances, coffee, and free WiFi in a beautiful public space",
-      "Come at night when the buildings are illuminated and the fountain is lit up for the most stunning photos"
-    ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ny-nyc-lincoln-center-for-the-performing-arts.png?alt=media&token=30934da4-0550-4781-9714-32feeef87b46",
-    "collectionRadius": "regular"
-  },
-  {
-    "id": "us-ny-williamsburg-domino-park",
-    "name": "Domino Park",
-    "latitude": 40.715083924855314,
-    "longitude": -73.96792078995901,
-    "address": "15 River St\nBrooklyn, NY 11249",
-    "collectionIds": [],
-    "about": "Waterfront park built on the historic Domino Sugar Refinery site with Manhattan skyline views and preserved industrial artifacts.",
-    "thingsToDoFromEditors": [
-      "Walk the elevated walkway for panoramic views of the Manhattan skyline and Williamsburg Bridge",
-      "Explore the preserved industrial artifacts scattered throughout the park"
-    ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ny-williamsburg-domino-park.png?alt=media&token=456f5774-e436-4614-9cf5-21d0806e2746",
-    "collectionRadius": "regular"
-  },
-  {
-    "id": "us-ny-nyc-little-island",
-    "name": "Little Island",
-    "latitude": 40.74201366923398,
-    "longitude": -74.01062815667991,
-    "address": "Pier 55 at Hudson River Park, Hudson River Greenway\nNew York, NY 10014",
-    "collectionIds": [],
-    "about": "Floating park built on 132 tulip-shaped pillars rising from the Hudson River, opened in 2021.",
-    "thingsToDoFromEditors": [
-      "Walk the undulating pathways through over 350 species of trees, shrubs, and perennials",
-      "Bring a blanket and relax on the grassy hills while watching boats pass by on the Hudson"
-    ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ny-nyc-little-island.png?alt=media&token=bcddbc7b-faa8-49d1-92dc-84ae601da908",
-    "collectionRadius": "regular"
-  },
-  {
-    "id": "us-ny-nyc-statue-of-liberty",
-    "name": "Statue of Liberty",
-    "latitude": 40.68924219085396,
-    "longitude": -74.04454705879492,
-    "address": "New York, NY 10004",
-    "collectionIds": [],
-    "about": "The Statue of Liberty was gifted by France to the United States in 1886. The seven spikes on her crown represent the seven continents and seven seas.",
-    "thingsToDoFromEditors": [
-      "Take the ferry from Battery Park and climb the 354 steps to the crown for panoramic views of New York Harbor",
-      "Walk around Liberty Island's grounds to see the statue from different angles"
-    ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ny-nyc-statue-of-libery.png?alt=media&token=90373a0a-0427-4d7a-bd21-10016a56077c",
-    "collectionRadius": "regular"
-  },
-  {
-    "id": "us-ca-la-the-getty-museum",
-    "name": "The Getty Museum",
-    "latitude": 34.07779958540805,
-    "longitude": -118.4744750174548,
-    "address": "1200 Getty Center Dr\nLos Angeles, CA 90049",
-    "collectionIds": [],
-    "about": "Art museum opened in 1997, home to Van Gogh's \"Irises\" and the stunning Central Garden designed by Robert Irwin.",
-    "thingsToDoFromEditors": [
-      "Admission is always free (only parking costs $20, or $15 after 3pm)",
-      "Take in panoramic views of Los Angeles from various viewpoints around the hilltop campus"
-    ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-la-the-getty-museum.png?alt=media&token=5245048f-79f2-4f2b-a3cd-4d2a0baf848b",
-    "collectionRadius": "regular"
-  },
-  {
-    "id": "us-ca-la-griffith-observatory",
-    "name": "Griffith Observatory",
-    "latitude": 34.11834831363419,
-    "longitude": -118.30042827173688,
-    "address": "2800 E Observatory Rd, Los Angeles, CA 90027",
+    "id": "us-ca-yosemite-glacier-point",
+    "name": "Glacier Point",
+    "latitude": 37.73050281103309,
+    "longitude": -119.57365321896644,
+    "address": "5202 Glacier Point Rd\nTuolumne Meadows, CA, USA 95389",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-yosemite-glacier-point.png?alt=media&token=d0331fa2-f783-4741-ba0d-4cc650154c55",
     "collectionIds": [
-      "stargazing-spots"
+      "yosemite-must-visits"
     ],
-    "about": "Built on land donated by Griffith J. Griffith in 1896 to be \"a place where everyone could access the stars,\" the observatory opened in 1935.",
+    "about": "Built in 1882, Glacier Point sits 3,200 feet directly above Curry Village with sweeping views of Half Dome's vertical face just 4,800 feet away.",
     "thingsToDoFromEditors": [
-      "Stargaze through the public telescopes",
-      "Photograph the Hollywood Sign"
+      "Drive Glacier Point Road for sunset views (open late May-Nov)",
+      "Photograph Half Dome at eye level across the valley",
+      "Watch for peregrine falcons soaring below you"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-la-griffith-observatory.png?alt=media&token=2e79adae-9aca-4816-a6fd-b764bdb54819",
-    "collectionRadius": "regular"
+    "geohash": "9qdyxh9h",
+    "collectionRadius": "regular",
+    "aspectRatio": 0.99
   },
   {
-    "id": "us-ca-fern-canyon",
-    "name": "Fern Canyon",
-    "latitude": 41.40169431327207,
-    "longitude": -124.06501199403411,
-    "address": "Fern Canyon\nOrick, CA 95555",
-    "collectionIds": [],
-    "about": "The unique landscape features 50-foot high walls covered in lush ferns and mosses. It served as a filming location for 1997 film The Lost World: Jurassic Park.",
-    "thingsToDoFromEditors": [
-      "Be prepared to get wet and hike a moderate 1-mile loop through the heart of the canyon",
-      "Observe wildlife including Roosevelt elk and various bird species that inhabit the canyon and surrounding area"
+    "id": "us-ca-yosemite-half-dome",
+    "name": "Half Dome",
+    "latitude": 37.74620095782649,
+    "longitude": -119.53328630545653,
+    "address": "Happy Isle Loop Rd\nTuolumne Meadows, CA, USA 95389",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-yosemite-half-dome.png?alt=media&token=e2ce4f4b-cc26-4ca0-ab85-001b636a0739",
+    "collectionIds": [
+      "yosemite-must-visits"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-fern-canyon.png?alt=media&token=ee569636-23e9-4f5a-87b9-43ca4de141a4",
-    "collectionRadius": "regular"
+    "about": "George Anderson made the first ascent in 1875 by drilling iron eyebolts. About 50,000 people attempt the 8,842-foot summit each year.",
+    "thingsToDoFromEditors": [
+      "Hike the 14-16 mile cable route to summit (permit required)",
+      "View it reflected in Mirror Lake in early morning",
+      "Watch climbers through binoculars from valley floor"
+    ],
+    "geohash": "9qdyxzqx",
+    "collectionRadius": "regularplus",
+    "aspectRatio": 0.99
+  },
+  {
+    "id": "us-ca-yosemite-mariposa-grove",
+    "name": "Mariposa Grove",
+    "latitude": 37.50988632479889,
+    "longitude": -119.61142303514187,
+    "address": "Mariposa Grv Rd\nFish Camp, CA, USA 93623",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-yosemite-mariposa-grove.png?alt=media&token=35ca5e0c-7132-4237-8c6c-f54faccb4cfc",
+    "collectionIds": [
+      "yosemite-must-visits"
+    ],
+    "about": "This 250-acre grove contains over 500 mature sequoias, including the Grizzly Giant with a base as wide as a city street. Discovered in 1857.",
+    "thingsToDoFromEditors": [
+      "Hike to the Grizzly Giant, one of the 25 largest trees on Earth",
+      "Visit the California Tunnel Tree you can walk through",
+      "Visit the Fallen Monarch, a fallen sequoia you can walk into"
+    ],
+    "geohash": "9qdvqhmw",
+    "collectionRadius": "regularplus",
+    "aspectRatio": 1.8
+  },
+  {
+    "id": "us-ca-yosemite-tunnel-view",
+    "name": "Tunnel View",
+    "latitude": 37.71576458077729,
+    "longitude": -119.67739898196547,
+    "address": "Wawona Rd\nCalifornia 95389",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-yosemite-tunnel-view.png?alt=media&token=73bb3110-1b0f-47d5-b883-bfaf3356e7c2",
+    "collectionIds": [
+      "yosemite-must-visits"
+    ],
+    "about": "Ansel Adams made this viewpoint famous with his 1927 photograph 'Clearing Winter Storm.' It's been the park's signature view for nearly a century.",
+    "thingsToDoFromEditors": [
+      "Take the classic Yosemite photo at sunrise or sunset",
+      "Compare your photo to Ansel Adams' famous shot",
+      "Visit during spring for maximum waterfall flow"
+    ],
+    "geohash": "9qdys9vw",
+    "collectionRadius": "regular",
+    "aspectRatio": 0.61
   },
   {
     "id": "us-hi-maui-kahekili-beach-park",
     "name": "Kahekili Beach Park",
     "latitude": 20.936568164369742,
     "longitude": -156.69270590314878,
-    "address": "65 Kai Ala Dr\nLahaina, HI 96761",
+    "address": "65 Kai Ala Dr\nLahaina, HI, USA 96761",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-hi-maui-kahekili-beach-park.png?alt=media&token=1d26c6d8-fa32-4f12-8dfa-a4bebd6c65f1",
     "collectionIds": [],
     "about": "Named after Maui's last ruling chief, King Kahekili Nui ʻAhumanu. Also called \"Airport Beach\" after Ka'anapali Airport that operated 1961-1986.",
     "thingsToDoFromEditors": [
       "Snorkel with green sea turtles among the vibrant coral reefs (stay 10 feet away)",
       "Parking at the free lot off Kai Ala Drive before 10AM"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-hi-maui-kahekili-beach-park.png?alt=media&token=1d26c6d8-fa32-4f12-8dfa-a4bebd6c65f1",
-    "collectionRadius": "regular"
+    "geohash": "8e8x477u",
+    "collectionRadius": "regular",
+    "aspectRatio": 1
   },
   {
     "id": "us-hi-the-big-island-mauna-kea",
@@ -917,6 +1101,7 @@
     "latitude": 19.82386657495944,
     "longitude": -155.4729126144228,
     "address": "Mauna Kea Access Rd, Hilo, HI 96720",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-hi-the-big-island-mauna-kea.png?alt=media&token=8bf38994-b78c-41b5-b89c-d7b090b8b44d",
     "collectionIds": [
       "stargazing-spots"
     ],
@@ -925,108 +1110,9 @@
       "Drive to the summit for sunset with a 4WD vehicle (required for the steep unpaved road) and witness one of the most spectacular sunset in the world.",
       "Join the free nightly stargazing programs at the Visitor Information Station with telescopes and expert staff"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-hi-the-big-island-mauna-kea.png?alt=media&token=8bf38994-b78c-41b5-b89c-d7b090b8b44d",
-    "collectionRadius": "regular"
-  },
-  {
-    "id": "us-ca-sequoia-national-park-general-sherman-tree",
-    "name": "General Sherman Tree",
-    "latitude": 36.581719950244235,
-    "longitude": -118.75144760233867,
-    "address": "Three Rivers, CA 93262",
-    "collectionIds": [
-      "sequoia-giants"
-    ],
-    "about": "The General Sherman Tree is the world's largest living tree by volume at 52,508 cubic feet. It is estimated to be between 2,300 and 2,700 years old.",
-    "thingsToDoFromEditors": [
-      "Walk the paved half-mile Congress Trail loop to see the General Sherman Tree and other giant sequoias",
-      "Hike the Big Trees Trail, an easy 1.2-mile loop through the Giant Forest grove"
-    ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sequoia-national-park-general-sherman-tree.png?alt=media&token=a8c41e7e-5110-4e58-bab6-b86b6eeb3c88",
-    "collectionRadius": "regular"
-  },
-  {
-    "id": "us-ca-tahoe-heavenly",
-    "name": "Heavenly Mountain Resort",
-    "latitude": 38.93744594803447,
-    "longitude": -119.92229922230797,
-    "address": "South Lake Tahoe, CA",
-    "collectionIds": [],
-    "about": "Heavenly is one of the few resorts where you can ski across two states—California and Nevada—literally crossing state lines on skis.",
-    "thingsToDoFromEditors": [
-      "Take the Heavenly Gondola to the summit for panoramic Lake Tahoe views",
-      "Enjoy terrain for all skill levels from beginner runs like First Ride to challenging expert runs like Gunbarrel"
-    ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-tahoe-heavenly.png?alt=media&token=3779b04b-3b6b-43a1-a495-9f9f8449594e",
-    "collectionRadius": "xlarge"
-  },
-  {
-    "id": "us-ca-sequoia-national-park-moro-rock",
-    "name": "Moro Rock",
-    "latitude": 36.544441076624544,
-    "longitude": -118.76554928048425,
-    "address": "Sequoia National Park, CA 93262",
-    "collectionIds": [
-      "sequoia-giants"
-    ],
-    "about": "Granite dome formed 100 million years ago. The 400-step stairway was built by the Civilian Conservation Corps in 1931, carved into the rock.",
-    "thingsToDoFromEditors": [
-      "Hike the quarter-mile trail to the summit",
-      "Watch the sunset with the unique granite formations from the top"
-    ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sequoia-national-park-moro-rock.png?alt=media&token=afd4fcd5-6313-4e8b-afc1-e983d9a4dfe4",
-    "collectionRadius": "regularplus"
-  },
-  {
-    "id": "us-ca-sequoia-national-park-tunnel-log",
-    "name": "Tunnel Log",
-    "latitude": 36.552567585037096,
-    "longitude": -118.76138131482963,
-    "address": "Crescent Meadow Rd, Sequoia National Park, CA 93262",
-    "collectionIds": [
-      "sequoia-giants"
-    ],
-    "about": "This giant sequoia fell across Crescent Meadow Road in 1937. Rather than removing it, park workers carved an 8-foot tunnel through it in 1938.",
-    "thingsToDoFromEditors": [
-      "Drive through the iconic tunnel carved into this 2,000-year-old fallen sequoia and snap the classic photo",
-      "Hike to Moro Rock nearby for panoramic views of the Sierra Nevada and collect a stamp"
-    ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sequoia-national-park-tunnel-log.png?alt=media&token=13ed1ae4-5e3a-422e-8868-49ddafa3dd8d",
-    "collectionRadius": "regular"
-  },
-  {
-    "id": "us-ca-sequoia-national-park-giant-forest-museum",
-    "name": "Giant Forest Museum",
-    "latitude": 36.56472497751813,
-    "longitude": -118.77272384986406,
-    "address": "47050 Generals Hwy, Three Rivers, CA 93271",
-    "collectionIds": [
-      "sequoia-giants"
-    ],
-    "about": "Originally built in 1928 as a market, it reopened in 2001 as a museum dedicated to the Giant Forest ecosystem.",
-    "thingsToDoFromEditors": [
-      "Learn about John Muir and early conservation efforts",
-      "Walk the Big Trees Trail loop (starts right outside)"
-    ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sequoia-national-park-giant-forest-museum.png?alt=media&token=cc7efa84-f231-49ba-8c9e-8885eb05f24e",
-    "collectionRadius": "regular"
-  },
-  {
-    "id": "us-ca-sequoia-national-park-crescent-meadow",
-    "name": "Crescent Meadow",
-    "latitude": 36.558824712542126,
-    "longitude": -118.74846460609943,
-    "address": "Cres Mdw Lp, California 93262",
-    "collectionIds": [
-      "sequoia-giants"
-    ],
-    "about": "John Muir called this \"the gem of the Sierra\" for its natural beauty. The 1.5-mile loop trail is easy and family-friendly.",
-    "thingsToDoFromEditors": [
-      "Hike the 1.5-mile Crescent Meadow Loop Trail through giant sequoias",
-      "Enjoy a peaceful picnic surrounded by ancient trees (pack out what you pack in)"
-    ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sequoia-national-park-crescent-meadow.png?alt=media&token=6bf0e3fd-b805-4103-8b2e-1cc191cb45fb",
-    "collectionRadius": "regular"
+    "geohash": "8e92y0u4",
+    "collectionRadius": "regular",
+    "aspectRatio": 1
   },
   {
     "id": "us-il-chicago-the-bean",
@@ -1034,29 +1120,88 @@
     "latitude": 41.88265986019165,
     "longitude": -87.62330545518154,
     "address": "201 E Randolph St, Chicago, IL 60602",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-il-chicago-the-bean.png?alt=media&token=0bb4e04d-d1fc-46dc-838a-4e2f740221d4",
     "collectionIds": [],
     "about": "Cloud Gate, affectionately nicknamed 'The Bean,' cost $23 million to build. On windy days, you can hear the sculpture 'hum'.",
     "thingsToDoFromEditors": [
       "Walk around the sculpture to see the skyline reflection change from every angle",
       "Visit at sunrise or sunset for the best lighting and fewer crowds"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-il-chicago-the-bean.png?alt=media&token=d0624adf-c82b-4c7f-a232-5510dfc81133",
-    "collectionRadius": "regular"
+    "geohash": "dp3wq0d8",
+    "collectionRadius": "regular",
+    "aspectRatio": 1
   },
   {
-    "id": "us-ca-solvang",
-    "name": "Solvang",
-    "latitude": 34.59420224442747,
-    "longitude": -120.13859958918809,
-    "address": "1618 Copenhagen Dr, Solvang, CA 93463",
+    "id": "us-me-bar-harbor-beals",
+    "name": "Beal's Lobster Pier",
+    "latitude": 44.27582873952332,
+    "longitude": -68.31262860701447,
+    "address": "182 Clark Point Rd\nSouthwest Harbor, ME, USA 04679",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-me-bar-harbor-beals.png?alt=media&token=1d1bff01-59fb-4de5-be96-1e416b8e4e50",
     "collectionIds": [],
-    "about": "This charming Danish village was founded in 1911 by Danish educators seeking to preserve their heritage in sunny California. Solvang means \"sunny field\" in Danish.",
+    "about": "Family-run working pier serving fresh lobster rolls caught daily from their own boats, with picnic tables overlooking the harbor since 1985.",
     "thingsToDoFromEditors": [
-      "Sample authentic Danish pastries and aebleskiver at local bakeries",
-      "Stroll through town to admire half-timbered buildings and windmills"
+      "Order the warm buttered lobster roll over cold mayo version",
+      "Bring cash - they don't take cards but have an ATM nearby"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-solvang.png?alt=media&token=d3bd80d3-6b93-4157-81ec-06c18fe2b1b6",
-    "collectionRadius": "regular"
+    "geohash": "drz7vs0m",
+    "collectionRadius": "regular",
+    "aspectRatio": 1
+  },
+  {
+    "id": "us-me-bar-harbor-beehive-trail-summit",
+    "name": "Beehive Trail Summit",
+    "latitude": 44.335420181862744,
+    "longitude": -68.1910357769886,
+    "address": "Beehive Trail\nBar Harbor, ME, USA 04609",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-me-bar-harbor-beehive-trail-summit.png?alt=media&token=b89740aa-96e2-4017-b114-3905817ea24f",
+    "collectionIds": [
+      "acadia-must-visits"
+    ],
+    "about": "Thrilling 1.5-mile climb with iron rungs and ladders bolted into exposed cliff faces, reaching a 520-foot summit with panoramic ocean views.",
+    "thingsToDoFromEditors": [
+      "Arrive before 7am to avoid waiting at the iron rungs sections",
+      "Wear gloves for better grip on the metal rungs and ladders"
+    ],
+    "geohash": "drzs0r0b",
+    "collectionRadius": "regular",
+    "aspectRatio": 1
+  },
+  {
+    "id": "us-me-bar-harbor-bubble-rock",
+    "name": "Bubble Rock",
+    "latitude": 44.33935709878886,
+    "longitude": -68.25340104731045,
+    "address": "Bubble Rock Trail\nBar Harbor, ME, USA 04609",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-me-bar-harbor-bubble-rock.png?alt=media&token=ff2a1fcc-baa8-4a1e-813f-6e76771f0a58",
+    "collectionIds": [
+      "acadia-must-visits"
+    ],
+    "about": "Massive 50-ton glacial boulder deposited by retreating glaciers 18,000 years ago, precariously perched on the edge of South Bubble Mountain.",
+    "thingsToDoFromEditors": [
+      "Take the classic 'pushing the rock' optical illusion photo",
+      "Continue to South Bubble summit for panoramic Jordan Pond views"
+    ],
+    "geohash": "drzknzer",
+    "collectionRadius": "regular",
+    "aspectRatio": 0.99
+  },
+  {
+    "id": "us-me-bar-harbor-mckays-public-house",
+    "name": "McKay's Public House",
+    "latitude": 44.385989414466714,
+    "longitude": -68.20437601454792,
+    "address": "231 Main St\nBar Harbor, ME, USA 04609",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-me-bar-harbor-mckays-public-house.png?alt=media&token=6673d53e-b8e7-46b4-ab5b-d805a72be157",
+    "collectionIds": [],
+    "about": "An Irish-style pub named after owner Mike McKay who visited Acadia, fell in love, and never left.",
+    "thingsToDoFromEditors": [
+      "Order fish & chips with a local Maine beer like Allagash or Shipyard",
+      "Peak season May-Oct; check ahead in winter to confirm hours"
+    ],
+    "geohash": "drzkxbpp",
+    "collectionRadius": "regular",
+    "aspectRatio": 0.97
   },
   {
     "id": "us-ny-brooklyn-janes-carousel",
@@ -1064,13 +1209,214 @@
     "latitude": 40.70444184118497,
     "longitude": -73.99238717289444,
     "address": "1 Old, Dock St, Brooklyn, NY 11201",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ny-brooklyn-janes-carousel.png?alt=media&token=5d3066f1-5460-472f-9591-dc710f626ee6",
     "collectionIds": [],
     "about": "Jane's Carousel is a century-old wood carousel built in 1922 that was rescued from a closed Ohio amusement park. It reopened to the public in 2011.",
     "thingsToDoFromEditors": [
       "Explore Brooklyn Bridge Park's waterfront and scenic views",
       "Photograph the Manhattan skyline through the glass pavilion"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ny-brooklyn-janes-carousel.png?alt=media&token=78657625-cb74-49cc-8849-05951319afcf",
-    "collectionRadius": "regular"
+    "geohash": "dr5rs602",
+    "collectionRadius": "regular",
+    "aspectRatio": 1
+  },
+  {
+    "id": "us-ny-nyc-bethesda-fountain",
+    "name": "Bethesda Fountain",
+    "latitude": 40.77432385893823,
+    "longitude": -73.9708430029675,
+    "address": "Bethesda Fountain\nNew York, NY, USA 10024",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ny-nyc-bethesda-fountain.png?alt=media&token=dd5ed11b-36c5-435b-9c55-1fec9bdc4ad8",
+    "collectionIds": [
+      "discover-central-park"
+    ],
+    "about": "Iconic Central Park fountain featuring Angel of the Waters by Emma Stebbins, the first woman to receive a public art commission in NYC in 1863.",
+    "thingsToDoFromEditors": [
+      "Listen to street musicians who perform around the fountain",
+      "Walk through the arcade to see the restored Minton tile ceiling"
+    ],
+    "geohash": "dr5ruy8p",
+    "collectionRadius": "regular",
+    "aspectRatio": 1.26
+  },
+  {
+    "id": "us-ny-nyc-bow-bridge",
+    "name": "Bow Bridge",
+    "latitude": 40.77582993707421,
+    "longitude": -73.97184158311308,
+    "address": "Bow Bridge\nNew York, NY, USA 10024",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ny-nyc-bow-bridge.png?alt=media&token=443c4e88-8a36-4a47-841c-dfdf6f22f5b6",
+    "collectionIds": [
+      "discover-central-park"
+    ],
+    "about": "One of Central Park's most iconic cast-iron bridges, built in 1862 and named for its graceful bow shape, spanning the Lake with stunning skyline views.",
+    "thingsToDoFromEditors": [
+      "Visit at sunrise or golden hour for the best photos with soft light reflecting off the water",
+      "Walk to the center of the bridge for the classic view looking north toward the San Remo towers"
+    ],
+    "geohash": "dr5ruxp2",
+    "collectionRadius": "regular",
+    "aspectRatio": 1.01
+  },
+  {
+    "id": "us-ny-nyc-conservatory-garden",
+    "name": "Conservatory Garden",
+    "latitude": 40.79377772795462,
+    "longitude": -73.95247967437285,
+    "address": "1233 5th Ave\nNew York, NY, USA 10029",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ny-nyc-conservatory-garden.png?alt=media&token=efda1070-7422-4165-a1b9-b876775406ff",
+    "collectionIds": [
+      "discover-central-park"
+    ],
+    "about": "Central Park's only formal garden with 6 acres divided into Italian, French, and English styles.",
+    "thingsToDoFromEditors": [
+      "Visit in spring (April-May) to see the famous Tulip Festival with 20,000+ tulips",
+      "Enter through the Vanderbilt Gate at 105th Street, one of Central Park's most ornate entrances"
+    ],
+    "geohash": "dr72j4m2",
+    "collectionRadius": "regular",
+    "aspectRatio": 1.72
+  },
+  {
+    "id": "us-ny-nyc-jacqueline-kennedy-onassis",
+    "name": "Jacqueline Kennedy Onassis Reservoir",
+    "latitude": 40.78217342996016,
+    "longitude": -73.96256475545574,
+    "address": "Jacqueline Kennedy Onassis Reservoir\nNew York, NY, USA 10128",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ny-nyc-jacqueline-kennedy-onassis.png?alt=media&token=ac40bd79-5d97-4324-b984-ca0deed745e6",
+    "collectionIds": [
+      "discover-central-park"
+    ],
+    "about": "Renamed in 1994 for Jackie Kennedy Onassis, who jogged here regularly. The 1.58-mile track offers stunning Manhattan skyline views.",
+    "thingsToDoFromEditors": [
+      "Walk or run the 1.58-mile path around the reservoir for beautiful skyline views",
+      "Visit at sunrise or sunset for the most spectacular light on the water"
+    ],
+    "geohash": "dr72hbnj",
+    "collectionRadius": "regular",
+    "aspectRatio": 1
+  },
+  {
+    "id": "us-ny-nyc-lincoln-center-for-the-performing-arts",
+    "name": "Lincoln Center for the Performing Arts",
+    "latitude": 40.77231303514775,
+    "longitude": -73.9834150425368,
+    "address": "Lincoln Center Plaza\nNew York, NY, USA 10023",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ny-nyc-lincoln-center-for-the-performing-arts.png?alt=media&token=30934da4-0550-4781-9714-32feeef87b46",
+    "collectionIds": [],
+    "about": "The world's largest performing arts center, built in the 1960s and home to the Met Opera, NY Philharmonic, NYC Ballet, and Juilliard.",
+    "thingsToDoFromEditors": [
+      "Visit the David Rubenstein Atrium for free performances, coffee, and free WiFi in a beautiful public space",
+      "Come at night when the buildings are illuminated and the fountain is lit up for the most stunning photos"
+    ],
+    "geohash": "dr5ruqqg",
+    "collectionRadius": "regular",
+    "aspectRatio": 0.98
+  },
+  {
+    "id": "us-ny-nyc-little-island",
+    "name": "Little Island",
+    "latitude": 40.74201366923398,
+    "longitude": -74.01062815667991,
+    "address": "Pier 55 at Hudson River Park, Hudson River Greenway\nNew York, NY, USA 10014",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ny-nyc-little-island.png?alt=media&token=bcddbc7b-faa8-49d1-92dc-84ae601da908",
+    "collectionIds": [],
+    "about": "Floating park built on 132 tulip-shaped pillars rising from the Hudson River, opened in 2021.",
+    "thingsToDoFromEditors": [
+      "Walk the undulating pathways through over 350 species of trees, shrubs, and perennials",
+      "Bring a blanket and relax on the grassy hills while watching boats pass by on the Hudson"
+    ],
+    "geohash": "dr5rgbg5",
+    "collectionRadius": "regular",
+    "aspectRatio": 1.13
+  },
+  {
+    "id": "us-ny-nyc-statue-of-liberty",
+    "name": "Statue of Liberty",
+    "latitude": 40.68924219085396,
+    "longitude": -74.04454705879492,
+    "address": "New York, NY 10004",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ny-nyc-statue-of-libery.png?alt=media&token=90373a0a-0427-4d7a-bd21-10016a56077c",
+    "collectionIds": [],
+    "about": "The Statue of Liberty was gifted by France to the United States in 1886. The seven spikes on her crown represent the seven continents and seven seas.",
+    "thingsToDoFromEditors": [
+      "Take the ferry from Battery Park and climb the 354 steps to the crown for panoramic views of New York Harbor",
+      "Walk around Liberty Island's grounds to see the statue from different angles"
+    ],
+    "geohash": "dr5r7p62",
+    "collectionRadius": "regular",
+    "aspectRatio": 1.01
+  },
+  {
+    "id": "us-ny-nyc-the-mall-and-literary-walk",
+    "name": "The Mall and Literary Walk",
+    "latitude": 40.77254781522678,
+    "longitude": -73.97151193545764,
+    "address": "The Mall\nNew York, NY, USA 10022",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ny-nyc-the-mall-and-literary-walk.png?alt=media&token=8a71d7a9-09d9-44fc-8c8a-aa2da0c2a2d7",
+    "collectionIds": [
+      "discover-central-park"
+    ],
+    "about": "The only straight path in Central Park, this quarter-mile promenade features a majestic canopy of 150-year-old American elm trees and writer statues.",
+    "thingsToDoFromEditors": [
+      "Visit Literary Walk at the southern end to see statues of famous writers like Shakespeare",
+      "Walk under the elm canopy in fall when the golden leaves create a natural tunnel"
+    ],
+    "geohash": "dr5ruwrt",
+    "collectionRadius": "regular",
+    "aspectRatio": 1
+  },
+  {
+    "id": "us-ny-nyc-the-ramble",
+    "name": "The Ramble",
+    "latitude": 40.77786894698316,
+    "longitude": -73.96971601812602,
+    "address": "79th St Transverse\nNew York, NY, USA 10024",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ny-nyc-the-ramble.png?alt=media&token=f8334ef3-db0f-49a4-a0e9-a231015dfdcc",
+    "collectionIds": [
+      "discover-central-park"
+    ],
+    "about": "36-acre wilderness and one of North America's best birdwatching spots with over 230 species spotted here.",
+    "thingsToDoFromEditors": [
+      "Bring binoculars during spring migration (April-May) for incredible birdwatching",
+      "Let yourself get lost on the winding paths - it's designed to feel like you've left the city"
+    ],
+    "geohash": "dr5ruz2u",
+    "collectionRadius": "regularplus",
+    "aspectRatio": 1.25
+  },
+  {
+    "id": "us-ny-williamsburg-domino-park",
+    "name": "Domino Park",
+    "latitude": 40.715083924855314,
+    "longitude": -73.96792078995901,
+    "address": "15 River St\nBrooklyn, NY, USA 11249",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ny-williamsburg-domino-park.png?alt=media&token=456f5774-e436-4614-9cf5-21d0806e2746",
+    "collectionIds": [],
+    "about": "Waterfront park built on the historic Domino Sugar Refinery site with Manhattan skyline views and preserved industrial artifacts.",
+    "thingsToDoFromEditors": [
+      "Walk the elevated walkway for panoramic views of the Manhattan skyline and Williamsburg Bridge",
+      "Explore the preserved industrial artifacts scattered throughout the park"
+    ],
+    "geohash": "dr5rsgfn",
+    "collectionRadius": "regular",
+    "aspectRatio": 1.2
+  },
+  {
+    "id": "your-first-stamp",
+    "name": "Welcome Stamp",
+    "latitude": 0,
+    "longitude": 0,
+    "address": "Anywhere in the world",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fyour-first-stamp.png?alt=media&token=031a3a71-4da8-4a68-9c9c-b9ffde9849c9",
+    "collectionIds": [],
+    "about": "Welcome to Stampbook!\nThis is your first special stamp that you can claim from anywhere.",
+    "thingsToDoFromEditors": [
+      "Tap \"Collect Stamp\"",
+      "Go out there and explore the world!"
+    ],
+    "geohash": "7zzzzzzz",
+    "collectionRadius": "regular",
+    "aspectRatio": 1
   }
 ]

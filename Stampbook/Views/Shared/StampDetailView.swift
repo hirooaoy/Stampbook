@@ -11,6 +11,7 @@ struct StampDetailView: View {
     @EnvironmentObject var mapCoordinator: MapCoordinator
     @EnvironmentObject var networkMonitor: NetworkMonitor
     let stamp: Stamp
+    let isCollectedAtInit: Bool  // Passed explicitly to avoid environment object dependency in init
     let userLocation: CLLocation?
     let showBackButton: Bool
     @State private var showMemorySection = false
@@ -23,11 +24,33 @@ struct StampDetailView: View {
     @State private var showAddressOptions = false
     @State private var showCopyConfirmation = false
     @State private var showInviteCodeSheet = false
-    @State private var imageScale: CGFloat = 1.5 // Start larger, shrinks to 1.0 on collection
-    @State private var showStampImage = false // Controls stamp image visibility (animated)
-    @State private var showLockIcon = true // Controls lock icon visibility (animated)
     @State private var isAnimatingCollection = false // Track if we're in collection animation
     @State private var displayStats: StampStatistics? = nil // Stats to display (frozen during animation)
+    
+    // Animation states (set correctly in init based on isCollected)
+    @State private var imageScale: CGFloat
+    @State private var showStampImage: Bool
+    @State private var showLockIcon: Bool
+    
+    init(stamp: Stamp, isCollected: Bool, userLocation: CLLocation? = nil, showBackButton: Bool = false) {
+        self.stamp = stamp
+        self.isCollectedAtInit = isCollected
+        self.userLocation = userLocation
+        self.showBackButton = showBackButton
+        
+        // Set correct initial animation states - no .onAppear updates needed!
+        if isCollected {
+            // Already collected: show at normal size
+            _imageScale = State(initialValue: 1.0)
+            _showStampImage = State(initialValue: true)
+            _showLockIcon = State(initialValue: false)
+        } else {
+            // Not collected: show large with lock (ready for collection animation)
+            _imageScale = State(initialValue: 1.5)
+            _showStampImage = State(initialValue: false)
+            _showLockIcon = State(initialValue: true)
+        }
+    }
     
     // Computed property to get live stampStats from StampsManager
     private var stampStats: StampStatistics? {
@@ -48,6 +71,23 @@ struct StampDetailView: View {
     
     private var isCollected: Bool {
         stampsManager.isCollected(stamp)
+    }
+    
+    // Check if stamp should use full width (wide panoramas)
+    private var isWideStamp: Bool {
+        guard let aspectRatio = stamp.aspectRatio else { return false }
+        return aspectRatio < 0.85
+    }
+    
+    // Width for stamps (iPhone only)
+    private var stampWidth: CGFloat {
+        return isWideStamp ? 345 : 260  // Wide: full width minus padding (393-48), Standard: 260
+    }
+    
+    // Dynamic stamp height based on aspect ratio
+    private var stampHeight: CGFloat {
+        let height = stampWidth * (stamp.aspectRatio ?? 1.0)
+        return max(100, height)  // Ensure minimum 100px
     }
     
     private var isWithinRange: Bool {
@@ -110,13 +150,13 @@ struct StampDetailView: View {
                     .padding(.top, 8)
                     .padding(.bottom, 24)
                     
-                    // Centered square stamp image with lock icon
+                    // Centered stamp image with flexible height for different aspect ratios
                     ZStack {
                         // Lock icon - show when not collected
                         if showLockIcon {
                             RoundedRectangle(cornerRadius: 16)
                                 .fill(Color.gray.opacity(0.1))
-                                .frame(width: 260, height: 260)
+                                .frame(width: stampWidth, height: stampHeight)
                             
                             Image(systemName: "lock.fill")
                                 .font(.system(size: 64))
@@ -130,24 +170,25 @@ struct StampDetailView: View {
                                     imageName: stamp.imageName.isEmpty ? nil : stamp.imageName,
                                     storagePath: stamp.imageStoragePath,
                                     stampId: stamp.id,
-                                    size: CGSize(width: 260, height: 260),
-                                    cornerRadius: 16,
+                                    size: CGSize(width: stampWidth, height: stampHeight),
+                                    cornerRadius: 0,
                                     useFullResolution: true,
                                     imageUrl: imageUrl
                                 )
+                                .frame(width: stampWidth, height: stampHeight)
                             } else if !stamp.imageName.isEmpty {
                                 Image(stamp.imageName)
                                     .resizable()
                                     .renderingMode(.original)
                                     .interpolation(.high)
                                     .scaledToFit()
-                                    .frame(width: 260, height: 260)
+                                    .frame(width: stampWidth, height: stampHeight)
                             } else {
                                 Image("empty")
                                     .resizable()
                                     .renderingMode(.original)
                                     .scaledToFit()
-                                    .frame(width: 260, height: 260)
+                                    .frame(maxWidth: 260, maxHeight: 400)
                             }
                         }
                         .scaleEffect(imageScale)
@@ -157,7 +198,7 @@ struct StampDetailView: View {
                         if showCopyConfirmation {
                             RoundedRectangle(cornerRadius: 16)
                                 .fill(Color.black.opacity(0.6))
-                                .frame(width: 260, height: 260)
+                                .frame(width: stampWidth, height: stampHeight)
                             
                             VStack(spacing: 8) {
                                 Image(systemName: "checkmark.circle.fill")
@@ -170,7 +211,7 @@ struct StampDetailView: View {
                             .transition(.scale.combined(with: .opacity))
                         }
                     }
-                    .frame(width: 260, height: 260)
+                    .frame(height: stampHeight)
                     .contextMenu {
                         if isCollected {
                             Button(action: {
@@ -567,12 +608,7 @@ struct StampDetailView: View {
             view.presentationDetents([.fraction(0.78), .large])
         }
         .onAppear {
-            // Initialize states for already collected stamps
-            if isCollected {
-                showStampImage = true
-                showLockIcon = false
-                imageScale = 1.0  // Already collected stamps show at normal size
-            }
+            // Animation states are now set correctly in init() - no updates needed!
             
             // Single task to load data sequentially (prevents race conditions)
             Task {
@@ -984,3 +1020,4 @@ struct StampDetailView: View {
         }
     }
 }
+

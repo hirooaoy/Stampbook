@@ -35,8 +35,8 @@ function log(message, color = 'reset') {
 }
 
 // SAFETY CHECKS
-const TARGET_USERNAME = 'watagumo_test';
-const PROTECTED_USERNAMES = ['hiroo', 'haoyama']; // List of usernames to protect
+const TARGET_USERNAME = 'watagumostudio';
+const PROTECTED_USERNAMES = ['hiroo', 'haoyama', 'rosemaryylin', 'lawonearth', 'roseannechao', 'yuka', 'wholetjustincook']; // List of usernames to protect
 
 async function findUserByUsername(username) {
   log(`\n🔍 Looking up user: @${username}...`, 'blue');
@@ -135,6 +135,7 @@ async function safeDeleteWatagumostudio() {
     log('   - Comments', 'cyan');
     log('   - Feedback', 'cyan');
     log('   - Stamp statistics entries', 'cyan');
+    log('   - Invite code slot (free up for reuse)', 'cyan');
     log('   - Notifications', 'cyan');
     log('   - Storage files', 'cyan');
     log('   - Authentication account\n', 'cyan');
@@ -244,7 +245,7 @@ async function safeDeleteWatagumostudio() {
     }
     
     // Remove from stamp statistics
-    log('\n[8/12] Removing from stamp statistics...', 'blue');
+    log('\n[8/13] Removing from stamp statistics...', 'blue');
     const statsQuery = await db.collection('stamp_statistics')
       .where('collectorUserIds', 'array-contains', userId)
       .get();
@@ -262,8 +263,32 @@ async function safeDeleteWatagumostudio() {
       log('       User not found in any stamp statistics', 'yellow');
     }
     
+    // Free up invite code slot
+    log('\n[9/13] Freeing up invite code slot...', 'blue');
+    const inviteCodeUsed = targetUser.inviteCodeUsed;
+    if (inviteCodeUsed) {
+      try {
+        const inviteCodeRef = db.collection('invite_codes').doc(inviteCodeUsed);
+        const inviteCodeDoc = await inviteCodeRef.get();
+        
+        if (inviteCodeDoc.exists) {
+          await inviteCodeRef.update({
+            usedCount: admin.firestore.FieldValue.increment(-1),
+            usedBy: admin.firestore.FieldValue.arrayRemove(userId)
+          });
+          log(`       ✅ Freed up slot in invite code: ${inviteCodeUsed}`, 'green');
+        } else {
+          log(`       ⚠️  Invite code "${inviteCodeUsed}" not found`, 'yellow');
+        }
+      } catch (error) {
+        log(`       ⚠️  Could not update invite code: ${error.message}`, 'yellow');
+      }
+    } else {
+      log('       No invite code to free up', 'yellow');
+    }
+    
     // Delete notifications
-    log('\n[9/12] Deleting notifications...', 'blue');
+    log('\n[10/13] Deleting notifications...', 'blue');
     const notificationsRef = db.collection('users').doc(userId).collection('notifications');
     const notifications = await notificationsRef.get();
     if (!notifications.empty) {
@@ -276,7 +301,7 @@ async function safeDeleteWatagumostudio() {
     }
     
     // Delete storage files
-    log('\n[10/12] Deleting storage files...', 'blue');
+    log('\n[11/13] Deleting storage files...', 'blue');
     const [files] = await storage.getFiles({ prefix: `users/${userId}/` });
     if (files.length > 0) {
       for (const file of files) {
@@ -288,12 +313,12 @@ async function safeDeleteWatagumostudio() {
     }
     
     // Delete user profile
-    log('\n[11/12] Deleting user profile...', 'blue');
+    log('\n[12/13] Deleting user profile...', 'blue');
     await db.collection('users').doc(userId).delete();
     log('       ✅ User profile deleted', 'green');
     
     // Delete authentication account
-    log('\n[12/12] Deleting authentication account...', 'blue');
+    log('\n[13/13] Deleting authentication account...', 'blue');
     try {
       await auth.deleteUser(userId);
       log('       ✅ Authentication account deleted', 'green');

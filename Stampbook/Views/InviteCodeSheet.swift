@@ -379,9 +379,11 @@ struct InviteCodeSheet: View {
                     }
                     Logger.success("Step 4 Complete: Profile loaded and cached", category: "InviteCodeSheet")
                     
-                    isAuthenticated = true
-                    dismiss()
+                    // Small delay to let ContentView fully render ProfileSetupPage
+                    // Ensures smooth transition with no flash of underlying view
+                    try? await Task.sleep(nanoseconds: 250_000_000) // 0.25s
                     
+                    dismiss()
                     Logger.success("✅ Account creation flow completed successfully", category: "InviteCodeSheet")
                 } catch {
                     // Profile load failed - account exists but profile couldn't be fetched
@@ -529,7 +531,8 @@ struct InviteCodeSheet: View {
                         }
                         Logger.success("Step 3 Complete: Profile loaded and cached", category: "InviteCodeSheet")
                         
-                        isAuthenticated = true
+                        // Dismiss directly - authManager.isSignedIn already set to true (line 518)
+                        // Don't set isAuthenticated here to avoid sheet recreation & page flash
                         dismiss()
                         
                         Logger.success("✅ Returning user sign in completed successfully", category: "InviteCodeSheet")
@@ -596,7 +599,8 @@ struct InviteCodeSheet: View {
                 
                 Logger.success("Profile loaded successfully on retry", category: "InviteCodeSheet")
                 
-                isAuthenticated = true
+                // Dismiss directly - authManager.isSignedIn already set from previous attempt
+                // Don't set isAuthenticated here to avoid sheet recreation & page flash
                 dismiss()
             } catch {
                 Logger.error("Profile load retry failed", error: error, category: "InviteCodeSheet")

@@ -774,6 +774,7 @@ struct FeedView: View {
             .navigationDestination(item: $selectedStampForDetail) { stamp in
                 StampDetailView(
                     stamp: stamp,
+                    isCollected: stampsManager.isCollected(stamp),
                     userLocation: nil,
                     showBackButton: true
                 )
@@ -1019,7 +1020,14 @@ struct FeedView: View {
         private func handleTap(url: URL) {
             if url.scheme == "stampbook" {
                 if url.host == "profile", let userId = url.pathComponents.last {
-                    onUserTap(userId, "", userName)
+                    // For current user, navigate to stamps tab instead of profile
+                    if isCurrentUser {
+                        shouldResetStampsNavigation = true
+                        selectedTab = 2
+                    } else {
+                        // For other users, navigate to their profile with correct username
+                        onUserTap(userId, "", userName)
+                    }
                 } else if url.host == "stamp" {
                     onStampTap(stamp)
                 }

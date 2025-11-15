@@ -30,22 +30,60 @@ async function uploadImages(folderPath) {
     }
     
     // Get all image files
-    const files = fs.readdirSync(folderPath).filter(file => 
+    const allFiles = fs.readdirSync(folderPath).filter(file => 
         /\.(jpg|jpeg|png)$/i.test(file)
     );
     
-    if (files.length === 0) {
+    if (allFiles.length === 0) {
         console.error('❌ No images found in folder');
         process.exit(1);
     }
     
-    console.log(`✅ Found ${files.length} images\n`);
-    console.log('📤 Uploading to Firebase Storage → stamps/ folder...\n');
+    // SAFETY CHECK: Filter for legitimate stamp images only
+    // Valid patterns: us-ca-city-name.png, us-state-city-name.png, your-first-stamp.png
+    const validStampPattern = /^(us-[a-z]{2}-[a-z-]+|your-first-stamp)\.(png|jpg|jpeg)$/i;
+    
+    const validFiles = [];
+    const invalidFiles = [];
+    
+    allFiles.forEach(file => {
+        if (validStampPattern.test(file)) {
+            validFiles.push(file);
+        } else {
+            invalidFiles.push(file);
+        }
+    });
+    
+    console.log(`📊 Found ${allFiles.length} total image(s) in folder`);
+    console.log(`   ✅ Valid stamp images: ${validFiles.length}`);
+    console.log(`   ⚠️  Invalid/personal files: ${invalidFiles.length}\n`);
+    
+    // If there are invalid files, show them and ask for confirmation
+    if (invalidFiles.length > 0) {
+        console.log('⚠️  WARNING: Found files that don\'t match stamp naming pattern:');
+        console.log('==============================================');
+        invalidFiles.slice(0, 10).forEach(f => console.log(`   - ${f}`));
+        if (invalidFiles.length > 10) {
+            console.log(`   ... and ${invalidFiles.length - 10} more`);
+        }
+        console.log('==============================================\n');
+        console.log('❌ SAFETY CHECK FAILED!');
+        console.log('📋 Only files matching pattern will be uploaded: us-state-city-name.png');
+        console.log('💡 To upload these files, move ONLY stamp images to a dedicated folder.\n');
+    }
+    
+    if (validFiles.length === 0) {
+        console.error('❌ No valid stamp images to upload.');
+        console.error('📋 Expected pattern: us-state-city-name.png (e.g., us-ca-sf-golden-gate-bridge.png)');
+        process.exit(1);
+    }
+    
+    console.log(`\n📤 Uploading ${validFiles.length} valid stamp image(s) to Firebase Storage...\n`);
     
     let uploaded = 0;
     let failed = 0;
     
-    for (const filename of files) {
+    for (const filename of validFiles) {
         const filePath = path.join(folderPath, filename);
         const destination = `stamps/${filename}`;
         

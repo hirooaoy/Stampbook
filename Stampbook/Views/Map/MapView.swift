@@ -216,6 +216,7 @@ struct MapView: View {
             NavigationStack {
                 StampDetailView(
                     stamp: stamp,
+                    isCollected: stampsManager.isCollected(stamp),
                     userLocation: locationManager.location,
                     showBackButton: false
                 )

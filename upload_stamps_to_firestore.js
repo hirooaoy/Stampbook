@@ -79,24 +79,64 @@ function parseDate(dateString) {
   }
 }
 
-async function uploadStamps() {
+async function uploadStamps(forceDelete = false) {
   console.log('📚 Reading stamps.json...');
   const stampsPath = path.join(__dirname, 'Stampbook', 'Data', 'stamps.json');
   const stampsData = JSON.parse(fs.readFileSync(stampsPath, 'utf8'));
   
   console.log(`✅ Found ${stampsData.length} stamps in JSON\n`);
   
-  // ==================== SYNC DELETIONS ====================
-  console.log('🔍 Checking for deletions...');
+  // ==================== SMART SYNC CHECK ====================
+  console.log('🔍 Checking differences between Firebase and JSON...');
   const snapshot = await db.collection('stamps').get();
-  const existingIds = new Set(snapshot.docs.map(doc => doc.id));
+  const firebaseStamps = {};
+  snapshot.docs.forEach(doc => {
+    firebaseStamps[doc.id] = doc.data();
+  });
+  
+  const existingIds = new Set(Object.keys(firebaseStamps));
   const jsonIds = new Set(stampsData.map(stamp => stamp.id));
   
-  const toDelete = [...existingIds].filter(id => !jsonIds.has(id));
+  const onlyInFirebase = [...existingIds].filter(id => !jsonIds.has(id));
+  const onlyInJSON = [...jsonIds].filter(id => !existingIds.has(id));
   
-  if (toDelete.length > 0) {
-    console.log(`\n🗑️  Deleting ${toDelete.length} stamp(s) not in JSON:`);
-    for (const id of toDelete) {
+  console.log(`📊 Firebase: ${existingIds.size} stamps`);
+  console.log(`📊 JSON: ${jsonIds.size} stamps`);
+  console.log(`📊 Only in Firebase: ${onlyInFirebase.length} stamps`);
+  console.log(`📊 Only in JSON: ${onlyInJSON.length} stamps\n`);
+  
+  // If Firebase has stamps that JSON doesn't, warn and require confirmation
+  if (onlyInFirebase.length > 0) {
+    console.log('⚠️  WARNING: Firebase has stamps that are NOT in your local JSON!');
+    console.log('⚠️  Running this script will DELETE these stamps from Firebase:\n');
+    
+    for (const id of onlyInFirebase) {
+      const stamp = firebaseStamps[id];
+      console.log(`   🗑️  ${stamp.name} (${id})`);
+    }
+    
+    console.log('\n❌ SYNC ABORTED FOR SAFETY!\n');
+    console.log('💡 What you probably want to do:');
+    console.log('   1. Run: node export_stamps_from_firestore.js');
+    console.log('   2. This will pull Firebase stamps into your local JSON');
+    console.log('   3. THEN run this script again\n');
+    console.log('🚨 If you really want to DELETE these stamps from Firebase:');
+    console.log('   Run: node upload_stamps_to_firestore.js --force\n');
+    process.exit(1);
+  }
+  
+  // If JSON has more stamps and Firebase is a subset, safe to proceed
+  if (onlyInJSON.length > 0 && onlyInFirebase.length === 0) {
+    console.log('✅ Safe to sync: JSON has new stamps, Firebase will be updated\n');
+  } else if (onlyInJSON.length === 0 && onlyInFirebase.length === 0) {
+    console.log('✅ Safe to sync: JSON and Firebase have the same stamps\n');
+  }
+  // ========================================================
+  
+  // Only delete if forced
+  if (forceDelete && onlyInFirebase.length > 0) {
+    console.log(`\n🗑️  FORCE DELETE: Removing ${onlyInFirebase.length} stamp(s) from Firebase:`);
+    for (const id of onlyInFirebase) {
       try {
         await db.collection('stamps').doc(id).delete();
         console.log(`   ✓ Deleted: ${id}`);
@@ -104,10 +144,7 @@ async function uploadStamps() {
         console.error(`   ✗ Failed to delete ${id}:`, error.message);
       }
     }
-  } else {
-    console.log('✅ No stamps to delete\n');
   }
-  // ========================================================
   
   console.log('\n📤 Uploading/updating stamps...');
   let uploadedCount = 0;
@@ -126,11 +163,15 @@ async function uploadStamps() {
         imageUrl: stamp.imageUrl || '',
         collectionIds: stamp.collectionIds,
         about: stamp.about,
-        notesFromOthers: stamp.notesFromOthers || [],
         thingsToDoFromEditors: stamp.thingsToDoFromEditors || [],
         geohash: geohash,
         collectionRadius: stamp.collectionRadius || 'regular'  // Default to regular if missing
       };
+      
+      // Add aspectRatio if present (optional field for proper lock sizing)
+      if (stamp.aspectRatio) {
+        stampData.aspectRatio = stamp.aspectRatio;
+      }
       
       // Add visibility fields only if present (keeps it clean)
       if (stamp.status) {
@@ -167,8 +208,8 @@ async function uploadStamps() {
   }
   
   console.log(`\n✅ Processed ${uploadedCount}/${stampsData.length} stamps`);
-  if (toDelete.length > 0) {
-    console.log(`🗑️  Deleted ${toDelete.length} stamps\n`);
+  if (forceDelete && onlyInFirebase.length > 0) {
+    console.log(`🗑️  Deleted ${onlyInFirebase.length} stamps\n`);
   }
 }
 
@@ -281,6 +322,9 @@ async function verifyCollectionCounts() {
 async function main() {
   console.log('🚀 Syncing Firestore with local JSON...\n');
   
+  // Check for --force flag
+  const forceDelete = process.argv.includes('--force');
+  
   try {
     // Verify counts first
     const countsValid = await verifyCollectionCounts();
@@ -289,7 +333,7 @@ async function main() {
       process.exit(1);
     }
     
-    await uploadStamps();
+    await uploadStamps(forceDelete);
     await uploadCollections();
     
     console.log('🎉 Sync complete!\n');

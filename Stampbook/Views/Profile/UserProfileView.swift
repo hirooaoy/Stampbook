@@ -532,6 +532,7 @@ struct UserProfileView: View {
                             NavigationLink(destination:
                                             StampDetailView(
                                                 stamp: item.stamp,
+                                                isCollected: true,  // All stamps in user profile are collected
                                                 userLocation: nil,
                                                 showBackButton: true
                                             )
@@ -606,18 +607,16 @@ struct UserProfileView: View {
                         storagePath: stamp.imageStoragePath,
                         stampId: stamp.id,
                         size: CGSize(width: 148, height: 148),
-                        cornerRadius: 12,
+                        cornerRadius: 0,  // No rounded corners for stamps (prevents clipping edges)
                         imageUrl: imageUrl
                     )
-                    .frame(height: 148)
                 } else if !stamp.imageName.isEmpty {
                     // Fallback to bundled image for backward compatibility
                     Image(stamp.imageName)
                         .resizable()
                         .renderingMode(.original)
                         .aspectRatio(contentMode: .fit)
-                        .frame(height: 148)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .frame(width: 148, height: 148)
                 } else {
                     // No image - show placeholder
                     Image("empty")

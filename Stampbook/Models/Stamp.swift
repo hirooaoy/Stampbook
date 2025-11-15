@@ -14,6 +14,7 @@ struct Stamp: Identifiable, Codable, Equatable, Hashable {
     let thingsToDoFromEditors: [String]
     let geohash: String? // Optional for backward compatibility
     let collectionRadius: String  // Collection radius category: "regular" (150m), "regularplus" (500m), "large" (1500m), "xlarge" (3000m)
+    let aspectRatio: Double? // Height/width ratio of stamp image (for proper lock sizing)
     
     // ==================== VISIBILITY SYSTEM ====================
     // Fields for moderation and temporary stamps (all optional for backward compatibility)
@@ -130,7 +131,7 @@ struct Stamp: Identifiable, Codable, Equatable, Hashable {
     
     // For backward compatibility with JSON that uses collectionId
     enum CodingKeys: String, CodingKey {
-        case id, name, latitude, longitude, address, imageName, imageUrl, about, thingsToDoFromEditors, geohash, collectionRadius
+        case id, name, latitude, longitude, address, imageName, imageUrl, about, thingsToDoFromEditors, geohash, collectionRadius, aspectRatio
         case collectionIds
         case collectionId
         // Visibility system
@@ -140,7 +141,7 @@ struct Stamp: Identifiable, Codable, Equatable, Hashable {
     init(id: String, name: String, latitude: Double, longitude: Double, address: String, 
          imageName: String = "", imageUrl: String? = nil, collectionIds: [String], 
          about: String, thingsToDoFromEditors: [String] = [], geohash: String? = nil,
-         collectionRadius: String = "regular",
+         collectionRadius: String = "regular", aspectRatio: Double? = nil,
          status: String? = nil, availableFrom: Date? = nil, 
          availableUntil: Date? = nil, removalReason: String? = nil) {
         self.id = id
@@ -155,6 +156,7 @@ struct Stamp: Identifiable, Codable, Equatable, Hashable {
         self.thingsToDoFromEditors = thingsToDoFromEditors
         self.geohash = geohash
         self.collectionRadius = collectionRadius
+        self.aspectRatio = aspectRatio
         self.status = status
         self.availableFrom = availableFrom
         self.availableUntil = availableUntil
@@ -174,6 +176,7 @@ struct Stamp: Identifiable, Codable, Equatable, Hashable {
         thingsToDoFromEditors = try container.decodeIfPresent([String].self, forKey: .thingsToDoFromEditors) ?? []
         geohash = try container.decodeIfPresent(String.self, forKey: .geohash)
         collectionRadius = try container.decodeIfPresent(String.self, forKey: .collectionRadius) ?? "regular"  // Default to regular if missing
+        aspectRatio = try container.decodeIfPresent(Double.self, forKey: .aspectRatio)
         
         // Visibility system fields (optional for backward compatibility)
         status = try container.decodeIfPresent(String.self, forKey: .status)
@@ -205,6 +208,7 @@ struct Stamp: Identifiable, Codable, Equatable, Hashable {
         try container.encode(thingsToDoFromEditors, forKey: .thingsToDoFromEditors)
         try container.encodeIfPresent(geohash, forKey: .geohash)
         try container.encode(collectionRadius, forKey: .collectionRadius)
+        try container.encodeIfPresent(aspectRatio, forKey: .aspectRatio)
         
         // Visibility system fields
         try container.encodeIfPresent(status, forKey: .status)
