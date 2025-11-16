@@ -71,8 +71,8 @@ struct CachedImageView: View {
                 // Detail view: Let image determine its own height (allows tall stamps to be tall)
                 return AnyView(imageView.frame(width: size.width))
             } else {
-                // Grid/feed view or profile: fixed frame
-                return AnyView(imageView.frame(width: size.width, height: contentMode == .fill ? size.height : nil))
+                // Grid/feed view or profile: fixed frame (enforce both width and height)
+                return AnyView(imageView.frame(width: size.width, height: size.height))
             }
         }()
         
@@ -153,12 +153,31 @@ struct CachedImageView: View {
             return
         }
         
-        // For grid/feed view, try loading thumbnail from local cache first (instant if exists)
+        // For grid/feed view, check memory cache first (instant!)
+        if let imageName = imageName {
+            let thumbnailKey = imageName.replacingOccurrences(of: ".jpg", with: "_thumb.jpg")
+                .replacingOccurrences(of: ".png", with: "_thumb.png")
+            
+            if let cachedImage = ImageCacheManager.shared.getThumbnail(key: thumbnailKey) {
+                await MainActor.run {
+                    self.image = cachedImage
+                }
+                return
+            }
+        }
+        
+        // Try loading thumbnail from local disk cache
         if let imageName = imageName,
            let cachedImage = ImageManager.shared.loadThumbnail(named: imageName) {
             await MainActor.run {
                 self.image = cachedImage
             }
+            
+            // Also cache in memory for next time
+            let thumbnailKey = imageName.replacingOccurrences(of: ".jpg", with: "_thumb.jpg")
+                .replacingOccurrences(of: ".png", with: "_thumb.png")
+            ImageCacheManager.shared.setThumbnail(cachedImage, key: thumbnailKey)
+            
             return
         }
         
@@ -182,6 +201,13 @@ struct CachedImageView: View {
             await MainActor.run {
                 self.image = downloadedImage
                 isLoading = false
+            }
+            
+            // Cache in memory for next time
+            if let imageName = imageName {
+                let thumbnailKey = imageName.replacingOccurrences(of: ".jpg", with: "_thumb.jpg")
+                    .replacingOccurrences(of: ".png", with: "_thumb.png")
+                ImageCacheManager.shared.setThumbnail(downloadedImage, key: thumbnailKey)
             }
         } catch {
             print("⚠️ Failed to download image: \(error.localizedDescription)")

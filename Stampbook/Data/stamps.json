@@ -1,11 +1,11 @@
 [
   {
-    "id": "stamp-desert-view-watchtower-1763169394644",
+    "id": "us-az-grand-canyon-desert-view-watchtower",
     "name": "Desert View Watchtower",
     "latitude": 36.04409790919088,
     "longitude": -111.82623223113129,
-    "geohash": "9w2mp3ds",
     "address": "Desert View Watchtower\nGrand Canyon Village, AZ USA 86023",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-az-grand-canyon-desert-view-watchtower.png?alt=media&token=a49cfbe6-b2b9-4b7d-80ac-648f13c5a826",
     "collectionIds": [
       "grand-canyon-must-visits"
     ],
@@ -14,17 +14,17 @@
       "Climb the Watchtower for one of the widest panoramic views on the South Rim",
       "Visit the Hopi Room to see murals painted by Fred Kabotie"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-az-grand-canyon-desert-view-watchtower.png?alt=media&token=a49cfbe6-b2b9-4b7d-80ac-648f13c5a826",
+    "geohash": "9w2mp3ds",
     "collectionRadius": "regular",
     "aspectRatio": 0.63
   },
   {
-    "id": "stamp-hopi-point-1763170300361",
+    "id": "us-az-grand-canyon-hopi-point",
     "name": "Hopi Point",
     "latitude": 36.07443973052488,
     "longitude": -112.15499016118565,
-    "geohash": "9w2jpz5h",
     "address": "Grand Canyon Village, AZ USA 86023",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-az-grand-canyon-hopi-point.png?alt=media&token=c3f6d1cf-28ef-464d-b57d-4d59c9326826",
     "collectionIds": [
       "grand-canyon-must-visits"
     ],
@@ -33,36 +33,36 @@
       "Watch the iconic Hopi Point sunset with glowing canyon layers",
       "Visit at night for stargazing and wide open sky views"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-az-grand-canyon-hopi-point.png?alt=media&token=c3f6d1cf-28ef-464d-b57d-4d59c9326826",
-    "aspectRatio": 0.64,
-    "collectionRadius": "regular"
+    "geohash": "9w2jpz5h",
+    "collectionRadius": "regular",
+    "aspectRatio": 0.64
   },
   {
-    "id": "stamp-mather-point-1763169028097",
+    "id": "us-az-grand-canyon-mather-point",
     "name": "Mather Point",
     "latitude": 36.06172387448706,
     "longitude": -112.10771149393501,
-    "geohash": "9w2m0uvd",
     "address": "Rim Trail\nGrand Canyon Village, AZ USA 86023",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-az-grand-canyon-mather-point.png?alt=media&token=984ff58a-d8d7-4be7-97d1-dbd0504d5919",
+    "collectionIds": [
+      "grand-canyon-must-visits"
+    ],
     "about": "Mather Point is named after Stephen Tyng Mather, the first director of the U.S. National Park Service from 1917. It's a short walk from the Visitor Center.",
     "thingsToDoFromEditors": [
       "Walk from the Visitor Center plaza to the Mather Point overlook for instant canyon view",
       "Arrive at sunrise or sunset to experience dramatic light across the canyon"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-az-grand-canyon-mather-point.png?alt=media&token=984ff58a-d8d7-4be7-97d1-dbd0504d5919",
+    "geohash": "9w2m0uvd",
     "collectionRadius": "regular",
-    "collectionIds": [
-      "grand-canyon-must-visits"
-    ],
     "aspectRatio": 0.62
   },
   {
-    "id": "stamp-moran-point-1763171078215",
+    "id": "us-az-grand-canyon-moran-point",
     "name": "Moran Point",
     "latitude": 36.00513627967556,
     "longitude": -111.92427741315812,
-    "geohash": "9w2kv4e1",
     "address": "Grand Canyon Village, AZ USA 86023",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-az-grand-canyon-moran-point.png?alt=media&token=01f38d04-d9f1-486f-b2c9-e3c1d131dc28",
     "collectionIds": [
       "grand-canyon-must-visits"
     ],
@@ -72,12 +72,12 @@
       "Look for Cardenas and Escalante Buttes from the overlook",
       "Visit during golden hour for vivid color layering"
     ],
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-az-grand-canyon-moran-point.png?alt=media&token=01f38d04-d9f1-486f-b2c9-e3c1d131dc28",
-    "aspectRatio": 0.6,
-    "collectionRadius": "regular"
+    "geohash": "9w2kv4e1",
+    "collectionRadius": "regular",
+    "aspectRatio": 0.6
   },
   {
-    "id": "stamp-yavapai-point-1763164622206",
+    "id": "us-az-grand-canyon-yavapai-point",
     "name": "Yavapai Point",
     "latitude": 36.06373166414744,
     "longitude": -112.11838633000048,
@@ -1132,6 +1132,25 @@
     "aspectRatio": 1
   },
   {
+    "id": "us-me-acadia-national-park-cadillac-mountain-summit-overlook",
+    "name": "Cadillac Mountain Summit Overlook",
+    "latitude": 44.35264357901701,
+    "longitude": -68.22501658065754,
+    "geohash": "drzkrd0h",
+    "address": "Paradise Hill Rd\nBar Harbor, ME USA 04609",
+    "collectionIds": [
+      "acadia-must-visits"
+    ],
+    "about": "Cadillac Mountain was named after French explorer Antoine Laumet de La Mothe, sieur de Cadillac, who also lent his name to the car brand.",
+    "thingsToDoFromEditors": [
+      "Arrive before dawn to watch the famous Cadillac sunrise",
+      "Photograph the island chain of Frenchman Bay from several angles"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-me-acadia-national-park-cadillac-mountain-summit-overlook.png?alt=media&token=a6c78e82-f69c-4562-9c69-415d865c1d8e",
+    "aspectRatio": 1,
+    "collectionRadius": "regular"
+  },
+  {
     "id": "us-me-bar-harbor-beals",
     "name": "Beal's Lobster Pier",
     "latitude": 44.27582873952332,
@@ -1154,7 +1173,7 @@
     "latitude": 44.335420181862744,
     "longitude": -68.1910357769886,
     "address": "Beehive Trail\nBar Harbor, ME, USA 04609",
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-me-bar-harbor-beehive-trail-summit.png?alt=media&token=b89740aa-96e2-4017-b114-3905817ea24f",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-me-acadia-national-park-beehive-trail-summit.png?alt=media&token=b641bba6-6660-442e-921f-594af4cd3a9d",
     "collectionIds": [
       "acadia-must-visits"
     ],
@@ -1173,7 +1192,7 @@
     "latitude": 44.33935709878886,
     "longitude": -68.25340104731045,
     "address": "Bubble Rock Trail\nBar Harbor, ME, USA 04609",
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-me-bar-harbor-bubble-rock.png?alt=media&token=ff2a1fcc-baa8-4a1e-813f-6e76771f0a58",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-me-acadia-national-park-bubble-rock.png?alt=media&token=7cf342fa-79cb-4a2a-9861-224dea0849d3",
     "collectionIds": [
       "acadia-must-visits"
     ],

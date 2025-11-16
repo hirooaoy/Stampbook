@@ -76,7 +76,7 @@ struct FollowListView: View {
         }
         .navigationTitle(userDisplayName)
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar(.hidden, for: .tabBar)
+        // .toolbar(.hidden, for: .tabBar)
         .onAppear {
             // Load both followers and following data to show accurate counts
             // Pass current user ID to batch check follow statuses

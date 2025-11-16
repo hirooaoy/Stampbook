@@ -199,15 +199,26 @@ service cloud.firestore {
       allow read: if isAdmin() || (request.auth != null && resource.data.userId == request.auth.uid);
       
       // Allow authenticated users to create suggestions
+      // Two types: "single_stamp" or "collection"
       allow create: if request.auth != null
         && request.resource.data.userId == request.auth.uid
-        && request.resource.data.stampName is string
-        && request.resource.data.stampName.size() > 0
-        && request.resource.data.fullAddress is string
-        && request.resource.data.fullAddress.size() > 0
-        && request.resource.data.additionalNotes is string
-        && request.resource.data.additionalNotes.size() > 0
-        && request.resource.data.createdAt is timestamp;
+        && request.resource.data.type is string
+        && request.resource.data.createdAt is timestamp
+        && (
+          // Single stamp validation
+          (request.resource.data.type == "single_stamp"
+           && request.resource.data.googleMapLink is string
+           && request.resource.data.googleMapLink.size() > 0
+           && request.resource.data.description is string
+           && request.resource.data.description.size() > 0)
+          ||
+          // Collection validation  
+          (request.resource.data.type == "collection"
+           && request.resource.data.collectionName is string
+           && request.resource.data.collectionName.size() > 0
+           && request.resource.data.stamps is list
+           && request.resource.data.stamps.size() >= 3)
+        );
     }
     
     // ==================== MODERATION ALERTS ====================

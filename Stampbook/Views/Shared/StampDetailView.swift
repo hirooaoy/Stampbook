@@ -603,7 +603,7 @@ struct StampDetailView: View {
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)
-        .toolbar(.hidden, for: .tabBar)
+        // .toolbar(.hidden, for: .tabBar)
         .if(!showBackButton) { view in
             view.presentationDetents([.fraction(0.78), .large])
         }
@@ -902,10 +902,9 @@ struct StampDetailView: View {
     }
     
     private func openInAppleMaps() {
-        let location = CLLocation(latitude: stamp.coordinate.latitude, longitude: stamp.coordinate.longitude)
-        
-        // Create MKMapItem with location and name
-        let mapItem = MKMapItem(location: location, address: nil)
+        // Create MKMapItem with coordinate and name (iOS 17+ compatible)
+        let placemark = MKPlacemark(coordinate: stamp.coordinate)
+        let mapItem = MKMapItem(placemark: placemark)
         mapItem.name = stamp.name
         mapItem.openInMaps(launchOptions: [
             MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeWalking

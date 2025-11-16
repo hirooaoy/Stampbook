@@ -36,13 +36,19 @@ struct PostDetailView: View {
         commentManager.getCommentCount(postId: postId)
     }
     
-    // Read notes dynamically from userCollection
+    // Note from post owner (passed from FeedPost data)
+    // For current user's posts, read from userCollection to get real-time updates after edits
     private var currentNote: String? {
         guard let post = post else { return nil }
-        let notes = stampsManager.userCollection.collectedStamps
-            .first(where: { $0.stampId == post.stampId })?
-            .userNotes ?? ""
-        return notes.isEmpty ? nil : notes
+        if post.isCurrentUser {
+            let notes = stampsManager.userCollection.collectedStamps
+                .first(where: { $0.stampId == post.stampId })?
+                .userNotes ?? ""
+            return notes.isEmpty ? nil : notes
+        } else {
+            // For other users' posts, use the note passed from FeedPost
+            return post.note
+        }
     }
     
     var body: some View {
@@ -109,7 +115,7 @@ struct PostDetailView: View {
                 .background(Color(.systemBackground))
             }
         }
-        .toolbar(.hidden, for: .tabBar)
+        // .toolbar(.hidden, for: .tabBar)
         .onAppear {
             loadPost()
         }

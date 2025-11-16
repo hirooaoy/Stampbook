@@ -163,7 +163,7 @@ struct PhotoGalleryView: View {
                                     storagePath: storagePath,
                                     stampId: stampId,
                                     size: CGSize(width: 106, height: 106),
-                                    cornerRadius: 0,  // No rounded corners for stamps (prevents clipping edges)
+                                    cornerRadius: 0,  // No corner radius - stamps should show full edges
                                     imageUrl: stampImageName
                                 )
                             } else {
@@ -171,7 +171,7 @@ struct PhotoGalleryView: View {
                                 Image(stampImageName)
                                     .resizable()
                                     .renderingMode(.original)
-                                    .aspectRatio(contentMode: .fit)
+                                    .aspectRatio(contentMode: .fit)  // FIT - show full stamp
                                     .frame(width: 106, height: 106)
                             }
                         } else {
@@ -179,7 +179,7 @@ struct PhotoGalleryView: View {
                             Image("empty")
                                 .resizable()
                                 .renderingMode(.original)
-                                .aspectRatio(contentMode: .fit)
+                                .aspectRatio(contentMode: .fit)  // FIT - show full placeholder
                                 .frame(width: 106, height: 106)
                         }
                         }
@@ -198,7 +198,6 @@ struct PhotoGalleryView: View {
                                     storagePath: getStoragePath(for: imageName),
                                     stampId: stampId
                                 )
-                                .frame(width: 106, height: 106)
                                 .cornerRadius(12)
                                 .id(imageName) // 🔧 FIX: Force view recreation when imageName changes
                                 
@@ -422,20 +421,23 @@ struct AsyncThumbnailView: View {
                 // Show placeholder while loading
                 RoundedRectangle(cornerRadius: 12)
                     .fill(Color.gray.opacity(0.3))
+                    .frame(width: 106, height: 106)
                     .overlay(
                         ProgressView()
                             .tint(.gray)
                     )
             } else if let thumbnail = thumbnail {
-                // Display the loaded thumbnail
+                // USER PHOTOS: Thumbnail is already cropped (aspect-fill generation)
+                // So just display it with .fit - shows exactly what's in the thumbnail!
                 Image(uiImage: thumbnail)
                     .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .clipped()
+                    .aspectRatio(contentMode: .fit)  // Simple .fit - no complex logic needed!
+                    .frame(width: 106, height: 106)
             } else {
                 // Failed to load - show placeholder
                 RoundedRectangle(cornerRadius: 12)
                     .fill(Color.gray.opacity(0.3))
+                    .frame(width: 106, height: 106)
                     .overlay(
                         Image(systemName: "photo")
                             .foregroundColor(.gray)
@@ -464,8 +466,24 @@ struct AsyncThumbnailView: View {
         // 🔧 FIX: Use thumbnail filename as key (consistent with ImageManager)
         let thumbnailKey = imageName.replacingOccurrences(of: ".jpg", with: "_thumb.jpg")
         
-        // 🔧 FIX: Check memory cache first (fast!)
-        if let cachedThumbnail = ImageCacheManager.shared.getThumbnail(key: thumbnailKey) {
+        // TODO: REMOVE BEFORE LAUNCH - Check thumbnail version for migration
+        // ==================================================================================
+        // DEBUG: Uncomment the line below to test migration (forces re-download)
+        // UserDefaults.standard.set(0, forKey: "thumbnailVersion")
+        
+        let thumbnailVersion = UserDefaults.standard.integer(forKey: "thumbnailVersion")
+        let currentThumbnailVersion = 2
+        let shouldForceRedownload = thumbnailVersion < currentThumbnailVersion
+        
+        #if DEBUG
+        if shouldForceRedownload {
+            print("🔄 [AsyncThumbnail] Migration active - skipping cache for \(imageName)")
+        }
+        #endif
+        // ==================================================================================
+        
+        // 🔧 FIX: Check memory cache first (fast!) - skip if forcing migration
+        if !shouldForceRedownload, let cachedThumbnail = ImageCacheManager.shared.getThumbnail(key: thumbnailKey) {
             #if DEBUG
             let loadTime = CFAbsoluteTimeGetCurrent() - loadStart
             print("⏱️ [AsyncThumbnail] Memory cache hit: \(String(format: "%.3f", loadTime))s for \(imageName)")
@@ -478,8 +496,8 @@ struct AsyncThumbnailView: View {
             return
         }
         
-        // Step 1: Try loading thumbnail from local disk cache
-        if let cachedThumbnail = ImageManager.shared.loadThumbnail(named: imageName) {
+        // Step 1: Try loading thumbnail from local disk cache - skip if forcing migration
+        if !shouldForceRedownload, let cachedThumbnail = ImageManager.shared.loadThumbnail(named: imageName) {
             #if DEBUG
             let loadTime = CFAbsoluteTimeGetCurrent() - loadStart
             print("⏱️ [AsyncThumbnail] Disk cache hit: \(String(format: "%.3f", loadTime))s for \(imageName)")

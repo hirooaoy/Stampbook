@@ -106,7 +106,7 @@ async function uploadStamps(forceDelete = false) {
   console.log(`📊 Only in JSON: ${onlyInJSON.length} stamps\n`);
   
   // If Firebase has stamps that JSON doesn't, warn and require confirmation
-  if (onlyInFirebase.length > 0) {
+  if (onlyInFirebase.length > 0 && !forceDelete) {
     console.log('⚠️  WARNING: Firebase has stamps that are NOT in your local JSON!');
     console.log('⚠️  Running this script will DELETE these stamps from Firebase:\n');
     

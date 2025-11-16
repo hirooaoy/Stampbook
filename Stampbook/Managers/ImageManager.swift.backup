@@ -996,10 +996,7 @@ class ImageManager: ObservableObject {
                     // Also store in memory cache
                     ImageCacheManager.shared.setFullImage(image, key: filename)
                 } catch {
-                    #if DEBUG
-
                     print("⚠️ Failed to cache profile picture: \(error.localizedDescription)")
-                    #endif
                     // Still return the image even if caching failed
                 }
                 
@@ -1083,27 +1080,18 @@ class ImageManager: ObservableObject {
     func prepareProfilePictureForUpload(_ image: UIImage) -> Data? {
         // Resize to 200x200px (optimized for MVP - 4x faster downloads)
         guard let resizedImage = resizeProfilePicture(image, size: 200) else {
-            #if DEBUG
-
             print("⚠️ Failed to resize profile picture for upload")
-            #endif
             return nil
         }
         
         // Compress to reasonable size (max 200KB for faster uploads)
         guard let imageData = compressImage(resizedImage, maxSizeMB: 0.2) else {
-            #if DEBUG
-
             print("⚠️ Failed to compress profile picture for upload")
-            #endif
             return nil
         }
         
         let sizeInKB = Double(imageData.count) / 1024.0
-        #if DEBUG
-
         print("✅ Profile picture prepared for upload: \(Int(sizeInKB))KB")
-        #endif
         
         return imageData
     }
@@ -1123,25 +1111,16 @@ class ImageManager: ObservableObject {
             
             do {
                 try fileManager.removeItem(at: fileURL)
-                #if DEBUG
-
                 print("🗑️ Cleared old profile picture from disk: \(oldFilename)")
-                #endif
                 clearedCount += 1
             } catch {
                 // File might not exist, that's okay
-                #if DEBUG
-
                 print("ℹ️ Old profile picture not in disk cache: \(oldFilename)")
-                #endif
             }
             
             // Clear from memory cache too
             ImageCacheManager.shared.removeFullImage(key: oldFilename)
-            #if DEBUG
-
             print("🗑️ Cleared old profile picture from memory cache: \(oldFilename)")
-            #endif
         }
         
         // Also clear all profile_* files for this user as a safety measure
@@ -1161,16 +1140,9 @@ class ImageManager: ObservableObject {
                 ImageCacheManager.shared.removeFullImage(key: filename)
             }
             
-            #if DEBUG
-
-            
             print("✅ Cleared \(clearedCount) cached profile pictures for user \(userId)")
-            #endif
         } catch {
-            #if DEBUG
-
             print("⚠️ Failed to enumerate cached profile pictures: \(error.localizedDescription)")
-            #endif
         }
     }
     
@@ -1181,23 +1153,13 @@ class ImageManager: ObservableObject {
         
         // Resize to cache size (200x200) - optimized for MVP
         guard let resizedImage = resizeProfilePicture(image, size: 200) else {
-            #if DEBUG
-
-            #if DEBUG
-
-
             print("⚠️ Failed to resize profile picture for precaching")
-            #endif
-            #endif
             return
         }
         
         // Compress
         guard let imageData = compressImage(resizedImage, maxSizeMB: 0.2) else {
-            #if DEBUG
-
             print("⚠️ Failed to compress profile picture for precaching")
-            #endif
             return
         }
         
@@ -1205,22 +1167,13 @@ class ImageManager: ObservableObject {
         let fileURL = getDocumentsDirectory().appendingPathComponent(filename)
         do {
             try imageData.write(to: fileURL)
-            #if DEBUG
-
             print("✅ Pre-cached new profile picture to disk: \(filename)")
-            #endif
             
             // Also store in memory cache for immediate access
             ImageCacheManager.shared.setFullImage(resizedImage, key: filename)
-            #if DEBUG
-
             print("✅ Pre-cached new profile picture to memory: \(filename)")
-            #endif
         } catch {
-            #if DEBUG
-
             print("⚠️ Failed to pre-cache profile picture: \(error.localizedDescription)")
-            #endif
         }
     }
 }

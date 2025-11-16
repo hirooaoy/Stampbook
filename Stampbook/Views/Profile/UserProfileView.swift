@@ -63,11 +63,14 @@ struct UserProfileView: View {
                     .font(.title3)
                     .fontWeight(.semibold)
                 
-                Text(userProfile?.bio ?? "")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .lineLimit(2)
+                if let bio = userProfile?.bio, !bio.isEmpty {
+                    Text(bio)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .lineLimit(2)
+                }
             }
+            .frame(height: userProfile?.bio.isEmpty != false ? 64 : nil)
             
             Spacer()
         }
@@ -307,7 +310,7 @@ struct UserProfileView: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar(.hidden, for: .tabBar) // Hide bottom navigation when viewing profile
+        // .toolbar(.hidden, for: .tabBar) // Hide bottom navigation when viewing profile
         .toolbar {
             // Triple dot menu in top right (only for other users)
             if !isCurrentUser {
@@ -436,7 +439,9 @@ struct UserProfileView: View {
     /*
     private func fetchUserRank(for profile: UserProfile) async {
         let startTime = Date()
+        #if DEBUG
         print("🔍 [UserProfileView] Fetching rank for \(profile.displayName) (userId: \(profile.id), totalStamps: \(profile.totalStamps))")
+        #endif
         
         do {
             let rank = try await FirebaseService.shared.calculateUserRankCached(

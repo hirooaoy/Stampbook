@@ -379,12 +379,16 @@ struct FeedView: View {
                 .environmentObject(notificationManager)
                 .onAppear {
                     activeSheetCount += 1
+                    #if DEBUG
                     print("🔔 [FeedView] Notifications sheet opened - activeSheetCount: \(activeSheetCount)")
+                    #endif
                 }
                 .onDisappear {
                     activeSheetCount -= 1
+                    #if DEBUG
                     print("🔔 [FeedView] Notifications sheet closed - activeSheetCount: \(activeSheetCount)")
                     print("✅ [FeedView] OPTIMIZED: No refresh needed - viewing notifications doesn't change feed (saved 113 reads)")
+                    #endif
                     // NotificationView fetches its own data on open, badge updates via polling
                 }
         }
@@ -394,11 +398,15 @@ struct FeedView: View {
                 .onAppear {
                     activeSheetCount += 1
                     didFollowChangeInSheet = false // Reset flag when opening
+                    #if DEBUG
                     print("🔍 [FeedView] Search sheet opened - activeSheetCount: \(activeSheetCount)")
+                    #endif
                 }
                 .onDisappear {
                     activeSheetCount -= 1
+                    #if DEBUG
                     print("🔍 [FeedView] Search sheet closed - activeSheetCount: \(activeSheetCount)")
+                    #endif
                     
                     // ✅ OPTIMIZED: Only refresh if user followed/unfollowed someone
                     // Check if followManager's following list changed
@@ -548,7 +556,9 @@ struct FeedView: View {
             // Listen for profile updates to refresh feed immediately
             profileUpdateListener = NotificationCenter.default.publisher(for: .profileDidUpdate)
                 .sink { _ in
+                    #if DEBUG
                     print("🔔 [FeedView] Profile updated - refreshing feed now")
+                    #endif
                     // ProfileManager has loaded/updated, now load feed with fresh profile data
                     if let userId = authManager.userId, authManager.isSignedIn {
                         Task {
@@ -723,6 +733,7 @@ struct FeedView: View {
                             stamp: post.stamp,
                             userPhotos: post.userPhotos,
                             userImagePaths: post.userImagePaths,
+                            note: post.note,
                             likeCount: post.likeCount,
                             commentCount: post.commentCount,
                             selectedTab: $selectedTab,
@@ -798,9 +809,11 @@ struct FeedView: View {
         
         /// Load feed with smart caching
         private func loadFeedIfNeeded() {
+            #if DEBUG
             if debugEnabled {
                 print("🔍 [DEBUG] FeedContent.loadFeedIfNeeded called for \(feedType.rawValue)")
             }
+            #endif
             guard let userId = authManager.userId else { return }
             guard authManager.isSignedIn else { return }
             
@@ -927,6 +940,7 @@ struct FeedView: View {
         let stamp: Stamp // Full stamp object (no need to fetch)
         let userPhotos: [String] // Additional user photos (can be empty)
         let userImagePaths: [String] // Firebase Storage paths for user photos
+        let note: String? // User's note for this stamp
         let likeCount: Int
         let commentCount: Int
         @Binding var selectedTab: Int
@@ -971,13 +985,18 @@ struct FeedView: View {
             commentManager.getCommentCount(postId: postId)
         }
         
-        // Read notes dynamically from userCollection (same pattern as photos)
-        // This ensures notes update instantly when edited, consistent with other features
+        // Note from post owner (passed from FeedPost data)
+        // For current user's posts, read from userCollection to get real-time updates after edits
         private var currentNote: String? {
-            let notes = stampsManager.userCollection.collectedStamps
-                .first(where: { $0.stampId == stamp.id })?
-                .userNotes ?? ""
-            return notes.isEmpty ? nil : notes
+            if isCurrentUser {
+                let notes = stampsManager.userCollection.collectedStamps
+                    .first(where: { $0.stampId == stamp.id })?
+                    .userNotes ?? ""
+                return notes.isEmpty ? nil : notes
+            } else {
+                // For other users' posts, use the note passed from FeedPost
+                return note
+            }
         }
         
         // Avatar URL comes from feed data (already fetched from Firebase)
