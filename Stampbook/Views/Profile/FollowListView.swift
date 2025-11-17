@@ -80,8 +80,13 @@ struct FollowListView: View {
         .onAppear {
             // Load both followers and following data to show accurate counts
             // Pass current user ID to batch check follow statuses
-            followManager.fetchFollowers(userId: userId, currentUserId: authManager.userId)
-            followManager.fetchFollowing(userId: userId, currentUserId: authManager.userId)
+            // ✅ FIX: Only fetch if lists are empty (preserves optimistic updates from unfollow)
+            if followManager.followers.isEmpty {
+                followManager.fetchFollowers(userId: userId, currentUserId: authManager.userId)
+            }
+            if followManager.following.isEmpty {
+                followManager.fetchFollowing(userId: userId, currentUserId: authManager.userId)
+            }
         }
     }
 }

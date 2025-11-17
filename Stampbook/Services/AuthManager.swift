@@ -28,14 +28,16 @@ class AuthManager: NSObject, ObservableObject {
     override init() {
         super.init()
         Logger.debug("AuthManager init() started")
-        
-        // Defer auth check to avoid blocking app launch
-        // Use regular Task (not detached) to maintain proper MainActor context
+        Logger.debug("AuthManager init() completed (auth check will start after profileManager is linked)")
+    }
+    
+    /// Start the auth state check
+    /// Called by StampbookApp after profileManager is linked (prevents race condition)
+    func startAuthCheck() {
+        Logger.debug("startAuthCheck() called")
         Task { [weak self] in
             await self?.checkAuthState()
         }
-        
-        Logger.debug("AuthManager init() completed (auth check deferred)")
     }
     
     /// Check if user is already signed in with Firebase
@@ -87,6 +89,11 @@ class AuthManager: NSObject, ObservableObject {
         
         Logger.debug("checkAuthState() completed")
         Logger.debug("Final state: isCheckingAuth=\(isCheckingAuth), isSignedIn=\(isSignedIn)")
+        
+        // Set loading flag BEFORE starting background task (prevents race condition)
+        await MainActor.run {
+            profileManager?.isLoadingProfile = true
+        }
         
         // Load user profile via ProfileManager (in background, non-blocking)
         Task.detached(priority: .medium) { [weak self] in

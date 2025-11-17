@@ -107,10 +107,14 @@ struct StampbookApp: App {
                 .environmentObject(commentManager)
                 .environmentObject(notificationManager)
                 .onAppear {
-                    // Link ProfileManager to AuthManager as soon as WindowGroup appears
-                    // This happens after @StateObjects are initialized but before deferred auth check completes
+                    // Link ProfileManager to AuthManager BEFORE starting auth check
+                    // This prevents race condition where checkAuthState() completes before profileManager is linked
                     authManager.profileManager = profileManager
                     Logger.debug("Linked ProfileManager to AuthManager in WindowGroup")
+                    
+                    // Now safe to start auth check (profileManager is guaranteed to be linked)
+                    authManager.startAuthCheck()
+                    Logger.debug("Started auth check after profileManager linkage")
                 }
         }
         .onChange(of: scenePhase) { oldPhase, newPhase in
@@ -132,9 +136,17 @@ struct StampbookApp: App {
                 notificationManager.startPollingForUnreadNotifications(userId: userId)
             }
         } else {
-            Logger.debug("User signed out")
+            Logger.debug("User signed out - clearing all caches")
             // Stop notification polling
             notificationManager.stopPollingForUnreadNotifications()
+            
+            // ✅ CRITICAL FIX: Clear all manager caches to prevent data leakage between users
+            // Without this, User B would see User A's liked posts, comments, feed, and follow data
+            likeManager.clearCache()
+            commentManager.clearCache()
+            followManager.clearFollowData()
+            // Note: FeedManager is created in FeedView (@StateObject), cleared automatically when view destroyed
+            Logger.success("All manager caches cleared on sign out", category: "StampbookApp")
         }
     }
     

@@ -1,11 +1,11 @@
 [
   {
     "id": "acadia-must-visits",
-    "emoji": "🍁",
+    "totalStamps": 5,
     "name": "Acadia National Park",
-    "description": "Iconic natural wonders and local favorites in and around Acadia National Park",
     "region": "acadia",
-    "totalStamps": 2
+    "emoji": "🍁",
+    "description": "Iconic natural wonders and local favorites in and around Acadia National Park"
   },
   {
     "id": "airports-of-the-world",
@@ -16,6 +16,14 @@
     "totalStamps": 1
   },
   {
+    "id": "big-bend-must-visits",
+    "totalStamps": 6,
+    "name": "Big Bend National Park",
+    "region": "texas",
+    "emoji": "🏜️",
+    "description": "Known for its stunning desert, mountain, and river landscapes along the U.S.-Mexico border"
+  },
+  {
     "id": "discover-central-park",
     "emoji": "🐴",
     "name": "Central Park",
@@ -24,12 +32,12 @@
     "totalStamps": 6
   },
   {
-    "description": "Observe the layered bands of red rock revealing millions of years of geological history",
-    "region": "arizona",
-    "name": "Grand Canyon National Park",
     "id": "grand-canyon-must-visits",
+    "emoji": "🏜",
     "totalStamps": 5,
-    "emoji": "🏜"
+    "name": "Grand Canyon National Park",
+    "region": "arizona",
+    "description": "Observe the layered bands of red rock revealing millions of years of geological history"
   },
   {
     "id": "libraries-that-make-you-forget-time",
@@ -88,11 +96,27 @@
     "totalStamps": 2
   },
   {
+    "id": "yellowstone-must-visits",
+    "totalStamps": 7,
+    "name": "Yellowstone National Park",
+    "region": "wyoming",
+    "description": "Home to hundreds of animal species, including bears, wolves, bison, elk and antelope",
+    "emoji": "🦬"
+  },
+  {
     "id": "yosemite-must-visits",
+    "region": "california",
+    "description": "Explore Yosemite's iconic granite cliffs, waterfalls, and ancient sequoias",
     "emoji": "🏔️",
     "name": "Yosemite National Park",
-    "description": "Explore Yosemite's iconic granite cliffs, waterfalls, and ancient sequoias",
-    "region": "california",
     "totalStamps": 6
+  },
+  {
+    "id": "zion-must-visits",
+    "region": "utah",
+    "description": "Explore the massive sandstone cliffs, scenic hikes, and narrow canyons carved by the Virgin River",
+    "emoji": "💧",
+    "totalStamps": 5,
+    "name": "Zion National Park"
   }
 ]

@@ -205,8 +205,9 @@ struct ContentView: View {
         // Check if user is in broken state (signed in but no profile cached)
         guard authManager.isSignedIn,
               let userId = authManager.userId,
-              profileManager.currentUserProfile == nil else {
-            return // State is fine
+              profileManager.currentUserProfile == nil,
+              !profileManager.isLoadingProfile else { // Don't interfere if profile is already loading
+            return // State is fine or already being handled
         }
         
         Logger.warning("Detected broken account state - user signed in but no profile cached", category: "ContentView")

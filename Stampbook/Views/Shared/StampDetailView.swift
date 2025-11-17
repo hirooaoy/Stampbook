@@ -14,6 +14,8 @@ struct StampDetailView: View {
     let isCollectedAtInit: Bool  // Passed explicitly to avoid environment object dependency in init
     let userLocation: CLLocation?
     let showBackButton: Bool
+    let viewingUserId: String?  // If viewing someone else's profile, this is their userId
+    let viewingDisplayName: String?  // If viewing someone else's profile, this is their display name (for "Justin's Memory" heading)
     @State private var showMemorySection = false
     @State private var showNotesEditor = false
     @State private var editingNotes = ""
@@ -26,17 +28,20 @@ struct StampDetailView: View {
     @State private var showInviteCodeSheet = false
     @State private var isAnimatingCollection = false // Track if we're in collection animation
     @State private var displayStats: StampStatistics? = nil // Stats to display (frozen during animation)
+    @State private var viewingUserCollectedStamp: CollectedStamp? = nil // When viewing someone else's profile, their collected stamp data
     
     // Animation states (set correctly in init based on isCollected)
     @State private var imageScale: CGFloat
     @State private var showStampImage: Bool
     @State private var showLockIcon: Bool
     
-    init(stamp: Stamp, isCollected: Bool, userLocation: CLLocation? = nil, showBackButton: Bool = false) {
+    init(stamp: Stamp, isCollected: Bool, userLocation: CLLocation? = nil, showBackButton: Bool = false, viewingUserId: String? = nil, viewingDisplayName: String? = nil) {
         self.stamp = stamp
         self.isCollectedAtInit = isCollected
         self.userLocation = userLocation
         self.showBackButton = showBackButton
+        self.viewingUserId = viewingUserId
+        self.viewingDisplayName = viewingDisplayName
         
         // Set correct initial animation states - no .onAppear updates needed!
         if isCollected {
@@ -62,15 +67,51 @@ struct StampDetailView: View {
         return stampsManager.stampStatistics[stamp.id]
     }
     
+    // Are we viewing someone else's profile?
+    private var isViewingOtherUser: Bool {
+        guard let viewingUserId = viewingUserId else { return false }
+        return viewingUserId != authManager.userId
+    }
+    
     // Computed property to get user rank from cached CollectedStamp
     // This updates automatically when userCollection changes
     private var cachedUserRank: Int? {
-        stampsManager.userCollection.collectedStamps
-            .first(where: { $0.stampId == stamp.id })?.userRank
+        if isViewingOtherUser {
+            // Viewing someone else's profile - use their rank
+            return viewingUserCollectedStamp?.userRank
+        } else {
+            // Viewing own profile - use current user's rank
+            return stampsManager.userCollection.collectedStamps
+                .first(where: { $0.stampId == stamp.id })?.userRank
+        }
     }
     
     private var isCollected: Bool {
         stampsManager.isCollected(stamp)
+    }
+    
+    // Should we show the Memory section?
+    // - If viewing own profile: show if current user collected it
+    // - If viewing someone else: show if THEY collected it (based on viewingUserCollectedStamp)
+    private var shouldShowMemory: Bool {
+        if isViewingOtherUser {
+            return viewingUserCollectedStamp != nil
+        } else {
+            return isCollected
+        }
+    }
+    
+    // Check if there are photos or notes to display (affects padding)
+    private var hasPhotosOrNotes: Bool {
+        if isViewingOtherUser {
+            // Viewing someone else - check if they have photos or notes
+            let hasPhotos = !(viewingUserCollectedStamp?.userImageNames.isEmpty ?? true)
+            let hasNotes = !userNotes.isEmpty
+            return hasPhotos || hasNotes
+        } else {
+            // Viewing own profile - always has "Add Photos" and "Add Notes" buttons
+            return true
+        }
     }
     
     // Check if stamp should use full width (wide panoramas)
@@ -103,19 +144,34 @@ struct StampDetailView: View {
     }
     
     private var collectedDate: Date? {
-        stampsManager.userCollection.collectedStamps
-            .first(where: { $0.stampId == stamp.id })?.collectedDate
+        if isViewingOtherUser {
+            // Viewing someone else's profile - use their date
+            return viewingUserCollectedStamp?.collectedDate
+        } else {
+            // Viewing own profile - use current user's date
+            return stampsManager.userCollection.collectedStamps
+                .first(where: { $0.stampId == stamp.id })?.collectedDate
+        }
     }
     
     private var userNotes: String {
-        stampsManager.userCollection.collectedStamps
-            .first(where: { $0.stampId == stamp.id })?.userNotes ?? ""
+        if isViewingOtherUser {
+            // Viewing someone else's profile - use their notes
+            return viewingUserCollectedStamp?.userNotes ?? ""
+        } else {
+            // Viewing own profile - use current user's notes
+            return stampsManager.userCollection.collectedStamps
+                .first(where: { $0.stampId == stamp.id })?.userNotes ?? ""
+        }
     }
     
     private var formattedFullDate: String {
         guard let date = collectedDate else { return "" }
         return date.formatted(.dateTime.month(.abbreviated).day().year())
     }
+    
+    // Track if we should show slow load warning (after 2 second delay)
+    @State private var showSlowLoadWarning = false
     
     // Status message for unavailable stamps (removed or expired)
     private var statusBanner: (message: String, icon: String, color: Color)? {
@@ -130,7 +186,39 @@ struct StampDetailView: View {
             return ("This event stamp expired on \(dateStr)", "calendar.badge.exclamationmark", .orange)
         }
         
+        // Priority 3: Collected but image taking a long time to load (2+ seconds)
+        // Only show after delay to avoid flash on fast connections
+        if isCollected && showSlowLoadWarning && !isStampImageCached {
+            return ("Image will load when you have a strong connection", "wifi.exclamationmark", .blue)
+        }
+        
         return nil
+    }
+    
+    // Check if stamp image is already cached
+    private var isStampImageCached: Bool {
+        // If stamp has no remote image, it's using a bundled asset (always "cached")
+        guard let imageUrl = stamp.imageUrl, !imageUrl.isEmpty else {
+            return true
+        }
+        
+        // Generate the same cache key used by ImageManager when downloading
+        let urlHash = abs(imageUrl.hashValue)
+        let cacheKey = "\(stamp.id)_\(urlHash).png"
+        
+        // Check both memory cache and disk cache
+        if ImageCacheManager.shared.getFullImage(key: cacheKey) != nil {
+            return true
+        }
+        
+        // Also check disk cache by attempting to load
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let fileURL = documentsPath.appendingPathComponent(cacheKey)
+        if FileManager.default.fileExists(atPath: fileURL.path) {
+            return true
+        }
+        
+        return false
     }
     
     var body: some View {
@@ -163,7 +251,7 @@ struct StampDetailView: View {
                                 .foregroundColor(.gray)
                         }
                         
-                        // Stamp image - always present, but hidden when not collected
+                        // Stamp image - always in view tree so scale animation works
                         ZStack {
                             if let imageUrl = stamp.imageUrl, !imageUrl.isEmpty {
                                 CachedImageView.stampPhoto(
@@ -242,14 +330,15 @@ struct StampDetailView: View {
                         .frame(maxWidth: .infinity)
                         .padding(.horizontal, 24)
                         .padding(.bottom, 36)
-                        .transition(.move(edge: .top).combined(with: .opacity))
+                        .transition(.opacity)
+                        .animation(.easeIn(duration: 0.3), value: statusBanner != nil)
                     }
                     
                     // Memory section - only visible after collection
-                    if isCollected && showMemorySection {
+                    if shouldShowMemory && showMemorySection {
                         VStack(alignment: .leading, spacing: 0) {
-                            // Memory heading
-                            Text("Memory")
+                            // Memory heading - show username if viewing someone else's profile
+                            Text(isViewingOtherUser ? "\(viewingDisplayName ?? "User")'s memory" : "Memory")
                                 .font(.headline)
                                 .foregroundColor(.secondary)
                                 .padding(.bottom, 8)
@@ -323,55 +412,74 @@ struct StampDetailView: View {
                             .padding(.bottom, 24)
                             
                             // Photo section
-                            if stampsManager.userCollection.collectedStamps.first(where: { $0.stampId == stamp.id }) != nil {
+                            if stampsManager.userCollection.collectedStamps.first(where: { $0.stampId == stamp.id }) != nil || isViewingOtherUser {
                                 // Always show photo gallery (it handles both empty and non-empty states)
                                 PhotoGalleryView(
-                                    stampId: stamp.id
+                                    stampId: stamp.id,
+                                    userId: isViewingOtherUser ? viewingUserId : nil,
+                                    userPhotos: isViewingOtherUser ? (viewingUserCollectedStamp?.userImageNames ?? []) : nil,
+                                    userPhotoPaths: isViewingOtherUser ? (viewingUserCollectedStamp?.userImagePaths ?? []) : nil
                                 )
-                                .padding(.bottom, 16)
+                                .padding(.bottom, hasPhotosOrNotes ? 16 : 0)
                             }
                             
-                            // Add notes button
-                            Button(action: {
-                                editingNotes = userNotes
-                                showNotesEditor = true
-                            }) {
+                            // Add notes button - only show if NOT viewing someone else's profile
+                            if !isViewingOtherUser {
+                                Button(action: {
+                                    editingNotes = userNotes
+                                    showNotesEditor = true
+                                }) {
+                                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                                        Image(systemName: "note.text")
+                                            .font(.body)
+                                            .foregroundColor(.primary)
+                                            .frame(width: 18, height: 18, alignment: .center)
+                                        
+                                        if userNotes.isEmpty {
+                                            Text("Add Notes")
+                                                .font(.body)
+                                                .fontWeight(.semibold)
+                                                .foregroundColor(.primary)
+                                        } else {
+                                            Text(userNotes)
+                                                .font(.body)
+                                                .foregroundColor(.primary)
+                                                .multilineTextAlignment(.leading)
+                                        }
+                                        
+                                        Spacer(minLength: 6)
+                                        
+                                        Image(systemName: "chevron.right")
+                                            .font(.body)
+                                            .foregroundColor(.secondary)
+                                    }
+                                    .frame(minHeight: 44)              // Larger tap target
+                                    .contentShape(Rectangle())         // Make entire frame tappable
+                                }
+                            } else if !userNotes.isEmpty {
+                                // Viewing someone else's notes - show as read-only text
                                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                                     Image(systemName: "note.text")
                                         .font(.body)
                                         .foregroundColor(.primary)
                                         .frame(width: 18, height: 18, alignment: .center)
                                     
-                                    if userNotes.isEmpty {
-                                        Text("Add Notes")
-                                            .font(.body)
-                                            .fontWeight(.semibold)
-                                            .foregroundColor(.primary)
-                                    } else {
-                                        Text(userNotes)
-                                            .font(.body)
-                                            .foregroundColor(.primary)
-                                            .multilineTextAlignment(.leading)
-                                    }
-                                    
-                                    Spacer(minLength: 6)
-                                    
-                                    Image(systemName: "chevron.right")
+                                    Text(userNotes)
                                         .font(.body)
-                                        .foregroundColor(.secondary)
+                                        .foregroundColor(.primary)
+                                        .multilineTextAlignment(.leading)
                                 }
-                                .frame(minHeight: 44)              // Larger tap target
-                                .contentShape(Rectangle())         // Make entire frame tappable
+                                .frame(minHeight: 44)
                             }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 24)
-                        .padding(.bottom, 36)
+                        .padding(.bottom, hasPhotosOrNotes ? 36 : 24)
                         .transition(.opacity)
                     }
                     
                     // Divider
-                    if isCollected && showMemorySection {
+                    if shouldShowMemory && showMemorySection {
                         Divider()
                             .padding(.horizontal, 24)
                             .padding(.bottom, 36)
@@ -610,48 +718,64 @@ struct StampDetailView: View {
         .onAppear {
             // Animation states are now set correctly in init() - no updates needed!
             
+            // Start slow-load warning timer (only if collected and not cached)
+            // Shows banner after 2 seconds to avoid flash on fast WiFi
+            if isCollected && !isStampImageCached {
+                Task {
+                    try? await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
+                    await MainActor.run {
+                        // Only show if image still not cached after 2 seconds
+                        if !isStampImageCached {
+                            showSlowLoadWarning = true
+                        }
+                    }
+                }
+            }
+            
             // Single task to load data sequentially (prevents race conditions)
             Task {
-                // 0. Preload stamp image if not collected yet (so it's ready when user taps collect)
-                // Don't block - just start downloading in background
-                if !isCollected, let storagePath = stamp.imageStoragePath {
-                    Task {
+                // 1. If viewing someone else's profile, fetch their collected stamp data
+                if isViewingOtherUser, let viewingUserId = viewingUserId {
                     do {
-                        _ = try await ImageManager.shared.downloadAndCacheThumbnail(
-                            storagePath: storagePath,
-                            stampId: stamp.id,
-                            imageUrl: stamp.imageUrl
-                        )
-                        print("✅ Preloaded stamp image for: \(stamp.name)")
+                        let fetchedStamp = try await FirebaseService.shared.fetchCollectedStamp(userId: viewingUserId, stampId: stamp.id)
+                        await MainActor.run {
+                            viewingUserCollectedStamp = fetchedStamp
+                        }
                     } catch {
-                        print("⚠️ Failed to preload image: \(error.localizedDescription)")
-                    }
+                        print("⚠️ Error fetching viewing user's collected stamp: \(error)")
                     }
                 }
                 
-                // 1. Always fetch stamp statistics first (needed for "X people have this stamp")
+                // 2. Always fetch stamp statistics first (needed for "X people have this stamp")
                 // Only fetch if cache is stale (older than 5 minutes) or doesn't exist
                 if stampStats == nil || stampStats?.isCacheStale() == true {
                     _ = await stampsManager.fetchStampStatistics(stampId: stamp.id)
                 }
                 
-                // 2. Then handle collected-specific logic
-                if isCollected {
+                // 3. Then handle collected-specific logic
+                if shouldShowMemory {
                     showMemorySection = true
                     
                     // Only fetch user rank if not cached (for old stamps collected before rank caching)
                     // Rank is permanent (your position in collector line), so cache is always valid
-                    if cachedUserRank == nil, let userId = authManager.userId {
+                    if isViewingOtherUser {
+                        // Viewing someone else - rank already loaded in viewingUserCollectedStamp
+                    } else if cachedUserRank == nil, let userId = authManager.userId {
                         let fetchedRank = await stampsManager.getUserRankForStamp(stampId: stamp.id, userId: userId)
                         userRank = fetchedRank  // Already on MainActor
                     }
                     
-                    // Calculate collection progress
-                    await calculateCollectionProgress()
+                    // Calculate collection progress (only for own profile)
+                    if !isViewingOtherUser {
+                        await calculateCollectionProgress()
+                    }
                 }
             }
         }
         .onChange(of: isCollected) { _, newValue in
+            // Don't update when viewing someone else's profile
+            guard !isViewingOtherUser else { return }
+            
             if newValue {
                 // Memory section and stats will be shown by collectStampWithAnimation()
                 // with proper delay and animation (don't update immediately here)
@@ -672,11 +796,18 @@ struct StampDetailView: View {
                 userRank = nil
             }
         }
+        .onDisappear {
+            // Reset slow load warning state when view dismisses
+            showSlowLoadWarning = false
+        }
         .onChange(of: stampsManager.userCollection.collectedStamps.count) { _, _ in
+            // Don't update when viewing someone else's profile
+            guard !isViewingOtherUser else { return }
+            
             // Recalculate collection progress whenever the user collects any stamp
             // This ensures the collection counts stay up-to-date even when viewing one stamp
             // while collecting others in the same collection
-            if isCollected {
+            if shouldShowMemory {
                 Task {
                     await calculateCollectionProgress()
                 }
@@ -963,19 +1094,21 @@ struct StampDetailView: View {
             if let imageUrl = stamp.imageUrl, !imageUrl.isEmpty,
                let storagePath = stamp.imageStoragePath {
                 
-                // Extract filename from storage path
-                let filename = (storagePath as NSString).lastPathComponent
+                // Generate the same cache key used by ImageManager when downloading
+                let urlHash = abs(imageUrl.hashValue)
+                let cacheKey = "\(stamp.id)_\(urlHash).png"
                 
                 // Try to get from cache (memory or disk)
-                imageToCopy = ImageCacheManager.shared.getFullImage(key: filename)
-                    ?? ImageManager.shared.loadImage(named: filename)
+                imageToCopy = ImageCacheManager.shared.getFullImage(key: cacheKey)
+                    ?? ImageManager.shared.loadImage(named: cacheKey)
                 
                 // If not cached yet, try downloading
                 if imageToCopy == nil {
                     do {
                         imageToCopy = try await ImageManager.shared.downloadAndCacheImage(
                             storagePath: storagePath,
-                            stampId: stamp.id
+                            stampId: stamp.id,
+                            imageUrl: imageUrl
                         )
                     } catch {
                         print("⚠️ Failed to download image for copying: \(error.localizedDescription)")

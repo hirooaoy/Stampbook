@@ -25,6 +25,10 @@ class FollowManager: ObservableObject {
     
     private let firebaseService = FirebaseService.shared
     
+    init() {
+        loadCachedFollowCounts()
+    }
+    
     // MARK: - Follow Status Checking
     
     /// Check if current user is following another user
@@ -389,6 +393,7 @@ class FollowManager: ObservableObject {
         print("📊 [FollowManager]   NEW followers: \(followerCount), following: \(followingCount)")
         print("📊 [FollowManager]   OLD followers: \(followCounts[userId]?.followers ?? -1), following: \(followCounts[userId]?.following ?? -1)")
         followCounts[userId] = (followerCount, followingCount)
+        saveCachedFollowCounts() // Persist to disk for instant display on next launch
         print("📊 [FollowManager]   Cache updated. Current cache count: \(followCounts.count) users")
         print("📊 [FollowManager]   Verified cache for \(userId): followers=\(followCounts[userId]?.followers ?? -1), following=\(followCounts[userId]?.following ?? -1)")
     }
@@ -402,10 +407,37 @@ class FollowManager: ObservableObject {
             let profile = try await firebaseService.fetchUserProfile(userId: userId, forceRefresh: true)
             await MainActor.run {
                 self.followCounts[userId] = (profile.followerCount, profile.followingCount)
+                self.saveCachedFollowCounts() // Persist to disk for instant display on next launch
                 print("✅ [FollowManager] Updated counts for \(userId): followers=\(profile.followerCount), following=\(profile.followingCount)")
             }
         } catch {
             Logger.error("Failed to refresh follow counts", error: error, category: "FollowManager")
+        }
+    }
+    
+    // MARK: - Persistence
+    
+    /// Save follow counts to UserDefaults for instant display on next launch
+    private func saveCachedFollowCounts() {
+        // Convert tuple dictionary to encodable format
+        var encodableDict: [String: [String: Int]] = [:]
+        for (userId, counts) in followCounts {
+            encodableDict[userId] = ["followers": counts.followers, "following": counts.following]
+        }
+        UserDefaults.standard.set(encodableDict, forKey: "followCounts")
+    }
+    
+    /// Load cached follow counts from UserDefaults
+    private func loadCachedFollowCounts() {
+        if let cachedDict = UserDefaults.standard.dictionary(forKey: "followCounts") as? [String: [String: Int]] {
+            var loadedCounts: [String: (followers: Int, following: Int)] = [:]
+            for (userId, counts) in cachedDict {
+                if let followers = counts["followers"], let following = counts["following"] {
+                    loadedCounts[userId] = (followers, following)
+                }
+            }
+            followCounts = loadedCounts
+            print("📊 [FollowManager] Loaded cached counts for \(loadedCounts.count) users")
         }
     }
     
@@ -419,6 +451,7 @@ class FollowManager: ObservableObject {
         followCounts.removeAll()
         isProcessingFollow.removeAll()
         error = nil
+        UserDefaults.standard.removeObject(forKey: "followCounts")
     }
 }
 

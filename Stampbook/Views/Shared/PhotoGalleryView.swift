@@ -4,7 +4,7 @@ import PhotosUI
 struct PhotoGalleryView: View {
     @EnvironmentObject var stampsManager: StampsManager
     @EnvironmentObject var authManager: AuthManager
-    @StateObject private var imageManager = ImageManager.shared
+    @ObservedObject private var imageManager = ImageManager.shared
     
     let stampId: String
     let maxPhotos: Int
@@ -86,7 +86,8 @@ struct PhotoGalleryView: View {
     
     var body: some View {
         // If no photos and not in Feed view, show "Add Photos" button
-        if imageNames.isEmpty && !showStampImage {
+        // Only show if viewing own stamps (not someone else's profile)
+        if imageNames.isEmpty && !showStampImage && !isViewingOtherUser {
             PhotosPicker(
                 selection: $selectedItems,
                 maxSelectionCount: maxPhotos,
@@ -198,7 +199,6 @@ struct PhotoGalleryView: View {
                                     storagePath: getStoragePath(for: imageName),
                                     stampId: stampId
                                 )
-                                .cornerRadius(12)
                                 .id(imageName) // 🔧 FIX: Force view recreation when imageName changes
                                 
                                 // Show loading spinner if this photo is uploading
@@ -210,7 +210,6 @@ struct PhotoGalleryView: View {
                                     ProgressView()
                                         .tint(.white)
                                 }
-                                // TODO: Add red warning badge for failed uploads (Error Handling - Phase A)
                             }
                         }
                         .buttonStyle(PlainButtonStyle())
@@ -433,6 +432,8 @@ struct AsyncThumbnailView: View {
                     .resizable()
                     .aspectRatio(contentMode: .fit)  // Simple .fit - no complex logic needed!
                     .frame(width: 106, height: 106)
+                    .cornerRadius(12)  // Rounded corners
+                    .clipped()  // Ensure corners are clipped properly
             } else {
                 // Failed to load - show placeholder
                 RoundedRectangle(cornerRadius: 12)
@@ -450,11 +451,10 @@ struct AsyncThumbnailView: View {
             }
         }
         .onDisappear {
-            // 🔧 FIX: Cancel loading task and clear thumbnail when off-screen
-            // PhotoGalleryView scrolls horizontally, so off-screen thumbnails should be freed
+            // Cancel loading task to avoid unnecessary work
             loadTask?.cancel()
-            thumbnail = nil
-            isLoading = true
+            // Don't clear thumbnail - ImageCacheManager already handles memory efficiently
+            // Clearing here was too aggressive and caused full-res to show in feed after navigation
         }
     }
     
@@ -463,27 +463,11 @@ struct AsyncThumbnailView: View {
         let loadStart = CFAbsoluteTimeGetCurrent()
         #endif
         
-        // 🔧 FIX: Use thumbnail filename as key (consistent with ImageManager)
+        // Use thumbnail filename as key (consistent with ImageManager)
         let thumbnailKey = imageName.replacingOccurrences(of: ".jpg", with: "_thumb.jpg")
         
-        // TODO: REMOVE BEFORE LAUNCH - Check thumbnail version for migration
-        // ==================================================================================
-        // DEBUG: Uncomment the line below to test migration (forces re-download)
-        // UserDefaults.standard.set(0, forKey: "thumbnailVersion")
-        
-        let thumbnailVersion = UserDefaults.standard.integer(forKey: "thumbnailVersion")
-        let currentThumbnailVersion = 2
-        let shouldForceRedownload = thumbnailVersion < currentThumbnailVersion
-        
-        #if DEBUG
-        if shouldForceRedownload {
-            print("🔄 [AsyncThumbnail] Migration active - skipping cache for \(imageName)")
-        }
-        #endif
-        // ==================================================================================
-        
-        // 🔧 FIX: Check memory cache first (fast!) - skip if forcing migration
-        if !shouldForceRedownload, let cachedThumbnail = ImageCacheManager.shared.getThumbnail(key: thumbnailKey) {
+        // Check memory cache first (fast!)
+        if let cachedThumbnail = ImageCacheManager.shared.getThumbnail(key: thumbnailKey) {
             #if DEBUG
             let loadTime = CFAbsoluteTimeGetCurrent() - loadStart
             print("⏱️ [AsyncThumbnail] Memory cache hit: \(String(format: "%.3f", loadTime))s for \(imageName)")
@@ -496,8 +480,8 @@ struct AsyncThumbnailView: View {
             return
         }
         
-        // Step 1: Try loading thumbnail from local disk cache - skip if forcing migration
-        if !shouldForceRedownload, let cachedThumbnail = ImageManager.shared.loadThumbnail(named: imageName) {
+        // Try loading thumbnail from local disk cache
+        if let cachedThumbnail = ImageManager.shared.loadThumbnail(named: imageName) {
             #if DEBUG
             let loadTime = CFAbsoluteTimeGetCurrent() - loadStart
             print("⏱️ [AsyncThumbnail] Disk cache hit: \(String(format: "%.3f", loadTime))s for \(imageName)")

@@ -419,28 +419,60 @@ class FirebaseService {
     /// Check if a user profile exists in Firestore
     /// Used to detect orphaned auth states or verify profile existence
     /// 
+    /// **Timeout:** 3 seconds (matches Instagram/Twitter for fast app launch on poor networks)
+    /// **Pattern:** TaskGroup race - whichever completes first (timeout or fetch) wins
+    /// 
     /// - Returns: Optional Bool
     ///   - `true`: Profile exists
     ///   - `false`: Profile definitely doesn't exist (verified with server)
-    ///   - `nil`: Couldn't determine (network error, offline, etc.)
+    ///   - `nil`: Couldn't determine (network error, offline, timeout)
     func userProfileExists(userId: String) async -> Bool? {
-        do {
-            let docRef = db.collection("users").document(userId)
-            let document = try await docRef.getDocument()
-            return document.exists
-        } catch let error as NSError {
-            // Check if this is a network/offline error
-            // Domain: NSURLErrorDomain (network) or FIRFirestoreErrorDomain
-            if error.domain == NSURLErrorDomain || 
-               error.domain == "FIRFirestoreErrorDomain" && (error.code == 14 || error.code == 8) {
-                // 14 = UNAVAILABLE (offline), 8 = DEADLINE_EXCEEDED (timeout)
-                Logger.warning("Cannot check profile existence - network unavailable (offline or timeout)", category: "FirebaseService")
-                return nil // Can't determine - network issue
+        // Capture db reference before entering task group (Firestore is thread-safe despite @MainActor annotation)
+        let db = self.db
+        
+        return await withTaskGroup(of: Bool?.self) { group in
+            // Add timeout task (3 seconds)
+            group.addTask {
+                try? await Task.sleep(nanoseconds: 3_000_000_000) // 3 seconds
+                return nil // Timeout = treat as network unavailable
             }
             
-            // Other errors (permissions, invalid data, etc.) - treat as not exists
-            Logger.error("Error checking user profile existence", error: error, category: "FirebaseService")
-            return false
+            // Add Firestore fetch task
+            group.addTask {
+                do {
+                    let docRef = db.collection("users").document(userId)
+                    let document = try await docRef.getDocument()
+                    return document.exists
+                } catch let error as NSError {
+                    // Check if this is a network/offline error
+                    // Domain: NSURLErrorDomain (network) or FIRFirestoreErrorDomain
+                    if error.domain == NSURLErrorDomain || 
+                       error.domain == "FIRFirestoreErrorDomain" && (error.code == 14 || error.code == 8) {
+                        // 14 = UNAVAILABLE (offline), 8 = DEADLINE_EXCEEDED (timeout)
+                        Logger.warning("Cannot check profile existence - network unavailable (offline or timeout)", category: "FirebaseService")
+                        return nil // Can't determine - network issue
+                    }
+                    
+                    // Other errors (permissions, invalid data, etc.) - treat as not exists
+                    Logger.error("Error checking user profile existence", error: error, category: "FirebaseService")
+                    return false
+                }
+            }
+            
+            // Wait for FIRST task to complete (race)
+            guard let result = await group.next() else {
+                return nil
+            }
+            
+            // Cancel the remaining task (cleanup)
+            group.cancelAll()
+            
+            // Log if it was a timeout
+            if result == nil {
+                Logger.warning("Profile existence check timed out after 3 seconds - treating as network unavailable", category: "FirebaseService")
+            }
+            
+            return result
         }
     }
     

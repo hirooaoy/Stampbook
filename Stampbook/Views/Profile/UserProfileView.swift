@@ -305,7 +305,13 @@ struct UserProfileView: View {
                     profileSection
                     statsSection
                     followButtonSection
-                    AllStampsContent(userCollectedStamps: userCollectedStamps, isLoadingStamps: isLoadingStamps)
+                    AllStampsContent(
+                        userCollectedStamps: userCollectedStamps,
+                        isLoadingStamps: isLoadingStamps,
+                        isCurrentUser: isCurrentUser,
+                        userId: userId,
+                        displayName: displayName
+                    )
                 }
             }
         }
@@ -358,7 +364,8 @@ struct UserProfileView: View {
         .onAppear {
             // Load user profile
             print("👤 [UserProfileView] onAppear for userId: \(userId)")
-            profileManager.loadProfile(userId: userId)
+            // ✅ FIX: Pass isCurrentUser: false to prevent clearing feed cache when viewing other users
+            profileManager.loadProfile(userId: userId, isCurrentUser: isCurrentUser)
             
             // Load user's collected stamps
             loadUserStamps()
@@ -466,12 +473,14 @@ struct UserProfileView: View {
     struct AllStampsContent: View {
         let userCollectedStamps: [CollectedStamp]
         let isLoadingStamps: Bool
+        let isCurrentUser: Bool  // Pass from parent
+        let userId: String       // Pass from parent
+        let displayName: String  // Pass from parent (for "Justin's Memory" heading)
         
         @EnvironmentObject var stampsManager: StampsManager
         @State private var displayedCount = 20 // Initial load
         @State private var userStamps: [Stamp] = [] // Lazy-loaded stamps
         @State private var isLoadingLazyStamps = false
-        @State private var hasLoadedOnce = false // Prevent multiple initial loads
         
         // Adaptive grid: iPhone shows 2 columns, iPad shows 4-6 columns
         private let columns = [
@@ -498,8 +507,8 @@ struct UserProfileView: View {
         
         var body: some View {
             Group {
-                if isLoadingLazyStamps && !hasLoadedOnce {
-                    // Loading skeleton - show only on first load
+                if isLoadingLazyStamps && userStamps.isEmpty {
+                    // Loading skeleton - show when loading and no stamps loaded yet
                     VStack {
                         Spacer()
                         ProgressView()
@@ -537,9 +546,11 @@ struct UserProfileView: View {
                             NavigationLink(destination:
                                             StampDetailView(
                                                 stamp: item.stamp,
-                                                isCollected: true,  // All stamps in user profile are collected
+                                                isCollected: stampsManager.isCollected(item.stamp),  // Check if CURRENT USER has collected it
                                                 userLocation: nil,
-                                                showBackButton: true
+                                                showBackButton: true,
+                                                viewingUserId: isCurrentUser ? nil : userId,  // Pass userId if viewing someone else's profile
+                                                viewingDisplayName: isCurrentUser ? nil : displayName  // Pass displayName for "Justin's Memory" heading
                                             )
                                                 .environmentObject(stampsManager)
                             ) {
@@ -558,25 +569,24 @@ struct UserProfileView: View {
                     .padding(.bottom, 32)
                 }
             }
-            .task {
-                // .task is more stable than .onAppear - only runs once per view appearance
-                guard !hasLoadedOnce else { return }
-                loadUserStamps()
-            }
-            .onChange(of: userCollectedStamps.count) { oldCount, newCount in
-                // Only reload if the count actually changed
-                if oldCount != newCount {
-                    loadUserStamps()
+            .task(id: userCollectedStamps.count) {
+                // Reload stamps whenever the collected stamps count changes
+                // SwiftUI automatically cancels previous task when ID changes
+                guard !userCollectedStamps.isEmpty else {
+                    // No stamps - clear the display
+                    await MainActor.run {
+                        userStamps = []
+                    }
+                    return
                 }
-            }
-        }
-        
-        private func loadUserStamps() {
-            guard !isLoadingLazyStamps else { return }
-            
-            isLoadingLazyStamps = true
-            
-            Task {
+                
+                // Prevent concurrent loads
+                guard !isLoadingLazyStamps else { return }
+                
+                await MainActor.run {
+                    isLoadingLazyStamps = true
+                }
+                
                 // LAZY LOADING: Fetch ONLY stamps this user has collected
                 let collectedStampIds = userCollectedStamps.map { $0.stampId }
                 print("🎯 [UserProfileView] Fetching \(collectedStampIds.count) user stamps")
@@ -586,7 +596,6 @@ struct UserProfileView: View {
                 
                 await MainActor.run {
                     userStamps = stamps
-                    hasLoadedOnce = true // Mark as loaded to prevent re-entry
                     isLoadingLazyStamps = false
                 }
             }

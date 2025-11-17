@@ -13,6 +13,7 @@ extension Notification.Name {
 class ProfileManager: ObservableObject {
     @Published var currentUserProfile: UserProfile?
     @Published var isLoading = false
+    @Published var isLoadingProfile = false // Track if profile load is in progress (prevents duplicate loads)
     @Published var error: String?
     
     // TODO: POST-MVP - User Ranking System
@@ -28,6 +29,12 @@ class ProfileManager: ObservableObject {
     // TODO: POST-MVP - Rank caching (disabled until rank feature is implemented)
     // private var cachedRanks: [String: (rank: Int, timestamp: Date)] = [:]
     // private let rankCacheExpiration: TimeInterval = 1800 // 30 minutes
+    
+    // MARK: - Persistent Profile Cache
+    
+    /// UserDefaults key for caching current user's profile
+    /// Pattern: "currentUserProfile_[userId]" allows multiple accounts
+    private let profileCacheKeyPrefix = "currentUserProfile"
     
     // MARK: - Lifecycle
     
@@ -72,6 +79,10 @@ class ProfileManager: ObservableObject {
                 await MainActor.run {
                     print("🔔 [ProfileManager] About to update currentUserProfile...")
                     self.currentUserProfile = profile
+                    
+                    // Save updated profile to cache
+                    self.saveCachedProfile(profile)
+                    
                     print("✅ [ProfileManager] Profile refreshed and @Published property updated")
                     print("✅ [ProfileManager]   followers: \(profile.followerCount), following: \(profile.followingCount)")
                     print("🔔 [ProfileManager] ========================================")
@@ -82,9 +93,13 @@ class ProfileManager: ObservableObject {
         }
     }
     
-    /// Load the current user's profile from Firebase
-    /// Counts are fetched separately for MVP simplicity
-    func loadProfile(userId: String, loadRank: Bool = false) {
+    /// Load a user's profile from Firebase
+    /// Uses cache-first pattern: loads cached profile instantly, then refreshes from Firestore in background
+    /// - Parameters:
+    ///   - userId: The user ID to load
+    ///   - loadRank: Whether to load user rank (POST-MVP feature)
+    ///   - isCurrentUser: Whether this is the current signed-in user (affects cache invalidation)
+    func loadProfile(userId: String, loadRank: Bool = false, isCurrentUser: Bool = true) {
         // Skip if already loaded for this user (avoid redundant loads)
         if let currentProfile = currentUserProfile, currentProfile.id == userId, !isLoading {
             Logger.debug("Profile already loaded for userId: \(userId)")
@@ -92,16 +107,25 @@ class ProfileManager: ObservableObject {
         }
         
         // Prevent duplicate loads
-        if isLoading {
+        if isLoading || isLoadingProfile {
             Logger.warning("Already loading profile, skipping duplicate request")
             return
         }
         
         isLoading = true
+        isLoadingProfile = true  // Signal that load is in progress
         error = nil
         
         Logger.info("Loading profile for userId: \(userId)", category: "ProfileManager")
         
+        // 1. INSTANT: Load cached profile first (0ms load time)
+        if let cachedProfile = loadCachedProfile(userId: userId) {
+            Logger.info("✨ Loaded cached profile for @\(cachedProfile.username) - instant display", category: "ProfileManager")
+            currentUserProfile = cachedProfile
+            // Note: isLoading stays true while we refresh in background
+        }
+        
+        // 2. BACKGROUND: Refresh from Firestore to get latest data
         Task {
             do {
                 // ✅ OPTIMIZED: Counts now denormalized on profile (Cloud Function keeps them in sync)
@@ -112,6 +136,24 @@ class ProfileManager: ObservableObject {
                 await MainActor.run {
                     self.currentUserProfile = profile
                     self.isLoading = false
+                    self.isLoadingProfile = false  // Load complete
+                    
+                    // Save fresh profile to cache for next launch
+                    self.saveCachedProfile(profile)
+                    
+                    // ✅ FIX: Only post profileDidUpdate if this is the CURRENT user's profile
+                    // UserProfileView creates local ProfileManager instances for OTHER users, but we should
+                    // only clear feed cache when the current user's profile updates, not when viewing others
+                    if isCurrentUser {
+                        NotificationCenter.default.post(
+                            name: .profileDidUpdate,
+                            object: nil,
+                            userInfo: ["profile": profile]
+                        )
+                        Logger.debug("Posted profileDidUpdate notification after loadProfile (current user)")
+                    } else {
+                        Logger.debug("Skipped profileDidUpdate notification (not current user)")
+                    }
                 }
                 Logger.success("Loaded user profile: \(profile.displayName) (\(profile.followerCount) followers, \(profile.followingCount) following)", category: "ProfileManager")
                 
@@ -123,8 +165,14 @@ class ProfileManager: ObservableObject {
                 await MainActor.run {
                     self.error = error.localizedDescription
                     self.isLoading = false
+                    self.isLoadingProfile = false  // Load failed, clear flag
                 }
-                Logger.error("Failed to load profile", error: error, category: "ProfileManager")
+                Logger.error("Failed to load profile from Firestore", error: error, category: "ProfileManager")
+                
+                // If we have cached profile, we're still in good shape
+                if currentUserProfile != nil {
+                    Logger.info("Using cached profile while offline/error", category: "ProfileManager")
+                }
             }
         }
     }
@@ -134,6 +182,9 @@ class ProfileManager: ObservableObject {
     func updateProfile(_ profile: UserProfile) {
         Logger.info("Updating profile: @\(profile.username)", category: "ProfileManager")
         currentUserProfile = profile
+        
+        // Save to persistent cache immediately
+        saveCachedProfile(profile)
         
         // Notify the app that profile has been updated
         // This triggers feed cache invalidation and UI refresh
@@ -163,6 +214,9 @@ class ProfileManager: ObservableObject {
             
             await MainActor.run {
                 self.currentUserProfile = profile
+                
+                // Save refreshed profile to cache
+                self.saveCachedProfile(profile)
             }
             
             // TODO: POST-MVP - Rank refresh disabled
@@ -233,10 +287,81 @@ class ProfileManager: ObservableObject {
     /// Clear profile data (on sign out)
     func clearProfile() {
         Logger.info("Clearing profile data", category: "ProfileManager")
+        
+        // Clear in-memory state
         currentUserProfile = nil
         // userRank = nil // TODO: POST-MVP
         error = nil
         // cachedRanks.removeAll() // TODO: POST-MVP
+        
+        // Clear persistent cache
+        clearCachedProfile()
+    }
+    
+    // MARK: - Persistent Cache Helpers
+    
+    /// Load profile from UserDefaults cache
+    /// Returns cached profile if available, nil otherwise
+    private func loadCachedProfile(userId: String) -> UserProfile? {
+        let cacheKey = "\(profileCacheKeyPrefix)_\(userId)"
+        
+        guard let data = UserDefaults.standard.data(forKey: cacheKey) else {
+            Logger.debug("No cached profile found for userId: \(userId)")
+            return nil
+        }
+        
+        do {
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            let profile = try decoder.decode(UserProfile.self, from: data)
+            
+            // Log cache age for debugging
+            let cacheAge = Date().timeIntervalSince(profile.createdAt)
+            Logger.debug("Found cached profile (age: \(String(format: "%.0f", cacheAge))s)")
+            
+            return profile
+        } catch {
+            Logger.warning("Failed to decode cached profile, clearing corrupt cache", category: "ProfileManager")
+            UserDefaults.standard.removeObject(forKey: cacheKey)
+            return nil
+        }
+    }
+    
+    /// Save profile to UserDefaults cache
+    /// Persists across app launches for instant profile loading
+    private func saveCachedProfile(_ profile: UserProfile) {
+        let cacheKey = "\(profileCacheKeyPrefix)_\(profile.id)"
+        
+        do {
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
+            let data = try encoder.encode(profile)
+            UserDefaults.standard.set(data, forKey: cacheKey)
+            Logger.debug("💾 Cached profile for @\(profile.username)")
+        } catch {
+            Logger.warning("Failed to cache profile", category: "ProfileManager")
+        }
+    }
+    
+    /// Clear cached profile from UserDefaults
+    /// Called on sign out to prevent stale data
+    private func clearCachedProfile() {
+        // Clear cache for current user if known
+        if let userId = currentUserProfile?.id {
+            let cacheKey = "\(profileCacheKeyPrefix)_\(userId)"
+            UserDefaults.standard.removeObject(forKey: cacheKey)
+            Logger.debug("🗑️ Cleared cached profile")
+        }
+        
+        // Optionally: Clear all cached profiles for all users
+        // This is more aggressive but ensures no stale data
+        // Commenting out for now - only clear current user's cache
+        /*
+        let keys = UserDefaults.standard.dictionaryRepresentation().keys
+        for key in keys where key.hasPrefix(profileCacheKeyPrefix) {
+            UserDefaults.standard.removeObject(forKey: key)
+        }
+        */
     }
 }
 

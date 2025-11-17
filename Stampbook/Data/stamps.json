@@ -1132,6 +1132,44 @@
     "aspectRatio": 1
   },
   {
+    "id": "us-me-acadia-national-park-beehive-trail-summit",
+    "name": "Beehive Trail Summit",
+    "latitude": 44.335420181862744,
+    "longitude": -68.1910357769886,
+    "address": "Beehive Trail\nBar Harbor, ME, USA 04609",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-me-acadia-national-park-beehive-trail-summit.png?alt=media&token=b641bba6-6660-442e-921f-594af4cd3a9d",
+    "collectionIds": [
+      "acadia-must-visits"
+    ],
+    "about": "Thrilling 1.5-mile climb with iron rungs and ladders bolted into exposed cliff faces, reaching a 520-foot summit with panoramic ocean views.",
+    "thingsToDoFromEditors": [
+      "Arrive before 7am to avoid waiting at the iron rungs sections",
+      "Wear gloves for better grip on the metal rungs and ladders"
+    ],
+    "geohash": "drzs0r0b",
+    "collectionRadius": "regular",
+    "aspectRatio": 1
+  },
+  {
+    "id": "us-me-acadia-national-park-bubble-rock",
+    "name": "Bubble Rock",
+    "latitude": 44.33935709878886,
+    "longitude": -68.25340104731045,
+    "address": "Bubble Rock Trail\nBar Harbor, ME, USA 04609",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-me-acadia-national-park-bubble-rock.png?alt=media&token=7cf342fa-79cb-4a2a-9861-224dea0849d3",
+    "collectionIds": [
+      "acadia-must-visits"
+    ],
+    "about": "Massive 50-ton glacial boulder deposited by retreating glaciers 18,000 years ago, precariously perched on the edge of South Bubble Mountain.",
+    "thingsToDoFromEditors": [
+      "Take the classic 'pushing the rock' optical illusion photo",
+      "Continue to South Bubble summit for panoramic Jordan Pond views"
+    ],
+    "geohash": "drzknzer",
+    "collectionRadius": "regular",
+    "aspectRatio": 0.99
+  },
+  {
     "id": "us-me-acadia-national-park-cadillac-mountain-summit-overlook",
     "name": "Cadillac Mountain Summit Overlook",
     "latitude": 44.35264357901701,
@@ -1151,6 +1189,45 @@
     "collectionRadius": "regular"
   },
   {
+    "id": "us-me-acadia-national-park-jordan-pond-path-trailhead",
+    "name": "Jordan Pond Path Trailhead",
+    "latitude": 44.32193135626776,
+    "longitude": -68.2545053849678,
+    "geohash": "drzknud9",
+    "address": "Seal Harbor, ME USA 04675",
+    "collectionIds": [
+      "acadia-must-visits"
+    ],
+    "about": "The nearby Jordan Pond House has served tea and popovers since the late 1800s. Moose occasionally wander through the area at dawn, though sightings are rare.",
+    "thingsToDoFromEditors": [
+      "Walk the Jordan Pond Path along the shoreline",
+      "Photograph the Bubbles with mirror-like reflections",
+      "Swimming is not allowed"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-me-acadia-national-park-jordan-pond-path-trailhead.png?alt=media&token=12375aef-8d80-47e3-ada0-528f180462c4",
+    "aspectRatio": 0.99,
+    "collectionRadius": "regular"
+  },
+  {
+    "id": "us-me-acadia-national-park-sand-beach-shoreline",
+    "name": "Sand Beach Shoreline",
+    "latitude": 44.329158595455176,
+    "longitude": -68.18226366436866,
+    "geohash": "drzs0mzh",
+    "address": "Bar Harbor, ME USA 04609",
+    "collectionIds": [
+      "acadia-must-visits"
+    ],
+    "about": "Sand Beach’s sand is made largely of crushed shell fragments, giving it a slight pink tint. It is framed by cliffs and turquoise water.",
+    "thingsToDoFromEditors": [
+      "Walk the full shoreline curve for the classic beach view",
+      "Photograph waves against the surrounding granite cliffs"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-me-acadia-national-park-sand-beach-shoreline.png?alt=media&token=a8fc61d1-93c4-45a6-a540-620195727353",
+    "aspectRatio": 1,
+    "collectionRadius": "regular"
+  },
+  {
     "id": "us-me-bar-harbor-beals",
     "name": "Beal's Lobster Pier",
     "latitude": 44.27582873952332,
@@ -1159,51 +1236,13 @@
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-me-bar-harbor-beals.png?alt=media&token=1d1bff01-59fb-4de5-be96-1e416b8e4e50",
     "collectionIds": [],
     "about": "Family-run working pier serving fresh lobster rolls caught daily from their own boats, with picnic tables overlooking the harbor since 1985.",
-    "thingsToDoFromEditors": [
-      "Order the warm buttered lobster roll over cold mayo version",
-      "Bring cash - they don't take cards but have an ATM nearby"
-    ],
     "geohash": "drz7vs0m",
     "collectionRadius": "regular",
-    "aspectRatio": 1
-  },
-  {
-    "id": "us-me-bar-harbor-beehive-trail-summit",
-    "name": "Beehive Trail Summit",
-    "latitude": 44.335420181862744,
-    "longitude": -68.1910357769886,
-    "address": "Beehive Trail\nBar Harbor, ME, USA 04609",
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-me-acadia-national-park-beehive-trail-summit.png?alt=media&token=b641bba6-6660-442e-921f-594af4cd3a9d",
-    "collectionIds": [
-      "acadia-must-visits"
-    ],
-    "about": "Thrilling 1.5-mile climb with iron rungs and ladders bolted into exposed cliff faces, reaching a 520-foot summit with panoramic ocean views.",
+    "aspectRatio": 1,
     "thingsToDoFromEditors": [
-      "Arrive before 7am to avoid waiting at the iron rungs sections",
-      "Wear gloves for better grip on the metal rungs and ladders"
-    ],
-    "geohash": "drzs0r0b",
-    "collectionRadius": "regular",
-    "aspectRatio": 1
-  },
-  {
-    "id": "us-me-bar-harbor-bubble-rock",
-    "name": "Bubble Rock",
-    "latitude": 44.33935709878886,
-    "longitude": -68.25340104731045,
-    "address": "Bubble Rock Trail\nBar Harbor, ME, USA 04609",
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-me-acadia-national-park-bubble-rock.png?alt=media&token=7cf342fa-79cb-4a2a-9861-224dea0849d3",
-    "collectionIds": [
-      "acadia-must-visits"
-    ],
-    "about": "Massive 50-ton glacial boulder deposited by retreating glaciers 18,000 years ago, precariously perched on the edge of South Bubble Mountain.",
-    "thingsToDoFromEditors": [
-      "Take the classic 'pushing the rock' optical illusion photo",
-      "Continue to South Bubble summit for panoramic Jordan Pond views"
-    ],
-    "geohash": "drzknzer",
-    "collectionRadius": "regular",
-    "aspectRatio": 0.99
+      "Order the warm buttered lobster roll over cold mayo version",
+      "Cards accepted - but cash is welcome too"
+    ]
   },
   {
     "id": "us-me-bar-harbor-mckays-public-house",
@@ -1420,6 +1459,357 @@
     "geohash": "dr5rsgfn",
     "collectionRadius": "regular",
     "aspectRatio": 1.2
+  },
+  {
+    "id": "us-tx-big-bend-national-park-balanced-rock",
+    "name": "Balanced Rock",
+    "latitude": 29.39891081689475,
+    "longitude": -103.20315146066353,
+    "geohash": "9tntj5rb",
+    "address": "Grapevine Hills Road, Big Bend National Park, TX USA 79834",
+    "collectionIds": [
+      "big-bend-must-visits"
+    ],
+    "about": "Balanced Rock is a massive boulder that rests precariously on a narrow pedestal, sculpted by millions of years of erosion in the volcanic Grapevine Hills.",
+    "thingsToDoFromEditors": [
+      "Hike the 2.2-mile trail with a short scramble over rocks at the end to reach the formation",
+      "Visit during golden hour for dramatic lighting on the balanced boulder and surrounding rocks"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-tx-big-bend-national-park-balanced-rock.png?alt=media&token=0a02b3c4ebab1764284eceba2cbe99df",
+    "aspectRatio": 0.61,
+    "collectionRadius": "regular"
+  },
+  {
+    "id": "us-tx-big-bend-national-park-chisos-basin",
+    "name": "Chisos Basin",
+    "latitude": 29.270539611712092,
+    "longitude": -103.30147490441031,
+    "geohash": "9tnr0y6n",
+    "address": "Chisos Basin Road, Big Bend National Park, TX USA 79834",
+    "collectionIds": [
+      "big-bend-must-visits"
+    ],
+    "about": "Chisos Basin sits at 5,400 feet elevation and is the only mountain lodge in the park, surrounded by dramatic peaks that create a natural amphitheater.",
+    "thingsToDoFromEditors": [
+      "Drive the winding Basin Road from park headquarters to reach the lodge and trailhead area",
+      "Use the basin as a basecamp for day hikes including Window Trail, Lost Mine, and Emory Peak"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-tx-big-bend-national-park-chisos-basin.png?alt=media&token=55c9b2013328ad88eceabfa23a34ff26",
+    "aspectRatio": 1.59,
+    "collectionRadius": "regularplus"
+  },
+  {
+    "id": "us-tx-big-bend-national-park-hot-springs",
+    "name": "Hot Springs",
+    "latitude": 29.177531511888162,
+    "longitude": -102.9992583909358,
+    "geohash": "9tnmxx43",
+    "address": "Hot Springs Road, Big Bend National Park, TX USA 79852",
+    "collectionIds": [
+      "big-bend-must-visits"
+    ],
+    "about": "J.O. Langford built a bathhouse and post office here in 1909, charging visitors 25 cents to soak in the natural 105°F mineral springs along the Rio Grande.",
+    "thingsToDoFromEditors": [
+      "Walk the short path from parking to the stone bathhouse ruins and soak in the natural spring pool",
+      "Explore the ruins and historic interpretive signs to learn about the early resort community"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-tx-big-bend-national-park-hot-springs.png?alt=media&token=ee6ac28e506f8771250ac5eed15d34ee",
+    "aspectRatio": 0.99,
+    "collectionRadius": "regular"
+  },
+  {
+    "id": "us-tx-big-bend-national-park-lost-mine-trail",
+    "name": "Lost Mine Trail",
+    "latitude": 29.270656015400384,
+    "longitude": -103.27671467116386,
+    "geohash": "9tnr1mvq",
+    "address": "Basin Road, Big Bend National Park, TX USA 79834",
+    "collectionIds": [
+      "big-bend-must-visits"
+    ],
+    "about": "Lost Mine Peak earned its name from legends of a rich Spanish silver mine that was sealed and hidden during an Apache raid in the mid-1800s.",
+    "thingsToDoFromEditors": [
+      "Hike the 4.8-mile trail from Basin Road with gradual elevation gain to panoramic overlooks",
+      "Arrive at sunrise to see golden light sweep across Pine Canyon and eastern ridges",
+      "Bring layers since the elevation at the overlook can be windy and cooler than the desert floor"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-tx-big-bend-national-park-lost-mine-trail.png?alt=media&token=4169961bdbd3a2c7f43846f0174e056f",
+    "aspectRatio": 0.55,
+    "collectionRadius": "regular"
+  },
+  {
+    "id": "us-tx-big-bend-national-park-santa-elena-canyon",
+    "name": "Santa Elena Canyon",
+    "latitude": 29.167651845834033,
+    "longitude": -103.6104547596911,
+    "geohash": "9tnmfmc1",
+    "address": "Terlingua, TX USA 79852",
+    "collectionIds": [
+      "big-bend-must-visits"
+    ],
+    "about": "Santa Elena Canyon's walls rise over 1,500 feet, creating one of the most dramatic vertical rock faces anywhere along the entire Rio Grande corridor.",
+    "thingsToDoFromEditors": [
+      "Walk the Santa Elena Canyon Trail for a close-up view of the canyon walls"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-tx-big-bend-national-park-santa-elena-canyon.png?alt=media&token=2f0f606f-bc36-404d-b2d2-3ca94f1429d7",
+    "aspectRatio": 0.65,
+    "collectionRadius": "regularplus"
+  },
+  {
+    "id": "us-tx-big-bend-national-park-the-window",
+    "name": "The Window",
+    "latitude": 29.27111666475465,
+    "longitude": -103.30280283016664,
+    "geohash": "9tnr0vzr",
+    "address": "Chisos Basin, Big Bend National Park, TX USA 79834",
+    "collectionIds": [
+      "big-bend-must-visits"
+    ],
+    "about": "The Window is a dramatic V-shaped pour-off where Oak Creek drops 220 feet into the desert below, creating one of Big Bend's most iconic sunset views.",
+    "thingsToDoFromEditors": [
+      "Hike the 5.6-mile Window Trail from Chisos Basin with a gentle downhill to the pour-off",
+      "Arrive 1-2 hours before sunset to watch golden light frame the desert through the opening"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-tx-big-bend-national-park-the-window.png?alt=media&token=0e8f28f7942ec787edaacaace218a4ac",
+    "aspectRatio": 0.51,
+    "collectionRadius": "regular"
+  },
+  {
+    "id": "us-ut-zion-national-park-angels-landing",
+    "name": "Angels Landing",
+    "latitude": 37.26930285431275,
+    "longitude": -112.94686286477392,
+    "geohash": "9qxsjbdt",
+    "address": "Zion Cyn Rd\nSpringdale, UT USA 84767",
+    "collectionIds": [
+      "zion-must-visits"
+    ],
+    "about": "Angels Landing got its name in 1916 when a Methodist minister said only angels could land on top. It's one of Zion’s most dramatic and unforgettable climbs.",
+    "thingsToDoFromEditors": [
+      "Hike to Scout Lookout without a permit, and the Zion Shuttle will drop you off directly at The Grotto trailhead",
+      "Apply for an Angels Landing permit if you want to climb the chain section",
+      "Look for California condors near the ridge during midday thermal winds"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ut-zion-national-park-angels-landing.png?alt=media&token=6705d5c8-44a8-4ff2-b361-fe5c56acdfaf",
+    "aspectRatio": 1.74,
+    "collectionRadius": "regularplus"
+  },
+  {
+    "id": "us-ut-zion-national-park-canyon-overlook",
+    "name": "Canyon Overlook",
+    "latitude": 37.21365155164498,
+    "longitude": -112.94332825005026,
+    "geohash": "9qxetyt1",
+    "address": "Utah USA 84737",
+    "collectionIds": [
+      "zion-must-visits"
+    ],
+    "about": "Canyon Overlook is one of the most accessible high viewpoints in Zion and requires only a short hike. Desert bighorn sheep are often seen along the cliffs.",
+    "thingsToDoFromEditors": [
+      "Walk the short trail to the overlook and take photos of Pine Creek Canyon",
+      "Visit during sunrise or late afternoon for soft and colorful light"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ut-zion-national-park-canyon-overlook.png?alt=media&token=1db0c8b5-7052-4b18-9791-19cd5601e345",
+    "aspectRatio": 0.63,
+    "collectionRadius": "regularplus"
+  },
+  {
+    "id": "us-ut-zion-national-park-emerald-pools-lower-pool",
+    "name": "Emerald Pools",
+    "latitude": 37.257061082170345,
+    "longitude": -112.96259372498287,
+    "geohash": "9qxevqrn",
+    "address": "Emerald Pools Trail\nHurricane, UT USA 84737",
+    "collectionIds": [
+      "zion-must-visits"
+    ],
+    "about": "The Emerald Pools were named for the reflective greenish color created by algae and minerals in the water.",
+    "thingsToDoFromEditors": [
+      "Take the shuttle to Zion Lodge and walk the short trail to the Lower Pool",
+      "Photograph the waterfalls beneath the tall sandstone alcove",
+      "Visit early in the morning for cooler temperatures and softer light"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ut-zion-national-park-emerald-pools-lower-pool.png?alt=media&token=a1d2d4da-03b6-436f-a842-b0ad8436bdba",
+    "aspectRatio": 1.86,
+    "collectionRadius": "regularplus"
+  },
+  {
+    "id": "us-ut-zion-national-park-observation-point",
+    "name": "Observation Point",
+    "latitude": 37.27834778122695,
+    "longitude": -112.94022552424283,
+    "geohash": "9qxsjfr6",
+    "address": "Utah USA 84767",
+    "collectionIds": [
+      "zion-must-visits"
+    ],
+    "about": "Observation Point sits at 6,521 feet, which places it far above Angels Landing and gives one of the most commanding views in Zion.",
+    "thingsToDoFromEditors": [
+      "Hike the East Mesa Trail, which does not require a shuttle or permit",
+      "Take photos of Angels Landing from directly above the ridge",
+      "Bring plenty of water since there are no reliable sources along the trail"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ut-zion-national-park-observation-point.png?alt=media&token=5c39f0af-65e4-4fd8-8422-7164f56d98c8",
+    "aspectRatio": 1.6,
+    "collectionRadius": "regularplus"
+  },
+  {
+    "id": "us-ut-zion-national-park-the-narrows",
+    "name": "The Narrows",
+    "latitude": 37.30500507210759,
+    "longitude": -112.949126932298,
+    "geohash": "9qxsjz0v",
+    "address": "The Narrows Bottom Up\nHurricane, UT USA 84737",
+    "collectionIds": [
+      "zion-must-visits"
+    ],
+    "about": "The Narrows is carved entirely by the Virgin River over millions of years. It offers a unique river-walk through soaring sandstone walls.",
+    "thingsToDoFromEditors": [
+      "Rent water shoes and dry pants in Springdale if you want safer footing in the river",
+      "Check the daily flow rate because the park closes the route when the water becomes too high",
+      "Start early in the morning if you want more comfortable temperatures"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ut-zion-national-park-the-narrows.png?alt=media&token=7844355b-8fc1-4ca8-94cb-9e7aa3a51b39",
+    "aspectRatio": 1.9,
+    "collectionRadius": "regularplus"
+  },
+  {
+    "id": "us-wy-yellowstone-national-park-artist-point",
+    "name": "Artist Point",
+    "latitude": 44.721066133523,
+    "longitude": -110.47904704897829,
+    "geohash": "9xcqmvpx",
+    "address": "Wyoming USA 82190",
+    "collectionIds": [
+      "yellowstone-must-visits"
+    ],
+    "about": "Early explorers believed the canyon colors came from “painted” minerals, which inspired the name. It's one of the most photographed viewpoints in Yellowstone.",
+    "thingsToDoFromEditors": [
+      "Park in the nearby lot and walk the short path to the viewpoint",
+      "Take photos of the Lower Falls and the colorful canyon walls"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-wy-yellowstone-national-park-artist-point.png?alt=media&token=b6665330-2afd-457a-b7c2-247ad9dc16fb",
+    "aspectRatio": 0.67,
+    "collectionRadius": "regular"
+  },
+  {
+    "id": "us-wy-yellowstone-national-park-grand-prismatic-spring-overlook",
+    "name": "Grand Prismatic Spring Overlook",
+    "latitude": 44.5234908696025,
+    "longitude": -110.83987877429011,
+    "geohash": "9xcjmc2b",
+    "address": "Yellowstone National Park, WY USA 82190",
+    "collectionIds": [
+      "yellowstone-must-visits"
+    ],
+    "about": "The vivid rainbow colors come from heat-loving bacteria that thrive in mineral-rich water. It is the largest hot spring in the United States (3rd in the world).",
+    "thingsToDoFromEditors": [
+      "Park at the Fairy Falls lot and walk the short uphill trail to the overlook",
+      "Photograph the full rainbow colors from the viewing platform",
+      "Follow the trail toward Fairy Falls if you want to extend your visit"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-wy-yellowstone-national-park-grand-prismatic-spring-overlook.png?alt=media&token=b6ef01e3-eda4-4e1d-9926-b68c2ade58ca",
+    "aspectRatio": 0.67,
+    "collectionRadius": "regular"
+  },
+  {
+    "id": "us-wy-yellowstone-national-park-hayden-valley",
+    "name": "Hayden Valley",
+    "latitude": 44.64385812093055,
+    "longitude": -110.45530888599461,
+    "geohash": "9xcmyx0v",
+    "address": "Yellowstone National Park\nGrand Loop Rd, Mammoth, WY USA 82190",
+    "collectionIds": [
+      "yellowstone-must-visits"
+    ],
+    "about": "Hayden Valley sits near the center of Yellowstone and offers one of the park’s best places to see large bison herds roaming freely across open grasslands.",
+    "thingsToDoFromEditors": [
+      "Drive through the valley early or late in the day for the best wildlife activity",
+      "Bring binoculars if you want a better chance of spotting bears or distant bison",
+      "Use official pullouts when stopping so you do not block traffic"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-wy-yellowstone-national-park-hayden-valley.png?alt=media&token=ab750d29-6d48-49e2-affb-52c53b5cde0e",
+    "aspectRatio": 0.6,
+    "collectionRadius": "regularplus"
+  },
+  {
+    "id": "us-wy-yellowstone-national-park-lamar-valley",
+    "name": "Lamar Valley",
+    "latitude": 44.86852800029886,
+    "longitude": -110.1746968641855,
+    "geohash": "9xcxkbj4",
+    "address": "NE Entrance Rd\nYellowstone National Park, WY USA 82190",
+    "collectionIds": [
+      "yellowstone-must-visits"
+    ],
+    "about": "The valley is one of the best places in the world to see wild wolves, which were reintroduced to Yellowstone in 1995. It also supports massive bison herds that roam freely across the grasslands.",
+    "thingsToDoFromEditors": [
+      "Drive through the valley early in the morning to see bison and other wildlife",
+      "Bring binoculars if you want a better chance of spotting wolves",
+      "Pull into official turnout areas when you stop so you do not block the road"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-wy-yellowstone-national-park-lamar-valley.png?alt=media&token=792b8b5e-2961-4bd8-8e01-800334cbfc57",
+    "aspectRatio": 0.55,
+    "collectionRadius": "regularplus"
+  },
+  {
+    "id": "us-wy-yellowstone-national-park-mammoth-hot-springs-terraces",
+    "name": "Mammoth Hot Springs Terraces",
+    "latitude": 44.96987192549434,
+    "longitude": -110.70556369639498,
+    "geohash": "9xcrbfd8",
+    "address": "Mammoth, WY USA 82190",
+    "collectionIds": [
+      "yellowstone-must-visits"
+    ],
+    "about": "The vibrant colors on the terraces come from heat-loving microbes that thrive in mineral-rich water flowing across the sculpted formations.",
+    "thingsToDoFromEditors": [
+      "Walk the upper and lower boardwalk loops from the main parking areas",
+      "Photograph the terraces from different levels for changing textures and colors",
+      "Stop by the Albright Visitor Center to explore exhibits and historic displays"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-wy-yellowstone-national-park-mammoth-hot-springs-terraces.png?alt=media&token=01fef547-554f-4cbc-aa99-13bc805f7ca4",
+    "aspectRatio": 1.75,
+    "collectionRadius": "regularplus"
+  },
+  {
+    "id": "us-wy-yellowstone-national-park-norris-geyser-basin",
+    "name": "Norris Geyser Basin",
+    "latitude": 44.72623509434239,
+    "longitude": -110.70429089941189,
+    "geohash": "9xcq2y5t",
+    "address": "Wyoming USA 82190",
+    "collectionIds": [
+      "yellowstone-must-visits"
+    ],
+    "about": "Norris Geyser Basin is Yellowstone’s hottest and most active thermal area, with underground temperatures reaching extremely high levels that shape the landscape.",
+    "thingsToDoFromEditors": [
+      "Walk both the Porcelain Basin and Back Basin boardwalk loops from the main parking area",
+      "Take photos of Steamboat Geyser, even if it is not erupting"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-wy-yellowstone-national-park-norris-geyser-basin.png?alt=media&token=6f9d0aeb-f1e7-4c60-a948-0666a7159f72",
+    "aspectRatio": 0.59,
+    "collectionRadius": "regular"
+  },
+  {
+    "id": "us-wy-yellowstone-national-park-old-faithful-geyser",
+    "name": "Old Faithful",
+    "latitude": 44.46060042385577,
+    "longitude": -110.82819433737329,
+    "geohash": "9xchyjc3",
+    "address": "Yellowstone National Park, WY USA 82190",
+    "collectionIds": [
+      "yellowstone-must-visits"
+    ],
+    "about": "Old Faithful erupts roughly every 60 to 90 minutes and has done so for over a century. Rangers can predict its eruption times with surprising accuracy thanks to long-term data.",
+    "thingsToDoFromEditors": [
+      "Check the posted eruption prediction times at the visitor center before you walk to the viewing area",
+      "Arrive at the boardwalk early because the front rows fill quickly during peak hours",
+      "Visit the Old Faithful Visitor Education Center for geothermal exhibits"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-wy-yellowstone-national-park-old-faithful-geyser.png?alt=media&token=0cac4c9f-342f-4ce4-9cad-bc83fdb2c38e",
+    "aspectRatio": 1.8,
+    "collectionRadius": "regular"
   },
   {
     "id": "your-first-stamp",

@@ -21,13 +21,58 @@ class ImageManager: ObservableObject {
     
     private let storage = Storage.storage()
     
+    // MARK: - Disk Cache Management
+    
+    /// Maximum disk cache size for OTHER PEOPLE's content (user's own photos have no limit)
+    private let maxDiskCacheSizeBytes: Int64 = 200 * 1024 * 1024 // 200MB
+    
+    /// Target size to trim down to when cleaning up (leaves headroom)
+    private let targetDiskCacheSizeBytes: Int64 = 150 * 1024 * 1024 // 150MB
+    
+    /// Track file access times for LRU cleanup
+    private let fileAccessQueue = DispatchQueue(label: "com.stampbook.fileAccessQueue")
+    private let fileAccessTimesKey = "diskCacheFileAccessTimes"
+    
+    /// Track user's own uploaded files (NEVER delete these)
+    private let userOwnedFilesKey = "userOwnedFiles"
+    
     // MARK: - Request Deduplication
     
     /// Track in-flight profile picture downloads to prevent duplicate requests
     private var inFlightProfilePictures: [String: Task<UIImage, Error>] = [:]
     private let profilePictureQueue = DispatchQueue(label: "com.stampbook.profilePictureQueue")
     
-    private init() {}
+    /// Track in-flight thumbnail downloads to prevent duplicate requests
+    /// Same pattern as StampsManager to avoid race conditions
+    private var inFlightThumbnails: [String: Task<UIImage, Error>] = [:]
+    private let thumbnailQueue = DispatchQueue(label: "com.stampbook.thumbnailQueue")
+    
+    private init() {
+        // Run migration to protect existing user photos and cleanup disk cache
+        // This is safe for all installs (new users have no photos to migrate)
+        Task {
+            await migrateExistingUserPhotos()
+            await cleanupDiskCacheIfNeeded()
+        }
+        
+        // Listen for app going to background and cleanup
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleAppBackground),
+            name: UIApplication.didEnterBackgroundNotification,
+            object: nil
+        )
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+    
+    @objc private func handleAppBackground() {
+        Task {
+            await cleanupDiskCacheIfNeeded()
+        }
+    }
     
     // MARK: - Local Storage
     
@@ -72,6 +117,9 @@ class ImageManager: ObservableObject {
             print("✅ Image saved locally: \(filename)")
             #endif
             
+            // Track this as user's own file (NEVER delete during cleanup)
+            markAsUserOwnedFile(filename)
+            
             // Generate and save thumbnail for USER PHOTOS
             // Use aspect-FILL (cropped) so display can be simple .fit everywhere
             if let thumbnail = generateUserPhotoThumbnail(resizedImage, size: 512) {
@@ -83,6 +131,8 @@ class ImageManager: ObservableObject {
                     #if DEBUG
                     print("✅ Thumbnail saved (cropped): \(thumbnailFilename)")
                     #endif
+                    // Track thumbnail as user's own file too
+                    markAsUserOwnedFile(thumbnailFilename)
                 }
             }
             
@@ -98,6 +148,7 @@ class ImageManager: ObservableObject {
     func loadImage(named filename: String) -> UIImage? {
         // Check memory cache first (fastest)
         if let cached = ImageCacheManager.shared.getFullImage(key: filename) {
+            recordFileAccess(filename) // Track access for LRU
             return cached
         }
         
@@ -108,6 +159,7 @@ class ImageManager: ObservableObject {
            let image = UIImage(data: imageData) {
             // Store in cache for next time
             ImageCacheManager.shared.setFullImage(image, key: filename)
+            recordFileAccess(filename) // Track access for LRU
             return image
         }
         
@@ -125,6 +177,7 @@ class ImageManager: ObservableObject {
         
         // Check memory cache first (fastest) - try PNG
         if let cached = ImageCacheManager.shared.getThumbnail(key: pngThumbnailFilename) {
+            recordFileAccess(pngThumbnailFilename) // Track access for LRU
             return cached
         }
         
@@ -134,6 +187,7 @@ class ImageManager: ObservableObject {
            let thumbnail = UIImage(data: thumbnailData) {
             // Store in cache for next time
             ImageCacheManager.shared.setThumbnail(thumbnail, key: pngThumbnailFilename)
+            recordFileAccess(pngThumbnailFilename) // Track access for LRU
             return thumbnail
         }
         
@@ -143,6 +197,7 @@ class ImageManager: ObservableObject {
         
         // Check memory cache for JPEG
         if let cached = ImageCacheManager.shared.getThumbnail(key: jpegThumbnailFilename) {
+            recordFileAccess(jpegThumbnailFilename) // Track access for LRU
             return cached
         }
         
@@ -152,6 +207,7 @@ class ImageManager: ObservableObject {
            let thumbnail = UIImage(data: thumbnailData) {
             // Store in cache for next time
             ImageCacheManager.shared.setThumbnail(thumbnail, key: jpegThumbnailFilename)
+            recordFileAccess(jpegThumbnailFilename) // Track access for LRU
             return thumbnail
         }
         
@@ -173,6 +229,9 @@ class ImageManager: ObservableObject {
             // Remove from memory cache
             ImageCacheManager.shared.removeFullImage(key: filename)
             
+            // Unmark from user-owned tracking
+            unmarkAsUserOwnedFile(filename)
+            
             // Also delete thumbnail if it exists
             let thumbnailFilename = filename.replacingOccurrences(of: ".jpg", with: "_thumb.jpg")
             let thumbnailURL = getDocumentsDirectory().appendingPathComponent(thumbnailFilename)
@@ -184,6 +243,8 @@ class ImageManager: ObservableObject {
                 #endif
                 // Remove thumbnail from memory cache
                 ImageCacheManager.shared.removeThumbnail(key: thumbnailFilename)
+                // Unmark thumbnail too
+                unmarkAsUserOwnedFile(thumbnailFilename)
             }
         } catch let deleteError {
             Logger.error("Failed to delete image", error: deleteError, category: "ImageManager")
@@ -306,13 +367,22 @@ class ImageManager: ObservableObject {
             // Also store in memory cache
             ImageCacheManager.shared.setFullImage(image, key: cacheKey)
             
-            // Also generate and cache thumbnail (512x512 for crisp @3x retina displays)
-            // Use PNG for stamp images to preserve transparency, JPEG for user photos
-            if let thumbnail = generateThumbnail(image, size: CGSize(width: 512, height: 512)) {
-                // Detect if this is a stamp image (from stamps/ path) vs user photo (from users/ path)
-                // Stamp images stored at: stamps/us-ca-sf-dolores-park.png
-                // User photos stored at: users/{userId}/stamps/{stampId}/photo.jpg
-                let isStampImage = storagePath.contains("/stamps/") || filename.hasSuffix(".png")
+            // Detect if this is a stamp image (from stamps/ path) vs user photo (from users/ path)
+            // Stamp images stored at: stamps/us-ca-sf-dolores-park.png (starts with "stamps/")
+            // User photos stored at: users/{userId}/stamps/{stampId}/photo.jpg (starts with "users/")
+            let isStampImage = storagePath.hasPrefix("stamps/") || filename.hasSuffix(".png")
+            
+            // Generate and cache thumbnail (512x512 for crisp @3x retina displays)
+            // USER PHOTOS: Use aspect-fill (cropped) for square display
+            // STAMP IMAGES: Use aspect-fit (with padding) to preserve full artwork
+            let thumbnail: UIImage?
+            if isStampImage {
+                thumbnail = generateThumbnail(image, size: CGSize(width: 512, height: 512))
+            } else {
+                thumbnail = generateUserPhotoThumbnail(image, size: 512)
+            }
+            
+            if let thumbnail = thumbnail {
                 
                 let thumbnailCacheKey: String
                 let thumbnailData: Data?
@@ -350,6 +420,7 @@ class ImageManager: ObservableObject {
     
     /// Download thumbnail from Firebase Storage and cache locally
     /// Falls back to full image if needed
+    /// ✅ OPTIMIZED (Nov 17, 2025): In-flight request tracking prevents duplicate downloads
     func downloadAndCacheThumbnail(storagePath: String, stampId: String, imageUrl: String? = nil) async throws -> UIImage {
         let filename = (storagePath as NSString).lastPathComponent
         
@@ -361,71 +432,126 @@ class ImageManager: ObservableObject {
             baseCacheKey = filename
         }
         
-        // TODO: REMOVE BEFORE LAUNCH - This is only for fixing thumbnails during beta/testing
-        // ==================================================================================
-        // Check thumbnail version - if old version exists, force re-download from Firebase
-        // This forces all existing users to re-download cropped thumbnails from Firebase
-        // after we ran the fix_firebase_thumbnails.js script on 2024-11-16.
-        // 
-        // ⚠️ REMOVE THIS CODE BEFORE PUBLIC LAUNCH - only needed for beta testers who have
-        // old padded thumbnails cached. Production users will have cropped thumbnails from day 1.
-        // ==================================================================================
-        let thumbnailVersion = UserDefaults.standard.integer(forKey: "thumbnailVersion")
-        let currentThumbnailVersion = 2 // Bump this when thumbnail format changes
+        #if DEBUG
+        print("🔑 [ImageManager] Thumbnail cache key: \(baseCacheKey)_thumb.jpg")
+        #endif
         
-        let shouldForceRedownload = thumbnailVersion < currentThumbnailVersion
-        
-        // Check if thumbnail already cached (skip if forcing re-download)
-        if !shouldForceRedownload, let cachedThumbnail = loadThumbnail(named: baseCacheKey) {
+        // STEP 1: Check disk cache (fast path)
+        if let cachedThumbnail = loadThumbnail(named: baseCacheKey) {
+            #if DEBUG
+            print("💾 [ImageManager] Thumbnail disk cache hit: \(baseCacheKey)_thumb.jpg")
+            #endif
             return cachedThumbnail
         }
-        // ================== END OF MIGRATION CODE TO REMOVE ==================
         
-        // Try to download the _thumb.jpg file from Firebase Storage first
-        // This is the cropped thumbnail we generate on upload and fix via script
-        let thumbnailStoragePath = storagePath.replacingOccurrences(of: ".jpg", with: "_thumb.jpg")
-        let thumbnailRef = storage.reference().child(thumbnailStoragePath)
+        // STEP 2: Check if already downloading (prevent duplicate Firebase requests)
+        let thumbnailKey = "\(baseCacheKey)_thumb.jpg"
+        let existingTask = thumbnailQueue.sync { () -> Task<UIImage, Error>? in
+            return inFlightThumbnails[thumbnailKey]
+        }
         
-        do {
-            // Try downloading the thumbnail file
-            let thumbnailData = try await thumbnailRef.data(maxSize: 10 * 1024 * 1024) // 10MB max
-            
-            if let thumbnailImage = UIImage(data: thumbnailData) {
-                // Cache it locally
-                let thumbnailFilename = "\(baseCacheKey)_thumb.jpg"
-                let thumbnailURL = getDocumentsDirectory().appendingPathComponent(thumbnailFilename)
-                
-                if let jpegData = thumbnailImage.jpegData(compressionQuality: 0.8) {
-                    try jpegData.write(to: thumbnailURL)
-                    #if DEBUG
-                    print("✅ Downloaded thumbnail from Firebase: \(thumbnailFilename)")
-                    #endif
-                    
-                    // TODO: REMOVE BEFORE LAUNCH - Update version after successful migration
-                    if shouldForceRedownload {
-                        UserDefaults.standard.set(currentThumbnailVersion, forKey: "thumbnailVersion")
-                    }
-                }
-                
-                return thumbnailImage
-            }
-        } catch {
-            // Thumbnail doesn't exist in Firebase, fall back to downloading full image
+        if let existingTask = existingTask {
             #if DEBUG
-            print("⚠️ Thumbnail not found in Firebase, downloading full image: \(error.localizedDescription)")
+            print("⏳ [ImageManager] Waiting for in-flight thumbnail download: \(thumbnailKey)")
             #endif
+            return try await existingTask.value
         }
         
-        // Fallback: Download full image and generate thumbnail locally
-        let fullImage = try await downloadAndCacheImage(storagePath: storagePath, stampId: stampId, imageUrl: imageUrl)
-        
-        // Return thumbnail (was generated during caching)
-        if let thumbnail = loadThumbnail(named: baseCacheKey) {
-            return thumbnail
+        // STEP 3: Start new download and register as in-flight
+        let downloadTask = Task<UIImage, Error> {
+            // Detect if this is a stamp image (PNG) vs user photo (JPEG)
+            // Stamp images: stamps/us-ca-sf-dolores-park.png
+            // User photos: users/{userId}/stamps/{stampId}/photo.jpg
+            let filename = (storagePath as NSString).lastPathComponent
+            let isStampImage = storagePath.hasPrefix("stamps/") || filename.hasSuffix(".png")
+            
+            // Try to download the _thumb file from Firebase Storage first
+            let thumbnailStoragePath = storagePath.replacingOccurrences(of: ".jpg", with: "_thumb.jpg")
+                .replacingOccurrences(of: ".png", with: "_thumb.png")
+            let thumbnailRef = storage.reference().child(thumbnailStoragePath)
+            
+            do {
+                #if DEBUG
+                print("⬇️ [ImageManager] Starting thumbnail download: \(thumbnailKey)")
+                #endif
+                
+                // Try downloading the thumbnail file
+                let thumbnailData = try await thumbnailRef.data(maxSize: 10 * 1024 * 1024) // 10MB max
+                
+                if let thumbnailImage = UIImage(data: thumbnailData) {
+                    // Cache it locally with proper extension matching
+                    // CRITICAL: Must match loadThumbnail's key format!
+                    let thumbnailFilename: String
+                    let imageData: Data?
+                    
+                    if isStampImage {
+                        // Stamp: Replace .png/.jpg with _thumb.png
+                        thumbnailFilename = baseCacheKey
+                            .replacingOccurrences(of: ".jpg", with: "_thumb.png")
+                            .replacingOccurrences(of: ".png", with: "_thumb.png")
+                        imageData = thumbnailImage.pngData()
+                    } else {
+                        // User photo: Replace .jpg/.png with _thumb.jpg
+                        thumbnailFilename = baseCacheKey
+                            .replacingOccurrences(of: ".jpg", with: "_thumb.jpg")
+                            .replacingOccurrences(of: ".png", with: "_thumb.jpg")
+                        imageData = thumbnailImage.jpegData(compressionQuality: 0.8)
+                    }
+                    
+                    if let imageData = imageData {
+                        let thumbnailURL = getDocumentsDirectory().appendingPathComponent(thumbnailFilename)
+                        try imageData.write(to: thumbnailURL)
+                        #if DEBUG
+                        print("✅ Downloaded thumbnail from Firebase: \(thumbnailFilename)")
+                        #endif
+                        
+                        // Store in memory cache for instant access
+                        ImageCacheManager.shared.setThumbnail(thumbnailImage, key: thumbnailFilename)
+                    }
+                    
+                    return thumbnailImage
+                }
+            } catch {
+                // Thumbnail doesn't exist in Firebase, fall back to downloading full image
+                #if DEBUG
+                print("⚠️ Thumbnail not found in Firebase, downloading full image: \(error.localizedDescription)")
+                #endif
+            }
+            
+            // Fallback: Download full image and generate thumbnail locally
+            let fullImage = try await downloadAndCacheImage(storagePath: storagePath, stampId: stampId, imageUrl: imageUrl)
+            
+            // Return thumbnail (was generated during caching)
+            if let thumbnail = loadThumbnail(named: baseCacheKey) {
+                return thumbnail
+            }
+            
+            // Fallback to full image
+            return fullImage
         }
         
-        // Fallback to full image
-        return fullImage
+        // Register task as in-flight
+        thumbnailQueue.sync {
+            inFlightThumbnails[thumbnailKey] = downloadTask
+        }
+        
+        // Wait for download to complete
+        do {
+            let result = try await downloadTask.value
+            
+            // Clean up in-flight tracking
+            _ = thumbnailQueue.sync {
+                inFlightThumbnails.removeValue(forKey: thumbnailKey)
+            }
+            
+            return result
+        } catch {
+            // Clean up in-flight tracking on error
+            _ = thumbnailQueue.sync {
+                inFlightThumbnails.removeValue(forKey: thumbnailKey)
+            }
+            throw error
+        }
     }
     
     /// Delete image from Firebase Storage
@@ -849,6 +975,8 @@ class ImageManager: ObservableObject {
             #if DEBUG
             print("✅ Profile picture saved locally: \(filename)")
             #endif
+            // Track as user's own file
+            markAsUserOwnedFile(filename)
             return filename
         } catch let saveError {
             Logger.error("Failed to save profile picture", error: saveError, category: "ImageManager")
@@ -1182,12 +1310,7 @@ class ImageManager: ObservableObject {
         // Resize to cache size (200x200) - optimized for MVP
         guard let resizedImage = resizeProfilePicture(image, size: 200) else {
             #if DEBUG
-
-            #if DEBUG
-
-
             print("⚠️ Failed to resize profile picture for precaching")
-            #endif
             #endif
             return
         }
@@ -1195,7 +1318,6 @@ class ImageManager: ObservableObject {
         // Compress
         guard let imageData = compressImage(resizedImage, maxSizeMB: 0.2) else {
             #if DEBUG
-
             print("⚠️ Failed to compress profile picture for precaching")
             #endif
             return
@@ -1206,22 +1328,293 @@ class ImageManager: ObservableObject {
         do {
             try imageData.write(to: fileURL)
             #if DEBUG
-
             print("✅ Pre-cached new profile picture to disk: \(filename)")
             #endif
             
             // Also store in memory cache for immediate access
             ImageCacheManager.shared.setFullImage(resizedImage, key: filename)
             #if DEBUG
-
             print("✅ Pre-cached new profile picture to memory: \(filename)")
             #endif
         } catch {
             #if DEBUG
-
             print("⚠️ Failed to pre-cache profile picture: \(error.localizedDescription)")
             #endif
         }
+    }
+    
+    // MARK: - Disk Cache Cleanup
+    
+    /// ONE-TIME MIGRATION: Mark existing user photos as owned (prevents deletion on first cleanup)
+    /// This should run once after deploying the tracking system to protect photos uploaded before tracking existed
+    /// 
+    /// TODO: Enable this after App Store launch by uncommenting in init()
+    /// Once migration completes for all users, this code can be removed in a future version
+    private func migrateExistingUserPhotos() async {
+        let migrationKey = "photoTrackingMigrationComplete_v1"
+        
+        // Check if already migrated
+        guard !UserDefaults.standard.bool(forKey: migrationKey) else {
+            #if DEBUG
+            print("✅ [ImageManager] Photo migration already complete, skipping")
+            #endif
+            return
+        }
+        
+        #if DEBUG
+        print("🔄 [ImageManager] Starting one-time migration to protect existing user photos...")
+        let migrationStart = CFAbsoluteTimeGetCurrent()
+        #endif
+        
+        // Get all files in documents directory
+        let documentsURL = getDocumentsDirectory()
+        let fileManager = FileManager.default
+        
+        do {
+            let fileURLs = try fileManager.contentsOfDirectory(at: documentsURL, includingPropertiesForKeys: nil)
+            let filenames = fileURLs.map { $0.lastPathComponent }
+            
+            // Patterns that indicate user-owned files:
+            // 1. User photos: {stampId}_{timestamp}_{uuid}.jpg
+            // 2. User thumbnails: {stampId}_{timestamp}_{uuid}_thumb.jpg
+            // 3. Profile pictures with timestamp: profile_{userId}_{timestamp}.jpg
+            
+            var migratedCount = 0
+            
+            for filename in filenames {
+                // Check if it looks like a user-uploaded photo (has timestamp pattern)
+                // Format: {id}_{timestamp}_{uuid}.jpg where timestamp is 10 digits
+                let components = filename.components(separatedBy: "_")
+                
+                // User photo pattern: minimum 3 components, second component is numeric timestamp
+                if components.count >= 3 {
+                    let potentialTimestamp = components[1]
+                    if potentialTimestamp.count == 10, Int(potentialTimestamp) != nil {
+                        // This looks like a user-uploaded file - mark it as owned
+                        fileAccessQueue.sync {
+                            var userFiles = UserDefaults.standard.stringArray(forKey: userOwnedFilesKey) ?? []
+                            if !userFiles.contains(filename) {
+                                userFiles.append(filename)
+                                UserDefaults.standard.set(userFiles, forKey: userOwnedFilesKey)
+                                migratedCount += 1
+                                #if DEBUG
+                                print("📌 [Migration] Marked as user-owned: \(filename)")
+                                #endif
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Mark migration as complete
+            UserDefaults.standard.set(true, forKey: migrationKey)
+            
+            #if DEBUG
+            let migrationTime = CFAbsoluteTimeGetCurrent() - migrationStart
+            print("✅ [ImageManager] Migration complete: Protected \(migratedCount) existing user photos (\(String(format: "%.3f", migrationTime))s)")
+            #endif
+            
+        } catch {
+            print("⚠️ [ImageManager] Migration failed: \(error.localizedDescription)")
+        }
+    }
+    
+    /// Mark a file as owned by the user (will never be deleted during cleanup)
+    private func markAsUserOwnedFile(_ filename: String) {
+        fileAccessQueue.async {
+            var userFiles = UserDefaults.standard.stringArray(forKey: self.userOwnedFilesKey) ?? []
+            if !userFiles.contains(filename) {
+                userFiles.append(filename)
+                UserDefaults.standard.set(userFiles, forKey: self.userOwnedFilesKey)
+                #if DEBUG
+                print("📌 [ImageManager] Marked as user-owned: \(filename)")
+                #endif
+            }
+        }
+    }
+    
+    /// Remove a file from user-owned tracking (when user deletes their own photo)
+    private func unmarkAsUserOwnedFile(_ filename: String) {
+        fileAccessQueue.async {
+            var userFiles = UserDefaults.standard.stringArray(forKey: self.userOwnedFilesKey) ?? []
+            if let index = userFiles.firstIndex(of: filename) {
+                userFiles.remove(at: index)
+                UserDefaults.standard.set(userFiles, forKey: self.userOwnedFilesKey)
+                #if DEBUG
+                print("📌 [ImageManager] Unmarked as user-owned: \(filename)")
+                #endif
+            }
+        }
+    }
+    
+    /// Track when a file was accessed (for LRU cleanup)
+    private func recordFileAccess(_ filename: String) {
+        fileAccessQueue.async {
+            var accessTimes = UserDefaults.standard.dictionary(forKey: self.fileAccessTimesKey) as? [String: TimeInterval] ?? [:]
+            accessTimes[filename] = Date().timeIntervalSince1970
+            UserDefaults.standard.set(accessTimes, forKey: self.fileAccessTimesKey)
+        }
+    }
+    
+    /// Get last access time for a file (returns epoch time, or 0 if never accessed)
+    private func getFileAccessTime(_ filename: String) -> TimeInterval {
+        fileAccessQueue.sync {
+            let accessTimes = UserDefaults.standard.dictionary(forKey: fileAccessTimesKey) as? [String: TimeInterval] ?? [:]
+            return accessTimes[filename] ?? 0
+        }
+    }
+    
+    /// Calculate total size of disk cache
+    private func calculateDiskCacheSize() -> (totalBytes: Int64, fileList: [(filename: String, size: Int64, accessTime: TimeInterval)]) {
+        let documentsURL = getDocumentsDirectory()
+        let fileManager = FileManager.default
+        
+        var totalSize: Int64 = 0
+        var fileList: [(filename: String, size: Int64, accessTime: TimeInterval)] = []
+        
+        do {
+            let fileURLs = try fileManager.contentsOfDirectory(at: documentsURL, includingPropertiesForKeys: [.fileSizeKey])
+            
+            for fileURL in fileURLs {
+                let filename = fileURL.lastPathComponent
+                
+                // Get file size
+                if let resources = try? fileURL.resourceValues(forKeys: [.fileSizeKey]),
+                   let fileSize = resources.fileSize {
+                    totalSize += Int64(fileSize)
+                    
+                    // Get access time
+                    let accessTime = getFileAccessTime(filename)
+                    fileList.append((filename: filename, size: Int64(fileSize), accessTime: accessTime))
+                }
+            }
+        } catch {
+            print("⚠️ Failed to calculate disk cache size: \(error.localizedDescription)")
+        }
+        
+        return (totalSize, fileList)
+    }
+    
+    /// Check if a file belongs to the current user (NEVER delete these)
+    private func isUserOwnedFile(_ filename: String, currentUserId: String?) -> Bool {
+        // Check explicit tracking list (most reliable)
+        let userFiles = UserDefaults.standard.stringArray(forKey: userOwnedFilesKey) ?? []
+        if userFiles.contains(filename) {
+            return true // Explicitly tracked as user's file
+        }
+        
+        // Fallback: Profile pictures with userId in filename (backward compatibility)
+        if filename.hasPrefix("profile_"), let userId = currentUserId, filename.contains(userId) {
+            return true
+        }
+        
+        // Everything else is deletable (cached content)
+        return false
+    }
+    
+    /// Clean up disk cache if over limit (LRU strategy)
+    /// SAFETY: Never deletes user's own uploaded photos or current profile picture
+    func cleanupDiskCacheIfNeeded(currentUserId: String? = nil) async {
+        let cleanupStart = CFAbsoluteTimeGetCurrent()
+        
+        #if DEBUG
+        print("🧹 [ImageManager] Starting disk cache cleanup check...")
+        #endif
+        
+        // Calculate current cache size
+        let (totalSize, fileList) = calculateDiskCacheSize()
+        let totalSizeMB = Double(totalSize) / (1024 * 1024)
+        
+        #if DEBUG
+        print("📊 [ImageManager] Total disk cache: \(String(format: "%.1f", totalSizeMB))MB (\(fileList.count) files)")
+        #endif
+        
+        // Check if cleanup needed
+        guard totalSize > maxDiskCacheSizeBytes else {
+            #if DEBUG
+            let cleanupTime = CFAbsoluteTimeGetCurrent() - cleanupStart
+            print("✅ [ImageManager] Disk cache under limit, no cleanup needed (\(String(format: "%.3f", cleanupTime))s)")
+            #endif
+            return
+        }
+        
+        #if DEBUG
+        print("⚠️ [ImageManager] Disk cache over limit (\(String(format: "%.1f", totalSizeMB))MB > 200MB), cleaning up...")
+        #endif
+        
+        // Separate files into owned vs deletable
+        var deletableFiles: [(filename: String, size: Int64, accessTime: TimeInterval)] = []
+        var ownedFilesSize: Int64 = 0
+        
+        for file in fileList {
+            if isUserOwnedFile(file.filename, currentUserId: currentUserId) {
+                ownedFilesSize += file.size
+            } else {
+                deletableFiles.append(file)
+            }
+        }
+        
+        #if DEBUG
+        let ownedSizeMB = Double(ownedFilesSize) / (1024 * 1024)
+        let deletableSizeMB = Double(deletableFiles.reduce(0) { $0 + $1.size }) / (1024 * 1024)
+        print("📊 [ImageManager] User's files: \(String(format: "%.1f", ownedSizeMB))MB (protected)")
+        print("📊 [ImageManager] Deletable files: \(String(format: "%.1f", deletableSizeMB))MB (\(deletableFiles.count) files)")
+        #endif
+        
+        // Sort deletable files by access time (oldest first)
+        deletableFiles.sort { $0.accessTime < $1.accessTime }
+        
+        // Delete oldest files until we're under target size
+        var currentSize = totalSize
+        var deletedCount = 0
+        var deletedSize: Int64 = 0
+        
+        for file in deletableFiles {
+            // Stop if we're under target
+            if currentSize <= targetDiskCacheSizeBytes {
+                break
+            }
+            
+            // Delete the file
+            let fileURL = getDocumentsDirectory().appendingPathComponent(file.filename)
+            do {
+                try FileManager.default.removeItem(at: fileURL)
+                currentSize -= file.size
+                deletedSize += file.size
+                deletedCount += 1
+                
+                // Also remove from memory cache
+                ImageCacheManager.shared.removeFullImage(key: file.filename)
+                ImageCacheManager.shared.removeThumbnail(key: file.filename)
+                
+                #if DEBUG
+                let lastAccess = Date(timeIntervalSince1970: file.accessTime)
+                let daysSinceAccess = Date().timeIntervalSince(lastAccess) / (24 * 3600)
+                print("🗑️ [ImageManager] Deleted: \(file.filename) (\(file.size / 1024)KB, last accessed \(String(format: "%.1f", daysSinceAccess)) days ago)")
+                #endif
+            } catch {
+                print("⚠️ [ImageManager] Failed to delete \(file.filename): \(error.localizedDescription)")
+            }
+        }
+        
+        // Clean up access times for deleted files
+        fileAccessQueue.async {
+            var accessTimes = UserDefaults.standard.dictionary(forKey: self.fileAccessTimesKey) as? [String: TimeInterval] ?? [:]
+            for file in deletableFiles.prefix(deletedCount) {
+                accessTimes.removeValue(forKey: file.filename)
+            }
+            UserDefaults.standard.set(accessTimes, forKey: self.fileAccessTimesKey)
+        }
+        
+        let finalSizeMB = Double(currentSize) / (1024 * 1024)
+        let deletedSizeMB = Double(deletedSize) / (1024 * 1024)
+        let cleanupTime = CFAbsoluteTimeGetCurrent() - cleanupStart
+        
+        #if DEBUG
+        print("✅ [ImageManager] Cleanup complete: Deleted \(deletedCount) files (\(String(format: "%.1f", deletedSizeMB))MB)")
+        print("📊 [ImageManager] Final cache size: \(String(format: "%.1f", finalSizeMB))MB")
+        print("⏱️ [ImageManager] Cleanup took \(String(format: "%.3f", cleanupTime))s")
+        #endif
     }
 }
 
