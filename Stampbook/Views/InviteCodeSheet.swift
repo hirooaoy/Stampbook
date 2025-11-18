@@ -433,7 +433,7 @@ struct InviteCodeSheet: View {
                     errorMessage = "Something went wrong. Please try again."
                     showError = true
                     
-                case .invalidCode, .codeExpired, .networkError:
+                case .invalidCode, .codeExpired, .networkError, .codeGenerationFailed, .codeNotFound:
                     // These should be caught during validation (inline errors)
                     // But handle them just in case
                     // Sign out if we got here with an invalid code

@@ -19,6 +19,8 @@ class InviteManager: ObservableObject {
         case networkError
         case accountCreationFailed
         case accountAlreadyExists
+        case codeGenerationFailed
+        case codeNotFound
         
         var errorDescription: String? {
             switch self {
@@ -34,6 +36,10 @@ class InviteManager: ObservableObject {
                 return "Something went wrong creating your account. Please try again."
             case .accountAlreadyExists:
                 return "You already have an account. Please use 'Already have an account?' to sign in."
+            case .codeGenerationFailed:
+                return "Failed to generate invite code. Please try again."
+            case .codeNotFound:
+                return "Invite code not found."
             }
         }
     }
@@ -161,7 +167,34 @@ class InviteManager: ObservableObject {
                     return nil
                 }
                 
-                // Create user profile
+                // Generate personal invite code for new user
+                var personalCode = self.generateRandomCode()
+                var codeAttempts = 0
+                
+                // Check for code collisions
+                while codeAttempts < 10 {
+                    let personalCodeRef = self.db.collection("invite_codes").document(personalCode)
+                    let personalCodeDoc: DocumentSnapshot
+                    do {
+                        personalCodeDoc = try transaction.getDocument(personalCodeRef)
+                    } catch {
+                        errorPointer?.pointee = NSError(
+                            domain: "InviteError",
+                            code: 6,
+                            userInfo: [NSLocalizedDescriptionKey: "Failed to check personal code"]
+                        )
+                        return nil
+                    }
+                    
+                    if !personalCodeDoc.exists {
+                        break
+                    }
+                    
+                    personalCode = self.generateRandomCode()
+                    codeAttempts += 1
+                }
+                
+                // Create user profile with personal code
                 let createdBy = data["createdBy"] as? String ?? "admin"
                 transaction.setData([
                     "id": userId,  // Required field for UserProfile decoder
@@ -169,7 +202,7 @@ class InviteManager: ObservableObject {
                     "displayName": username,  // Default to username, user can change later
                     "inviteCodeUsed": codeString,
                     "invitedBy": createdBy,
-                    "invitesRemaining": 0,  // Phase 2: set to 5 for user invites
+                    "personalInviteCode": personalCode,  // Their personal code to share
                     "createdAt": FieldValue.serverTimestamp(),
                     "lastActiveAt": FieldValue.serverTimestamp(),
                     "totalStamps": 0,
@@ -180,6 +213,21 @@ class InviteManager: ObservableObject {
                     "followingCount": 0,
                     "hasSeenOnboarding": false  // Show profile setup sheet to new users
                 ], forDocument: userRef)
+                
+                // Create personal invite code document
+                let personalCodeRef = self.db.collection("invite_codes").document(personalCode)
+                transaction.setData([
+                    "code": personalCode,
+                    "type": "personal",
+                    "createdBy": userId,
+                    "createdByUsername": username,
+                    "maxUses": 5,
+                    "usedCount": 0,
+                    "usedBy": [],
+                    "createdAt": FieldValue.serverTimestamp(),
+                    "expiresAt": NSNull(),
+                    "status": "active"
+                ], forDocument: personalCodeRef)
                 
                 // Update code usage
                 usedBy.append(userId)
@@ -230,6 +278,109 @@ class InviteManager: ObservableObject {
             Logger.error("Error checking user profile", error: error, category: "InviteManager")
             return false
         }
+    }
+    
+    // MARK: - Personal Invite Codes
+    
+    /// Generate a random 8-character code (no confusing characters)
+    private func generateRandomCode() -> String {
+        let chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
+        return String((0..<8).map { _ in chars.randomElement()! })
+    }
+    
+    /// Check if user already has a personal code
+    func getUserPersonalCode(userId: String) async -> String? {
+        Logger.info("Checking if user \(userId) has personal code", category: "InviteManager")
+        
+        // Check user profile first (cached)
+        let userRef = db.collection("users").document(userId)
+        guard let userData = try? await userRef.getDocument().data(),
+              let code = userData["personalInviteCode"] as? String else {
+            return nil
+        }
+        
+        Logger.success("User has existing code: \(code)", category: "InviteManager")
+        return code
+    }
+    
+    /// Generate personal invite code for user
+    func generatePersonalCode(userId: String, username: String) async throws -> String {
+        Logger.info("Generating personal code for \(username) (\(userId))", category: "InviteManager")
+        
+        // Check if user already has a code
+        if let existingCode = await getUserPersonalCode(userId: userId) {
+            Logger.warning("User already has code: \(existingCode)", category: "InviteManager")
+            return existingCode
+        }
+        
+        // Generate unique code (check for collisions)
+        var code = generateRandomCode()
+        var attempts = 0
+        
+        while attempts < 10 {
+            let codeRef = db.collection("invite_codes").document(code)
+            let codeDoc = try await codeRef.getDocument()
+            
+            if !codeDoc.exists {
+                // Code is unique, use it
+                break
+            }
+            
+            // Collision detected, regenerate
+            Logger.warning("Code collision detected: \(code), regenerating...", category: "InviteManager")
+            code = generateRandomCode()
+            attempts += 1
+        }
+        
+        if attempts >= 10 {
+            throw InviteError.codeGenerationFailed
+        }
+        
+        Logger.info("Generated unique code: \(code)", category: "InviteManager")
+        
+        // Create the invite code document
+        let codeRef = db.collection("invite_codes").document(code)
+        try await codeRef.setData([
+            "code": code,
+            "type": "personal",
+            "createdBy": userId,
+            "createdByUsername": username,
+            "maxUses": 5,
+            "usedCount": 0,
+            "usedBy": [],
+            "createdAt": FieldValue.serverTimestamp(),
+            "expiresAt": NSNull(),
+            "status": "active"
+        ])
+        
+        Logger.info("Created invite code document", category: "InviteManager")
+        
+        // Update user profile with their code
+        let userRef = db.collection("users").document(userId)
+        try await userRef.updateData([
+            "personalInviteCode": code
+        ])
+        
+        Logger.success("Personal code \(code) generated and saved for \(username)", category: "InviteManager")
+        return code
+    }
+    
+    /// Get usage stats for a personal code
+    func getCodeUsageStats(code: String) async throws -> (used: Int, max: Int, status: String) {
+        Logger.info("Fetching usage stats for code: \(code)", category: "InviteManager")
+        
+        let codeRef = db.collection("invite_codes").document(code)
+        let codeDoc = try await codeRef.getDocument()
+        
+        guard codeDoc.exists,
+              let data = codeDoc.data(),
+              let usedCount = data["usedCount"] as? Int,
+              let maxUses = data["maxUses"] as? Int,
+              let status = data["status"] as? String else {
+            throw InviteError.codeNotFound
+        }
+        
+        return (used: usedCount, max: maxUses, status: status)
     }
 }
 

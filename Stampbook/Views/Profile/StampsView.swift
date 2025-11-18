@@ -29,6 +29,7 @@ struct StampsView: View {
     @State private var navigationPath = NavigationPath() // Track navigation stack
     @State private var welcomeStamp: Stamp? // Store the fetched welcome stamp (nil = sheet closed, non-nil = sheet open)
     @State private var showInviteCodeSheet = false // Show invite code sheet for signed-out users
+    @State private var showPersonalInviteSheet = false // Show personal invite sheet for signed-in users
     // @State private var hasAttemptedRankLoad = false // TODO: POST-MVP - Rank loading disabled
     
     enum StampTab: String, CaseIterable {
@@ -98,6 +99,19 @@ struct StampsView: View {
     // MARK: - Signed-in Menu Buttons
     private var signedInMenuButtons: some View {
         HStack(spacing: 8) {
+            // Invite Friends Button - Opens PersonalInviteSheet
+            Button(action: {
+                showPersonalInviteSheet = true
+            }) {
+                Image(systemName: "link.circle")
+                    .font(.system(size: 24))
+                    .foregroundColor(.primary)
+                    .frame(width: 44, height: 44)  // Larger tap target
+                    .contentShape(Rectangle())     // Make entire frame tappable
+            }
+            .disabled(profileManager.currentUserProfile == nil)
+            .accessibilityLabel("Invite friends")
+            
             // Edit Profile Button - Opens ProfileEditView sheet
             Button(action: {
                 showEditProfile = true
@@ -627,6 +641,14 @@ struct StampsView: View {
                     profileManager.updateProfile(updatedProfile)
                 }
                 .environmentObject(authManager)
+            }
+        }
+        // MARK: - Personal Invite Sheet
+        // Shows PersonalInviteSheet when user taps invite icon
+        .sheet(isPresented: $showPersonalInviteSheet) {
+            if let userId = authManager.userId,
+               let username = profileManager.currentUserProfile?.username {
+                PersonalInviteSheet(userId: userId, username: username)
             }
         }
         // MARK: - Profile Refresh on Stamp Collection

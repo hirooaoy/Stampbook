@@ -105,7 +105,7 @@ New fields added to `users/{userId}`:
 {
   inviteCodeUsed: "SUMMIT24",
   invitedBy: "admin" | userId,
-  invitesRemaining: 0,    // Phase 2: set to 5 for user invites
+  personalInviteCode: "ABC12345",  // Their personal code to share (8 chars)
   accountCreatedAt: timestamp
 }
 ```

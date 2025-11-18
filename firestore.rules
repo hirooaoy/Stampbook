@@ -161,6 +161,15 @@ service cloud.firestore {
       // CANNOT list/query all codes (prevents scraping valid codes)
       allow list: if false;
       
+      // Users can create their personal invite code DURING signup transaction
+      // Must be type "personal" with exactly 5 maxUses, created by the user making the request
+      allow create: if request.auth != null
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.type == "personal"
+        && request.resource.data.maxUses == 5
+        && request.resource.data.usedCount == 0
+        && request.resource.data.status == "active";
+      
       // Users can update codes ONLY to mark them as used during signup transaction
       // They can ONLY increment usedCount, append to usedBy array, and update status
       allow update: if request.auth != null
@@ -168,8 +177,11 @@ service cloud.firestore {
         && request.resource.data.usedBy.hasAll(resource.data.usedBy)  // Can only ADD to usedBy array
         && request.resource.data.usedCount == resource.data.usedCount + 1;  // Must increment by exactly 1
       
-      // Only admin service account can create/delete codes (via generate_invite_codes.js)
-      allow create, delete: if false;
+      // Only personal codes can be deleted by their owner OR admin service account
+      // Admin codes cannot be deleted by users (only service account)
+      allow delete: if request.auth != null 
+        && resource.data.type == "personal" 
+        && resource.data.createdBy == request.auth.uid;
     }
     
     // ==================== FEEDBACK ====================

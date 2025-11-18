@@ -256,8 +256,33 @@ async function deleteUserAccount(userId) {
       }
     }
     
-    // Step 11: Delete notifications (if collection exists)
-    log('\n📋 Step 11: Deleting notifications...', 'blue');
+    // Step 11: Delete personal invite code
+    log('\n📋 Step 11: Deleting personal invite code...', 'blue');
+    if (userDoc.exists) {
+      const userData = userDoc.data();
+      const personalCode = userData.personalInviteCode;
+      
+      if (personalCode) {
+        try {
+          const personalCodeRef = db.collection('invite_codes').doc(personalCode);
+          const personalCodeDoc = await personalCodeRef.get();
+          
+          if (personalCodeDoc.exists) {
+            await personalCodeRef.delete();
+            log(`   ✅ Deleted personal invite code: ${personalCode}`, 'green');
+          } else {
+            log(`   ⚠️  Personal invite code "${personalCode}" not found`, 'yellow');
+          }
+        } catch (error) {
+          log(`   ⚠️  Could not delete personal code: ${error.message}`, 'yellow');
+        }
+      } else {
+        log('   ⚠️  User has no personalInviteCode field', 'yellow');
+      }
+    }
+    
+    // Step 12: Delete notifications (if collection exists)
+    log('\n📋 Step 12: Deleting notifications...', 'blue');
     try {
       const notificationsRef = db.collection('users').doc(userId).collection('notifications');
       const notifications = await notificationsRef.get();
@@ -278,8 +303,8 @@ async function deleteUserAccount(userId) {
       log('   ⚠️  Notifications collection not found (may not exist yet)', 'yellow');
     }
     
-    // Step 11: Delete Firebase Storage files
-    log('\n📋 Step 12: Deleting storage files...', 'blue');
+    // Step 13: Delete Firebase Storage files
+    log('\n📋 Step 13: Deleting storage files...', 'blue');
     const [files] = await storage.getFiles({ prefix: `users/${userId}/` });
     
     if (files.length === 0) {
@@ -293,13 +318,13 @@ async function deleteUserAccount(userId) {
       log(`   ✅ Deleted ${deletedCount} storage files`, 'green');
     }
     
-    // Step 12: Delete user profile document
-    log('\n📋 Step 13: Deleting user profile...', 'blue');
+    // Step 14: Delete user profile document
+    log('\n📋 Step 14: Deleting user profile...', 'blue');
     await db.collection('users').doc(userId).delete();
     log('   ✅ User profile deleted', 'green');
     
-    // Step 13: Delete Firebase Authentication account
-    log('\n📋 Step 14: Deleting authentication account...', 'blue');
+    // Step 15: Delete Firebase Authentication account
+    log('\n📋 Step 15: Deleting authentication account...', 'blue');
     try {
       await auth.deleteUser(userId);
       log('   ✅ Authentication account deleted', 'green');
