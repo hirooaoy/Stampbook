@@ -1,5 +1,25 @@
 [
   {
+    "id": "canada-british-columbia-whistler-whistler-blackcomb",
+    "name": "Whistler Blackcomb",
+    "latitude": 50.11549865834642,
+    "longitude": -122.94752538416701,
+    "address": "4545 Blackcomb Way\nWhistler, BC Canada V8E 0X9",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fcanada-british-columbia-whistler-whistler-blackcomb.png?alt=media&token=0d4d8fa788f120c9f64bf782da45e0f1",
+    "collectionIds": [
+      "ski-resort-bucket-list"
+    ],
+    "about": "North America's largest ski resort spans two massive mountains connected by the Peak 2 Peak Gondola, hosting the 2010 Winter Olympics alpine events.",
+    "thingsToDoFromEditors": [
+      "Visit Whistler Village base for maps and activity info at multiple lodges",
+      "Ride the Peak 2 Peak Gondola between mountains for stunning alpine views",
+      "Explore Whistler Village's pedestrian streets with shops and restaurants"
+    ],
+    "geohash": "c2bt470r",
+    "collectionRadius": "xlarge",
+    "aspectRatio": 1.01
+  },
+  {
     "id": "us-az-grand-canyon-desert-view-watchtower",
     "name": "Desert View Watchtower",
     "latitude": 36.04409790919088,
@@ -11,8 +31,8 @@
     ],
     "about": "This 70-feet tall watchtower is the tallest major structure on the South Rim. On clear days, visitors can see over 100 miles toward the Painted Desert.",
     "thingsToDoFromEditors": [
-      "Climb the Watchtower for one of the widest panoramic views on the South Rim",
-      "Visit the Hopi Room to see murals painted by Fred Kabotie"
+      "Climb the tower for panoramic views",
+      "See Fred Kabotie murals in Hopi Room"
     ],
     "geohash": "9w2mp3ds",
     "collectionRadius": "regular",
@@ -30,8 +50,8 @@
     ],
     "about": "The point is named after the Hopi Tribe, whose cultural stories link the Grand Canyon to their ancestral migrations.",
     "thingsToDoFromEditors": [
-      "Watch the iconic Hopi Point sunset with glowing canyon layers",
-      "Visit at night for stargazing and wide open sky views"
+      "Watch sunset with canyon colors",
+      "Stargaze at night from the point"
     ],
     "geohash": "9w2jpz5h",
     "collectionRadius": "regular",
@@ -49,8 +69,8 @@
     ],
     "about": "Mather Point is named after Stephen Tyng Mather, the first director of the U.S. National Park Service from 1917. It's a short walk from the Visitor Center.",
     "thingsToDoFromEditors": [
-      "Walk from the Visitor Center plaza to the Mather Point overlook for instant canyon view",
-      "Arrive at sunrise or sunset to experience dramatic light across the canyon"
+      "Walk to overlook from visitor center for instant canyon views",
+      "Arrive at sunrise or sunset for dramatic light"
     ],
     "geohash": "9w2m0uvd",
     "collectionRadius": "regular",
@@ -68,9 +88,9 @@
     ],
     "about": "Moran Point is named after Thomas Moran, the painter whose 19th-century artworks helped convince Congress to protect American landscapes like Yellowstone and the Grand Canyon.",
     "thingsToDoFromEditors": [
-      "Watch sunrise from Moran Point to see pastel canyon colors",
-      "Look for Cardenas and Escalante Buttes from the overlook",
-      "Visit during golden hour for vivid color layering"
+      "Watch sunrise for pastel colors",
+      "Spot Cardenas and Escalante Buttes",
+      "Visit at golden hour"
     ],
     "geohash": "9w2kv4e1",
     "collectionRadius": "regular",
@@ -88,8 +108,8 @@
     ],
     "about": "From Yavapai Point you can see deep into the canyon and catch glimpses of the Colorado River channel across vast terrain.",
     "thingsToDoFromEditors": [
-      "Walk the Rim Trail from the visitor center to Yavapai Point for unobstructed views",
-      "Visit the Yavapai Geology Museum to learn about the canyon's formation"
+      "Walk Rim Trail from visitor center for unobstructed canyon views",
+      "Visit Geology Museum learn canyon formation"
     ],
     "geohash": "9w2m0tjy",
     "collectionRadius": "regular",
@@ -105,8 +125,8 @@
     "collectionIds": [],
     "about": "Authentic 13th century Tuscan castle winery built over 15 years with 107 rooms, moat, and drawbridge.",
     "thingsToDoFromEditors": [
-      "Book the Diamond Estate Tour for a guided walk through the Great Hall and wine caves",
-      "Book the Seated Tasting Experience to sample five wines while exploring the castle at your own pace"
+      "Book Diamond Estate Tour for guided walk through castle and caves",
+      "Book Seated Tasting to sample wines while exploring castle"
     ],
     "geohash": "9qbg77r5",
     "collectionRadius": "regular",
@@ -119,11 +139,14 @@
     "longitude": -124.06501199403411,
     "address": "Fern Canyon\nOrick, CA, USA 95555",
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-fern-canyon.png?alt=media&token=ee569636-23e9-4f5a-87b9-43ca4de141a4",
-    "collectionIds": [],
+    "collectionIds": [
+      "movie-landmarks"
+    ],
     "about": "The unique landscape features 50-foot high walls covered in lush ferns and mosses. It served as a filming location for 1997 film The Lost World: Jurassic Park.",
     "thingsToDoFromEditors": [
-      "Be prepared to get wet and hike a moderate 1-mile loop through the heart of the canyon",
-      "Observe wildlife including Roosevelt elk and various bird species that inhabit the canyon and surrounding area"
+      "Hike the 1-mile loop through canyon (expect to get wet)",
+      "Spot Roosevelt elk and bird species",
+      "Recreate scenes from The Lost World: Jurassic Park"
     ],
     "geohash": "9prg8bfw",
     "collectionRadius": "regular",
@@ -137,12 +160,14 @@
     "address": "2800 E Observatory Rd, Los Angeles, CA 90027",
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-la-griffith-observatory.png?alt=media&token=2e79adae-9aca-4816-a6fd-b764bdb54819",
     "collectionIds": [
-      "stargazing-spots"
+      "stargazing-spots",
+      "movie-landmarks"
     ],
     "about": "Built on land donated by Griffith J. Griffith in 1896 to be \"a place where everyone could access the stars,\" the observatory opened in 1935.",
     "thingsToDoFromEditors": [
       "Stargaze through the public telescopes",
-      "Photograph the Hollywood Sign"
+      "Photograph the Hollywood Sign",
+      "Visit the planetarium where Mia and Seb danced in La La Land"
     ],
     "geohash": "9q5fh503",
     "collectionRadius": "regular",
@@ -158,12 +183,31 @@
     "collectionIds": [],
     "about": "Art museum opened in 1997, home to Van Gogh's \"Irises\" and the stunning Central Garden designed by Robert Irwin.",
     "thingsToDoFromEditors": [
-      "Admission is always free (only parking costs $20, or $15 after 3pm)",
-      "Take in panoramic views of Los Angeles from various viewpoints around the hilltop campus"
+      "Admission always free (parking $20, $15 after 3pm)",
+      "Take in LA panoramic views"
     ],
     "geohash": "9q5cb59t",
     "collectionRadius": "regular",
     "aspectRatio": 0.98
+  },
+  {
+    "id": "us-ca-losangeles-lax-airport",
+    "name": "Los Angeles International Airport",
+    "latitude": 33.942647021985145,
+    "longitude": -118.41070059628139,
+    "address": "Los Angeles International Airport\nLos Angeles, CA USA 90045",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-losangeles-lax-airport.png?alt=media&token=4bb19fef-d9bd-4af6-b08f-f6e2addb8d09",
+    "collectionIds": [
+      "airports-of-the-world"
+    ],
+    "about": "Iconic Theme Building designed in 1961 with its futuristic \"Jetsons\" architecture has become LA's aviation symbol and houses a restaurant on top.",
+    "thingsToDoFromEditors": [
+      "Visit the Theme Building's observation deck",
+      "Try In-N-Out Burger at Terminal 1"
+    ],
+    "collectionRadius": "xlarge",
+    "aspectRatio": 1,
+    "geohash": "9q5c17pf"
   },
   {
     "id": "us-ca-marshall-hog-island-oyster-farm",
@@ -175,8 +219,8 @@
     "collectionIds": [],
     "about": "Founded in the 1980s by marine biologists, this farm supplies fresh oysters to Bay Area restaurants including their Ferry Building oyster bar.",
     "thingsToDoFromEditors": [
-      "Dine outside and enjoy fresh oysters while looking out at Tomales Bay",
-      "Book a farm tour to learn about sustainable aquaculture and taste signature Sweetwater oysters"
+      "Dine outside with Tomales Bay views",
+      "Book farm tour learn sustainable aquaculture"
     ],
     "geohash": "9qb957px",
     "collectionRadius": "regular",
@@ -194,8 +238,8 @@
     ],
     "about": "Award-winning 1966 library nestled among towering redwoods with floor-to-ceiling windows and a wood-burning fireplace.",
     "thingsToDoFromEditors": [
-      "Sit by the large windows overlooking the creek and redwood groves",
-      "Walk around behind the library into the woods and breathe in the fresh air"
+      "Sit by windows overlooking creek",
+      "Walk behind library into woods"
     ],
     "geohash": "9q8zehwd",
     "collectionRadius": "regular",
@@ -232,8 +276,8 @@
     ],
     "about": "The General Sherman Tree is the world's largest living tree by volume at 52,508 cubic feet. It is estimated to be between 2,300 and 2,700 years old.",
     "thingsToDoFromEditors": [
-      "Walk the paved half-mile Congress Trail loop to see the General Sherman Tree and other giant sequoias",
-      "Hike the Big Trees Trail, an easy 1.2-mile loop through the Giant Forest grove"
+      "Walk Congress Trail loop to see General Sherman and giant sequoias",
+      "Hike Big Trees Trail through Giant Forest grove"
     ],
     "geohash": "9qe81erz",
     "collectionRadius": "regular",
@@ -289,8 +333,8 @@
     ],
     "about": "This giant sequoia fell across Crescent Meadow Road in 1937. Rather than removing it, park workers carved an 8-foot tunnel through it in 1938.",
     "thingsToDoFromEditors": [
-      "Drive through the iconic tunnel carved into this 2,000-year-old fallen sequoia and snap the classic photo",
-      "Hike to Moro Rock nearby for panoramic views of the Sierra Nevada and collect a stamp"
+      "Drive through tunnel carved into fallen sequoia",
+      "Hike to Moro Rock nearby for Sierra views"
     ],
     "geohash": "9q7xcw0w",
     "collectionRadius": "regular",
@@ -309,7 +353,7 @@
     "about": "San Francisco's largest urban farm at 3.5 acres, operated by volunteers who grow produce distributed free to the community for food security.",
     "thingsToDoFromEditors": [
       "Join Saturday volunteer mornings (10am) to help with planting and harvesting",
-      "Take in the sweeping city views from this hilltop farm"
+      "Take in sweeping city views from this hilltop farm"
     ],
     "geohash": "9q8ywkbx",
     "collectionRadius": "regular",
@@ -327,8 +371,8 @@
     ],
     "about": "Founded in 2014 in the Outer Sunset, this roaster is famous for the Snowy Plover affogato named after the endangered bird found at Ocean Beach.",
     "thingsToDoFromEditors": [
-      "Order the Snowy Plover (brown sugar ice cream + espresso) - their signature drink",
-      "Take your drink to Ocean Beach and relax by the water"
+      "Order the Snowy Plover (espresso + brown sugar ice cream)",
+      "Take your drink to Ocean Beach"
     ],
     "geohash": "9q8yuhq6",
     "collectionRadius": "regular",
@@ -346,7 +390,7 @@
     ],
     "about": "A former military site that became a public beach in 1897. It has one of the most iconic Golden Gate Bridge views.",
     "thingsToDoFromEditors": [
-      "Bring a picnic blanket and relax with the Golden Gate",
+      "Bring a picnic blanket and relax with Golden Gate",
       "Hike Batteries to Bluffs Trail along the cliffs"
     ],
     "geohash": "9q8zhb45",
@@ -365,7 +409,7 @@
     ],
     "about": "Neighborhood café opened in 2015, named \"Ballast\" to be a stable, grounding presence like ballast stabilizes ships.",
     "thingsToDoFromEditors": [
-      "Order a pour-over and enjoy the relaxed neighborhood vibe",
+      "Order a pour-over the relaxed neighborhood vibe",
       "Explore the shops and restaurants along W Portal Avenue"
     ],
     "geohash": "9q8ytjuk",
@@ -442,8 +486,8 @@
     ],
     "about": "Built in 1879, this Victorian greenhouse is Golden Gate Park's oldest building and houses over 2,000 rare tropical plants from around the world.",
     "thingsToDoFromEditors": [
-      "Visit the Aquatic Plants room to see giant water lilies and carnivorous plants",
-      "Come during holiday season for spectacular light displays on the building"
+      "Visit the Aquatic Plants room giant water lilies and carnivorous plants",
+      "Come during holiday season for spectacular light displays on building"
     ],
     "geohash": "9q8yvk71",
     "collectionRadius": "regular",
@@ -518,8 +562,8 @@
     ],
     "about": "One of SF's first community gardens from 1978, perched on terraced slopes with bay views on historic military grounds.",
     "thingsToDoFromEditors": [
-      "Walk through the terraced gardens then continue to Fort Mason waterfront",
-      "Visit in spring/summer to see the gardens at their most lush"
+      "Walk through terraced gardens then continue to Fort Mason waterfront",
+      "Visit in spring/summer the gardens at their most lush"
     ],
     "geohash": "9q8zn46g",
     "collectionRadius": "regular",
@@ -651,8 +695,8 @@
     ],
     "about": "Opened in 2000 as the first privately financed MLB ballpark since Dodger Stadium, home to the Giants and McCovey Cove's kayaking \"splash hit\" fans.",
     "thingsToDoFromEditors": [
-      "Order garlic fries and crab sandwich - two ballpark food legends",
-      "Walk along the San Francisco Bay Trail to see under the Bay Bridge"
+      "Order garlic fries and crab sandwich",
+      "Walk Bay Trail to see Bay Bridge"
     ],
     "geohash": "9q8yyvqd",
     "collectionRadius": "regular",
@@ -671,7 +715,7 @@
     "about": "Built 1892-1896, these seven Victorian houses (called \"Postcard Row\") survived the 1906 earthquake and became world-famous from Full House's opening credits.",
     "thingsToDoFromEditors": [
       "Bring a picnic blanket and snacks to enjoy the view from the park",
-      "Take photos from the Alamo Square lawn in late afternoon when the houses glow golden"
+      "Take photos Alamo Square lawn in late afternoon when the houses glow golden"
     ],
     "geohash": "9q8yvuzn",
     "collectionRadius": "regular",
@@ -689,7 +733,7 @@
     ],
     "about": "Stunning Greco-Roman monument designed by Bernard Maybeck for the 1915 Panama-Pacific Exposition, featuring a massive rotunda reflected in a lagoon.",
     "thingsToDoFromEditors": [
-      "Visit at golden hour for stunning light on the rotunda reflected in the lagoon",
+      "Visit at golden hour for stunning light on rotunda reflected in lagoon",
       "Walk around the entire lagoon to find different angles of the columns"
     ],
     "geohash": "9q8zj9gf",
@@ -727,7 +771,7 @@
     ],
     "about": "Opened in 2014 in an 1880s building, this certified green business features a vibrant rainbow wall and serves \"Masarap\" (Tagalog for \"delicious\").",
     "thingsToDoFromEditors": [
-      "Order their perfectly crafted flat white at the window bar",
+      "Order their perfectly crafted flat white at window bar",
       "Walk up to Bernal Heights Park for panoramic city views"
     ],
     "geohash": "9q8ywq31",
@@ -785,7 +829,7 @@
     "about": "One of San Francisco's most scenic cable car routes since 1891, climbing steep hills with stunning bay views and passing through Russian Hill.",
     "thingsToDoFromEditors": [
       "Board at Powell & Market early morning to avoid 2-hour waits",
-      "Stand on the outer running board going down Hyde Street for thrilling bay views"
+      "Stand on outer running board going down Hyde Street for thrilling bay views"
     ],
     "geohash": "9q8yyw92",
     "collectionRadius": "regular",
@@ -803,8 +847,8 @@
     ],
     "about": "Minimalist Polk Street café founded in 2013, named after a beloved family dog (Frank), not a saint.",
     "thingsToDoFromEditors": [
-      "Ask baristas about their rotating single-origin espresso - they love sharing details",
-      "Try the cortado to experience their roasting at its purest"
+      "Ask baristas about single-origin espresso",
+      "Try their signature pour-over"
     ],
     "geohash": "9q8zn0yz",
     "collectionRadius": "regular",
@@ -816,18 +860,18 @@
     "latitude": 37.616311330998435,
     "longitude": -122.38619540440072,
     "address": "San Francisco International Airport\nSan Francisco, CA, USA 94128",
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-san-francisco-airport.png?alt=media&token=3d7c59bc-5247-4293-8f26-f7eead61bd68",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-san-francisco-airport.png?alt=media&token=fa9bb36f-5a77-4ce3-bb92-1a95d34517e6",
     "collectionIds": [
       "airports-of-the-world"
     ],
     "about": "SFO was the first US airport with a museum (1980) and yoga room. Terminal 2's sustainable design won architectural awards for sustainability.",
     "thingsToDoFromEditors": [
-      "Explore the SFO Museum's rotating exhibits in all terminals - completely free",
-      "Try local favorites: Tony's Pizza Napoletana (Terminal 1) and Tartine (Terminal A)"
+      "Explore aviation museum in Terminal 3",
+      "Try Tony's Pizza (Terminal 1) or Tartine (Terminal A)"
     ],
     "geohash": "9q8vzpc4",
     "collectionRadius": "xlarge",
-    "aspectRatio": 1
+    "aspectRatio": 0.98
   },
   {
     "id": "us-ca-sf-sightglass-coffee",
@@ -860,8 +904,8 @@
     ],
     "about": "Intimate Mission District café known for innovative drinks like the \"Dirty Horchata\" (espresso with house-made horchata) and fresh donuts.",
     "thingsToDoFromEditors": [
-      "Order their donuts with specialty coffee for the perfect pairing",
-      "Note: This location has very short hours - if you want to try their coffee, check out another branch!"
+      "Try their signature coffee drinks",
+      "Check hours before visiting - this location keeps short hours"
     ],
     "geohash": "9q8yy6p7",
     "collectionRadius": "regular",
@@ -942,23 +986,6 @@
     "aspectRatio": 1
   },
   {
-    "id": "us-ca-tahoe-heavenly",
-    "name": "Heavenly Mountain Resort",
-    "latitude": 38.93744594803447,
-    "longitude": -119.92229922230797,
-    "address": "South Lake Tahoe, CA",
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-tahoe-heavenly.png?alt=media&token=3779b04b-3b6b-43a1-a495-9f9f8449594e",
-    "collectionIds": [],
-    "about": "Heavenly is one of the few resorts where you can ski across two states—California and Nevada—literally crossing state lines on skis.",
-    "thingsToDoFromEditors": [
-      "Take the Heavenly Gondola to the summit for panoramic Lake Tahoe views",
-      "Enjoy terrain for all skill levels from beginner runs like First Ride to challenging expert runs like Gunbarrel"
-    ],
-    "geohash": "9qftx075",
-    "collectionRadius": "xlarge",
-    "aspectRatio": 1
-  },
-  {
     "id": "us-ca-yosemite-bridalveil-fall",
     "name": "Bridalveil Fall",
     "latitude": 37.71669112399343,
@@ -971,7 +998,7 @@
     "about": "Tumbling 620 feet from a hanging valley formed by glaciers, the mist blows sideways in wind like a bride's veil, giving the waterfall its name.",
     "thingsToDoFromEditors": [
       "Feel the cool mist on warm spring and summer days",
-      "Spot rainbows in the mist on sunny afternoons",
+      "Spot rainbows in mist on sunny afternoons",
       "Combine with Tunnel View in one stop off Wawona Road"
     ],
     "geohash": "9qdyt6h5",
@@ -1079,6 +1106,428 @@
     "aspectRatio": 0.61
   },
   {
+    "id": "us-ca-losangeles-bradbury-building",
+    "name": "Bradbury Building",
+    "latitude": 34.050609885598796,
+    "longitude": -118.24785335496539,
+    "address": "304 S Broadway\nLos Angeles, CA USA 90013",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-losangeles-bradbury-building.png?alt=media&token=3e8ce06b-26e4-4e84-9d8f-840baef3b41c",
+    "collectionIds": [
+      "movie-landmarks"
+    ],
+    "about": "Built in 1893, this Victorian landmark showcases an extraordinary skylit atrium with ornate ironwork that became iconic in Ridley Scott's Blade Runner.",
+    "thingsToDoFromEditors": [
+      "Visit the stunning atrium (free, weekdays 9am-5pm)",
+      "Photograph the ornate iron railings and skylight",
+      "Ride the vintage open-cage elevators"
+    ],
+    "geohash": "9q5ctnwx",
+    "collectionRadius": "regular",
+    "aspectRatio": 1.87
+  },
+  {
+    "id": "us-california-mammoth-lakes-mammoth-mountain",
+    "name": "Mammoth Mountain",
+    "latitude": 37.651350630549004,
+    "longitude": -118.98608010265731,
+    "address": "10001 Minaret Rd\nMammoth Lakes, CA USA 93546",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-california-mammoth-lakes-mammoth-mountain.png?alt=media&token=a510dffceaa4aebc6c4742fe0aa5f3f5",
+    "collectionIds": [
+      "ski-resort-bucket-list"
+    ],
+    "about": "Built on an active volcano, Mammoth opened in 1955 and reaches 11,053 feet, offering California's highest summit skiing with 300+ days of annual sunshine.",
+    "thingsToDoFromEditors": [
+      "Check in at the Main Lodge for mountain conditions and lift status",
+      "Ride the gondola to the 11,053-foot summit for panoramic Sierra Nevada views",
+      "Explore the extensive terrain parks and halfpipes Mammoth is famous for"
+    ],
+    "geohash": "9qeqhqhz",
+    "collectionRadius": "xlarge",
+    "aspectRatio": 1
+  },
+  {
+    "id": "us-california-mill-valley-muir-woods",
+    "name": "Muir Woods",
+    "latitude": 37.89284920359298,
+    "longitude": -122.57249263230263,
+    "address": "1 Muir Woods Rd\nMill Valley, CA USA 94941",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-california-mill-valley-muir-woods.png?alt=media&token=beb64ba568ab7796b2156730f265a44c",
+    "collectionIds": [],
+    "about": "Named after naturalist John Muir and established in 1908, this ancient forest shelters coast redwoods up to 800 years old and towering over 250 feet tall.",
+    "thingsToDoFromEditors": [
+      "Stop at visitor center for trail maps and ranger-led program schedules",
+      "Walk the Main Trail Loop through cathedral grove of old-growth redwoods",
+      "Arrive early morning to experience the peaceful mist and fewer crowds"
+    ],
+    "geohash": "9q8zdf1m",
+    "collectionRadius": "regular",
+    "aspectRatio": 1.74
+  },
+  {
+    "id": "us-california-monterey-monterey-bay-aquarium",
+    "name": "Monterey Bay Aquarium",
+    "latitude": 36.61828130385295,
+    "longitude": -121.9019541983266,
+    "address": "886 Cannery Row\nMonterey, CA USA 93940",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-california-monterey-monterey-bay-aquarium.png?alt=media&token=b4d88475e6506ef543fdaab26fd69a4f",
+    "collectionIds": [],
+    "about": "Built on the site of the last sardine cannery in 1984, this aquarium pioneered kelp forest and jellyfish exhibits with stunning Monterey Bay views.",
+    "thingsToDoFromEditors": [
+      "Watch sea otters play during feeding time in two-story kelp forest exhibit",
+      "Walk through mesmerizing jellyfish galleries with ethereal lighting",
+      "the Open Sea exhibit's massive viewing window with sharks and sea turtles"
+    ],
+    "geohash": "9q92641s",
+    "collectionRadius": "regular",
+    "aspectRatio": 1.73
+  },
+  {
+    "id": "us-california-south-lake-tahoe-heavenly",
+    "name": "Heavenly",
+    "latitude": 38.95576044882974,
+    "longitude": -119.94359158449736,
+    "address": "1001 Heavenly Village Way\nSouth Lake Tahoe, CA USA 96150",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-california-south-lake-tahoe-heavenly.png?alt=media&token=8a6bfa92f666f587adaef345b4088b9f",
+    "collectionIds": [
+      "ski-resort-bucket-list"
+    ],
+    "about": "Opened in 1955, Heavenly straddles the California-Nevada state line with 4,800 acres of terrain and breathtaking views of deep blue Lake Tahoe below.",
+    "thingsToDoFromEditors": [
+      "Stop at base lodge for trail maps and check conditions on both state sides",
+      "Ride the gondola from downtown South Lake Tahoe up to the mountain",
+      "Ski runs overlooking Lake Tahoe for some of the world's best views while skiing"
+    ],
+    "geohash": "9qftweet",
+    "collectionRadius": "xlarge",
+    "aspectRatio": 0.99
+  },
+  {
+    "id": "us-co-denver-international-airport",
+    "name": "Denver International Airport",
+    "latitude": 39.863767821319726,
+    "longitude": -104.67813734436864,
+    "address": "Denver International Airport\nDenver, CO USA 80249",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-co-denver-international-airport.png?alt=media&token=f509a891-ab7e-42ee-88e1-ac87c5e01c91",
+    "collectionIds": [
+      "airports-of-the-world"
+    ],
+    "about": "Opened in 1995, its white tensile roof mimics the Rocky Mountains. At 53 square miles, it's the largest US airport by land area and second-largest globally.",
+    "thingsToDoFromEditors": [
+      "See the infamous Blue Mustang \"Blucifer\" sculpture",
+      "Try Root Down's farm-to-table food in Terminal C"
+    ],
+    "collectionRadius": "xlarge",
+    "aspectRatio": 0.97,
+    "geohash": "9xjdcbzx"
+  },
+  {
+    "id": "us-co-rocky-mountain-national-park-alberta-falls",
+    "name": "Alberta Falls",
+    "latitude": 40.30360857155947,
+    "longitude": -105.63777100268216,
+    "geohash": "9xj4hxd8",
+    "address": "Bear Lake Road, Estes Park, CO USA 80517",
+    "collectionIds": [
+      "rocky-mountain-must-visits"
+    ],
+    "about": "Alberta Falls drops 30 feet over rocky ledges and was named after Alberta Sprague, whose family built the original Sprague's Lodge near the falls in the early 1900s.",
+    "thingsToDoFromEditors": [
+      "Hike easy 1.7-mile trail from Glacier Gorge through pine forest",
+      "Visit in spring for peak snowmelt flow"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-co-rocky-mountain-national-park-alberta-falls.png?alt=media&token=bbb875b5d60d224071f92fa3a6d7d53d",
+    "aspectRatio": 1.8,
+    "collectionRadius": "regular"
+  },
+  {
+    "id": "us-co-rocky-mountain-national-park-bear-lake",
+    "name": "Bear Lake",
+    "latitude": 40.31378581833264,
+    "longitude": -105.65000643983466,
+    "geohash": "9xj4k8p1",
+    "address": "Bear Lake Road, Estes Park, CO USA 80517",
+    "collectionIds": [
+      "rocky-mountain-must-visits"
+    ],
+    "about": "Bear Lake was named by early explorers who spotted bears feeding on berries along its shores, and today its 0.6-mile loop is the most accessible hike in the park.",
+    "thingsToDoFromEditors": [
+      "Walk the easy 0.6-mile paved loop trail lake with stunning views of Hallett Peak",
+      "Arrive at sunrise for mirror-like reflections when the water is perfectly calm"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-co-rocky-mountain-national-park-bear-lake.png?alt=media&token=f641464647e3c30fb609882b03c6bdc8",
+    "aspectRatio": 0.64,
+    "collectionRadius": "regular"
+  },
+  {
+    "id": "us-co-rocky-mountain-national-park-dream-lake",
+    "name": "Dream Lake",
+    "latitude": 40.30961908307693,
+    "longitude": -105.65943754293633,
+    "geohash": "9xj4jkgj",
+    "address": "Bear Lake Road, Estes Park, CO USA 80517",
+    "collectionIds": [
+      "rocky-mountain-must-visits"
+    ],
+    "about": "Dream Lake sits at 9,850 feet in a glacial cirque beneath Hallett Peak's dramatic east face, and was named in 1914 by Enos Mills, the park's founding father.",
+    "thingsToDoFromEditors": [
+      "Hike 2.2-mile trail from Bear Lake (425ft gain) to alpine lake",
+      "Arrive early for parking"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-co-rocky-mountain-national-park-dream-lake.png?alt=media&token=6dbf61cbd68cba02a106a33991876245",
+    "aspectRatio": 0.65,
+    "collectionRadius": "regular"
+  },
+  {
+    "id": "us-co-rocky-mountain-national-park-longs-peak",
+    "name": "Longs Peak",
+    "latitude": 40.2548965439513,
+    "longitude": -105.61601697142392,
+    "geohash": "9xj3xf3m",
+    "address": "Longs Peak Road, Estes Park, CO USA 80517",
+    "collectionIds": [
+      "rocky-mountain-must-visits"
+    ],
+    "about": "Longs Peak rises to 14,259 feet and was named after Major Stephen Long who led an expedition that spotted it in 1820, though he never attempted to climb it.",
+    "thingsToDoFromEditors": [
+      "Start challenging 15-mile Keyhole Route from trailhead at 3am",
+      "Summit attempt requires early alpine start"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-co-rocky-mountain-national-park-longs-peak.png?alt=media&token=1bf33872f42bc0c1f84ab274c72ddc98",
+    "aspectRatio": 1.74,
+    "collectionRadius": "regularplus"
+  },
+  {
+    "id": "us-co-rocky-mountain-national-park-sprague-lake",
+    "name": "Sprague Lake",
+    "latitude": 40.32051316379384,
+    "longitude": -105.6048332807874,
+    "geohash": "9xj4p3px",
+    "address": "Bear Lake Road, Estes Park, CO USA 80517",
+    "collectionIds": [
+      "rocky-mountain-must-visits"
+    ],
+    "about": "Sprague Lake was created in 1915 by Abner Sprague as a trout hatchery, and today its wheelchair-accessible 0.9-mile loop offers some of the park's most peaceful views.",
+    "thingsToDoFromEditors": [
+      "Walk flat accessible trail with Continental Divide reflections",
+      "Best photos at sunrise"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-co-rocky-mountain-national-park-sprague-lake.png?alt=media&token=9453d6dc3deb020e4161d3b38b81726c",
+    "aspectRatio": 0.6,
+    "collectionRadius": "regular"
+  },
+  {
+    "id": "us-co-rocky-mountain-national-park-trail-ridge-road",
+    "name": "Trail Ridge Road (Alpine Visitor Center)",
+    "latitude": 40.44127046166831,
+    "longitude": -105.75481312090277,
+    "geohash": "9xj6m79w",
+    "address": "Trail Ridge Road, Estes Park, CO USA 80517",
+    "collectionIds": [
+      "rocky-mountain-must-visits"
+    ],
+    "about": "Trail Ridge Road reaches 12,183 feet and was completed in 1932, making it the highest continuous paved road in North America at the time of construction.",
+    "thingsToDoFromEditors": [
+      "Stop at Alpine Visitor Center at 11,796ft for exhibits",
+      "Drive 48-mile scenic road with views above treeline"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-co-rocky-mountain-national-park-trail-ridge-road.png?alt=media&token=f0e667515b3bff36948461ca8e56f551",
+    "aspectRatio": 0.63,
+    "collectionRadius": "regular"
+  },
+  {
+    "id": "us-colorado-aspen-aspen-snowmass",
+    "name": "Aspen Snowmass",
+    "latitude": 39.18627229883054,
+    "longitude": -106.81821644469038,
+    "address": "601 E Dean St\nAspen, CO USA 81611",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-colorado-aspen-aspen-snowmass.png?alt=media&token=831d7e71e96442c9c2f6db14b4740266",
+    "collectionIds": [
+      "ski-resort-bucket-list"
+    ],
+    "about": "Four mountains in one resort area since 1946, Aspen became a celebrity hotspot after hosting troops for mountain training during World War II training.",
+    "thingsToDoFromEditors": [
+      "Visit the visitor center for mountain maps and activity schedules",
+      "Ride the Silver Queen Gondola for panoramic views of the four mountains",
+      "Explore historic downtown Aspen with Victorian-era buildings and luxury shopping"
+    ],
+    "geohash": "9wuncm9k",
+    "collectionRadius": "xlarge",
+    "aspectRatio": 0.98
+  },
+  {
+    "id": "us-colorado-breckenridge-breckenridge",
+    "name": "Breckenridge",
+    "latitude": 39.482744025668524,
+    "longitude": -106.05948585331669,
+    "address": "1599 Summit County Rd 3\nBreckenridge, CO USA 80424",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-colorado-breckenridge-breckenridge.png?alt=media&token=e36525b78f46db720a2574cb8b8b7b92",
+    "collectionIds": [
+      "ski-resort-bucket-list"
+    ],
+    "about": "Founded in 1961 on a former gold mining site from the 1859 rush, Breckenridge sits at 9,600 feet and spans five peaks with charming Victorian Main Street.",
+    "thingsToDoFromEditors": [
+      "Visit the base village welcome center for mountain maps and lift ticket info",
+      "Ride the BreckConnect Gondola linking the town to Peak 8 base area",
+      "Walk Main Street preserved Victorian buildings and mining heritage"
+    ],
+    "geohash": "9xh8de9g",
+    "collectionRadius": "xlarge",
+    "aspectRatio": 0.99
+  },
+  {
+    "id": "us-colorado-vail-vail-mountain",
+    "name": "Vail Mountain",
+    "latitude": 39.642363744909936,
+    "longitude": -106.37306280218264,
+    "address": "241 S Frontage Rd W #8150\nVail, CO USA 81657",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-colorado-vail-vail-mountain.png?alt=media&token=8584ef3b6240012ad16609a11e793a9c",
+    "collectionIds": [
+      "ski-resort-bucket-list"
+    ],
+    "about": "Opened in 1962, Vail is America's largest ski resort with 5,317 skiable acres, famous for its legendary back bowls and European-inspired alpine village.",
+    "thingsToDoFromEditors": [
+      "Stop at visitor center at Vail Village for trail maps and mountain info",
+      "Ride the gondola up to explore the famous back bowls and Blue Sky Basin",
+      "Stroll through Vail Village for shops, dining, and European alpine atmosphere"
+    ],
+    "geohash": "9xh3e2tm",
+    "collectionRadius": "xlarge",
+    "aspectRatio": 0.98
+  },
+  {
+    "id": "us-fl-orlando-international-airport",
+    "name": "Orlando International Airport",
+    "latitude": 28.427033721341747,
+    "longitude": -81.31105845311968,
+    "address": "Orlando International Airport\nOrlando, FL USA 32827",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-fl-orlando-international-airport.png?alt=media&token=5391f365-59ce-44a2-af18-3d2219b88543",
+    "collectionIds": [
+      "airports-of-the-world"
+    ],
+    "about": "Code \"MCO\" comes from its former name McCoy Air Force Base. The massive Hyatt Regency inside is the largest airport hotel in America with 445 rooms.",
+    "thingsToDoFromEditors": [
+      "Ride the Hyatt's glass elevators through the atrium",
+      "Try Cask & Larder's Southern food in Terminal A"
+    ],
+    "collectionRadius": "xlarge",
+    "aspectRatio": 1,
+    "geohash": "djn1twzp"
+  },
+  {
+    "id": "us-florida-everglades-national-park-anhinga-trail",
+    "name": "Anhinga Trail",
+    "latitude": 25.38286569166472,
+    "longitude": -80.60563486595241,
+    "address": "Anhinga Trail\nHomestead, FL USA 33034",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-florida-everglades-national-park-anhinga-trail.png?alt=media&token=033415f81b11030213423a1c487e916a",
+    "collectionIds": [
+      "everglades-must-visits"
+    ],
+    "about": "Half-mile boardwalk trail offering the park's best wildlife viewing where alligators sun themselves mere feet from visitors and anhingas dive for fish.",
+    "thingsToDoFromEditors": [
+      "Arrive at sunrise for best wildlife activity and photography",
+      "Bring binoculars to spot wading birds and turtles"
+    ],
+    "geohash": "dhw8mubc",
+    "collectionRadius": "regular",
+    "aspectRatio": 1
+  },
+  {
+    "id": "us-florida-everglades-national-park-guy-bradley-visitor-center",
+    "name": "Guy Bradley Visitor Center",
+    "latitude": 25.141292546043946,
+    "longitude": -80.92389708111237,
+    "address": "Guy Bradley Visitor Center\nFlamingo, FL USA 33034",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-florida-everglades-national-park-guy-bradley-visitor-center.png?alt=media&token=247df79999acbf1414af6401463c41d3",
+    "collectionIds": [
+      "everglades-must-visits"
+    ],
+    "about": "Named after Guy Bradley, the first wildlife ranger killed in the line of duty in 1905 protecting birds from plume hunters, this visitor center sits at Florida's southern tip.",
+    "thingsToDoFromEditors": [
+      "Kayak the mangrove tunnels and backcountry waterways",
+      "Watch sunset over Florida Bay from the marina"
+    ],
+    "geohash": "dhqrn8c4",
+    "collectionRadius": "regular",
+    "aspectRatio": 0.99
+  },
+  {
+    "id": "us-florida-everglades-national-park-mahogany-hammock",
+    "name": "Mahogany Hammock",
+    "latitude": 25.322504681299318,
+    "longitude": -80.83364069825495,
+    "address": "Mahogany Hammock Trail\nHomestead, FL USA 33034",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-florida-everglades-national-park-mahogany-hammock.png?alt=media&token=cb32bc69a50b65e486c9e7e54b0ff236",
+    "collectionIds": [
+      "everglades-must-visits"
+    ],
+    "about": "Half-mile boardwalk through tropical hardwood hammock sheltering the largest living mahogany tree in the United States, estimated at over 130 years old with massive trunk.",
+    "thingsToDoFromEditors": [
+      "Walk the shaded boardwalk to find the champion mahogany tree",
+      "Look for air plants and ferns hanging from branches"
+    ],
+    "geohash": "dhw809fd",
+    "collectionRadius": "regular",
+    "aspectRatio": 1.31
+  },
+  {
+    "id": "us-florida-everglades-national-park-pa-hay-okee-overlook",
+    "name": "Pa-hay-okee Overlook",
+    "latitude": 25.44159063849541,
+    "longitude": -80.78401698827625,
+    "address": "Pa-hay-okee Overlook\nHomestead, FL USA 33034",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-florida-everglades-national-park-pa-hay-okee-overlook.png?alt=media&token=266232ac702aee7cca1747dc1f954965",
+    "collectionIds": [
+      "everglades-must-visits"
+    ],
+    "about": "Seminole name meaning 'grassy waters,' this elevated boardwalk offers the quintessential River of Grass view with endless sawgrass prairie and scattered tree islands to the horizon.",
+    "thingsToDoFromEditors": [
+      "Visit at golden hour for stunning light over the sawgrass",
+      "Scan the horizon for tree islands called hammocks"
+    ],
+    "geohash": "dhw89xwb",
+    "collectionRadius": "regular",
+    "aspectRatio": 0.62
+  },
+  {
+    "id": "us-florida-everglades-national-park-shark-valley-observation-tower",
+    "name": "Shark Valley Observation Tower",
+    "latitude": 25.656208848990094,
+    "longitude": -80.76660782876142,
+    "address": "Shark Valley Observation Tower\nMiami, FL USA 33194",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-florida-everglades-national-park-shark-valley-observation-tower.png?alt=media&token=14034f83a83aecb2723b2f15ad22fd04",
+    "collectionIds": [
+      "everglades-must-visits"
+    ],
+    "about": "Built in 1984, this 65-foot observation tower offers 360-degree views over the River of Grass after a 15-mile loop trail through sawgrass prairie and gator territory.",
+    "thingsToDoFromEditors": [
+      "Rent a bike or take the tram for the 15-mile loop to the tower",
+      "Climb to the top level for panoramic Everglades views"
+    ],
+    "geohash": "dhw9fned",
+    "collectionRadius": "regular",
+    "aspectRatio": 1.73
+  },
+  {
+    "id": "us-ga-atlanta-hartsfield-jackson-airport",
+    "name": "Hartsfield-Jackson Atlanta International Airport",
+    "latitude": 33.64012296901368,
+    "longitude": -84.42803394918447,
+    "address": "Hartsfield-Jackson Atlanta International Airport\nAtlanta, GA USA 30320",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ga-atlanta-hartsfield-jackson-airport.png?alt=media&token=436e2fd7-4311-42e6-b161-6c3eadc46397",
+    "collectionIds": [
+      "airports-of-the-world"
+    ],
+    "about": "World's busiest airport since 1998, handling over 100 million passengers annually. Named after two former Atlanta mayors who championed aviation.",
+    "thingsToDoFromEditors": [
+      "Try Paschal's fried chicken in Concourse A",
+      "Grab a Coca-Cola Freestyle at the Coca-Cola store"
+    ],
+    "collectionRadius": "xlarge",
+    "aspectRatio": 0.98,
+    "geohash": "djgzqgcr"
+  },
+  {
     "id": "us-hi-maui-kahekili-beach-park",
     "name": "Kahekili Beach Park",
     "latitude": 20.936568164369742,
@@ -1089,7 +1538,7 @@
     "about": "Named after Maui's last ruling chief, King Kahekili Nui ʻAhumanu. Also called \"Airport Beach\" after Ka'anapali Airport that operated 1961-1986.",
     "thingsToDoFromEditors": [
       "Snorkel with green sea turtles among the vibrant coral reefs (stay 10 feet away)",
-      "Parking at the free lot off Kai Ala Drive before 10AM"
+      "Parking at free lot off Kai Ala Drive before 10AM"
     ],
     "geohash": "8e8x477u",
     "collectionRadius": "regular",
@@ -1107,12 +1556,31 @@
     ],
     "about": "Hawaii's highest peak at 13,796 feet. The Keck Observatory here helped discover the supermassive black hole at our galaxy's center, earning a 2020 Nobel Prize.",
     "thingsToDoFromEditors": [
-      "Drive to the summit for sunset with a 4WD vehicle (required for the steep unpaved road) and witness one of the most spectacular sunset in the world.",
-      "Join the free nightly stargazing programs at the Visitor Information Station with telescopes and expert staff"
+      "Drive to summit with 4WD for spectacular sunset views",
+      "Join free nightly stargazing at Visitor Station"
     ],
     "geohash": "8e92y0u4",
     "collectionRadius": "regular",
     "aspectRatio": 1
+  },
+  {
+    "id": "us-il-chicago-ohare-airport",
+    "name": "Chicago O'Hare International Airport",
+    "latitude": 41.98076970279307,
+    "longitude": -87.90976475579723,
+    "address": "Chicago O'Hare International Airport\nChicago, IL USA 60666",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-il-chicago-ohare-airport.png?alt=media&token=92c1302d-3316-47c9-9abb-9d2a5dccdeac",
+    "collectionIds": [
+      "airports-of-the-world"
+    ],
+    "about": "Named after WWII Medal of Honor recipient Edward \"Butch\" O'Hare. The airport's iconic neon tunnel connects terminals with changing light displays.",
+    "thingsToDoFromEditors": [
+      "Walk through the psychedelic neon light tunnel",
+      "Try Garrett Popcorn or deep-dish pizza at Giordano's"
+    ],
+    "collectionRadius": "xlarge",
+    "aspectRatio": 1,
+    "geohash": "dp3qzd65"
   },
   {
     "id": "us-il-chicago-the-bean",
@@ -1124,7 +1592,7 @@
     "collectionIds": [],
     "about": "Cloud Gate, affectionately nicknamed 'The Bean,' cost $23 million to build. On windy days, you can hear the sculpture 'hum'.",
     "thingsToDoFromEditors": [
-      "Walk around the sculpture to see the skyline reflection change from every angle",
+      "Walk sculpture the skyline reflection change from every angle",
       "Visit at sunrise or sunset for the best lighting and fewer crowds"
     ],
     "geohash": "dp3wq0d8",
@@ -1144,7 +1612,7 @@
     "about": "Thrilling 1.5-mile climb with iron rungs and ladders bolted into exposed cliff faces, reaching a 520-foot summit with panoramic ocean views.",
     "thingsToDoFromEditors": [
       "Arrive before 7am to avoid waiting at the iron rungs sections",
-      "Wear gloves for better grip on the metal rungs and ladders"
+      "Wear gloves for better grip on metal rungs and ladders"
     ],
     "geohash": "drzs0r0b",
     "collectionRadius": "regular",
@@ -1221,7 +1689,7 @@
     "about": "Sand Beach’s sand is made largely of crushed shell fragments, giving it a slight pink tint. It is framed by cliffs and turquoise water.",
     "thingsToDoFromEditors": [
       "Walk the full shoreline curve for the classic beach view",
-      "Photograph waves against the surrounding granite cliffs"
+      "Photograph waves against the granite cliffs"
     ],
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-me-acadia-national-park-sand-beach-shoreline.png?alt=media&token=a8fc61d1-93c4-45a6-a540-620195727353",
     "aspectRatio": 1,
@@ -1262,6 +1730,45 @@
     "aspectRatio": 0.97
   },
   {
+    "id": "us-montana-big-sky-big-sky-resort",
+    "name": "Big Sky Resort",
+    "latitude": 45.28501524006928,
+    "longitude": -111.40180019955945,
+    "address": "50 Big Sky Resort Rd\nBig Sky, MT USA 59716",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-montana-big-sky-big-sky-resort.png?alt=media&token=ee2e4f121051ac783799a8d87c888d7d",
+    "collectionIds": [
+      "ski-resort-bucket-list"
+    ],
+    "about": "Opened in 1973, Big Sky markets as 'Biggest Skiing in America' with 5,850 acres of uncrowded terrain crowned by the iconic 11,166-foot Lone Peak.",
+    "thingsToDoFromEditors": [
+      "Check in at Mountain Village base for trail maps and Lone Peak tram status",
+      "Ride the Lone Peak Tram to the 11,166-foot summit for 360-degree views",
+      "Enjoy uncrowded runs with more skiable acres per skier than any major resort"
+    ],
+    "geohash": "c80c8gzs",
+    "collectionRadius": "xlarge",
+    "aspectRatio": 1.01
+  },
+  {
+    "id": "us-nv-lasvegas-harry-reid-airport",
+    "name": "Harry Reid International Airport",
+    "latitude": 36.08477666948465,
+    "longitude": -115.15103809531695,
+    "address": "Harry Reid International Airport\nLas Vegas, NV USA 89119",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-nv-lasvegas-harry-reid-airport.png?alt=media&token=5f781333-9c4e-4b6a-a7a1-ee0f9c475ff4",
+    "collectionIds": [
+      "airports-of-the-world"
+    ],
+    "about": "Renamed in 2021 after Senator Harry Reid. Famous for slot machines throughout terminals, making it the only major US airport where you can gamble.",
+    "thingsToDoFromEditors": [
+      "Try your luck at the airport slot machines",
+      "Grab a burger at Gordon Ramsay BurGR"
+    ],
+    "collectionRadius": "xlarge",
+    "aspectRatio": 0.99,
+    "geohash": "9qqj79j9"
+  },
+  {
     "id": "us-ny-brooklyn-janes-carousel",
     "name": "Jane's Carousel",
     "latitude": 40.70444184118497,
@@ -1272,11 +1779,30 @@
     "about": "Jane's Carousel is a century-old wood carousel built in 1922 that was rescued from a closed Ohio amusement park. It reopened to the public in 2011.",
     "thingsToDoFromEditors": [
       "Explore Brooklyn Bridge Park's waterfront and scenic views",
-      "Photograph the Manhattan skyline through the glass pavilion"
+      "Photograph the Manhattan skyline through glass pavilion"
     ],
     "geohash": "dr5rs602",
     "collectionRadius": "regular",
     "aspectRatio": 1
+  },
+  {
+    "id": "us-ny-newyork-jfk-airport",
+    "name": "John F. Kennedy International Airport",
+    "latitude": 40.65004236681849,
+    "longitude": -73.78843584023926,
+    "address": "John F. Kennedy International Airport\nQueens, NY USA 11430",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ny-newyork-jfk-airport.png?alt=media&token=4c536462-f1f0-4ead-b435-d5692f7cea00",
+    "collectionIds": [
+      "airports-of-the-world"
+    ],
+    "about": "Named after President Kennedy in 1963, just a month after his assassination. The TWA Flight Center designed by Eero Saarinen is now a hotel and landmark.",
+    "thingsToDoFromEditors": [
+      "Visit the iconic TWA Hotel and Flight Center",
+      "Try Shake Shack in Terminal 4"
+    ],
+    "collectionRadius": "xlarge",
+    "aspectRatio": 0.97,
+    "geohash": "dr5x2bhg"
   },
   {
     "id": "us-ny-nyc-bethesda-fountain",
@@ -1290,7 +1816,7 @@
     ],
     "about": "Iconic Central Park fountain featuring Angel of the Waters by Emma Stebbins, the first woman to receive a public art commission in NYC in 1863.",
     "thingsToDoFromEditors": [
-      "Listen to street musicians who perform around the fountain",
+      "Listen to street musicians who perform fountain",
       "Walk through the arcade to see the restored Minton tile ceiling"
     ],
     "geohash": "dr5ruy8p",
@@ -1309,8 +1835,8 @@
     ],
     "about": "One of Central Park's most iconic cast-iron bridges, built in 1862 and named for its graceful bow shape, spanning the Lake with stunning skyline views.",
     "thingsToDoFromEditors": [
-      "Visit at sunrise or golden hour for the best photos with soft light reflecting off the water",
-      "Walk to the center of the bridge for the classic view looking north toward the San Remo towers"
+      "Visit at sunrise for soft light photos",
+      "Walk to bridge center for view north"
     ],
     "geohash": "dr5ruxp2",
     "collectionRadius": "regular",
@@ -1328,8 +1854,8 @@
     ],
     "about": "Central Park's only formal garden with 6 acres divided into Italian, French, and English styles.",
     "thingsToDoFromEditors": [
-      "Visit in spring (April-May) to see the famous Tulip Festival with 20,000+ tulips",
-      "Enter through the Vanderbilt Gate at 105th Street, one of Central Park's most ornate entrances"
+      "Visit in spring for tulips and summer for roses",
+      "Enter through Vanderbilt Gate at 105th St"
     ],
     "geohash": "dr72j4m2",
     "collectionRadius": "regular",
@@ -1347,7 +1873,7 @@
     ],
     "about": "Renamed in 1994 for Jackie Kennedy Onassis, who jogged here regularly. The 1.58-mile track offers stunning Manhattan skyline views.",
     "thingsToDoFromEditors": [
-      "Walk or run the 1.58-mile path around the reservoir for beautiful skyline views",
+      "Walk or run the 1.58-mile path reservoir for beautiful skyline views",
       "Visit at sunrise or sunset for the most spectacular light on the water"
     ],
     "geohash": "dr72hbnj",
@@ -1364,8 +1890,8 @@
     "collectionIds": [],
     "about": "The world's largest performing arts center, built in the 1960s and home to the Met Opera, NY Philharmonic, NYC Ballet, and Juilliard.",
     "thingsToDoFromEditors": [
-      "Visit the David Rubenstein Atrium for free performances, coffee, and free WiFi in a beautiful public space",
-      "Come at night when the buildings are illuminated and the fountain is lit up for the most stunning photos"
+      "Visit Atrium for free performances and WiFi",
+      "Come at night when buildings are lit up"
     ],
     "geohash": "dr5ruqqg",
     "collectionRadius": "regular",
@@ -1381,8 +1907,8 @@
     "collectionIds": [],
     "about": "Floating park built on 132 tulip-shaped pillars rising from the Hudson River, opened in 2021.",
     "thingsToDoFromEditors": [
-      "Walk the undulating pathways through over 350 species of trees, shrubs, and perennials",
-      "Bring a blanket and relax on the grassy hills while watching boats pass by on the Hudson"
+      "Walk pathways through 350+ plant species",
+      "Relax on grassy hills with Hudson views"
     ],
     "geohash": "dr5rgbg5",
     "collectionRadius": "regular",
@@ -1398,8 +1924,8 @@
     "collectionIds": [],
     "about": "The Statue of Liberty was gifted by France to the United States in 1886. The seven spikes on her crown represent the seven continents and seven seas.",
     "thingsToDoFromEditors": [
-      "Take the ferry from Battery Park and climb the 354 steps to the crown for panoramic views of New York Harbor",
-      "Walk around Liberty Island's grounds to see the statue from different angles"
+      "Take ferry from Battery Park and climb 354 steps to crown",
+      "Book crown tickets months in advance"
     ],
     "geohash": "dr5r7p62",
     "collectionRadius": "regular",
@@ -1417,7 +1943,7 @@
     ],
     "about": "The only straight path in Central Park, this quarter-mile promenade features a majestic canopy of 150-year-old American elm trees and writer statues.",
     "thingsToDoFromEditors": [
-      "Visit Literary Walk at the southern end to see statues of famous writers like Shakespeare",
+      "Visit Literary Walk at southern end statues of famous writers like Shakespeare",
       "Walk under the elm canopy in fall when the golden leaves create a natural tunnel"
     ],
     "geohash": "dr5ruwrt",
@@ -1436,8 +1962,8 @@
     ],
     "about": "36-acre wilderness and one of North America's best birdwatching spots with over 230 species spotted here.",
     "thingsToDoFromEditors": [
-      "Bring binoculars during spring migration (April-May) for incredible birdwatching",
-      "Let yourself get lost on the winding paths - it's designed to feel like you've left the city"
+      "Bring binoculars for birdwatching",
+      "Get lost on winding paths away from city"
     ],
     "geohash": "dr5ruz2u",
     "collectionRadius": "regularplus",
@@ -1453,12 +1979,147 @@
     "collectionIds": [],
     "about": "Waterfront park built on the historic Domino Sugar Refinery site with Manhattan skyline views and preserved industrial artifacts.",
     "thingsToDoFromEditors": [
-      "Walk the elevated walkway for panoramic views of the Manhattan skyline and Williamsburg Bridge",
-      "Explore the preserved industrial artifacts scattered throughout the park"
+      "Walk elevated walkway for Manhattan skyline views",
+      "Play at vintage carnival games"
     ],
     "geohash": "dr5rsgfn",
     "collectionRadius": "regular",
     "aspectRatio": 1.2
+  },
+  {
+    "id": "us-or-crater-lake-national-park-cleetwood-cove",
+    "name": "Cleetwood Cove Trail",
+    "latitude": 42.97588316215738,
+    "longitude": -122.08934189754301,
+    "geohash": "c20n62zg",
+    "address": "Rim Drive, Crater Lake, OR USA 97604",
+    "collectionIds": [
+      "crater-lake-must-visits"
+    ],
+    "about": "Cleetwood Cove Trail is the only legal access to the lake shore, descending 700 feet in just 1.1 miles with 11 switchbacks carved into the caldera wall.",
+    "thingsToDoFromEditors": [
+      "Hike down the steep trail to swim in crystal clear 55°F water at shoreline",
+      "Take a boat tour to Wizard Island departing dock at bottom of the trail"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-or-crater-lake-national-park-cleetwood-cove.png?alt=media&token=7dc115915cb9f9a7430c3e76fbf49ff8",
+    "aspectRatio": 1.63,
+    "collectionRadius": "regular"
+  },
+  {
+    "id": "us-or-crater-lake-national-park-discovery-point",
+    "name": "Discovery Point",
+    "latitude": 42.924849588395205,
+    "longitude": -122.16216521066355,
+    "geohash": "c20n07kh",
+    "address": "Rim Drive, Crater Lake, OR USA 97604",
+    "collectionIds": [
+      "crater-lake-must-visits"
+    ],
+    "about": "Discovery Point is where prospector John Wesley Hillman became the first non-Native American to see Crater Lake on June 12, 1853, calling it 'Deep Blue Lake.'",
+    "thingsToDoFromEditors": [
+      "Hike 2.2-mile trail from Rim Village",
+      "Read signs about Hillman 1853 discovery"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-or-crater-lake-national-park-discovery-point.png?alt=media&token=5f8738a64885ffdeda94c4f0d28958e1",
+    "aspectRatio": 0.62,
+    "collectionRadius": "regular"
+  },
+  {
+    "id": "us-or-crater-lake-national-park-phantom-ship",
+    "name": "Phantom Ship",
+    "latitude": 42.902624550820285,
+    "longitude": -122.09695007242217,
+    "geohash": "c20mz9y0",
+    "address": "Crater Lake, OR USA 97604",
+    "collectionIds": [
+      "crater-lake-must-visits"
+    ],
+    "about": "Phantom Ship is a 400,000-year-old volcanic rock formation that predates the caldera collapse, making it the oldest exposed rock in Crater Lake National Park.",
+    "thingsToDoFromEditors": [
+      "View from Sun Notch for best ship-like formation perspective",
+      "Visit in morning when shadows make rock appear to float"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-or-crater-lake-national-park-phantom-ship.png?alt=media&token=0d2335385829e151903857058940ec2d",
+    "aspectRatio": 0.64,
+    "collectionRadius": "regularplus"
+  },
+  {
+    "id": "us-or-crater-lake-national-park-watchman-overlook",
+    "name": "Watchman Overlook",
+    "latitude": 42.94295461569216,
+    "longitude": -122.17243004804392,
+    "geohash": "c20n0t3s",
+    "address": "Rim Drive, Crater Lake, OR USA 97604",
+    "collectionIds": [
+      "crater-lake-must-visits"
+    ],
+    "about": "The Watchman sits at 8,013 feet elevation and was once a fire lookout station in the 1930s, now offering one of the best sunset views in the entire park.",
+    "thingsToDoFromEditors": [
+      "Hike short trail to fire lookout",
+      "Arrive hour before sunset for golden light on Wizard Island"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-or-crater-lake-national-park-watchman-overlook.png?alt=media&token=7add48f28110ea23391372a4dccf6ce9",
+    "aspectRatio": 0.61,
+    "collectionRadius": "regular"
+  },
+  {
+    "id": "us-or-crater-lake-national-park-wizard-island",
+    "name": "Wizard Island",
+    "latitude": 42.9396541043879,
+    "longitude": -122.1491726659568,
+    "geohash": "c20n2v0p",
+    "address": "Crater Lake, OR USA 97604",
+    "collectionIds": [
+      "crater-lake-must-visits"
+    ],
+    "about": "Wizard Island is a volcanic cinder cone that erupted after Crater Lake formed 7,700 years ago, rising 763 feet above the water with its own summit crater at the top.",
+    "thingsToDoFromEditors": [
+      "Take boat tour from Cleetwood Cove to island and hike summit",
+      "Book boat tours in advance"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-or-crater-lake-national-park-wizard-island.png?alt=media&token=af032099cc2776ee32593230bc021927",
+    "aspectRatio": 0.99,
+    "collectionRadius": "regularplus"
+  },
+  {
+    "id": "us-or-mounthood-timberline-lodge",
+    "name": "Timberline Lodge",
+    "latitude": 45.331132325794144,
+    "longitude": -121.71110162298127,
+    "address": "Timberline Lodge\nGovernment Camp, OR USA 97028",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-or-mounthood-timberline-lodge.png?alt=media&token=18e84f00-c6c5-41ad-8697-4307ec1a05b2",
+    "collectionIds": [
+      "movie-landmarks"
+    ],
+    "about": "Built in 1937 as a WPA project, this National Historic Landmark served as the exterior of the Overlook Hotel in Stanley Kubrick's The Shining.",
+    "thingsToDoFromEditors": [
+      "Stay overnight in the historic lodge (avoid Room 237!)",
+      "Photograph the iconic exterior from the parking area",
+      "Explore the handcrafted interior woodwork and art"
+    ],
+    "geohash": "c213ykk8",
+    "collectionRadius": "regular",
+    "aspectRatio": 1.0
+  },
+  {
+    "id": "us-pa-philadelphia-rocky-steps",
+    "name": "Rocky Steps",
+    "latitude": 39.96518230034687,
+    "longitude": -75.18040042691467,
+    "address": "2600 Benjamin Franklin Parkway\nPhiladelphia, PA USA 19130",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-pa-philadelphia-rocky-steps.png?alt=media&token=420b42f5-da1e-4e1b-aa2b-94c2a0c6b270",
+    "collectionIds": [
+      "movie-landmarks"
+    ],
+    "about": "The Philadelphia Museum of Art's 72 stone steps became a global symbol of determination after Sylvester Stallone's triumphant run in the 1976 film Rocky.",
+    "thingsToDoFromEditors": [
+      "Run up the 72 steps and raise your arms at the top",
+      "Take a photo with the Rocky statue nearby",
+      "Visit the world-class art museum inside"
+    ],
+    "geohash": "dr4e35rq",
+    "collectionRadius": "regular",
+    "aspectRatio": 1.6
   },
   {
     "id": "us-tx-big-bend-national-park-balanced-rock",
@@ -1472,11 +2133,10 @@
     ],
     "about": "Balanced Rock is a massive boulder that rests precariously on a narrow pedestal, sculpted by millions of years of erosion in the volcanic Grapevine Hills.",
     "thingsToDoFromEditors": [
-      "Hike the 2.2-mile trail with a short scramble over rocks at the end to reach the formation",
-      "Visit during golden hour for dramatic lighting on the balanced boulder and surrounding rocks"
+      "Hike 2.2-mile trail with short rock scramble at end"
     ],
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-tx-big-bend-national-park-balanced-rock.png?alt=media&token=0a02b3c4ebab1764284eceba2cbe99df",
-    "aspectRatio": 0.61,
+    "aspectRatio": 1.65,
     "collectionRadius": "regular"
   },
   {
@@ -1491,11 +2151,11 @@
     ],
     "about": "Chisos Basin sits at 5,400 feet elevation and is the only mountain lodge in the park, surrounded by dramatic peaks that create a natural amphitheater.",
     "thingsToDoFromEditors": [
-      "Drive the winding Basin Road from park headquarters to reach the lodge and trailhead area",
-      "Use the basin as a basecamp for day hikes including Window Trail, Lost Mine, and Emory Peak"
+      "Drive winding Basin Road to lodge and trailhead",
+      "Use as basecamp for Window, Lost Mine, Emory Peak hikes"
     ],
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-tx-big-bend-national-park-chisos-basin.png?alt=media&token=55c9b2013328ad88eceabfa23a34ff26",
-    "aspectRatio": 1.59,
+    "aspectRatio": 0.63,
     "collectionRadius": "regularplus"
   },
   {
@@ -1510,11 +2170,11 @@
     ],
     "about": "J.O. Langford built a bathhouse and post office here in 1909, charging visitors 25 cents to soak in the natural 105°F mineral springs along the Rio Grande.",
     "thingsToDoFromEditors": [
-      "Walk the short path from parking to the stone bathhouse ruins and soak in the natural spring pool",
-      "Explore the ruins and historic interpretive signs to learn about the early resort community"
+      "Walk short path to bathhouse ruins and soak in spring pool",
+      "Explore ruins and learn resort history"
     ],
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-tx-big-bend-national-park-hot-springs.png?alt=media&token=ee6ac28e506f8771250ac5eed15d34ee",
-    "aspectRatio": 0.99,
+    "aspectRatio": 1.01,
     "collectionRadius": "regular"
   },
   {
@@ -1529,12 +2189,12 @@
     ],
     "about": "Lost Mine Peak earned its name from legends of a rich Spanish silver mine that was sealed and hidden during an Apache raid in the mid-1800s.",
     "thingsToDoFromEditors": [
-      "Hike the 4.8-mile trail from Basin Road with gradual elevation gain to panoramic overlooks",
-      "Arrive at sunrise to see golden light sweep across Pine Canyon and eastern ridges",
-      "Bring layers since the elevation at the overlook can be windy and cooler than the desert floor"
+      "Hike 4.8-mile trail from Basin Road to panoramic overlooks",
+      "Start early morning to avoid heat",
+      "Bring layers for windy, cool overlook"
     ],
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-tx-big-bend-national-park-lost-mine-trail.png?alt=media&token=4169961bdbd3a2c7f43846f0174e056f",
-    "aspectRatio": 0.55,
+    "aspectRatio": 1.82,
     "collectionRadius": "regular"
   },
   {
@@ -1549,7 +2209,7 @@
     ],
     "about": "Santa Elena Canyon's walls rise over 1,500 feet, creating one of the most dramatic vertical rock faces anywhere along the entire Rio Grande corridor.",
     "thingsToDoFromEditors": [
-      "Walk the Santa Elena Canyon Trail for a close-up view of the canyon walls"
+      "Walk the Santa Elena Canyon Trail close-up view of the canyon walls"
     ],
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-tx-big-bend-national-park-santa-elena-canyon.png?alt=media&token=2f0f606f-bc36-404d-b2d2-3ca94f1429d7",
     "aspectRatio": 0.65,
@@ -1567,11 +2227,11 @@
     ],
     "about": "The Window is a dramatic V-shaped pour-off where Oak Creek drops 220 feet into the desert below, creating one of Big Bend's most iconic sunset views.",
     "thingsToDoFromEditors": [
-      "Hike the 5.6-mile Window Trail from Chisos Basin with a gentle downhill to the pour-off",
-      "Arrive 1-2 hours before sunset to watch golden light frame the desert through the opening"
+      "Hike 5.6-mile Window Trail from Chisos Basin to pour-off",
+      "Arrive 1-2 hours before sunset for golden light"
     ],
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-tx-big-bend-national-park-the-window.png?alt=media&token=0e8f28f7942ec787edaacaace218a4ac",
-    "aspectRatio": 0.51,
+    "aspectRatio": 1.94,
     "collectionRadius": "regular"
   },
   {
@@ -1586,9 +2246,8 @@
     ],
     "about": "Angels Landing got its name in 1916 when a Methodist minister said only angels could land on top. It's one of Zion’s most dramatic and unforgettable climbs.",
     "thingsToDoFromEditors": [
-      "Hike to Scout Lookout without a permit, and the Zion Shuttle will drop you off directly at The Grotto trailhead",
-      "Apply for an Angels Landing permit if you want to climb the chain section",
-      "Look for California condors near the ridge during midday thermal winds"
+      "Hike to Scout Lookout without permit (Shuttle drops at Grotto)",
+      "Book permit months ahead for final chain section"
     ],
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ut-zion-national-park-angels-landing.png?alt=media&token=6705d5c8-44a8-4ff2-b361-fe5c56acdfaf",
     "aspectRatio": 1.74,
@@ -1665,13 +2324,185 @@
     ],
     "about": "The Narrows is carved entirely by the Virgin River over millions of years. It offers a unique river-walk through soaring sandstone walls.",
     "thingsToDoFromEditors": [
-      "Rent water shoes and dry pants in Springdale if you want safer footing in the river",
-      "Check the daily flow rate because the park closes the route when the water becomes too high",
-      "Start early in the morning if you want more comfortable temperatures"
+      "Hike upstream from Temple of Sinawava",
+      "Check daily flow rate - park closes route when water too high"
     ],
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ut-zion-national-park-the-narrows.png?alt=media&token=7844355b-8fc1-4ca8-94cb-9e7aa3a51b39",
     "aspectRatio": 1.9,
     "collectionRadius": "regularplus"
+  },
+  {
+    "id": "us-utah-alta-alta-ski-area",
+    "name": "Alta Ski Area",
+    "latitude": 40.588691482999934,
+    "longitude": -111.6402717503904,
+    "address": "10260 E Little Cottonwood Canyon Rd\nAlta, UT USA 84092",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-utah-alta-alta-ski-area.png?alt=media&token=1e2ca18a5327c77cebb35604b07c9ddf",
+    "collectionIds": [
+      "ski-resort-bucket-list"
+    ],
+    "about": "Operating since 1939, Alta remains one of only three American resorts banning snowboarders, preserving its legendary powder skiing and old-school charm.",
+    "thingsToDoFromEditors": [
+      "Stop at base lodge for daily snow reports and skiers-only trail conditions",
+      "Ride the Collins or Wildcat lifts to access famous powder stashes",
+      "the traditional ski culture at one of the historic base lodges"
+    ],
+    "geohash": "9x0wgsfn",
+    "collectionRadius": "xlarge",
+    "aspectRatio": 1.01
+  },
+  {
+    "id": "us-utah-park-city-park-city-mountain",
+    "name": "Park City Mountain",
+    "latitude": 40.6514106102246,
+    "longitude": -111.50780967500746,
+    "address": "1345 Lowell Ave\nPark City, UT USA 84060",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-utah-park-city-park-city-mountain.png?alt=media&token=844c7f7fd0bb5140b4a40280099b079f",
+    "collectionIds": [
+      "ski-resort-bucket-list"
+    ],
+    "about": "America's largest ski resort by terrain opened in 1963 as a repurposed silver mine, later hosting freestyle and snowboarding events at the 2002 Olympics.",
+    "thingsToDoFromEditors": [
+      "Stop at base visitor center for trail maps and Olympic history displays",
+      "Ride the Town Lift connecting the resort to historic Main Street below",
+      "Walk Main Street preserved 1800s mining town buildings and local shops"
+    ],
+    "geohash": "9x0xq867",
+    "collectionRadius": "xlarge",
+    "aspectRatio": 1
+  },
+  {
+    "id": "us-wa-olympic-national-park-hoh-rain-forest",
+    "name": "Hoh Rain Forest",
+    "latitude": 47.86090559415114,
+    "longitude": -123.9348438288361,
+    "geohash": "c23m0kru",
+    "address": "Upper Hoh Road, Forks, WA USA 98331",
+    "collectionIds": [
+      "olympic-must-visits"
+    ],
+    "about": "Hoh Rain Forest receives over 140 inches of rain annually, creating one of the largest temperate rainforests in the U.S. with massive moss-covered trees.",
+    "thingsToDoFromEditors": [
+      "Walk Hall of Mosses Trail through moss-draped maples",
+      "Hike Spruce Nature Trail loop"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-wa-olympic-national-park-hoh-rain-forest.png?alt=media&token=6d0529eb39627599b284a5785e6fd701",
+    "aspectRatio": 1.65,
+    "collectionRadius": "regular"
+  },
+  {
+    "id": "us-wa-olympic-national-park-hurricane-ridge",
+    "name": "Hurricane Ridge",
+    "latitude": 47.93320100875042,
+    "longitude": -123.40945538399585,
+    "geohash": "c23x2zjh",
+    "address": "Hurricane Ridge Road, Port Angeles, WA USA 98362",
+    "collectionIds": [
+      "olympic-must-visits"
+    ],
+    "about": "Hurricane Ridge sits at 5,242 feet and offers one of the most accessible alpine viewpoints in Olympic National Park, named for its fierce winter winds.",
+    "thingsToDoFromEditors": [
+      "Drive scenic Hurricane Ridge Road from Port Angeles to visitor center",
+      "Hike Hurricane Hill Trail for mountain views"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-wa-olympic-national-park-hurricane-ridge.png?alt=media&token=2514bdd72c69a530b064c42b41b8b292",
+    "aspectRatio": 0.61,
+    "collectionRadius": "regularplus"
+  },
+  {
+    "id": "us-wa-olympic-national-park-lake-crescent",
+    "name": "Lake Crescent",
+    "latitude": 48.068121763828,
+    "longitude": -123.82348560176898,
+    "geohash": "c24p9j4n",
+    "address": "Highway 101, Port Angeles, WA USA 98363",
+    "collectionIds": [
+      "olympic-must-visits"
+    ],
+    "about": "Lake Crescent is a glacially-carved lake reaching 624 feet deep with exceptionally clear blue-green water that has remained largely unchanged for 7,000 years.",
+    "thingsToDoFromEditors": [
+      "Drive Highway 101 along lake for stunning mountain and water views",
+      "Stop at Lake Crescent Lodge or pullouts for photos"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-wa-olympic-national-park-lake-crescent.png?alt=media&token=2a366dd7047223ce6ed149cfc890eede",
+    "aspectRatio": 0.63,
+    "collectionRadius": "regularplus"
+  },
+  {
+    "id": "us-wa-olympic-national-park-marymere-falls",
+    "name": "Marymere Falls",
+    "latitude": 48.05105277315626,
+    "longitude": -123.7884117925889,
+    "geohash": "c24p6g5m",
+    "address": "Lake Crescent Rd, Port Angeles, WA 98363",
+    "collectionIds": [
+      "olympic-must-visits"
+    ],
+    "about": "Marymere Falls cascades 90 feet down a moss-covered cliff through old-growth forest near Lake Crescent, named after the sister of a local pioneer.",
+    "thingsToDoFromEditors": [
+      "Hike 1.8-mile trail from Storm King Station through rainforest",
+      "View 90-foot waterfall from bridge"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-wa-olympic-national-park-marymere-falls.png?alt=media&token=28b4b692f89adcce91a6459aaa283800",
+    "aspectRatio": 1.84,
+    "collectionRadius": "regular"
+  },
+  {
+    "id": "us-wa-olympic-national-park-ruby-beach",
+    "name": "Ruby Beach",
+    "latitude": 47.71091611479072,
+    "longitude": -124.41548823068888,
+    "geohash": "c23jv8yq",
+    "address": "Highway 101, Forks, WA USA 98331",
+    "collectionIds": [
+      "olympic-must-visits"
+    ],
+    "about": "Ruby Beach is named for the ruby-like crystals in its sand and features dramatic sea stacks, massive driftwood logs, and some of Washington's best tide pools.",
+    "thingsToDoFromEditors": [
+      "Walk down trail to explore tide pools and sea stacks at low tide",
+      "Watch sunset over sea stacks"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-wa-olympic-national-park-ruby-beach.png?alt=media&token=505aeb0539ac74cf77a51d57922cfeaf",
+    "aspectRatio": 0.64,
+    "collectionRadius": "regular"
+  },
+  {
+    "id": "us-wa-olympic-national-park-sol-duc-falls",
+    "name": "Sol Duc Falls",
+    "latitude": 47.950684815131815,
+    "longitude": -123.81506815396668,
+    "geohash": "c23x9p7w",
+    "address": "Sol Duc Hot Springs Road, Port Angeles, WA USA 98363",
+    "collectionIds": [
+      "olympic-must-visits"
+    ],
+    "about": "Sol Duc Falls drops 48 feet through a narrow canyon surrounded by old-growth forest, accessible via one of Olympic's most popular and scenic short trails.",
+    "thingsToDoFromEditors": [
+      "Hike easy 1.6-mile trail from Sol Duc trailhead through forest",
+      "Cross wooden bridge above falls for canyon view"
+    ],
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-wa-olympic-national-park-sol-duc-falls.png?alt=media&token=06fe2860d963f8756d23cca6fb45eba3",
+    "aspectRatio": 1.76,
+    "collectionRadius": "regular"
+  },
+  {
+    "id": "us-wa-seattle-seatac-airport",
+    "name": "Seattle-Tacoma International Airport",
+    "latitude": 47.45242828930967,
+    "longitude": -122.31010790239465,
+    "address": "Seattle-Tacoma International Airport\nSeaTac, WA USA 98158",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-wa-seattle-seatac-airport.png?alt=media&token=52f3312d-a5e9-42bf-9920-11ee77ccd399",
+    "collectionIds": [
+      "airports-of-the-world"
+    ],
+    "about": "Home to the first Starbucks airport location and a Sub Pop Records store. The airport's central marketplace features fresh Pike Place Market vendors.",
+    "thingsToDoFromEditors": [
+      "Visit the Sub Pop Records store (birthplace of grunge)",
+      "Try Ivar's clam chowder or Beecher's mac and cheese"
+    ],
+    "collectionRadius": "xlarge",
+    "aspectRatio": 0.99,
+    "geohash": "c23jby2q"
   },
   {
     "id": "us-wy-yellowstone-national-park-artist-point",
@@ -1704,8 +2535,8 @@
     ],
     "about": "The vivid rainbow colors come from heat-loving bacteria that thrive in mineral-rich water. It is the largest hot spring in the United States (3rd in the world).",
     "thingsToDoFromEditors": [
-      "Park at the Fairy Falls lot and walk the short uphill trail to the overlook",
-      "Photograph the full rainbow colors from the viewing platform",
+      "Park at Fairy Falls lot and walk the short uphill trail to the overlook",
+      "Photograph the full rainbow colors viewing platform",
       "Follow the trail toward Fairy Falls if you want to extend your visit"
     ],
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-wy-yellowstone-national-park-grand-prismatic-spring-overlook.png?alt=media&token=b6ef01e3-eda4-4e1d-9926-b68c2ade58ca",
@@ -1724,7 +2555,7 @@
     ],
     "about": "Hayden Valley sits near the center of Yellowstone and offers one of the park’s best places to see large bison herds roaming freely across open grasslands.",
     "thingsToDoFromEditors": [
-      "Drive through the valley early or late in the day for the best wildlife activity",
+      "Drive through valley early or late in day for the best wildlife activity",
       "Bring binoculars if you want a better chance of spotting bears or distant bison",
       "Use official pullouts when stopping so you do not block traffic"
     ],
@@ -1744,9 +2575,9 @@
     ],
     "about": "The valley is one of the best places in the world to see wild wolves, which were reintroduced to Yellowstone in 1995. It also supports massive bison herds that roam freely across the grasslands.",
     "thingsToDoFromEditors": [
-      "Drive through the valley early in the morning to see bison and other wildlife",
+      "Drive through valley early in morning bison and other wildlife",
       "Bring binoculars if you want a better chance of spotting wolves",
-      "Pull into official turnout areas when you stop so you do not block the road"
+      "Pull into official turnouts when you stop so you do not block the road"
     ],
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-wy-yellowstone-national-park-lamar-valley.png?alt=media&token=792b8b5e-2961-4bd8-8e01-800334cbfc57",
     "aspectRatio": 0.55,
@@ -1784,7 +2615,7 @@
     ],
     "about": "Norris Geyser Basin is Yellowstone’s hottest and most active thermal area, with underground temperatures reaching extremely high levels that shape the landscape.",
     "thingsToDoFromEditors": [
-      "Walk both the Porcelain Basin and Back Basin boardwalk loops from the main parking area",
+      "Walk both the Porcelain Basin and Back Basin boardwalk loops main parking",
       "Take photos of Steamboat Geyser, even if it is not erupting"
     ],
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-wy-yellowstone-national-park-norris-geyser-basin.png?alt=media&token=6f9d0aeb-f1e7-4c60-a948-0666a7159f72",
@@ -1803,13 +2634,144 @@
     ],
     "about": "Old Faithful erupts roughly every 60 to 90 minutes and has done so for over a century. Rangers can predict its eruption times with surprising accuracy thanks to long-term data.",
     "thingsToDoFromEditors": [
-      "Check the posted eruption prediction times at the visitor center before you walk to the viewing area",
-      "Arrive at the boardwalk early because the front rows fill quickly during peak hours",
-      "Visit the Old Faithful Visitor Education Center for geothermal exhibits"
+      "Check eruption prediction times at visitor center before walking",
+      "Arrive early for front row viewing"
     ],
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-wy-yellowstone-national-park-old-faithful-geyser.png?alt=media&token=0cac4c9f-342f-4ce4-9cad-bc83fdb2c38e",
     "aspectRatio": 1.8,
     "collectionRadius": "regular"
+  },
+  {
+    "id": "us-wyoming-jackson-jackson-hole",
+    "name": "Jackson Hole",
+    "latitude": 43.587538124210226,
+    "longitude": -110.82769952581074,
+    "address": "3395 Cody Ln\nTeton Village, WY USA 83025",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-wyoming-jackson-jackson-hole.png?alt=media&token=50619d800803880dc54808b1b60dfc34",
+    "collectionIds": [
+      "ski-resort-bucket-list"
+    ],
+    "about": "Known for America's steepest vertical drop at 4,139 feet, Jackson Hole opened in 1965 and remains legendary for expert terrain and the iconic aerial tram.",
+    "thingsToDoFromEditors": [
+      "Visit the base area info center for trail conditions and tram schedule",
+      "Ride the aerial tram 4,139 vertical feet to Rendezvous Mountain summit",
+      "Challenge yourself on Corbet's Couloir or other famous expert runs"
+    ],
+    "geohash": "9x9pynce",
+    "collectionRadius": "xlarge",
+    "aspectRatio": 1.03
+  },
+  {
+    "id": "us-ca-aguadulce-vasquez-rocks",
+    "name": "Vasquez Rocks",
+    "latitude": 34.48848914169669,
+    "longitude": -118.321533969165,
+    "address": "10700 W Escondido Canyon Rd\nAgua Dulce, CA USA 91390",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-aguadulce-vasquez-rocks.png?alt=media&token=05e08508-f874-46e8-805a-d06a3c68ea99",
+    "collectionIds": [
+      "movie-landmarks"
+    ],
+    "about": "Named after outlaw Tiburcio Vásquez, these dramatic angled sandstone formations have served as alien planets and Wild West backdrops in over 100 films.",
+    "thingsToDoFromEditors": [
+      "Climb to the top of the iconic 150-foot angled rock",
+      "Hike the 2.5-mile loop trail through formations",
+      "Recreate scenes from Star Trek or your favorite films"
+    ],
+    "geohash": "9q5u5w2y",
+    "collectionRadius": "regularplus",
+    "aspectRatio": 0.62
+  },
+  {
+    "id": "us-california-alameda-alameda-point-antiques-faire",
+    "name": "Alameda Point Antiques Faire",
+    "latitude": 37.79025324403177,
+    "longitude": -122.30273133249555,
+    "address": "2900 Navy Way\nAlameda, CA USA 94501",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-california-alameda-alameda-point-antiques-faire.png?alt=media&token=c38bc687ac9473beb4d69765f9e9a3cd",
+    "collectionIds": [],
+    "about": "Bay Area's largest antique fair held monthly since 1982 at a former airfield, where 800+ vendors and thousands of treasure hunters gather on first Sundays.",
+    "thingsToDoFromEditors": [
+      "Visit on first Sunday of the month (check schedule and buy tickets online)",
+      "Arrive early at 6am for the best vintage finds",
+      "Hunt for mid-century furniture, clothing, and jewelry"
+    ],
+    "geohash": "9q9nbztb",
+    "collectionRadius": "regular",
+    "aspectRatio": 0.61
+  },
+  {
+    "id": "us-california-dixon-araceli-farms",
+    "name": "Araceli Farms",
+    "latitude": 38.416854553203045,
+    "longitude": -121.84253661996317,
+    "address": "7389 Pitt School Rd\nDixon, CA USA 95620",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-california-dixon-araceli-farms.png?alt=media&token=7eb006f36d8a5fb4c8db253f81dee0b3",
+    "collectionIds": [],
+    "about": "Private membership farm that opens to the public each June for spectacular lavender bloom season, with endless purple fields perfect for photography.",
+    "thingsToDoFromEditors": [
+      "Reserve day pass in advance (farm open by reservation only)",
+      "Visit during June lavender bloom season for best views",
+      "Walk through purple lavender fields and take photos"
+    ],
+    "geohash": "9qc6e3sf",
+    "collectionRadius": "regular",
+    "aspectRatio": 0.63
+  },
+  {
+    "id": "us-california-sacramento-california-state-capitol",
+    "name": "California State Capitol",
+    "latitude": 38.57658575933158,
+    "longitude": -121.49331540157877,
+    "address": "1315 10th Street\nSacramento, CA USA 95814",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-california-sacramento-california-state-capitol.png?alt=media&token=d5c0405567dc5a66513113388d9958af",
+    "collectionIds": [],
+    "about": "Built between 1861-1874, this neoclassical masterpiece features a 210-foot dome covered in gold leaf and houses California's government in a 40-acre park.",
+    "thingsToDoFromEditors": [
+      "Take free guided tours of the historic building",
+      "Walk through Capitol Park to see trees from around the world",
+      "Visit the museum on the basement level"
+    ],
+    "geohash": "9qce7qek",
+    "collectionRadius": "regular",
+    "aspectRatio": 1.87
+  },
+  {
+    "id": "us-california-sacramento-old-sacramento-historic-district",
+    "name": "Old Sacramento Historic District",
+    "latitude": 38.58296612306799,
+    "longitude": -121.50501143221373,
+    "address": "Old Sacramento State Historic Park\nSacramento, CA USA 95814",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-california-sacramento-old-sacramento-historic-district.png?alt=media&token=1421d57dcb1fe745029a0b16732175e7",
+    "collectionIds": [],
+    "about": "Preserved 1850s Gold Rush district along the Sacramento River with wooden boardwalks, cobblestone streets, and 53 historic buildings from the 1840s-1870s.",
+    "thingsToDoFromEditors": [
+      "Walk the wooden boardwalks and explore historic storefronts",
+      "Visit California State Railroad Museum",
+      "Ride a historic riverboat or horse-drawn carriage"
+    ],
+    "geohash": "9qce7pff",
+    "collectionRadius": "regular",
+    "aspectRatio": 0.63
+  },
+  {
+    "id": "us-california-oakland-fentons-creamery",
+    "name": "Fentons Creamery",
+    "latitude": 37.82800367971416,
+    "longitude": -122.25004593894455,
+    "address": "4226 Piedmont Avenue\nOakland, CA USA 94611",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-california-oakland-fentons-creamery.png?alt=media&token=7422b53fddd1929bac216f84d3887e3c",
+    "collectionIds": [
+      "movie-landmarks"
+    ],
+    "about": "This 1894 Oakland landmark appeared in Pixar's Up during Carl and Russell's ice cream scene, famous for massive sundaes and handcrafted ice cream.",
+    "thingsToDoFromEditors": [
+      "Order the Black & Tan sundae (their signature creation)",
+      "Try the handmade ice cream made fresh daily on-site",
+      "Check out the vintage photos showing 130 years of history"
+    ],
+    "geohash": "9q9p4nkh",
+    "collectionRadius": "regular",
+    "aspectRatio": 0.97
   },
   {
     "id": "your-first-stamp",

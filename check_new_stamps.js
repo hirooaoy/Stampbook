@@ -51,6 +51,27 @@ async function checkNewStamps() {
     console.log('📊 Firebase: ' + firebaseStamps.length + ' stamps');
     console.log('📊 Local: ' + localStamps.length + ' stamps\n');
     
+    // Check for duplicates FIRST (critical check)
+    console.log('🔍 Checking for duplicate stamps...\n');
+    const duplicates = await checkForDuplicateStamps(firebaseStamps);
+    
+    if (duplicates.length > 0) {
+      console.log('❌ CRITICAL: Found ' + duplicates.length + ' duplicate stamp(s)!\n');
+      duplicates.forEach(dupe => {
+        console.log('⚠️  "' + dupe.name + '" appears ' + dupe.count + ' times:');
+        dupe.stamps.forEach(s => {
+          console.log('   - ID: ' + s.id);
+          console.log('     GPS: ' + s.latitude + ', ' + s.longitude);
+        });
+        console.log('');
+      });
+      console.log('🛑 FIX REQUIRED: Run "node remove_duplicate_stamp.js <stamp-id>" to remove duplicates');
+      console.log('   Choose the stamp ID that has NO collectors (check Firebase console)\n');
+      process.exit(1);
+    } else {
+      console.log('✅ No duplicates found\n');
+    }
+    
     // Find what's new
     const localStampIds = new Set(localStamps.map(s => s.id));
     const newStamps = firebaseStamps.filter(s => !localStampIds.has(s.id));
@@ -218,6 +239,31 @@ async function checkNewStamps() {
     console.error('❌ Error:', error);
     process.exit(1);
   }
+}
+
+// Helper function to check for duplicate stamps
+async function checkForDuplicateStamps(stamps) {
+  const nameMap = {};
+  const duplicates = [];
+  
+  stamps.forEach(stamp => {
+    if (!nameMap[stamp.name]) {
+      nameMap[stamp.name] = [];
+    }
+    nameMap[stamp.name].push(stamp);
+  });
+  
+  Object.entries(nameMap).forEach(([name, stampList]) => {
+    if (stampList.length > 1) {
+      duplicates.push({
+        name: name,
+        count: stampList.length,
+        stamps: stampList
+      });
+    }
+  });
+  
+  return duplicates;
 }
 
 checkNewStamps();

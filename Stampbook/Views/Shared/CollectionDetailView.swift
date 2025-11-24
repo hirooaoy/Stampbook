@@ -15,7 +15,7 @@ struct CollectionDetailView: View {
     
     // Adaptive grid: iPhone shows 2 columns (~390px / 160 = 2), iPad shows 4-6 columns
     private let columns = [
-        GridItem(.adaptive(minimum: 160), spacing: 16)
+        GridItem(.adaptive(minimum: 160), spacing: 4)
     ]
     
     var body: some View {

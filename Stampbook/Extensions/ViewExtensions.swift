@@ -27,5 +27,19 @@ extension View {
     func adaptiveHorizontalPadding(_ iPhone: CGFloat = 24) -> some View {
         self.padding(.horizontal, isIPad ? iPhone * 2 : iPhone)
     }
+    
+    /// Adds appropriate background for sheet content with NavigationStack
+    /// iOS 26+ has native semi-transparent sheet backgrounds (looks great!)
+    /// iOS 18.6-25 have broken/missing backgrounds, so we add explicit background
+    @ViewBuilder
+    func sheetContentBackground() -> some View {
+        if #available(iOS 26.0, *) {
+            // iOS 26+ handles sheet backgrounds automatically with nice semi-transparency
+            self
+        } else {
+            // iOS 18.6-25: Fix missing background bug
+            self.background(Color(uiColor: .systemBackground))
+        }
+    }
 }
 

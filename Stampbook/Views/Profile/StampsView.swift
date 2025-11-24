@@ -9,6 +9,7 @@ struct StampsView: View {
     @EnvironmentObject var followManager: FollowManager
     @Environment(\.colorScheme) var colorScheme
     @Binding var shouldResetNavigation: Bool // Binding to reset navigation when tab is selected
+    @Binding var deepLinkedStampId: String? // For widget deep linking
     @State private var selectedTab: StampTab = .all
     
     // SHEET MANAGEMENT: This view has 12 sheet modifiers which triggers SwiftUI warnings
@@ -64,6 +65,29 @@ struct StampsView: View {
                     }
                 }
             }
+            .onChange(of: deepLinkedStampId) { _, stampId in
+                guard let stampId = stampId else { return }
+                
+                Logger.info("🔗 [StampsView] Deep link detected for stamp: \(stampId)", category: "DeepLink")
+                
+                // Capture stampsManager before Task
+                let manager = stampsManager
+                
+                // Fetch the stamp and open detail sheet
+                Task {
+                    let stamps = await manager.fetchStamps(ids: [stampId])
+                    await MainActor.run {
+                        if let stamp = stamps.first {
+                            welcomeStamp = stamp // Opens the sheet
+                            deepLinkedStampId = nil // Clear so it can be triggered again
+                            Logger.success("✅ [StampsView] Opened stamp detail for: \(stamp.name)", category: "DeepLink")
+                        } else {
+                            Logger.warning("⚠️ [StampsView] Could not find stamp: \(stampId)", category: "DeepLink")
+                            deepLinkedStampId = nil
+                        }
+                    }
+                }
+            }
     }
     
     // MARK: - Top Bar
@@ -103,7 +127,7 @@ struct StampsView: View {
             Button(action: {
                 showPersonalInviteSheet = true
             }) {
-                Image(systemName: "link.circle")
+                Image(systemName: "square.and.arrow.up")
                     .font(.system(size: 24))
                     .foregroundColor(.primary)
                     .frame(width: 44, height: 44)  // Larger tap target
@@ -116,7 +140,7 @@ struct StampsView: View {
             Button(action: {
                 showEditProfile = true
             }) {
-                Image(systemName: "pencil.circle")
+                Image(systemName: "gearshape")
                     .font(.system(size: 24))
                     .foregroundColor(.primary)
                     .frame(width: 44, height: 44)  // Larger tap target
@@ -532,7 +556,7 @@ struct StampsView: View {
         }
     }
     
-    private var content: some View {
+    private var navigationContent: some View {
         NavigationStack(path: $navigationPath) {
             VStack(spacing: 0) {
                 topBar
@@ -551,6 +575,12 @@ struct StampsView: View {
                     initialTab: destination.initialTab
                 )
             }
+        }
+    }
+    
+    private var content: some View {
+        Group {
+            navigationContent
         }
         .toolbar(.hidden, for: .navigationBar)
         // MARK: - Cache Follow Counts
@@ -605,26 +635,23 @@ struct StampsView: View {
                     print("📊 [StampsView]   \(cachedUserId): followers=\(counts.followers), following=\(counts.following)")
                 }
                 
-                // Check if follow counts actually changed (indicating a follow/unfollow occurred)
-                let oldFollowerCount = oldProfile?.followerCount ?? 0
-                let oldFollowingCount = oldProfile?.followingCount ?? 0
-                let countsChanged = profile.followerCount != oldFollowerCount || profile.followingCount != oldFollowingCount
+                // Always trust Firebase profile data over disk cache (prevents stale cache bugs)
+                // The cache exists to show instant data on cold start, but Firebase is source of truth
+                let cachedFollowerCount = followManager.followCounts[userId]?.followers ?? -1
+                let cachedFollowingCount = followManager.followCounts[userId]?.following ?? -1
+                let cacheOutdated = cachedFollowerCount != profile.followerCount || cachedFollowingCount != profile.followingCount
                 
-                print("📊 [StampsView] Counts changed? \(countsChanged)")
+                print("📊 [StampsView] Cache outdated? \(cacheOutdated)")
+                print("📊 [StampsView] Cached: followers=\(cachedFollowerCount), following=\(cachedFollowingCount)")
+                print("📊 [StampsView] Firebase: followers=\(profile.followerCount), following=\(profile.followingCount)")
                 
-                if countsChanged {
-                    // Follow counts changed - always update cache with fresh Firebase data
-                    print("📊 [StampsView] ✅ Profile follow counts CHANGED - updating cache")
-                    print("📊 [StampsView] Old: followers=\(oldFollowerCount), following=\(oldFollowingCount)")
-                    print("📊 [StampsView] New: followers=\(profile.followerCount), following=\(profile.followingCount)")
+                if cacheOutdated || followManager.followCounts[userId] == nil {
+                    // Update cache with fresh Firebase data
+                    print("📊 [StampsView] ✅ Updating cache with Firebase data")
                     followManager.updateFollowCounts(userId: userId, followerCount: profile.followerCount, followingCount: profile.followingCount)
                     print("📊 [StampsView] Cache update complete")
-                } else if followManager.followCounts[userId] == nil {
-                    // No change in counts, but cache is empty - initialize it
-                    print("📊 [StampsView] ✅ No count change, but cache empty - initializing")
-                    followManager.updateFollowCounts(userId: userId, followerCount: profile.followerCount, followingCount: profile.followingCount)
                 } else {
-                    print("📊 [StampsView] ⏭️  No count change and cache exists - skipping update")
+                    print("📊 [StampsView] ⏭️  Cache already matches Firebase - skipping update")
                 }
             } else {
                 print("📊 [StampsView] ⚠️  Missing profile or userId - skipping")
@@ -688,7 +715,7 @@ struct StampsView: View {
         .sheet(isPresented: $showForCreators) {
             ForCreatorsView()
         }
-        .sheet(item: $welcomeStamp) { stamp in
+        .fullScreenCover(item: $welcomeStamp) { stamp in
             // Sheet opens when welcomeStamp is set, closes when set to nil
             NavigationStack {
                 StampDetailView(
@@ -697,6 +724,7 @@ struct StampsView: View {
                     userLocation: nil,
                     showBackButton: false
                 )
+                .sheetContentBackground()
                 .environmentObject(stampsManager)
                 .environmentObject(authManager)
                 .environmentObject(MapCoordinator())
@@ -750,7 +778,7 @@ struct StampsView: View {
         
         // Adaptive grid: iPhone shows 2 columns, iPad shows 4-6 columns
         private let columns = [
-            GridItem(.adaptive(minimum: 160), spacing: 16)
+            GridItem(.adaptive(minimum: 160), spacing: 4)
         ]
         
         // Get collected stamps sorted by date (latest first)
@@ -789,7 +817,20 @@ struct StampsView: View {
                         VStack(spacing: 16) {
                             Spacer()
                             
-                            // Gift icon button
+                            VStack(spacing: 0) {
+                                // Gift icon (non-interactive display)
+                                Image(systemName: "gift.fill")
+                                    .font(.system(size: 80))
+                                    .foregroundColor(.red)
+                                    .frame(width: 120, height: 120)
+                                
+                                Text("Here's a little something for you")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                    .multilineTextAlignment(.center)
+                            }
+                            
+                            // Claim button
                             Button(action: {
                                 // Fetch welcome stamp and show it
                                 Task {
@@ -800,22 +841,15 @@ struct StampsView: View {
                                     }
                                 }
                             }) {
-                                Image(systemName: "gift.fill")
-                                    .font(.system(size: 80))
-                                    .foregroundColor(.red)
-                                    .frame(width: 120, height: 120)
+                                Text("Claim gift")
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                                    .frame(maxWidth: 200)
+                                    .padding(.vertical, 14)
+                                    .padding(.horizontal, 40)
+                                    .background(Color.blue)
+                                    .cornerRadius(12)
                             }
-                            .buttonStyle(PlainButtonStyle())
-                            
-                            Text("Claim your first stamp")
-                                .font(.title2)
-                                .fontWeight(.semibold)
-                            
-                            Text("Tap the icon to collect your first stamp")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal, 40)
                             
                             Spacer()
                         }
@@ -1250,3 +1284,4 @@ struct StampsView: View {
         }
     }
 }
+

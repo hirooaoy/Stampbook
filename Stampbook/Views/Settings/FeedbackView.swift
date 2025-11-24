@@ -66,6 +66,7 @@ struct SimpleFeedbackView: View {
                 Text(errorMessage)
             }
             .toolbar(.visible, for: .tabBar)
+            .sheetContentBackground() // iOS 18.6 compatibility: Adds background to NavigationStack in sheet
         }
     }
     
@@ -167,6 +168,7 @@ struct SimpleProblemReportView: View {
                 Text(errorMessage)
             }
             .toolbar(.visible, for: .tabBar)
+            .sheetContentBackground() // iOS 18.6 compatibility: Adds background to NavigationStack in sheet
         }
     }
     
@@ -271,6 +273,7 @@ struct SimpleUserReportView: View {
                 Text(errorMessage)
             }
             .toolbar(.visible, for: .tabBar)
+            .sheetContentBackground() // iOS 18.6 compatibility: Adds background to NavigationStack in sheet
         }
     }
     
@@ -381,6 +384,7 @@ struct SuggestEditView: View {
                 Text(errorMessage)
             }
             .toolbar(.visible, for: .tabBar)
+            .sheetContentBackground() // iOS 18.6 compatibility: Adds background to NavigationStack in sheet
         }
     }
     
@@ -491,6 +495,7 @@ struct SuggestCollectionEditView: View {
                 Text(errorMessage)
             }
             .toolbar(.visible, for: .tabBar)
+            .sheetContentBackground() // iOS 18.6 compatibility: Adds background to NavigationStack in sheet
         }
     }
     
@@ -598,6 +603,7 @@ struct AccountDeletionRequestView: View {
                 Text(errorMessage)
             }
             .toolbar(.visible, for: .tabBar)
+            .sheetContentBackground() // iOS 18.6 compatibility: Adds background to NavigationStack in sheet
         }
     }
     
@@ -705,6 +711,7 @@ struct DataDownloadRequestView: View {
                 Text(errorMessage)
             }
             .toolbar(.visible, for: .tabBar)
+            .sheetContentBackground() // iOS 18.6 compatibility: Adds background to NavigationStack in sheet
         }
     }
     

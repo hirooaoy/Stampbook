@@ -364,8 +364,11 @@ struct UserProfileView: View {
         .onAppear {
             // Load user profile
             print("👤 [UserProfileView] onAppear for userId: \(userId)")
-            // ✅ FIX: Pass isCurrentUser: false to prevent clearing feed cache when viewing other users
-            profileManager.loadProfile(userId: userId, isCurrentUser: isCurrentUser)
+            // ✅ FIX: Always pass isCurrentUser: false to prevent clearing feed cache
+            // UserProfileView uses a local ProfileManager for VIEWING profiles only
+            // The global ProfileManager (currentUserProfileManager) manages the current user's profile
+            // Even if viewing your own profile, this local ProfileManager should NOT post profileDidUpdate
+            profileManager.loadProfile(userId: userId, isCurrentUser: false)
             
             // Load user's collected stamps
             loadUserStamps()
@@ -484,7 +487,7 @@ struct UserProfileView: View {
         
         // Adaptive grid: iPhone shows 2 columns, iPad shows 4-6 columns
         private let columns = [
-            GridItem(.adaptive(minimum: 160), spacing: 16)
+            GridItem(.adaptive(minimum: 160), spacing: 4)
         ]
         
         // Get collected stamps sorted by date (latest first)

@@ -120,12 +120,16 @@ service cloud.firestore {
       allow read: if request.auth != null;
       // Validation: Require text, userId, postId, timestamps
       // Rate limiting note: Max comment length prevents storage abuse
+      // @mentions: Optional mentionedUserIds array (max 3 mentions per comment)
       allow create: if request.auth != null 
         && request.resource.data.userId == request.auth.uid
         && request.resource.data.text is string
         && request.resource.data.text.size() > 0
         && request.resource.data.text.size() <= 1000  // Max 1000 chars prevents abuse
-        && request.resource.data.createdAt is timestamp;
+        && request.resource.data.createdAt is timestamp
+        && (!('mentionedUserIds' in request.resource.data) ||  // Optional field
+            (request.resource.data.mentionedUserIds is list
+             && request.resource.data.mentionedUserIds.size() <= 3));  // Max 3 mentions (spam prevention)
       allow delete: if request.auth != null && 
                        (resource.data.userId == request.auth.uid ||  // Your own comment
                         resource.data.postOwnerId == request.auth.uid);  // Or your post

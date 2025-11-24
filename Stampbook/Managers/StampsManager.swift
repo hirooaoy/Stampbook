@@ -2,6 +2,10 @@ import Foundation
 import Combine
 import MapKit
 
+#if canImport(WidgetKit)
+import WidgetKit
+#endif
+
 class StampsManager: ObservableObject {
     // Debug flag - set to true to enable debug logging
     private let DEBUG_STAMPS = true
@@ -59,6 +63,16 @@ class StampsManager: ObservableObject {
                 self?.objectWillChange.send()
             }
             .store(in: &cancellables)
+        
+        // Listen for user stamps loaded notification (for widget sync)
+        NotificationCenter.default.addObserver(
+            forName: .userStampsDidLoad,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            print("🔔 [StampsManager] Received userStampsDidLoad notification")
+            self?.syncWidgetData()
+        }
         
         if DEBUG_STAMPS {
             print("✅ [StampsManager] init() completed (collection load is async)")
@@ -544,6 +558,7 @@ class StampsManager: ObservableObject {
                 await reconcileUserStats(userId: userId, profileManager: profileManager)
             }
         }
+        // Note: Widget sync happens automatically via .userStampsDidLoad notification
     }
     
     // MARK: - User Actions
@@ -562,6 +577,9 @@ class StampsManager: ObservableObject {
             await MainActor.run {
                 userCollection.collectStamp(stamp.id, userId: userId, userRank: nil)
             }
+            
+            // Sync to widget immediately after collecting
+            syncWidgetData()
             
             // Notify feed that a stamp was collected (clears cache for auto-refresh)
             NotificationCenter.default.post(name: .stampDidCollect, object: nil)
@@ -663,6 +681,83 @@ class StampsManager: ObservableObject {
             await MainActor.run {
                 _ = stampStatistics.removeValue(forKey: stampId)
             }
+        }
+    }
+    
+    // MARK: - Widget Integration
+    
+    /// Sync collected stamps to widget data
+    /// Converts CollectedStamps to lightweight WidgetStamps and saves to App Group
+    func syncWidgetData() {
+        Task {
+            let widgetStamps: [WidgetStamp] = await MainActor.run {
+                // Get stamps with cached images
+                let stamps = userCollection.collectedStamps.compactMap { collectedStamp in
+                    // Parse name from stamp ID (e.g., "us-ca-san-francisco-golden-gate-bridge" -> "Golden Gate Bridge")
+                    let stampName = collectedStamp.stampId
+                        .split(separator: "-")
+                        .dropFirst(3) // Drop country, state, city
+                        .map { String($0).capitalized }
+                        .joined(separator: " ")
+                    
+                    return WidgetStamp(
+                        id: collectedStamp.stampId,
+                        name: stampName.isEmpty ? "Stamp" : stampName,
+                        collectedDate: collectedStamp.collectedDate,
+                        imageFileName: "\(collectedStamp.stampId).png"
+                    )
+                }
+                
+                print("🔔 [Widget] Syncing \(stamps.count) stamps to widget")
+                return stamps
+            }
+            
+            // Copy images to shared container in background
+            for stamp in widgetStamps {
+                await copyStampImageToSharedContainer(stampId: stamp.id)
+            }
+            
+            // Save to App Group
+            WidgetDataManager.shared.saveStampsForWidget(widgetStamps)
+            
+            // Trigger widget refresh
+            #if canImport(WidgetKit)
+            WidgetCenter.shared.reloadAllTimelines()
+            print("✅ [Widget] Widget timelines reloaded")
+            #endif
+        }
+    }
+    
+    /// Copy stamp image from app cache to shared container for widget access
+    private func copyStampImageToSharedContainer(stampId: String) async {
+        let documentsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        
+        // List all files in Documents directory
+        guard let allFiles = try? FileManager.default.contentsOfDirectory(atPath: documentsDir.path) else {
+            print("⚠️ [Widget] Could not list Documents directory")
+            return
+        }
+        
+        // Find any file that starts with the stampId (handles hash suffixes)
+        // Format: "stampId_hash.png" or "stampId_hash_thumb.png"
+        let matchingFiles = allFiles.filter { filename in
+            filename.hasPrefix(stampId) && 
+            (filename.hasSuffix(".png") || filename.hasSuffix(".jpg")) &&
+            !filename.contains("_thumb") // Skip thumbnails, we want full-res
+        }
+        
+        if let firstMatch = matchingFiles.first {
+            let sourceURL = documentsDir.appendingPathComponent(firstMatch)
+            print("📂 [Widget] Found cached image: \(firstMatch)")
+            
+            // Copy to shared container
+            if let _ = WidgetDataManager.shared.copyImageToSharedContainer(from: sourceURL, stampId: stampId) {
+                print("📸 [Widget] ✅ Copied image for stamp: \(stampId)")
+            } else {
+                print("⚠️ [Widget] Failed to copy image for: \(stampId)")
+            }
+        } else {
+            print("⚠️ [Widget] No cached image found for: \(stampId) (searched \(allFiles.count) files)")
         }
     }
     

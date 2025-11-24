@@ -287,17 +287,30 @@ async function safeDeleteWatagumostudio() {
       log('       No invite code to free up', 'yellow');
     }
     
-    // Delete notifications
+    // Delete notifications (both received and sent)
     log('\n[10/13] Deleting notifications...', 'blue');
+    
+    // Delete notifications received by this user (in their subcollection)
     const notificationsRef = db.collection('users').doc(userId).collection('notifications');
     const notifications = await notificationsRef.get();
     if (!notifications.empty) {
       const batch = db.batch();
       notifications.forEach(doc => batch.delete(doc.ref));
       await batch.commit();
-      log(`       ✅ Deleted ${notifications.size} notifications`, 'green');
+      log(`       ✅ Deleted ${notifications.size} received notifications`, 'green');
     } else {
-      log('       No notifications found', 'yellow');
+      log('       No received notifications found', 'yellow');
+    }
+    
+    // Delete notifications sent by this user (where they are the actor in top-level collection)
+    const sentNotificationsQuery = await db.collection('notifications').where('actorId', '==', userId).get();
+    if (!sentNotificationsQuery.empty) {
+      const batch = db.batch();
+      sentNotificationsQuery.forEach(doc => batch.delete(doc.ref));
+      await batch.commit();
+      log(`       ✅ Deleted ${sentNotificationsQuery.size} sent notifications (where user was actor)`, 'green');
+    } else {
+      log('       No sent notifications found', 'yellow');
     }
     
     // Delete storage files

@@ -88,6 +88,21 @@
       "_comment": "For cleanup function: delete all notifications older than 90 days"
     },
     {
+      "collectionGroup": "notifications",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "type",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ],
+      "_comment": "For querying notifications by type (e.g., mention notifications)"
+    },
+    {
       "collectionGroup": "following",
       "queryScope": "COLLECTION_GROUP",
       "fields": [

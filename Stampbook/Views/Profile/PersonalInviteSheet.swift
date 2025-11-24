@@ -63,7 +63,7 @@ struct PersonalInviteSheet: View {
                     .font(.title2)
                     .fontWeight(.bold)
                 
-                Text("You can invite up to 5 people (\(remainingText))")
+                Text("Tell your friends to download the app and use your personal code to join (\(remainingText))")
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
@@ -93,8 +93,12 @@ struct PersonalInviteSheet: View {
                 }
                 .frame(maxWidth: .infinity)
                 .frame(height: 50)
-                .background(showCopied ? Color.green.opacity(0.1) : Color(.systemGray6))
+                .background(showCopied ? Color.green.opacity(0.1) : Color.clear)
                 .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color(.systemGray3), lineWidth: showCopied ? 0 : 1)
+                )
             }
             .buttonStyle(PlainButtonStyle())
             .padding(.horizontal, 32)
@@ -103,7 +107,7 @@ struct PersonalInviteSheet: View {
             Button(action: {
                 shareCode()
             }) {
-                Text("Share your code")
+                Text("Share")
                     .font(.headline)
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)

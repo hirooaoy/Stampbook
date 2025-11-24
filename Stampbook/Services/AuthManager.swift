@@ -29,6 +29,42 @@ class AuthManager: NSObject, ObservableObject {
         super.init()
         Logger.debug("AuthManager init() started")
         Logger.debug("AuthManager init() completed (auth check will start after profileManager is linked)")
+        
+        // Listen for FCM token updates
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleFCMTokenUpdate(_:)),
+            name: NSNotification.Name("FCMTokenUpdated"),
+            object: nil
+        )
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+    
+    /// Handle FCM token updates
+    @objc private func handleFCMTokenUpdate(_ notification: Notification) {
+        guard let token = notification.userInfo?["token"] as? String,
+              let userId = userId else {
+            return
+        }
+        
+        Logger.info("Updating FCM token for user \(userId)", category: "AuthManager")
+        
+        Task {
+            await updateFCMToken(userId: userId, token: token)
+        }
+    }
+    
+    /// Update FCM token in Firestore
+    private func updateFCMToken(userId: String, token: String) async {
+        do {
+            try await firebaseService.updateFCMToken(userId: userId, token: token)
+            Logger.success("FCM token saved to Firestore", category: "AuthManager")
+        } catch {
+            Logger.error("Failed to save FCM token", error: error, category: "AuthManager")
+        }
     }
     
     /// Start the auth state check
@@ -85,6 +121,11 @@ class AuthManager: NSObject, ObservableObject {
             self.isCheckingAuth = false
             Logger.success("User already signed in: \(currentUser.uid)", category: "AuthManager")
             Logger.debug("Set isCheckingAuth = false, isSignedIn = true")
+        }
+        
+        // Update FCM token if available
+        if let fcmToken = UserDefaults.standard.string(forKey: "fcmToken") {
+            await updateFCMToken(userId: currentUser.uid, token: fcmToken)
         }
         
         Logger.debug("checkAuthState() completed")

@@ -259,6 +259,17 @@ struct NotificationRow: View {
                     .font(.subheadline)
                     .fontWeight(notification.isRead ? .regular : .medium)
             }
+            
+        case .mention:
+            if let stampName = stamp?.name {
+                Text("\(Text(actorName).fontWeight(.semibold)) tagged you in a comment on \(Text(stampName).fontWeight(.semibold))")
+                    .font(.subheadline)
+                    .fontWeight(notification.isRead ? .regular : .medium)
+            } else {
+                Text("\(Text(actorName).fontWeight(.semibold)) tagged you in a comment")
+                    .font(.subheadline)
+                    .fontWeight(notification.isRead ? .regular : .medium)
+            }
         }
     }
     
@@ -268,7 +279,7 @@ struct NotificationRow: View {
             // Navigate to user profile
             onProfileTap()
             
-        case .like, .comment:
+        case .like, .comment, .mention:
             // Navigate to post detail
             if notification.postId != nil {
                 onPostTap()

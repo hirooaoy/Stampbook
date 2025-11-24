@@ -20,6 +20,11 @@ class FeedManager: ObservableObject {
     private var lastFetchedPostDate: Date? = nil // Track pagination cursor for "All" tab
     private var lastFetchedMyPostDate: Date? = nil // Track pagination cursor for "Only Yours" tab
     
+    /// Track if current feedPosts are from stale disk cache vs fresh Firebase
+    /// - true: Fresh data from Firebase (safe to sync counts to managers)
+    /// - false: Stale disk cache (don't overwrite UserDefaults cached counts!)
+    @Published private(set) var isDataFresh = false
+    
     private let firebaseService = FirebaseService.shared
     private let imageManager = ImageManager.shared
     private let refreshInterval: TimeInterval = 300 // 5 minutes
@@ -265,6 +270,7 @@ class FeedManager: ObservableObject {
             // Update UI
             await MainActor.run {
                 self.myPosts = posts
+                self.isDataFresh = true // Mark as fresh Firebase data
                 self.isLoading = false
                 // Only set hasMorePosts if we got a full page
                 self.hasMorePosts = posts.count == 20
@@ -644,6 +650,7 @@ class FeedManager: ObservableObject {
             await MainActor.run {
                 self.feedPosts = posts
                 self.lastRefreshTime = Date()
+                self.isDataFresh = true // Mark as fresh Firebase data
                 self.isLoading = false
                 self.isLoadingMore = false
                 // Only set hasMorePosts if we got a full page (exactly 20 = might be more)
@@ -809,6 +816,7 @@ class FeedManager: ObservableObject {
     /// Clear cached feed data
     func clearCache() {
         feedPosts = []
+        isDataFresh = false
         lastRefreshTime = nil
         hasMorePosts = true
         lastFetchedPostDate = nil // Reset pagination cursor
@@ -837,7 +845,12 @@ class FeedManager: ObservableObject {
             // Show cached posts immediately (even if stale) - use MainActor to avoid publishing during view update
             await MainActor.run {
                 self.feedPosts = cachedPosts
+                self.isDataFresh = false // Mark as stale disk cache data
             }
+            
+            #if DEBUG
+            print("💾 [FeedManager] Loaded \(cachedPosts.count) posts from disk cache (STALE - don't sync counts!)")
+            #endif
         } catch {
             // Silently fail - will load fresh data
         }

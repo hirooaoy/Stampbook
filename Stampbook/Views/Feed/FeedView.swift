@@ -144,17 +144,17 @@ struct FeedView: View {
             await feedManager.loadMyPosts(userId: userId, stampsManager: stampsManager, forceRefresh: true)
         }
         
-        // Initialize like counts from feed data (bulk operation, no race condition)
+        // Sync counts from fresh Firebase data (refresh always fetches fresh data)
         let postsToSync = selectedFeedTab == .all ? feedManager.feedPosts : feedManager.myPosts
         let likeCounts = Dictionary(uniqueKeysWithValues: postsToSync.map { ($0.id, $0.likeCount) })
-        likeManager.setLikeCounts(likeCounts)
-        
-        // Initialize comment counts from feed data (bulk operation, no race condition)
         let commentCounts = Dictionary(uniqueKeysWithValues: postsToSync.map { ($0.id, $0.commentCount) })
-        commentManager.setCommentCounts(commentCounts)
+        
+        // Pass isStaleData: false since refresh always gets fresh data
+        likeManager.setLikeCounts(likeCounts, isStaleData: false)
+        commentManager.setCommentCounts(commentCounts, isStaleData: false)
         
         // Fetch like status for all posts to sync with cached state
-        let postIds = postsToSync.map { $0.id }
+        let postIds = (selectedFeedTab == .all ? feedManager.feedPosts : feedManager.myPosts).map { $0.id }
         if !postIds.isEmpty {
             await likeManager.fetchLikeStatus(postIds: postIds, userId: userId)
         }
@@ -883,17 +883,19 @@ struct FeedView: View {
                     )
                 }
                 
-                // Initialize like counts from feed data (bulk operation, no race condition)
+                // ⚠️ CRITICAL: Sync counts with appropriate mode based on data freshness
+                // - Fresh data: Overwrites all counts (authoritative)
+                // - Stale data: Only fills missing counts (preserves UserDefaults cache)
                 let postsToSync = feedType == .all ? feedManager.feedPosts : feedManager.myPosts
                 let likeCounts = Dictionary(uniqueKeysWithValues: postsToSync.map { ($0.id, $0.likeCount) })
-                likeManager.setLikeCounts(likeCounts)
-                
-                // Initialize comment counts from feed data (bulk operation, no race condition)
                 let commentCounts = Dictionary(uniqueKeysWithValues: postsToSync.map { ($0.id, $0.commentCount) })
-                commentManager.setCommentCounts(commentCounts)
+                
+                // Pass isStaleData flag to prevent overwriting fresh UserDefaults cache
+                likeManager.setLikeCounts(likeCounts, isStaleData: !feedManager.isDataFresh)
+                commentManager.setCommentCounts(commentCounts, isStaleData: !feedManager.isDataFresh)
                 
                 // Fetch like status for all posts to sync with cached state
-                let postIds = postsToSync.map { $0.id }
+                let postIds = (feedType == .all ? feedManager.feedPosts : feedManager.myPosts).map { $0.id }
                 if !postIds.isEmpty {
                     await likeManager.fetchLikeStatus(postIds: postIds, userId: userId)
                 }
@@ -929,17 +931,18 @@ struct FeedView: View {
                     )
                 }
                 
-                // Update like counts for new posts
+                // Update counts for all posts (including newly loaded ones)
+                // Load more always fetches fresh data from Firebase
                 let postsToSync = feedType == .all ? feedManager.feedPosts : feedManager.myPosts
                 let likeCounts = Dictionary(uniqueKeysWithValues: postsToSync.map { ($0.id, $0.likeCount) })
-                likeManager.setLikeCounts(likeCounts)
-                
-                // Update comment counts for new posts
                 let commentCounts = Dictionary(uniqueKeysWithValues: postsToSync.map { ($0.id, $0.commentCount) })
-                commentManager.setCommentCounts(commentCounts)
+                
+                // Pass isStaleData: false since load more always gets fresh data
+                likeManager.setLikeCounts(likeCounts, isStaleData: false)
+                commentManager.setCommentCounts(commentCounts, isStaleData: false)
                 
                 // Fetch like status for new posts
-                let postIds = postsToSync.map { $0.id }
+                let postIds = (feedType == .all ? feedManager.feedPosts : feedManager.myPosts).map { $0.id }
                 if !postIds.isEmpty {
                     await likeManager.fetchLikeStatus(postIds: postIds, userId: userId)
                 }
@@ -997,11 +1000,25 @@ struct FeedView: View {
         }
         
         private var currentLikeCount: Int {
-            likeManager.getLikeCount(postId: postId)
+            // Check if manager has this post's data (either from setLikeCounts or optimistic updates)
+            // If manager has data, use it (includes optimistic updates)
+            // Otherwise, fallback to feed data (prevents showing 0 on cold start)
+            if likeManager.hasCountData(postId: postId) {
+                return likeManager.getLikeCount(postId: postId)
+            } else {
+                return likeCount
+            }
         }
         
         private var currentCommentCount: Int {
-            commentManager.getCommentCount(postId: postId)
+            // Check if manager has this post's data (either from setCommentCounts or optimistic updates)
+            // If manager has data, use it (includes optimistic updates)
+            // Otherwise, fallback to feed data (prevents showing 0 on cold start)
+            if commentManager.hasCountData(postId: postId) {
+                return commentManager.getCommentCount(postId: postId)
+            } else {
+                return commentCount
+            }
         }
         
         // Note from post owner (passed from FeedPost data)

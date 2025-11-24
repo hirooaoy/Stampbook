@@ -1,6 +1,8 @@
 import SwiftUI
 import FirebaseCore
 import FirebaseCrashlytics
+import FirebaseMessaging
+import UserNotifications
 
 // MARK: - Future Features
 // TODO: iOS Widget - Rotating Stamp Widget
@@ -17,7 +19,7 @@ import FirebaseCrashlytics
 //   5. Add deep linking support with .onOpenURL()
 
 // MARK: - App Delegate
-class AppDelegate: NSObject, UIApplicationDelegate {
+class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate, MessagingDelegate {
     func application(_ application: UIApplication,
                     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
         Logger.debug("didFinishLaunching started")
@@ -28,8 +30,85 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         // Configure Crashlytics
         Crashlytics.crashlytics().setCrashlyticsCollectionEnabled(true)
         
+        // Configure Push Notifications
+        Messaging.messaging().delegate = self
+        UNUserNotificationCenter.current().delegate = self
+        
+        // Request notification permissions
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+            if granted {
+                Logger.info("Push notification permission granted", category: "AppDelegate")
+                DispatchQueue.main.async {
+                    UIApplication.shared.registerForRemoteNotifications()
+                }
+            } else {
+                Logger.info("Push notification permission denied", category: "AppDelegate")
+            }
+            
+            if let error = error {
+                Logger.error("Push notification permission error: \(error.localizedDescription)", category: "AppDelegate")
+            }
+        }
+        
         Logger.info("Firebase & Crashlytics configured", category: "AppDelegate")
         return true
+    }
+    
+    // MARK: - Remote Notification Registration
+    
+    func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        Logger.info("Successfully registered for remote notifications", category: "AppDelegate")
+        Messaging.messaging().apnsToken = deviceToken
+    }
+    
+    func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        Logger.error("Failed to register for remote notifications: \(error.localizedDescription)", category: "AppDelegate")
+    }
+    
+    // MARK: - FCM Token Handling
+    
+    func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
+        guard let fcmToken = fcmToken else { return }
+        
+        Logger.info("FCM token received: \(fcmToken.prefix(20))...", category: "AppDelegate")
+        
+        // Save token to UserDefaults for access by other parts of the app
+        UserDefaults.standard.set(fcmToken, forKey: "fcmToken")
+        
+        // Post notification so other parts of the app can handle token updates
+        NotificationCenter.default.post(name: NSNotification.Name("FCMTokenUpdated"), object: nil, userInfo: ["token": fcmToken])
+    }
+    
+    // MARK: - Notification Handling
+    
+    /// Handle notification when app is in foreground
+    func userNotificationCenter(_ center: UNUserNotificationCenter,
+                               willPresent notification: UNNotification,
+                               withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        let userInfo = notification.request.content.userInfo
+        Logger.info("Notification received in foreground: \(userInfo)", category: "AppDelegate")
+        
+        // Show banner and sound even when app is in foreground
+        completionHandler([.banner, .sound, .badge])
+    }
+    
+    /// Handle notification tap
+    func userNotificationCenter(_ center: UNUserNotificationCenter,
+                               didReceive response: UNNotificationResponse,
+                               withCompletionHandler completionHandler: @escaping () -> Void) {
+        let userInfo = response.notification.request.content.userInfo
+        Logger.info("Notification tapped: \(userInfo)", category: "AppDelegate")
+        
+        // Extract notification data for deep linking
+        if let postId = userInfo["postId"] as? String {
+            // Post deep link notification for navigation
+            NotificationCenter.default.post(name: NSNotification.Name("OpenPost"), object: nil, userInfo: ["postId": postId])
+        } else if let userId = userInfo["userId"] as? String {
+            // Profile deep link notification for navigation
+            NotificationCenter.default.post(name: NSNotification.Name("OpenProfile"), object: nil, userInfo: ["userId": userId])
+        }
+        
+        completionHandler()
     }
 }
 

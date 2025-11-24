@@ -26,6 +26,9 @@ class ProfileManager: ObservableObject {
     
     private let firebaseService = FirebaseService.shared
     
+    // Track in-flight profile loads to await instead of early-exiting
+    private var inFlightLoads: [String: Task<Void, Never>] = [:]
+    
     // TODO: POST-MVP - Rank caching (disabled until rank feature is implemented)
     // private var cachedRanks: [String: (rank: Int, timestamp: Date)] = [:]
     // private let rankCacheExpiration: TimeInterval = 1800 // 30 minutes
@@ -106,55 +109,60 @@ class ProfileManager: ObservableObject {
             return
         }
         
-        // Prevent duplicate loads
-        if isLoading || isLoadingProfile {
-            Logger.warning("Already loading profile, skipping duplicate request")
+        // ✅ FIX: If already loading this user, await the in-flight load instead of early-exiting
+        // This ensures currentUserProfile is always set after the load completes
+        if let existingTask = inFlightLoads[userId] {
+            Logger.warning("⏱️ Already loading profile for \(userId), waiting for in-flight load to complete")
+            Task {
+                await existingTask.value // Wait for existing load
+                Logger.debug("✅ In-flight profile load completed, currentUserProfile is now set")
+            }
             return
         }
         
-        isLoading = true
-        isLoadingProfile = true  // Signal that load is in progress
-        error = nil
-        
-        Logger.info("Loading profile for userId: \(userId)", category: "ProfileManager")
-        
-        // 1. INSTANT: Load cached profile first (0ms load time)
-        if let cachedProfile = loadCachedProfile(userId: userId) {
-            Logger.info("✨ Loaded cached profile for @\(cachedProfile.username) - instant display", category: "ProfileManager")
-            currentUserProfile = cachedProfile
-            // Note: isLoading stays true while we refresh in background
-        }
-        
-        // 2. BACKGROUND: Refresh from Firestore to get latest data
-        Task {
+        // Create task to track this load
+        let loadTask = Task { @MainActor in
+            self.isLoading = true
+            self.isLoadingProfile = true  // Signal that load is in progress
+            self.error = nil
+            
+            Logger.info("Loading profile for userId: \(userId)", category: "ProfileManager")
+            
+            // 1. INSTANT: Load cached profile first (0ms load time)
+            if let cachedProfile = loadCachedProfile(userId: userId) {
+                Logger.info("✨ Loaded cached profile for @\(cachedProfile.username) - instant display", category: "ProfileManager")
+                currentUserProfile = cachedProfile
+                // Note: isLoading stays true while we refresh in background
+            }
+            
+            // 2. BACKGROUND: Refresh from Firestore to get latest data
             do {
                 // ✅ OPTIMIZED: Counts now denormalized on profile (Cloud Function keeps them in sync)
                 // No need to query subcollections - saves 20-100 reads per profile view (97% cost reduction)
                 let profile = try await firebaseService.fetchUserProfile(userId: userId)
                 // Counts are already on profile.followerCount and profile.followingCount
                 
-                await MainActor.run {
-                    self.currentUserProfile = profile
-                    self.isLoading = false
-                    self.isLoadingProfile = false  // Load complete
-                    
-                    // Save fresh profile to cache for next launch
-                    self.saveCachedProfile(profile)
-                    
-                    // ✅ FIX: Only post profileDidUpdate if this is the CURRENT user's profile
-                    // UserProfileView creates local ProfileManager instances for OTHER users, but we should
-                    // only clear feed cache when the current user's profile updates, not when viewing others
-                    if isCurrentUser {
-                        NotificationCenter.default.post(
-                            name: .profileDidUpdate,
-                            object: nil,
-                            userInfo: ["profile": profile]
-                        )
-                        Logger.debug("Posted profileDidUpdate notification after loadProfile (current user)")
-                    } else {
-                        Logger.debug("Skipped profileDidUpdate notification (not current user)")
-                    }
+                self.currentUserProfile = profile
+                self.isLoading = false
+                self.isLoadingProfile = false  // Load complete
+                
+                // Save fresh profile to cache for next launch
+                self.saveCachedProfile(profile)
+                
+                // ✅ FIX: Only post profileDidUpdate if this is the CURRENT user's profile
+                // UserProfileView creates local ProfileManager instances for OTHER users, but we should
+                // only clear feed cache when the current user's profile updates, not when viewing others
+                if isCurrentUser {
+                    NotificationCenter.default.post(
+                        name: .profileDidUpdate,
+                        object: nil,
+                        userInfo: ["profile": profile]
+                    )
+                    Logger.debug("Posted profileDidUpdate notification after loadProfile (current user)")
+                } else {
+                    Logger.debug("Skipped profileDidUpdate notification (not current user)")
                 }
+                
                 Logger.success("Loaded user profile: \(profile.displayName) (\(profile.followerCount) followers, \(profile.followingCount) following)", category: "ProfileManager")
                 
                 // TODO: POST-MVP - Rank loading disabled
@@ -162,11 +170,10 @@ class ProfileManager: ObservableObject {
                 //     await fetchUserRank(for: profile)
                 // }
             } catch {
-                await MainActor.run {
-                    self.error = error.localizedDescription
-                    self.isLoading = false
-                    self.isLoadingProfile = false  // Load failed, clear flag
-                }
+                self.error = error.localizedDescription
+                self.isLoading = false
+                self.isLoadingProfile = false  // Load failed, clear flag
+                
                 Logger.error("Failed to load profile from Firestore", error: error, category: "ProfileManager")
                 
                 // If we have cached profile, we're still in good shape
@@ -174,7 +181,13 @@ class ProfileManager: ObservableObject {
                     Logger.info("Using cached profile while offline/error", category: "ProfileManager")
                 }
             }
+            
+            // Clean up in-flight task tracking
+            self.inFlightLoads.removeValue(forKey: userId)
         }
+        
+        // Track this load
+        inFlightLoads[userId] = loadTask
     }
     
     /// Update the current user's profile
@@ -287,6 +300,10 @@ class ProfileManager: ObservableObject {
     /// Clear profile data (on sign out)
     func clearProfile() {
         Logger.info("Clearing profile data", category: "ProfileManager")
+        
+        // Cancel any in-flight loads
+        inFlightLoads.values.forEach { $0.cancel() }
+        inFlightLoads.removeAll()
         
         // Clear in-memory state
         currentUserProfile = nil

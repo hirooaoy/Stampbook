@@ -1,6 +1,11 @@
 import Foundation
 import Combine
 
+/// Notification for widget sync
+extension Notification.Name {
+    static let userStampsDidLoad = Notification.Name("userStampsDidLoad")
+}
+
 // TODO: BACKEND - Consider adding collectionLocation (lat/long where user actually collected it)
 struct CollectedStamp: Codable, Identifiable, Equatable {
     var id: String { stampId } // Make it Identifiable for Firestore
@@ -100,6 +105,11 @@ class UserStampCollection: ObservableObject {
                 await syncFromFirestore(userId: userId)
                 // Retry any pending deletions when user signs in
                 await retryPendingDeletions()
+                
+                // CRITICAL: Notify StampsManager that stamps are loaded (for widget sync)
+                await MainActor.run {
+                    NotificationCenter.default.post(name: .userStampsDidLoad, object: nil)
+                }
             }
         }
     }
@@ -276,6 +286,19 @@ class UserStampCollection: ObservableObject {
         }
         saveCollectedStamps()
         print("🏅 Updated local cache: User rank #\(rank) for stamp \(stampId)")
+        
+        // CRITICAL: Sync the updated rank to Firestore
+        // This fixes the bug where ranks were only cached locally but never saved to Firebase
+        if let userId = currentUserId, let updatedStamp = collectedStamps.first(where: { $0.stampId == stampId }) {
+            Task {
+                do {
+                    try await firebaseService.saveCollectedStamp(updatedStamp, for: userId)
+                    print("✅ Rank #\(rank) synced to Firestore for stamp \(stampId)")
+                } catch {
+                    print("⚠️ Failed to sync rank to Firestore: \(error.localizedDescription)")
+                }
+            }
+        }
     }
     
     func addImage(for stampId: String, imageName: String, storagePath: String? = nil) {

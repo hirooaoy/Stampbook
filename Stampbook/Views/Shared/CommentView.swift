@@ -16,6 +16,12 @@ struct CommentView: View {
     @State private var selectedUserId: IdentifiableString? // For navigation to user profile
     @FocusState private var isTextFieldFocused: Bool
     
+    // @mention autocomplete states
+    @State private var mentionQuery: String = ""  // Current @mention being typed (e.g., "hir")
+    @State private var mentionSuggestions: [UserProfile] = []  // Search results
+    @State private var showMentionSuggestions: Bool = false
+    @State private var mentionSearchTask: Task<Void, Never>?  // For debouncing
+    
     // Changed to directly observe the published property to trigger view updates
     private var comments: [Comment] {
         commentManager.comments[postId] ?? []
@@ -65,7 +71,7 @@ struct CommentView: View {
                     // Comments list
                     ScrollView {
                         LazyVStack(alignment: .leading, spacing: 16) {
-                            ForEach(comments) { comment in
+                            ForEach(comments, id: \.computedId) { comment in
                                 CommentRow(
                                     comment: comment,
                                     currentUserId: authManager.userId,
@@ -87,34 +93,52 @@ struct CommentView: View {
                 
                 Divider()
                 
-                // Comment input
+                // Comment input with mention autocomplete
                 if authManager.isSignedIn {
-                    HStack(spacing: 12) {
-                        // Profile picture
-                        ProfileImageView(
-                            avatarUrl: profileManager.currentUserProfile?.avatarUrl,
-                            userId: authManager.userId ?? "",
-                            size: 36
-                        )
-                        
-                        // Text field
-                        TextField("Add a comment...", text: $newCommentText, axis: .vertical)
-                            .textFieldStyle(.plain)
-                            .focused($isTextFieldFocused)
-                            .lineLimit(1...5)
-                        
-                        // Send button
-                        Button(action: {
-                            sendComment()
-                        }) {
-                            Image(systemName: "arrow.up.circle.fill")
-                                .font(.system(size: 28))
-                                .foregroundColor(newCommentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? .gray : .blue)
+                    ZStack(alignment: .bottom) {
+                        // Mention suggestions (appears above TextField)
+                        if showMentionSuggestions && !mentionSuggestions.isEmpty {
+                            MentionSuggestionsView(
+                                suggestions: mentionSuggestions,
+                                onSelect: { selectedProfile in
+                                    insertMention(selectedProfile.username)
+                                }
+                            )
+                            .padding(.bottom, 60)  // Offset above TextField
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
                         }
-                        .disabled(newCommentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        
+                        // Comment input
+                        HStack(spacing: 12) {
+                            // Profile picture
+                            ProfileImageView(
+                                avatarUrl: profileManager.currentUserProfile?.avatarUrl,
+                                userId: authManager.userId ?? "",
+                                size: 36
+                            )
+                            
+                            // Text field (simple, no overlay)
+                            TextField("Add a comment...", text: $newCommentText, axis: .vertical)
+                                .textFieldStyle(.plain)
+                                .focused($isTextFieldFocused)
+                                .lineLimit(1...5)
+                                .onChange(of: newCommentText) { oldValue, newValue in
+                                    detectMention(in: newValue)
+                                }
+                            
+                            // Send button
+                            Button(action: {
+                                sendComment()
+                            }) {
+                                Image(systemName: "arrow.up.circle.fill")
+                                    .font(.system(size: 28))
+                                    .foregroundColor(newCommentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? .gray : .blue)
+                            }
+                            .disabled(newCommentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
                 }
             }
             .navigationTitle("Comments")
@@ -223,6 +247,91 @@ struct CommentView: View {
             stampId: stampId
         )
     }
+    
+    // MARK: - @Mention Autocomplete
+    
+    /// Detects if user is typing an @mention and triggers search
+    private func detectMention(in text: String) {
+        // Find the last @ symbol in the text
+        guard let lastAtIndex = text.lastIndex(of: "@") else {
+            // No @ symbol - hide suggestions
+            showMentionSuggestions = false
+            mentionQuery = ""
+            mentionSearchTask?.cancel()
+            return
+        }
+        
+        // Get text after the last @
+        let afterAt = String(text[text.index(after: lastAtIndex)...])
+        
+        // Check if there's a space after @ (means mention is complete)
+        if afterAt.contains(" ") {
+            showMentionSuggestions = false
+            mentionQuery = ""
+            mentionSearchTask?.cancel()
+            return
+        }
+        
+        // Valid mention query (no spaces, still typing)
+        let query = afterAt.trimmingCharacters(in: .whitespacesAndNewlines)
+        mentionQuery = query
+        
+        // Cancel previous search
+        mentionSearchTask?.cancel()
+        
+        // Debounce search (wait 300ms after user stops typing)
+        mentionSearchTask = Task {
+            try? await Task.sleep(nanoseconds: 300_000_000)  // 300ms
+            
+            if !Task.isCancelled {
+                await searchUsers(query: query)
+            }
+        }
+    }
+    
+    /// Search for users matching the mention query
+    private func searchUsers(query: String) async {
+        // If query is empty, search all users (show recent/popular)
+        // If query has text, search by username or displayName
+        
+        do {
+            let results = try await FirebaseService.shared.searchUsers(
+                query: query,
+                limit: 5
+            )
+            
+            await MainActor.run {
+                mentionSuggestions = results
+                showMentionSuggestions = !results.isEmpty
+            }
+        } catch {
+            print("⚠️ Failed to search users for mention: \(error.localizedDescription)")
+            await MainActor.run {
+                mentionSuggestions = []
+                showMentionSuggestions = false
+            }
+        }
+    }
+    
+    /// Insert selected username into comment text
+    private func insertMention(_ username: String) {
+        // Find the last @ symbol
+        guard let lastAtIndex = newCommentText.lastIndex(of: "@") else {
+            return
+        }
+        
+        // Replace from @ to cursor with @username + space
+        let beforeAt = String(newCommentText[..<lastAtIndex])
+        newCommentText = beforeAt + "@\(username) "
+        
+        // Hide suggestions
+        showMentionSuggestions = false
+        mentionQuery = ""
+        mentionSearchTask?.cancel()
+        
+        // Keep keyboard focused
+        isTextFieldFocused = true
+    }
 }
 
 /// Row view for a single comment
@@ -250,6 +359,11 @@ struct CommentRow: View {
         return isOwnComment || isOwnPost
     }
     
+    // ✅ FIX: Disable delete for optimistic comments (not yet saved to Firebase)
+    private var isOptimisticComment: Bool {
+        return comment.id == nil
+    }
+    
     var body: some View {
         HStack(alignment: .center, spacing: 12) {
             // Profile picture - tappable to navigate to profile
@@ -270,7 +384,10 @@ struct CommentRow: View {
                     .font(.subheadline)
                     .fontWeight(.semibold)
                 
-                Text(comment.text)
+                // Display comment text with @mentions highlighted in blue
+                // TODO: Make @mentions tappable to navigate to user profiles (Phase 2)
+                // Currently mentions are only highlighted, not interactive
+                Text(formatCommentWithMentions(comment.text))
                     .font(.subheadline)
                     .foregroundColor(.primary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -282,29 +399,36 @@ struct CommentRow: View {
             
             Spacer()
             
-            // Triple dot menu for all comments
-            Menu {
-                // Delete option (for own comments OR own post)
-                if canDelete {
-                    Button(role: .destructive, action: onDelete) {
-                        Label(isOwnComment ? "Delete comment" : "Remove comment", systemImage: "trash")
+            // Show loading indicator for optimistic comments, menu for saved comments
+            if isOptimisticComment {
+                ProgressView()
+                    .scaleEffect(0.7)
+                    .frame(width: 24, height: 24)
+            } else {
+                // Triple dot menu for saved comments
+                Menu {
+                    // Delete option (for own comments OR own post)
+                    if canDelete {
+                        Button(role: .destructive, action: onDelete) {
+                            Label(isOwnComment ? "Delete comment" : "Remove comment", systemImage: "trash")
+                        }
                     }
-                }
-                
-                // Report option (only for OTHER people's comments)
-                if !isOwnComment {
-                    Button(action: { showingReportSheet = true }) {
-                        Label("Report comment", systemImage: "exclamationmark.triangle")
+                    
+                    // Report option (only for OTHER people's comments)
+                    if !isOwnComment {
+                        Button(role: .destructive, action: { showingReportSheet = true }) {
+                            Label("Report comment", systemImage: "exclamationmark.triangle")
+                        }
                     }
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .font(.system(size: 18))
+                        .foregroundColor(.gray)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
                 }
-            } label: {
-                Image(systemName: "ellipsis")
-                    .font(.system(size: 18))
-                    .foregroundColor(.gray)
-                    .frame(width: 44, height: 44)
-                    .contentShape(Rectangle())
+                .buttonStyle(PlainButtonStyle())
             }
-            .buttonStyle(PlainButtonStyle())
         }
         .sheet(isPresented: $showingReportSheet) {
             SimpleCommentReportView(
@@ -325,6 +449,96 @@ private struct IdentifiableString: Identifiable, Hashable {
     let value: String
     let username: String
     let displayName: String
+}
+
+// MARK: - @Mention Formatting
+
+/// Helper function to format comment text with @mentions highlighted
+/// 
+/// Parses comment text and highlights @username patterns in blue
+/// Pattern matches: @[a-z0-9_]{3,20} (consistent with backend validation)
+/// 
+/// Example: "Hey @hiroo check this!" 
+/// → "Hey " (black) + "@hiroo" (blue) + " check this!" (black)
+/// 
+/// Future enhancement: Add autocomplete dropdown when typing @ in comment box
+/// (Similar to Instagram/Twitter) - would require username search as user types
+fileprivate func formatCommentWithMentions(_ text: String) -> AttributedString {
+    var attributedString = AttributedString(text)
+    
+    // Pattern matches @username (3-20 chars, alphanumeric + underscore)
+    // \b word boundary prevents matching email addresses
+    let mentionPattern = "@[a-z0-9_]{3,20}\\b"
+    
+    // Find all @mention ranges in the text
+    let nsString = text as NSString
+    let regex = try? NSRegularExpression(pattern: mentionPattern, options: [.caseInsensitive])
+    let matches = regex?.matches(in: text, options: [], range: NSRange(location: 0, length: nsString.length)) ?? []
+    
+    // Highlight each @mention in blue
+    for match in matches {
+        if let range = Range(match.range, in: text) {
+            if let attrRange = Range(range, in: attributedString) {
+                attributedString[attrRange].foregroundColor = .blue
+                attributedString[attrRange].font = .subheadline.weight(.semibold)
+            }
+        }
+    }
+    
+    return attributedString
+}
+
+// MARK: - Mention Suggestions View
+
+/// Popup view showing username suggestions for @mentions
+/// Appears above TextField when user types @
+struct MentionSuggestionsView: View {
+    let suggestions: [UserProfile]
+    let onSelect: (UserProfile) -> Void
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            ForEach(suggestions) { profile in
+                Button(action: {
+                    onSelect(profile)
+                }) {
+                    HStack(spacing: 12) {
+                        // Profile image (aligned with comment panel profile pic)
+                        ProfileImageView(
+                            avatarUrl: profile.avatarUrl,
+                            userId: profile.id,
+                            size: 36
+                        )
+                        
+                        // User info (username on top, display name as subtitle)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("@\(profile.username)")
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.primary)
+                            
+                            Text(profile.displayName)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        Spacer()
+                    }
+                    .padding(.vertical, 8)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(PlainButtonStyle())
+                
+                if profile.id != suggestions.last?.id {
+                    Divider()
+                        .padding(.leading, 64)  // Align with text, not profile pic
+                }
+            }
+        }
+        .padding(.horizontal, 16)  // Match comment input padding
+        .background(Color(.systemBackground))
+        .cornerRadius(12)
+    }
 }
 
 // MARK: - Date Extension for "time ago" display

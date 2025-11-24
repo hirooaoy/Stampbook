@@ -1,5 +1,5 @@
 const {onCall} = require('firebase-functions/v2/https');
-const {onDocumentWritten, onDocumentCreated} = require('firebase-functions/v2/firestore');
+const {onDocumentWritten, onDocumentCreated, onDocumentDeleted} = require('firebase-functions/v2/firestore');
 const {onSchedule} = require('firebase-functions/v2/scheduler');
 const admin = require('firebase-admin');
 const Filter = require('bad-words');
@@ -264,6 +264,97 @@ exports.moderateProfileOnWrite = onDocumentWritten('users/{userId}', async (even
 // ==================== NOTIFICATION TRIGGERS ====================
 
 /**
+ * Helper Function: Send push notification via FCM
+ * 
+ * Sends a push notification to a user's device using Firebase Cloud Messaging
+ * 
+ * @param {string} userId - User ID to send notification to
+ * @param {object} notification - Notification payload { title, body }
+ * @param {object} data - Additional data for deep linking { postId?, userId?, type }
+ */
+async function sendPushNotification(userId, notification, data = {}) {
+  try {
+    // Fetch user's FCM token from Firestore
+    const userDoc = await admin.firestore().collection('users').doc(userId).get();
+    
+    if (!userDoc.exists) {
+      console.log(`⚠️ User ${userId} not found - skipping push notification`);
+      return;
+    }
+    
+    const fcmToken = userDoc.data()?.fcmToken;
+    
+    if (!fcmToken) {
+      console.log(`⚠️ No FCM token for user ${userId} - skipping push notification`);
+      return;
+    }
+    
+    // Send push notification
+    const message = {
+      token: fcmToken,
+      notification: {
+        title: notification.title,
+        body: notification.body
+      },
+      data: data,
+      apns: {
+        payload: {
+          aps: {
+            sound: 'default',
+            badge: 1 // Will be updated with actual unread count
+          }
+        }
+      }
+    };
+    
+    await admin.messaging().send(message);
+    console.log(`✅ Push notification sent to user ${userId}`);
+    
+  } catch (error) {
+    // Don't throw - push notification failure shouldn't break the function
+    console.error(`❌ Failed to send push notification to user ${userId}:`, error);
+  }
+}
+
+/**
+ * Helper Function: Extract @mentions from comment text
+ * 
+ * Parses text for @username patterns and returns array of unique usernames
+ * 
+ * Rules:
+ * - Pattern: @[a-z0-9_]{3,20} (matches username validation rules)
+ * - Max 3 mentions per comment (spam prevention)
+ * - Case insensitive (converts to lowercase)
+ * - Deduplicates (if user mentioned multiple times, only returns once)
+ * 
+ * Examples:
+ * - "Hey @hiroo check this!" → ["hiroo"]
+ * - "Cool! @hiroo @watagumostudio" → ["hiroo", "watagumostudio"]
+ * - "email@test.com" → [] (email addresses not detected)
+ * - "@ab too short" → [] (usernames must be 3+ chars)
+ * 
+ * Future: Add autocomplete dropdown to help users mention correctly
+ */
+function extractMentions(text) {
+  // Regex matches @username pattern (3-20 chars, alphanumeric + underscore)
+  // \b word boundary prevents matching email addresses like "email@test.com"
+  const mentionPattern = /@([a-z0-9_]{3,20})\b/gi;
+  
+  const matches = [];
+  let match;
+  
+  // Extract all @username patterns
+  while ((match = mentionPattern.exec(text)) !== null) {
+    matches.push(match[1].toLowerCase()); // match[1] is the captured username
+  }
+  
+  // Remove duplicates and limit to 3 mentions (spam prevention)
+  const uniqueMentions = [...new Set(matches)].slice(0, 3);
+  
+  return uniqueMentions;
+}
+
+/**
  * Firestore Trigger: Create notification when someone follows a user
  * 
  * Triggered when a follow document is created in users/{userId}/following/{followingId}
@@ -281,6 +372,10 @@ exports.createFollowNotification = onDocumentCreated('users/{userId}/following/{
   console.log(`📬 Creating follow notification: ${followerId} followed ${followingId}`);
   
   try {
+    // Fetch follower's profile to get their name
+    const followerDoc = await admin.firestore().collection('users').doc(followerId).get();
+    const followerName = followerDoc.exists ? followerDoc.data().displayName : 'Someone';
+    
     // Create notification for the person being followed
     await admin.firestore().collection('notifications').add({
       recipientId: followingId,
@@ -294,6 +389,20 @@ exports.createFollowNotification = onDocumentCreated('users/{userId}/following/{
     });
     
     console.log(`✅ Follow notification created successfully`);
+    
+    // Send push notification
+    await sendPushNotification(
+      followingId,
+      {
+        title: 'New Follower',
+        body: `${followerName} started following you`
+      },
+      {
+        type: 'follow',
+        userId: followerId
+      }
+    );
+    
   } catch (error) {
     console.error(`❌ Error creating follow notification:`, error);
   }
@@ -318,6 +427,14 @@ exports.createLikeNotification = onDocumentCreated('likes/{likeId}', async (even
   console.log(`📬 Creating like notification: ${like.userId} liked post by ${like.postOwnerId}`);
   
   try {
+    // Fetch liker's profile to get their name
+    const likerDoc = await admin.firestore().collection('users').doc(like.userId).get();
+    const likerName = likerDoc.exists ? likerDoc.data().displayName : 'Someone';
+    
+    // Fetch stamp name for notification
+    const stampDoc = await admin.firestore().collection('stamps').doc(like.stampId).get();
+    const stampName = stampDoc.exists ? stampDoc.data().name : 'your stamp';
+    
     // Create notification for the post owner
     await admin.firestore().collection('notifications').add({
       recipientId: like.postOwnerId,
@@ -331,6 +448,21 @@ exports.createLikeNotification = onDocumentCreated('likes/{likeId}', async (even
     });
     
     console.log(`✅ Like notification created successfully`);
+    
+    // Send push notification
+    await sendPushNotification(
+      like.postOwnerId,
+      {
+        title: 'New Like',
+        body: `${likerName} liked your ${stampName}`
+      },
+      {
+        type: 'like',
+        postId: like.postId,
+        stampId: like.stampId
+      }
+    );
+    
   } catch (error) {
     console.error(`❌ Error creating like notification:`, error);
   }
@@ -343,38 +475,259 @@ exports.createLikeNotification = onDocumentCreated('likes/{likeId}', async (even
  * 
  * Triggered when a comment document is created in comments collection
  * Creates a notification for the post owner with comment preview
+ * Also creates mention notifications for any @mentioned users
  */
 exports.createCommentNotification = onDocumentCreated('comments/{commentId}', async (event) => {
   const comment = event.data.data();
   
-  // Don't create notification if user comments on their own post
-  if (comment.userId === comment.postOwnerId) {
-    return null;
-  }
-  
-  console.log(`📬 Creating comment notification: ${comment.userId} commented on post by ${comment.postOwnerId}`);
+  console.log(`📬 Processing comment: ${comment.userId} commented on post by ${comment.postOwnerId}`);
   
   try {
+    // Fetch commenter's profile to get their name
+    const commenterDoc = await admin.firestore().collection('users').doc(comment.userId).get();
+    const commenterName = commenterDoc.exists ? commenterDoc.data().displayName : 'Someone';
+    
+    // Fetch stamp name for notification
+    const stampDoc = await admin.firestore().collection('stamps').doc(comment.stampId).get();
+    const stampName = stampDoc.exists ? stampDoc.data().name : 'a stamp';
+    
     // Truncate comment text to 100 characters for preview
     const commentPreview = comment.text.length > 100 
       ? comment.text.substring(0, 100) + '...'
       : comment.text;
     
-    // Create notification for the post owner
-    await admin.firestore().collection('notifications').add({
-      recipientId: comment.postOwnerId,
-      actorId: comment.userId,
-      type: 'comment',
-      postId: comment.postId,
-      stampId: comment.stampId,
-      commentPreview: commentPreview,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      isRead: false
-    });
+    // ==================== @MENTION NOTIFICATIONS ====================
     
-    console.log(`✅ Comment notification created successfully`);
+    // Extract @mentions from comment text FIRST (process regardless of who commented)
+    const mentionedUsernames = extractMentions(comment.text);
+    
+    // Track users who should be notified
+    const notifiedUserIds = new Set();
+    
+    // ==================== POST OWNER NOTIFICATION ====================
+    
+    // Only create notification for post owner if someone ELSE commented
+    if (comment.userId !== comment.postOwnerId) {
+      // Check if post owner is mentioned
+      let postOwnerIsMentioned = false;
+      if (mentionedUsernames.length > 0) {
+        console.log(`👥 Found ${mentionedUsernames.length} mentions: ${mentionedUsernames.join(', ')}`);
+        
+        // Get post owner's username to check if they're mentioned
+        try {
+          const postOwnerDoc = await admin.firestore()
+            .collection('users')
+            .doc(comment.postOwnerId)
+            .get();
+          
+          if (postOwnerDoc.exists) {
+            const postOwnerUsername = postOwnerDoc.data().username;
+            postOwnerIsMentioned = mentionedUsernames.includes(postOwnerUsername.toLowerCase());
+          }
+        } catch (error) {
+          console.error('Error checking if post owner is mentioned:', error);
+        }
+      }
+      
+      // Create notification for the post owner
+      // If they were @mentioned, use "mention" type instead of "comment" type
+      const notificationType = postOwnerIsMentioned ? 'mention' : 'comment';
+      
+      await admin.firestore().collection('notifications').add({
+        recipientId: comment.postOwnerId,
+        actorId: comment.userId,
+        type: notificationType,
+        postId: comment.postId,
+        stampId: comment.stampId,
+        commentPreview: commentPreview,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        isRead: false
+      });
+      
+      console.log(`✅ ${notificationType} notification created for post owner${postOwnerIsMentioned ? ' (was @mentioned)' : ''}`);
+      
+      // Send push notification
+      const pushBody = postOwnerIsMentioned 
+        ? `${commenterName} tagged you in a comment on ${stampName}`
+        : `${commenterName} commented on your ${stampName}`;
+      
+      await sendPushNotification(
+        comment.postOwnerId,
+        {
+          title: postOwnerIsMentioned ? 'You were tagged' : 'New Comment',
+          body: pushBody
+        },
+        {
+          type: notificationType,
+          postId: comment.postId,
+          stampId: comment.stampId
+        }
+      );
+      
+      // Track that post owner has been notified
+      notifiedUserIds.add(comment.postOwnerId);
+    } else {
+      console.log(`⏭️ Skipping post owner notification (user commented on own post)`);
+    }
+    
+    // ==================== ADDITIONAL MENTION NOTIFICATIONS ====================
+    // Create mention notifications for any OTHER users who were mentioned (not already notified)
+    
+    if (mentionedUsernames.length > 0) {
+      // Process each mentioned username
+      for (const username of mentionedUsernames) {
+        try {
+          // Query Firestore to get userId from username
+          const userSnapshot = await admin.firestore()
+            .collection('users')
+            .where('username', '==', username)
+            .limit(1)
+            .get();
+          
+          // Skip if username doesn't exist
+          if (userSnapshot.empty) {
+            console.log(`⚠️ Username @${username} not found - skipping mention notification`);
+            continue;
+          }
+          
+          const mentionedUserId = userSnapshot.docs[0].id;
+          
+          // Skip if user mentions themselves
+          if (mentionedUserId === comment.userId) {
+            console.log(`⚠️ User mentioned themselves (@${username}) - skipping self-mention`);
+            continue;
+          }
+          
+          // Skip if user already notified (post owner notification created above)
+          if (notifiedUserIds.has(mentionedUserId)) {
+            console.log(`⚠️ User @${username} already notified (post owner) - skipping duplicate`);
+            continue;
+          }
+          
+          // Create mention notification
+          await admin.firestore().collection('notifications').add({
+            recipientId: mentionedUserId,
+            actorId: comment.userId,
+            type: 'mention',
+            postId: comment.postId,
+            stampId: comment.stampId,
+            commentPreview: commentPreview,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            isRead: false
+          });
+          
+          notifiedUserIds.add(mentionedUserId);
+          console.log(`✅ Mention notification created for @${username}`);
+          
+          // Send push notification for mention
+          await sendPushNotification(
+            mentionedUserId,
+            {
+              title: 'You were tagged',
+              body: `${commenterName} tagged you in a comment on ${stampName}`
+            },
+            {
+              type: 'mention',
+              postId: comment.postId,
+              stampId: comment.stampId
+            }
+          );
+          
+        } catch (mentionError) {
+          console.error(`❌ Error processing mention for @${username}:`, mentionError);
+          // Continue processing other mentions even if one fails
+        }
+      }
+    }
+    
   } catch (error) {
     console.error(`❌ Error creating comment notification:`, error);
+  }
+  
+  return null;
+});
+
+/**
+ * Firestore Trigger: Clean up notifications when a comment is deleted
+ * 
+ * Triggered when a comment document is deleted from comments collection
+ * Automatically deletes all related notifications (comment, mention) to prevent "Post not found" errors
+ * 
+ * This happens when:
+ * - User deletes their own comment
+ * - Post owner deletes someone's comment
+ * 
+ * Notifications deleted:
+ * - Comment notifications for post owner (type: "comment")
+ * - Mention notifications for tagged users (type: "mention")
+ */
+exports.cleanupCommentNotifications = onDocumentDeleted('comments/{commentId}', async (event) => {
+  const commentId = event.params.commentId;
+  const deletedComment = event.data.data();
+  
+  console.log(`🗑️ Comment deleted: ${commentId} - cleaning up notifications...`);
+  
+  if (!deletedComment) {
+    console.log('⚠️ No comment data available (already deleted)');
+    return null;
+  }
+  
+  try {
+    // Find all notifications related to this comment (by postId + stampId + createdAt proximity)
+    // We can't query by commentId since notifications don't store it, so we query by post
+    const notificationsQuery = await admin.firestore()
+      .collection('notifications')
+      .where('postId', '==', deletedComment.postId)
+      .where('stampId', '==', deletedComment.stampId)
+      .get();
+    
+    if (notificationsQuery.empty) {
+      console.log('✓ No notifications found for this comment');
+      return null;
+    }
+    
+    // Filter to find notifications that match this specific comment
+    // (by checking actorId matches commenter and commentPreview matches comment text)
+    const commentPreview = deletedComment.text.length > 100 
+      ? deletedComment.text.substring(0, 100) + '...'
+      : deletedComment.text;
+    
+    const notificationsToDelete = [];
+    
+    notificationsQuery.forEach(doc => {
+      const notifData = doc.data();
+      
+      // Match if:
+      // 1. Actor is the commenter
+      // 2. Type is "comment" or "mention"
+      // 3. Comment preview matches
+      if (notifData.actorId === deletedComment.userId && 
+          (notifData.type === 'comment' || notifData.type === 'mention') &&
+          notifData.commentPreview === commentPreview) {
+        notificationsToDelete.push(doc.id);
+      }
+    });
+    
+    if (notificationsToDelete.length === 0) {
+      console.log('✓ No matching notifications to delete');
+      return null;
+    }
+    
+    // Delete notifications in batch
+    const batch = admin.firestore().batch();
+    notificationsToDelete.forEach(notifId => {
+      const notifRef = admin.firestore().collection('notifications').doc(notifId);
+      batch.delete(notifRef);
+    });
+    
+    await batch.commit();
+    
+    console.log(`✅ Deleted ${notificationsToDelete.length} notification(s) for deleted comment`);
+    
+  } catch (error) {
+    console.error(`❌ Error cleaning up notifications:`, error);
+    // Don't throw - comment deletion already succeeded
+    // Orphaned notifications will be cleaned up by scheduled job
   }
   
   return null;

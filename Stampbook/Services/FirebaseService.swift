@@ -664,6 +664,16 @@ class FirebaseService {
         invalidateProfileCache(userId: userId)
     }
     
+    /// Update FCM token for push notifications
+    func updateFCMToken(userId: String, token: String) async throws {
+        let docRef = db.collection("users").document(userId)
+        try await docRef.updateData([
+            "fcmToken": token,
+            "fcmTokenUpdatedAt": FieldValue.serverTimestamp()
+        ])
+        Logger.info("FCM token updated for user \(userId)", category: "FirebaseService")
+    }
+    
     /// Check if a username is available (not taken by another user)
     /// Returns true if available, false if taken
     /// Used during profile editing to validate username uniqueness
@@ -1450,6 +1460,7 @@ class FirebaseService {
     @discardableResult
     func addComment(postId: String, stampId: String, postOwnerId: String, userId: String, text: String, userProfile: UserProfile) async throws -> Comment {
         let commentRef = db.collection("comments").document()
+        _ = commentRef.documentID  // Auto-generated ID is handled by @DocumentID in Comment model
         
         let comment = Comment(
             userId: userId,
@@ -1472,7 +1483,12 @@ class FirebaseService {
         ])
         
         print("✅ Added comment to post: \(postId)")
-        return comment
+        
+        // ✅ FIX: Read back the comment to get the @DocumentID populated
+        // This ensures the returned comment has an ID (fixes infinite spinner bug)
+        let savedSnapshot = try await commentRef.getDocument()
+        let savedComment = try savedSnapshot.data(as: Comment.self)
+        return savedComment
     }
     
     /// Fetch comments for a post

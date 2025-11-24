@@ -10,6 +10,7 @@ struct StampDetailView: View {
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var mapCoordinator: MapCoordinator
     @EnvironmentObject var networkMonitor: NetworkMonitor
+    @EnvironmentObject var followManager: FollowManager
     let stamp: Stamp
     let isCollectedAtInit: Bool  // Passed explicitly to avoid environment object dependency in init
     let userLocation: CLLocation?
@@ -71,6 +72,25 @@ struct StampDetailView: View {
     private var isViewingOtherUser: Bool {
         guard let viewingUserId = viewingUserId else { return false }
         return viewingUserId != authManager.userId
+    }
+    
+    // Check if current user is following the viewed user
+    private var isFollowingViewedUser: Bool {
+        guard let viewingUserId = viewingUserId else { return false }
+        return followManager.isFollowing[viewingUserId] ?? false
+    }
+    
+    // Should we show the full memory details (notes, photos)?
+    // YES if: viewing own stamp OR following the user
+    // NO if: viewing someone else's stamp and not following them
+    private var shouldShowMemoryDetails: Bool {
+        if !isViewingOtherUser {
+            // Viewing own stamp - always show
+            return true
+        } else {
+            // Viewing someone else's stamp - only show if following them
+            return isFollowingViewedUser
+        }
     }
     
     // Computed property to get user rank from cached CollectedStamp
@@ -343,138 +363,199 @@ struct StampDetailView: View {
                                 .foregroundColor(.secondary)
                                 .padding(.bottom, 8)
                             
-                            // Memory cards showing rank and date
-                            HStack(spacing: 12) {
-                                // Rank card - shows what number collector the user was (like being #23 in line - permanent!)
+                            // Check if we should show full memory details or privacy placeholder
+                            if shouldShowMemoryDetails {
+                                // FULL MEMORY: Show rank, date, photos, and notes
+                                // Memory cards showing rank and date
                                 HStack(spacing: 12) {
-                                    Image(systemName: "medal.fill")
-                                        .font(.system(size: 24))
-                                        .foregroundColor(.yellow)
-                                    
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text("Number")
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
+                                    // Rank card - shows what number collector the user was (like being #23 in line - permanent!)
+                                    HStack(spacing: 12) {
+                                        Image(systemName: "medal.fill")
+                                            .font(.system(size: 24))
+                                            .foregroundColor(.yellow)
                                         
-                                        if let rank = cachedUserRank ?? userRank {
-                                            Text("#\(rank)")
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text("Number")
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+                                            
+                                            if let rank = cachedUserRank ?? userRank {
+                                                Text("#\(rank)")
+                                                    .font(.body)
+                                                    .fontWeight(.semibold)
+                                                    .foregroundColor(.primary)
+                                                    .lineLimit(1)
+                                                    .minimumScaleFactor(0.5)
+                                            } else {
+                                                Text("...")
+                                                    .font(.body)
+                                                    .fontWeight(.semibold)
+                                                    .foregroundColor(.secondary)
+                                                    .lineLimit(1)
+                                                    .minimumScaleFactor(0.5)
+                                            }
+                                        }
+                                        
+                                        Spacer()
+                                    }
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 14)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 70)
+                                    .background(Color.gray.opacity(0.1))
+                                    .cornerRadius(12)
+                                    
+                                    // Date card
+                                    HStack(spacing: 12) {
+                                        Image(systemName: "calendar")
+                                            .font(.system(size: 24))
+                                            .foregroundColor(.red)
+                                        
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text("Date")
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+                                            Text(formattedFullDate)
                                                 .font(.body)
                                                 .fontWeight(.semibold)
                                                 .foregroundColor(.primary)
                                                 .lineLimit(1)
                                                 .minimumScaleFactor(0.5)
-                                        } else {
-                                            Text("...")
-                                                .font(.body)
-                                                .fontWeight(.semibold)
-                                                .foregroundColor(.secondary)
-                                                .lineLimit(1)
-                                                .minimumScaleFactor(0.5)
                                         }
+                                        
+                                        Spacer()
                                     }
-                                    
-                                    Spacer()
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 14)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 70)
+                                    .background(Color.gray.opacity(0.1))
+                                    .cornerRadius(12)
                                 }
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 14)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 70)
-                                .background(Color.gray.opacity(0.1))
-                                .cornerRadius(12)
+                                .padding(.bottom, 24)
                                 
-                                // Date card
-                                HStack(spacing: 12) {
-                                    Image(systemName: "calendar")
-                                        .font(.system(size: 24))
-                                        .foregroundColor(.red)
-                                    
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text("Date")
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-                                        Text(formattedFullDate)
-                                            .font(.body)
-                                            .fontWeight(.semibold)
-                                            .foregroundColor(.primary)
-                                            .lineLimit(1)
-                                            .minimumScaleFactor(0.5)
-                                    }
-                                    
-                                    Spacer()
+                                // Photo section
+                                if stampsManager.userCollection.collectedStamps.first(where: { $0.stampId == stamp.id }) != nil || isViewingOtherUser {
+                                    // Always show photo gallery (it handles both empty and non-empty states)
+                                    PhotoGalleryView(
+                                        stampId: stamp.id,
+                                        userId: isViewingOtherUser ? viewingUserId : nil,
+                                        userPhotos: isViewingOtherUser ? (viewingUserCollectedStamp?.userImageNames ?? []) : nil,
+                                        userPhotoPaths: isViewingOtherUser ? (viewingUserCollectedStamp?.userImagePaths ?? []) : nil
+                                    )
+                                    .padding(.bottom, hasPhotosOrNotes ? 16 : 0)
                                 }
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 14)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 70)
-                                .background(Color.gray.opacity(0.1))
-                                .cornerRadius(12)
-                            }
-                            .padding(.bottom, 24)
-                            
-                            // Photo section
-                            if stampsManager.userCollection.collectedStamps.first(where: { $0.stampId == stamp.id }) != nil || isViewingOtherUser {
-                                // Always show photo gallery (it handles both empty and non-empty states)
-                                PhotoGalleryView(
-                                    stampId: stamp.id,
-                                    userId: isViewingOtherUser ? viewingUserId : nil,
-                                    userPhotos: isViewingOtherUser ? (viewingUserCollectedStamp?.userImageNames ?? []) : nil,
-                                    userPhotoPaths: isViewingOtherUser ? (viewingUserCollectedStamp?.userImagePaths ?? []) : nil
-                                )
-                                .padding(.bottom, hasPhotosOrNotes ? 16 : 0)
-                            }
-                            
-                            // Add notes button - only show if NOT viewing someone else's profile
-                            if !isViewingOtherUser {
-                                Button(action: {
-                                    editingNotes = userNotes
-                                    showNotesEditor = true
-                                }) {
+                                
+                                // Add notes button - only show if NOT viewing someone else's profile
+                                if !isViewingOtherUser {
+                                    Button(action: {
+                                        editingNotes = userNotes
+                                        showNotesEditor = true
+                                    }) {
+                                        HStack(alignment: .firstTextBaseline, spacing: 8) {
+                                            Image(systemName: "note.text")
+                                                .font(.body)
+                                                .foregroundColor(.primary)
+                                                .frame(width: 18, height: 18, alignment: .center)
+                                            
+                                            if userNotes.isEmpty {
+                                                Text("Add Notes")
+                                                    .font(.body)
+                                                    .fontWeight(.semibold)
+                                                    .foregroundColor(.primary)
+                                            } else {
+                                                Text(userNotes)
+                                                    .font(.body)
+                                                    .foregroundColor(.primary)
+                                                    .multilineTextAlignment(.leading)
+                                            }
+                                            
+                                            Spacer(minLength: 6)
+                                            
+                                            Image(systemName: "chevron.right")
+                                                .font(.body)
+                                                .foregroundColor(.secondary)
+                                        }
+                                        .frame(minHeight: 44)              // Larger tap target
+                                        .contentShape(Rectangle())         // Make entire frame tappable
+                                    }
+                                } else if !userNotes.isEmpty {
+                                    // Viewing someone else's notes - show as read-only text
                                     HStack(alignment: .firstTextBaseline, spacing: 8) {
                                         Image(systemName: "note.text")
                                             .font(.body)
                                             .foregroundColor(.primary)
                                             .frame(width: 18, height: 18, alignment: .center)
                                         
-                                        if userNotes.isEmpty {
-                                            Text("Add Notes")
+                                        Text(userNotes)
+                                            .font(.body)
+                                            .foregroundColor(.primary)
+                                            .multilineTextAlignment(.leading)
+                                    }
+                                    .frame(minHeight: 44)
+                                }
+                            } else {
+                                // PRIVACY PLACEHOLDER: Show "Follow to see memory"
+                                VStack(spacing: 16) {
+                                    // Blurred/placeholder area
+                                    HStack(spacing: 12) {
+                                        Image(systemName: "lock.fill")
+                                            .font(.system(size: 28))
+                                            .foregroundColor(.gray)
+                                        
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text("Follow to see memory")
                                                 .font(.body)
                                                 .fontWeight(.semibold)
                                                 .foregroundColor(.primary)
-                                        } else {
-                                            Text(userNotes)
-                                                .font(.body)
-                                                .foregroundColor(.primary)
-                                                .multilineTextAlignment(.leading)
+                                            
+                                            Text("Photos, notes, and collection date")
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
                                         }
                                         
-                                        Spacer(minLength: 6)
-                                        
-                                        Image(systemName: "chevron.right")
-                                            .font(.body)
-                                            .foregroundColor(.secondary)
+                                        Spacer()
                                     }
-                                    .frame(minHeight: 44)              // Larger tap target
-                                    .contentShape(Rectangle())         // Make entire frame tappable
-                                }
-                            } else if !userNotes.isEmpty {
-                                // Viewing someone else's notes - show as read-only text
-                                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                                    Image(systemName: "note.text")
-                                        .font(.body)
-                                        .foregroundColor(.primary)
-                                        .frame(width: 18, height: 18, alignment: .center)
+                                    .padding(16)
+                                    .frame(maxWidth: .infinity)
+                                    .background(Color.gray.opacity(0.1))
+                                    .cornerRadius(12)
                                     
-                                    Text(userNotes)
-                                        .font(.body)
-                                        .foregroundColor(.primary)
-                                        .multilineTextAlignment(.leading)
+                                    // Follow button
+                                    if let viewingUserId = viewingUserId {
+                                        Button(action: {
+                                            guard let currentUserId = authManager.userId else { return }
+                                            followManager.followUser(currentUserId: currentUserId, targetUserId: viewingUserId) { _ in
+                                                // After following, the view will automatically update
+                                                // because followManager.isFollowing will change
+                                            }
+                                        }) {
+                                            HStack(spacing: 8) {
+                                                if followManager.isProcessingFollow[viewingUserId] == true {
+                                                    ProgressView()
+                                                        .progressViewStyle(CircularProgressViewStyle())
+                                                        .scaleEffect(0.8)
+                                                        .tint(.white)
+                                                }
+                                                Text("Follow")
+                                            }
+                                            .font(.body)
+                                            .fontWeight(.semibold)
+                                            .foregroundColor(.white)
+                                            .frame(maxWidth: .infinity)
+                                            .frame(height: 44)
+                                            .background(Color.blue)
+                                            .cornerRadius(12)
+                                        }
+                                        .disabled(followManager.isProcessingFollow[viewingUserId] == true)
+                                    }
                                 }
-                                .frame(minHeight: 44)
+                                .padding(.bottom, 16)
                             }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 24)
-                        .padding(.bottom, hasPhotosOrNotes ? 36 : 24)
+                        .padding(.bottom, hasPhotosOrNotes && shouldShowMemoryDetails ? 36 : 24)
                         .transition(.opacity)
                     }
                     
@@ -717,6 +798,11 @@ struct StampDetailView: View {
         }
         .onAppear {
             // Animation states are now set correctly in init() - no updates needed!
+            
+            // Check follow status if viewing someone else's profile
+            if isViewingOtherUser, let viewingUserId = viewingUserId, let currentUserId = authManager.userId {
+                followManager.checkFollowStatus(currentUserId: currentUserId, targetUserId: viewingUserId)
+            }
             
             // Start slow-load warning timer (only if collected and not cached)
             // Shows banner after 2 seconds to avoid flash on fast WiFi

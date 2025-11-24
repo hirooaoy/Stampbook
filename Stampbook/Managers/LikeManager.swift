@@ -161,6 +161,11 @@ class LikeManager: ObservableObject {
         return likeCounts[postId, default: 0]
     }
     
+    /// Check if manager has count data for a post (to distinguish between "has 0 likes" vs "no data yet")
+    func hasCountData(postId: String) -> Bool {
+        return likeCounts[postId] != nil
+    }
+    
     /// Fetch like status for multiple posts (batch operation)
     /// 
     /// ✅ OPTIMIZED (Nov 13, 2025): Smart Caching
@@ -221,8 +226,29 @@ class LikeManager: ObservableObject {
     }
     
     /// Set initial like counts (called when feed loads)
-    func setLikeCounts(_ counts: [String: Int]) {
-        likeCounts = counts
+    /// - Parameters:
+    ///   - counts: Dictionary of postId -> like count from feed data
+    ///   - isStaleData: If true, only fills in missing posts (doesn't overwrite existing)
+    func setLikeCounts(_ counts: [String: Int], isStaleData: Bool = false) {
+        if isStaleData {
+            // Stale disk cache: Only fill in posts we don't have data for yet
+            // This prevents overwriting fresh UserDefaults cache with old counts
+            for (postId, count) in counts {
+                if likeCounts[postId] == nil {
+                    likeCounts[postId] = count
+                }
+            }
+            #if DEBUG
+            let addedCount = counts.filter { likeCounts[$0.key] == $0.value }.count
+            print("📊 [LikeManager] Initialized \(addedCount) new posts from STALE data (preserved existing cache)")
+            #endif
+        } else {
+            // Fresh Firebase data: Replace all counts with authoritative data
+            likeCounts = counts
+            #if DEBUG
+            print("📊 [LikeManager] Replaced all counts with FRESH Firebase data (\(counts.count) posts)")
+            #endif
+        }
         // Save updated counts to cache for next session
         saveCachedLikes()
     }

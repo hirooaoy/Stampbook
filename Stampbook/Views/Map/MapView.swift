@@ -220,6 +220,7 @@ struct MapView: View {
                     userLocation: locationManager.location,
                     showBackButton: false
                 )
+                .sheetContentBackground()
                 .toolbar(.visible, for: .tabBar)
             }
         }

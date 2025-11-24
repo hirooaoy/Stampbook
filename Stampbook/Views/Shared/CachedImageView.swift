@@ -218,6 +218,10 @@ struct CachedImageView: View {
     }
     
     private func loadFullResolution(storagePath: String, stampId: String, imageUrl: String?) async {
+        await MainActor.run {
+            isLoading = true
+        }
+        
         do {
             let fullResImage = try await ImageManager.shared.downloadAndCacheImage(
                 storagePath: storagePath,

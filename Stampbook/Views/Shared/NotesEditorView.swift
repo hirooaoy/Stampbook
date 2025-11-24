@@ -50,6 +50,7 @@ struct NotesEditorView: View {
                 isTextFieldFocused = true
             }
             .toolbar(.visible, for: .tabBar)
+            .sheetContentBackground() // iOS 18.6 compatibility: Adds background to NavigationStack in fullScreenCover
         }
         .presentationDragIndicator(.visible)
     }

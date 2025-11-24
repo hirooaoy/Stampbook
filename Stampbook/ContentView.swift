@@ -13,6 +13,7 @@ struct ContentView: View {
     @State private var selectedTab = 0
     @State private var previousTab = 0 // Track previous tab
     @State private var shouldResetStampsNavigation = false // Flag to reset StampsView navigation
+    @State private var deepLinkedStampId: String? = nil // For widget deep linking
     
     // Safety net for broken account state (signed in but no profile cached)
     @State private var isLoadingMissingProfile = false
@@ -101,7 +102,7 @@ struct ContentView: View {
             }
                 .tag(1)
             
-            StampsView(shouldResetNavigation: $shouldResetStampsNavigation)
+            StampsView(shouldResetNavigation: $shouldResetStampsNavigation, deepLinkedStampId: $deepLinkedStampId)
                 .tabItem {
                     Label("Stamps", systemImage: "book.closed.fill")
                 }
@@ -118,6 +119,9 @@ struct ContentView: View {
                 Logger.debug("Switching to Map tab (tab 1)")
                 selectedTab = 1 // Switch to Map tab
             }
+        }
+        .onOpenURL { url in
+            handleDeepLink(url)
         }
         .onAppear {
             Logger.debug("onAppear started")
@@ -164,6 +168,29 @@ struct ContentView: View {
             }
         }
         }
+    }
+    
+    // MARK: - Deep Linking
+    
+    /// Handle deep links from widget (stampbook://stamp/{stampId})
+    private func handleDeepLink(_ url: URL) {
+        Logger.debug("Received deep link: \(url)")
+        
+        // Parse URL: stampbook://stamp/{stampId}
+        guard url.scheme == "stampbook",
+              url.host() == "stamp",
+              let stampId = url.pathComponents.dropFirst().first else {
+            Logger.warning("Invalid deep link format: \(url)")
+            return
+        }
+        
+        Logger.info("Opening stamp from widget: \(stampId)", category: "DeepLink")
+        
+        // Don't force tab switch - let user stay on their current tab
+        // The fullScreenCover will present modally over any tab
+        
+        // Set the stamp ID to open (StampsView will detect and open detail sheet)
+        deepLinkedStampId = stampId
     }
     
     // MARK: - Profile Setup Check

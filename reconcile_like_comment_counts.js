@@ -72,7 +72,7 @@ async function reconcileCounts() {
       const postsSnapshot = await db
         .collection('users')
         .doc(userId)
-        .collection('collected_stamps')
+        .collection('collectedStamps')
         .get();
       
       if (postsSnapshot.empty) {

@@ -56,6 +56,10 @@ GoogleService-Info.plist
 
 serviceAccountKey.json
 
+# APNs Authentication Key (Apple Push Notifications)
+*.p8
+AuthKey_*.p8
+
 # Admin tools (should not be committed)
 public/admin-upload-stamp.html
 

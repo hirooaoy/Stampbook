@@ -13,7 +13,7 @@
     "name": "Airports of the World",
     "description": "Travel the world and collect stamps from unique airports",
     "region": "global",
-    "totalStamps": 1
+    "totalStamps": 9
   },
   {
     "id": "big-bend-must-visits",
@@ -24,12 +24,28 @@
     "description": "Known for its stunning desert, mountain, and river landscapes along the U.S.-Mexico border"
   },
   {
+    "id": "crater-lake-must-visits",
+    "totalStamps": 5,
+    "name": "Crater Lake National Park",
+    "region": "oregon",
+    "emoji": "💙",
+    "description": "America's deepest lake at 1,943 feet, formed in a collapsed volcano with impossibly blue water"
+  },
+  {
     "id": "discover-central-park",
     "emoji": "🐴",
     "name": "Central Park",
     "description": "You're never too old to be happily exploring Central Park's iconic landmarks and hidden corners",
     "region": "new-york",
     "totalStamps": 6
+  },
+  {
+    "id": "everglades-must-visits",
+    "totalStamps": 5,
+    "name": "Everglades National Park",
+    "region": "florida",
+    "emoji": "🐊",
+    "description": "America's largest subtropical wilderness, protecting unique wetland ecosystems and incredible wildlife"
   },
   {
     "id": "grand-canyon-must-visits",
@@ -46,6 +62,30 @@
     "description": "Beautiful libraries where you can lose yourself in thought and tranquility",
     "region": "global",
     "totalStamps": 1
+  },
+  {
+    "id": "movie-landmarks",
+    "emoji": "🎥",
+    "name": "Movie Landmarks",
+    "description": "Iconic filming locations where your favorite movies came to life",
+    "region": "global",
+    "totalStamps": 7
+  },
+  {
+    "id": "olympic-must-visits",
+    "totalStamps": 6,
+    "name": "Olympic National Park",
+    "region": "washington",
+    "emoji": "🌲",
+    "description": "Three distinct ecosystems: glacier-capped mountains, temperate rainforests, and rugged Pacific coastline"
+  },
+  {
+    "id": "rocky-mountain-must-visits",
+    "totalStamps": 6,
+    "name": "Rocky Mountain National Park",
+    "region": "colorado",
+    "emoji": "⛰️",
+    "description": "Alpine peaks, pristine lakes, and the highest continuous paved road in North America"
   },
   {
     "id": "sequoia-giants",
@@ -72,6 +112,14 @@
     "totalStamps": 6
   },
   {
+    "id": "ski-resort-bucket-list",
+    "emoji": "⛷️",
+    "name": "Ski Resort Bucket List",
+    "description": "Dream ski destinations from North America's most legendary mountains",
+    "region": "north-america",
+    "totalStamps": 10
+  },
+  {
     "id": "sf-golden-gate-park",
     "emoji": "🌳",
     "name": "Golden Gate Park",
@@ -90,7 +138,7 @@
   {
     "id": "stargazing-spots",
     "emoji": "⭐",
-    "name": "Sight of the Stars Makes Me Dream",
+    "name": "Stargaze into the Galaxy",
     "description": "Beautiful places on earth to stargaze and forget about the world",
     "region": "global",
     "totalStamps": 2

@@ -281,14 +281,15 @@ async function deleteUserAccount(userId) {
       }
     }
     
-    // Step 12: Delete notifications (if collection exists)
+    // Step 12: Delete notifications (both received and sent)
     log('\n📋 Step 12: Deleting notifications...', 'blue');
     try {
+      // Delete notifications received by this user (in their subcollection)
       const notificationsRef = db.collection('users').doc(userId).collection('notifications');
       const notifications = await notificationsRef.get();
       
       if (notifications.empty) {
-        log('   No notifications found', 'yellow');
+        log('   No received notifications found', 'yellow');
       } else {
         const batch = db.batch();
         let count = 0;
@@ -297,7 +298,18 @@ async function deleteUserAccount(userId) {
           count++;
         });
         await batch.commit();
-        log(`   ✅ Deleted ${count} notifications`, 'green');
+        log(`   ✅ Deleted ${count} received notifications`, 'green');
+      }
+      
+      // Delete notifications sent by this user (where they are the actor in top-level collection)
+      const sentNotificationsQuery = await db.collection('notifications').where('actorId', '==', userId).get();
+      if (!sentNotificationsQuery.empty) {
+        const batch = db.batch();
+        sentNotificationsQuery.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
+        log(`   ✅ Deleted ${sentNotificationsQuery.size} sent notifications (where user was actor)`, 'green');
+      } else {
+        log('   No sent notifications found', 'yellow');
       }
     } catch (error) {
       log('   ⚠️  Notifications collection not found (may not exist yet)', 'yellow');

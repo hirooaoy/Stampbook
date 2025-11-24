@@ -38,6 +38,7 @@ enum NotificationType: String, Codable, Hashable {
     case follow = "follow"
     case like = "like"
     case comment = "comment"
+    case mention = "mention"  // When user is @mentioned in a comment
     // Future types can be added here:
     // case adminMessage = "admin_message"
     // case nearbyStamp = "nearby_stamp"

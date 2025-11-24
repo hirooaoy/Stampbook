@@ -80,7 +80,7 @@ class CommentManager: ObservableObject {
         }
         lastCommentTime = Date()
         
-        // Create optimistic comment
+        // Create optimistic comment with temp ID
         let optimisticComment = Comment(
             userId: userId,
             postId: postId,
@@ -92,6 +92,9 @@ class CommentManager: ObservableObject {
             userAvatarUrl: userProfile.avatarUrl,
             createdAt: Date()
         )
+        
+        // Store the temp ID for later replacement
+        let tempId = optimisticComment.computedId
         
         // Optimistic update
         if comments[postId] == nil {
@@ -120,11 +123,9 @@ class CommentManager: ObservableObject {
                     userProfile: userProfile
                 )
                 
-                // Replace optimistic comment with actual comment (which has ID)
+                // Replace optimistic comment with actual comment (which has Firebase ID)
                 await MainActor.run {
-                    if let index = comments[postId]?.firstIndex(where: { 
-                        $0.createdAt == optimisticComment.createdAt && $0.userId == userId 
-                    }) {
+                    if let index = comments[postId]?.firstIndex(where: { $0.computedId == tempId }) {
                         comments[postId]?[index] = savedComment
                     }
                 }
@@ -135,9 +136,7 @@ class CommentManager: ObservableObject {
                 
                 // Revert optimistic update on error
                 await MainActor.run {
-                    comments[postId]?.removeAll(where: { 
-                        $0.createdAt == optimisticComment.createdAt && $0.userId == userId 
-                    })
+                    comments[postId]?.removeAll(where: { $0.computedId == tempId })
                     commentCounts[postId, default: 1] = max(0, commentCounts[postId, default: 1] - 1)
                     let revertedCount = commentCounts[postId, default: 0]
                     
@@ -197,9 +196,8 @@ class CommentManager: ObservableObject {
                 )
                 
                 print("✅ Comment deleted from Firebase: \(commentId)")
-                
-                // Refetch to ensure accuracy
-                await fetchComments(postId: postId)
+                // ✅ No refetch needed - optimistic update is already accurate
+                // This makes delete consistent with add (neither refetch on success)
             } catch {
                 print("❌ Failed to delete comment: \(error.localizedDescription)")
                 
@@ -235,13 +233,35 @@ class CommentManager: ObservableObject {
         return max(0, commentCounts[postId, default: 0])
     }
     
+    /// Check if manager has count data for a post (to distinguish between "has 0 comments" vs "no data yet")
+    func hasCountData(postId: String) -> Bool {
+        return commentCounts[postId] != nil
+    }
+    
     /// Set initial comment counts (called when feed loads)
-    /// Overwrites existing counts with authoritative data from Firestore
-    func setCommentCounts(_ counts: [String: Int]) {
-        #if DEBUG
-        print("📊 [CommentManager] setCommentCounts called with \(counts.count) posts")
-        #endif
-        commentCounts = counts
+    /// - Parameters:
+    ///   - counts: Dictionary of postId -> comment count from feed data
+    ///   - isStaleData: If true, only fills in missing posts (doesn't overwrite existing)
+    func setCommentCounts(_ counts: [String: Int], isStaleData: Bool = false) {
+        if isStaleData {
+            // Stale disk cache: Only fill in posts we don't have data for yet
+            // This prevents overwriting fresh UserDefaults cache with old counts
+            for (postId, count) in counts {
+                if commentCounts[postId] == nil {
+                    commentCounts[postId] = count
+                }
+            }
+            #if DEBUG
+            let addedCount = counts.filter { commentCounts[$0.key] == $0.value }.count
+            print("📊 [CommentManager] Initialized \(addedCount) new posts from STALE data (preserved existing cache)")
+            #endif
+        } else {
+            // Fresh Firebase data: Replace all counts with authoritative data
+            commentCounts = counts
+            #if DEBUG
+            print("📊 [CommentManager] Replaced all counts with FRESH Firebase data (\(counts.count) posts)")
+            #endif
+        }
         saveCachedCommentCounts() // Persist to disk so cache stays fresh
     }
     
