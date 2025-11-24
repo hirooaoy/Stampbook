@@ -289,6 +289,16 @@ async function sendPushNotification(userId, notification, data = {}) {
       return;
     }
     
+    // Get actual unread notification count for accurate badge
+    const unreadCount = await admin.firestore()
+      .collection('notifications')
+      .where('recipientId', '==', userId)
+      .where('isRead', '==', false)
+      .count()
+      .get();
+    
+    const badgeCount = unreadCount.data().count;
+    
     // Send push notification
     const message = {
       token: fcmToken,
@@ -301,14 +311,14 @@ async function sendPushNotification(userId, notification, data = {}) {
         payload: {
           aps: {
             sound: 'default',
-            badge: 1 // Will be updated with actual unread count
+            badge: badgeCount // Actual unread count
           }
         }
       }
     };
     
     await admin.messaging().send(message);
-    console.log(`✅ Push notification sent to user ${userId}`);
+    console.log(`✅ Push notification sent to user ${userId} (badge: ${badgeCount})`);
     
   } catch (error) {
     // Don't throw - push notification failure shouldn't break the function
