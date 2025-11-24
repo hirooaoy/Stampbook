@@ -240,6 +240,11 @@ struct StampbookApp: App {
                 Logger.debug("App became active")
                 // Network monitor will automatically check connectivity
                 
+                // Clear app badge when app opens (notifications viewed)
+                Task {
+                    try? await UNUserNotificationCenter.current().setBadgeCount(0)
+                }
+                
                 // Start notification polling if user is signed in
                 // Polls every 5 minutes - 98% cheaper than real-time listeners
                 if authManager.isSignedIn, let userId = authManager.userId {

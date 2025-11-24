@@ -34,20 +34,38 @@ struct StampWidgetView: View {
                     .aspectRatio(contentMode: .fit) // Shows full stamp without cropping
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                // Fallback: Show app logo if stamp image not available
-                if let logoImage = UIImage(named: "AppLogo") {
-                    Image(uiImage: logoImage)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else {
-                    // Final fallback
-                    Color.blue.opacity(0.3)
-                        .overlay(
-                            Image(systemName: "map.fill")
-                                .font(.system(size: 40))
-                                .foregroundColor(.white)
-                        )
+                // Fallback: Beautiful branded placeholder when image not yet cached
+                ZStack {
+                    // Gradient background (subtle stamp-like colors)
+                    LinearGradient(
+                        colors: [
+                            Color(red: 0.95, green: 0.94, blue: 0.92),
+                            Color(red: 0.98, green: 0.97, blue: 0.95)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                    
+                    VStack(spacing: 8) {
+                        // Stamp icon
+                        Image(systemName: "map.fill")
+                            .font(.system(size: 36, weight: .light))
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [Color(red: 0.4, green: 0.45, blue: 0.5), Color(red: 0.5, green: 0.55, blue: 0.6)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                        
+                        // Stamp name
+                        Text(stamp.name)
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(Color(red: 0.3, green: 0.35, blue: 0.4))
+                            .multilineTextAlignment(.center)
+                            .lineLimit(2)
+                    }
+                    .padding(.horizontal, 8)
                 }
             }
             

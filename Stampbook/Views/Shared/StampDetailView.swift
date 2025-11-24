@@ -206,7 +206,7 @@ struct StampDetailView: View {
             return ("This event stamp expired on \(dateStr)", "calendar.badge.exclamationmark", .orange)
         }
         
-        // Priority 3: Collected but image taking a long time to load (2+ seconds)
+        // Priority 3: Collected but image taking a long time to load (4+ seconds)
         // Only show after delay to avoid flash on fast connections
         if isCollected && showSlowLoadWarning && !isStampImageCached {
             return ("Image will load when you have a strong connection", "wifi.exclamationmark", .blue)
@@ -805,12 +805,12 @@ struct StampDetailView: View {
             }
             
             // Start slow-load warning timer (only if collected and not cached)
-            // Shows banner after 2 seconds to avoid flash on fast WiFi
+            // Shows banner after 4 seconds to avoid flash on fast WiFi
             if isCollected && !isStampImageCached {
                 Task {
-                    try? await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
+                    try? await Task.sleep(nanoseconds: 4_000_000_000) // 4 seconds
                     await MainActor.run {
-                        // Only show if image still not cached after 2 seconds
+                        // Only show if image still not cached after 4 seconds
                         if !isStampImageCached {
                             showSlowLoadWarning = true
                         }
