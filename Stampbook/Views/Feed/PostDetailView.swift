@@ -21,6 +21,8 @@ struct PostDetailView: View {
     @State private var navigateToStampDetail = false
     @State private var stamp: Stamp? = nil
     @State private var selectedUserId: IdentifiableString? // For navigation to user profile from comments
+    @State private var replyingTo: Comment? = nil // For comment replies
+    @FocusState private var commentInputFocused: Bool
     @Environment(\.dismiss) var dismiss
     
     // Computed properties for real-time updates
@@ -108,7 +110,8 @@ struct PostDetailView: View {
                     postId: postId,
                     postOwnerId: post.userId,
                     stampId: post.stampId,
-                    commentManager: commentManager
+                    commentManager: commentManager,
+                    replyingTo: $replyingTo
                 )
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
@@ -318,8 +321,13 @@ struct PostDetailView: View {
                         commentManager: commentManager,
                         onProfileTap: { userId, username, displayName in
                             selectedUserId = IdentifiableString(value: userId, username: username, displayName: displayName)
+                        },
+                        onReply: { replyingComment in
+                            replyingTo = replyingComment
+                            commentInputFocused = true
                         }
                     )
+                    .padding(.leading, comment.parentCommentId != nil ? 40 : 0) // Indent replies
                 }
             }
         }
@@ -446,6 +454,7 @@ private struct CommentRowView: View {
     let postOwnerId: String
     @ObservedObject var commentManager: CommentManager
     let onProfileTap: (String, String, String) -> Void // (userId, username, displayName)
+    let onReply: (Comment) -> Void // Callback for reply button
     
     @EnvironmentObject var authManager: AuthManager
     @State private var showDeleteAlert = false
@@ -469,7 +478,7 @@ private struct CommentRowView: View {
     }
     
     var body: some View {
-        HStack(alignment: .center, spacing: 12) {
+        HStack(alignment: .top, spacing: 12) {
             // Profile picture
             Button(action: {
                 onProfileTap(comment.userId, comment.userUsername, comment.userDisplayName)
@@ -501,37 +510,49 @@ private struct CommentRowView: View {
             
             Spacer()
             
-            // Show loading indicator for optimistic comments, menu for saved comments
+            // Show loading indicator for optimistic comments, Reply + menu for saved comments
             if isOptimisticComment {
                 ProgressView()
                     .scaleEffect(0.7)
                     .frame(width: 24, height: 24)
             } else {
-                // Triple dot menu for saved comments
-                Menu {
-                    // Delete option (for own comments OR own post)
-                    if canDelete {
-                        Button(role: .destructive, action: {
-                            showDeleteAlert = true
-                        }) {
-                            Label(isOwnComment ? "Delete comment" : "Remove comment", systemImage: "trash")
-                        }
+                HStack(spacing: 8) {
+                    // Reply button (text only, no background)
+                    Button(action: {
+                        onReply(comment)
+                    }) {
+                        Text("Reply")
+                            .font(.system(size: 14))
+                            .foregroundColor(.gray)
                     }
+                    .buttonStyle(PlainButtonStyle())
                     
-                    // Report option (only for OTHER people's comments)
-                    if !isOwnComment {
-                        Button(role: .destructive, action: { showingReportSheet = true }) {
-                            Label("Report comment", systemImage: "exclamationmark.triangle")
+                    // Triple dot menu for saved comments
+                    Menu {
+                        // Delete option (for own comments OR own post)
+                        if canDelete {
+                            Button(role: .destructive, action: {
+                                showDeleteAlert = true
+                            }) {
+                                Label(isOwnComment ? "Delete comment" : "Remove comment", systemImage: "trash")
+                            }
                         }
+                        
+                        // Report option (only for OTHER people's comments)
+                        if !isOwnComment {
+                            Button(role: .destructive, action: { showingReportSheet = true }) {
+                                Label("Report comment", systemImage: "exclamationmark.triangle")
+                            }
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis")
+                            .font(.system(size: 18))
+                            .foregroundColor(.gray)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
                     }
-                } label: {
-                    Image(systemName: "ellipsis")
-                        .font(.system(size: 18))
-                        .foregroundColor(.gray)
-                        .frame(width: 44, height: 44)
-                        .contentShape(Rectangle())
+                    .buttonStyle(PlainButtonStyle())
                 }
-                .buttonStyle(PlainButtonStyle())
             }
         }
         .alert(isOwnComment ? "Delete Comment" : "Remove Comment", isPresented: $showDeleteAlert) {
@@ -570,6 +591,9 @@ private struct CommentInputView: View {
     
     @State private var commentText = ""
     @FocusState private var isTextFieldFocused: Bool
+    
+    // Reply state
+    @Binding var replyingTo: Comment?
     
     // @mention autocomplete states
     @State private var mentionQuery: String = ""
@@ -621,6 +645,12 @@ private struct CommentInputView: View {
             }
             .padding(.vertical, 8)
         }
+        .onChange(of: replyingTo) { oldValue, newValue in
+            if let replyComment = newValue {
+                commentText = "@\(replyComment.userUsername) "
+                isTextFieldFocused = true
+            }
+        }
     }
     
     private func sendComment() {
@@ -637,10 +667,12 @@ private struct CommentInputView: View {
             postOwnerId: postOwnerId,
             userId: userId,
             text: trimmedText,
-            userProfile: userProfile
+            userProfile: userProfile,
+            parentCommentId: replyingTo?.id
         )
         
         commentText = ""
+        replyingTo = nil
         isTextFieldFocused = false
     }
     

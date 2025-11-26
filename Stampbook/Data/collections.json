@@ -1,11 +1,48 @@
 [
   {
+    "id": "new-york",
+    "emoji": "🗽",
+    "name": "New York",
+    "description": "Explore the best of New York City from iconic landmarks to hidden treasures",
+    "region": "new-york",
+    "totalStamps": 0,
+    "isParent": true
+  },
+  {
+    "id": "us-national-parks",
+    "emoji": "🏞️",
+    "name": "US National Parks",
+    "description": "Explore America's most stunning natural landmarks and protected wilderness areas",
+    "region": "usa",
+    "totalStamps": 0,
+    "isParent": true
+  },
+  {
+    "id": "san-francisco",
+    "emoji": "🌉",
+    "name": "San Francisco",
+    "description": "The best of San Francisco from iconic landmarks to hidden gems",
+    "region": "california",
+    "totalStamps": 0,
+    "isParent": true
+  },
+  {
+    "id": "movie-tv-landmarks",
+    "emoji": "🎬",
+    "name": "TV Show and Movie Landmarks",
+    "description": "Step into the scenes of your favorite films and shows at these iconic locations",
+    "region": "global",
+    "totalStamps": 0,
+    "isParent": true
+  },
+  {
     "id": "acadia-must-visits",
     "totalStamps": 5,
     "name": "Acadia National Park",
     "region": "acadia",
     "emoji": "🍁",
-    "description": "Iconic natural wonders and local favorites in and around Acadia National Park"
+    "description": "Iconic natural wonders and local favorites in and around Acadia National Park",
+    "parentId": "us-national-parks"
   },
   {
     "id": "airports-of-the-world",
@@ -21,7 +58,8 @@
     "name": "Big Bend National Park",
     "region": "texas",
     "emoji": "🏜️",
-    "description": "Known for its stunning desert, mountain, and river landscapes along the U.S.-Mexico border"
+    "description": "Known for its stunning desert, mountain, and river landscapes along the U.S.-Mexico border",
+    "parentId": "us-national-parks"
   },
   {
     "id": "crater-lake-must-visits",
@@ -29,7 +67,8 @@
     "name": "Crater Lake National Park",
     "region": "oregon",
     "emoji": "💙",
-    "description": "America's deepest lake at 1,943 feet, formed in a collapsed volcano with impossibly blue water"
+    "description": "America's deepest lake at 1,943 feet, formed in a collapsed volcano with impossibly blue water",
+    "parentId": "us-national-parks"
   },
   {
     "id": "discover-central-park",
@@ -37,15 +76,26 @@
     "name": "Central Park",
     "description": "You're never too old to be happily exploring Central Park's iconic landmarks and hidden corners",
     "region": "new-york",
-    "totalStamps": 6
+    "totalStamps": 6,
+    "parentId": "new-york"
   },
   {
     "id": "everglades-must-visits",
+    "emoji": "🐊",
     "totalStamps": 5,
     "name": "Everglades National Park",
+    "description": "America's largest subtropical wilderness, protecting unique wetland ecosystems and incredible wildlife",
     "region": "florida",
-    "emoji": "🐊",
-    "description": "America's largest subtropical wilderness, protecting unique wetland ecosystems and incredible wildlife"
+    "parentId": "us-national-parks"
+  },
+  {
+    "id": "gateway-arch-must-visits",
+    "emoji": "🏛️",
+    "totalStamps": 2,
+    "name": "Gateway Arch National Park",
+    "description": "America's tallest monument and symbol of westward expansion along the Mississippi River",
+    "region": "missouri",
+    "parentId": "us-national-parks"
   },
   {
     "id": "grand-canyon-must-visits",
@@ -53,12 +103,13 @@
     "totalStamps": 5,
     "name": "Grand Canyon National Park",
     "region": "arizona",
-    "description": "Observe the layered bands of red rock revealing millions of years of geological history"
+    "description": "Observe the layered bands of red rock revealing millions of years of geological history",
+    "parentId": "us-national-parks"
   },
   {
     "id": "libraries-that-make-you-forget-time",
     "emoji": "📚",
-    "name": "Libraries That Make You Forget Time",
+    "name": "Libraries to Forget Time",
     "description": "Beautiful libraries where you can lose yourself in thought and tranquility",
     "region": "global",
     "totalStamps": 1
@@ -66,10 +117,20 @@
   {
     "id": "movie-landmarks",
     "emoji": "🎥",
-    "name": "Movie Landmarks",
+    "name": "Iconic Movie Landmarks",
     "description": "Iconic filming locations where your favorite movies came to life",
     "region": "global",
-    "totalStamps": 7
+    "totalStamps": 7,
+    "parentId": "movie-tv-landmarks"
+  },
+  {
+    "id": "offline-love-nice-france",
+    "emoji": "💕",
+    "name": "Offline Love in Nice, France",
+    "description": "Find love without any digital devices... well, maybe just a little to collect these stamps",
+    "region": "france",
+    "totalStamps": 6,
+    "parentId": "movie-tv-landmarks"
   },
   {
     "id": "olympic-must-visits",
@@ -77,7 +138,8 @@
     "name": "Olympic National Park",
     "region": "washington",
     "emoji": "🌲",
-    "description": "Three distinct ecosystems: glacier-capped mountains, temperate rainforests, and rugged Pacific coastline"
+    "description": "Three distinct ecosystems: glacier-capped mountains, temperate rainforests, and rugged Pacific coastline",
+    "parentId": "us-national-parks"
   },
   {
     "id": "rocky-mountain-must-visits",
@@ -85,7 +147,8 @@
     "name": "Rocky Mountain National Park",
     "region": "colorado",
     "emoji": "⛰️",
-    "description": "Alpine peaks, pristine lakes, and the highest continuous paved road in North America"
+    "description": "Alpine peaks, pristine lakes, and the highest continuous paved road in North America",
+    "parentId": "us-national-parks"
   },
   {
     "id": "sequoia-giants",
@@ -93,7 +156,8 @@
     "name": "Sequoia National Park",
     "description": "Discover ancient giants and stand beneath the world's largest trees in California's Sequoia National Park",
     "region": "california",
-    "totalStamps": 5
+    "totalStamps": 5,
+    "parentId": "us-national-parks"
   },
   {
     "id": "sf-coffee",
@@ -101,7 +165,8 @@
     "name": "San Francisco Great Coffee",
     "description": "Discover the finest coffee shops in San Francisco",
     "region": "san-francisco",
-    "totalStamps": 10
+    "totalStamps": 10,
+    "parentId": "san-francisco"
   },
   {
     "id": "sf-community-gardens",
@@ -109,15 +174,8 @@
     "name": "San Francisco Popular Community Gardens",
     "description": "Discover vibrant community gardens where neighbors grow together",
     "region": "san-francisco",
-    "totalStamps": 6
-  },
-  {
-    "id": "ski-resort-bucket-list",
-    "emoji": "⛷️",
-    "name": "Ski Resort Bucket List",
-    "description": "Dream ski destinations from North America's most legendary mountains",
-    "region": "north-america",
-    "totalStamps": 10
+    "totalStamps": 6,
+    "parentId": "san-francisco"
   },
   {
     "id": "sf-golden-gate-park",
@@ -125,7 +183,8 @@
     "name": "Golden Gate Park",
     "description": "Discover hidden gems and iconic landmarks in San Francisco's urban oasis",
     "region": "san-francisco",
-    "totalStamps": 5
+    "totalStamps": 5,
+    "parentId": "san-francisco"
   },
   {
     "id": "sf-must-visits",
@@ -133,15 +192,33 @@
     "name": "San Francisco Must Visits",
     "description": "Essential spots to visit in San Francisco",
     "region": "san-francisco",
-    "totalStamps": 12
+    "totalStamps": 12,
+    "parentId": "san-francisco"
+  },
+  {
+    "id": "ski-resort-bucket-list",
+    "emoji": "⛷️",
+    "totalStamps": 10,
+    "name": "Ski Resort Bucket List",
+    "description": "Dream ski destinations from North America's most legendary mountains",
+    "region": "north-america"
   },
   {
     "id": "stargazing-spots",
     "emoji": "⭐",
-    "name": "Stargaze into the Galaxy",
     "description": "Beautiful places on earth to stargaze and forget about the world",
     "region": "global",
-    "totalStamps": 2
+    "totalStamps": 2,
+    "name": "Stargaze into the Galaxy"
+  },
+  {
+    "id": "theodore-roosevelt-must-visits",
+    "emoji": "🦬",
+    "totalStamps": 6,
+    "name": "Theodore Roosevelt National Park",
+    "description": "Rugged badlands and wildlife where Theodore Roosevelt developed his conservation legacy in the 1880s",
+    "region": "northdakota",
+    "parentId": "us-national-parks"
   },
   {
     "id": "yellowstone-must-visits",
@@ -149,7 +226,8 @@
     "name": "Yellowstone National Park",
     "region": "wyoming",
     "description": "Home to hundreds of animal species, including bears, wolves, bison, elk and antelope",
-    "emoji": "🦬"
+    "emoji": "🦬",
+    "parentId": "us-national-parks"
   },
   {
     "id": "yosemite-must-visits",
@@ -157,7 +235,8 @@
     "description": "Explore Yosemite's iconic granite cliffs, waterfalls, and ancient sequoias",
     "emoji": "🏔️",
     "name": "Yosemite National Park",
-    "totalStamps": 6
+    "totalStamps": 6,
+    "parentId": "us-national-parks"
   },
   {
     "id": "zion-must-visits",
@@ -165,6 +244,7 @@
     "description": "Explore the massive sandstone cliffs, scenic hikes, and narrow canyons carved by the Virgin River",
     "emoji": "💧",
     "totalStamps": 5,
-    "name": "Zion National Park"
+    "name": "Zion National Park",
+    "parentId": "us-national-parks"
   }
 ]

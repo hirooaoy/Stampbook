@@ -17,28 +17,25 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             background: #000000;
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             padding: 20px;
             color: #fff;
+            position: relative;
         }
 
         .container {
             max-width: 600px;
             width: 100%;
             text-align: center;
-            animation: fadeIn 0.8s ease-in;
+            margin: 0 auto;
+            padding-top: 80px;
         }
 
         @keyframes fadeIn {
             from {
                 opacity: 0;
-                transform: translateY(20px);
             }
             to {
                 opacity: 1;
-                transform: translateY(0);
             }
         }
 
@@ -81,6 +78,14 @@
             margin-bottom: 35px;
         }
 
+        .bottom-section {
+            position: fixed;
+            bottom: 40px;
+            left: 0;
+            right: 0;
+            text-align: center;
+        }
+
         .stamp-example {
             width: 80px;
             height: 80px;
@@ -95,55 +100,19 @@
             object-fit: cover;
         }
 
-        .qr-section {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 40px 80px;
-            margin-top: 0;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            display: inline-block;
-            max-width: 100%;
-        }
-
         .qr-code {
-            background: white;
-            padding: 20px;
-            border-radius: 12px;
             display: inline-block;
-            margin-bottom: 20px;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            margin-bottom: 10px;
         }
 
         .qr-code img {
-            width: 100%;
-            max-width: 200px;
-            height: auto;
+            width: 80px;
+            height: 80px;
             display: block;
         }
 
-        .invite-text {
-            font-size: 16px;
-            margin-top: 25px;
-            margin-bottom: 0;
-            opacity: 0.9;
-        }
-
-        .invite-code-block {
-            font-family: 'Courier New', monospace;
-            font-weight: 600;
-            letter-spacing: 1px;
-            font-size: 18px;
-            margin-top: 10px;
-        }
-
-        .testflight-link {
-            margin-top: 0;
-            padding-top: 0;
-        }
-
         .disclaimer {
-            margin-top: 40px;
+            margin-top: 0;
             font-size: 13px;
             opacity: 0.6;
             line-height: 1.6;
@@ -202,8 +171,7 @@
             <img src="logo.png" alt="Stampbook Logo">
         </div>
         
-        <h1>Stampbook</h1>
-        <p class="subtitle">Download on TestFlight and collect stamps around the world</p>
+        <p class="subtitle">Collect stamps around the world</p>
         
         <div class="stamps-preview">
             <div class="stamp-example">
@@ -217,21 +185,14 @@
             </div>
         </div>
         
-        <div class="qr-section">
+        <div class="bottom-section">
             <div class="qr-code">
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://testflight.apple.com/join/tFseAr5C" alt="TestFlight QR Code">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=https://testflight.apple.com/join/tFseAr5C&color=ffffff&bgcolor=000000" alt="TestFlight QR Code">
             </div>
             
-            <div class="invite-text">
-                Use this invite code in the app
+            <div class="disclaimer">
+                TestFlight (iOS) only. In the app, enter STAMPBOOKBETA to skip waitlist. <a href="https://stampbook-app.web.app/privacy-policy.html" target="_blank">Privacy policy</a>.
             </div>
-            <div class="invite-code-block">
-                STAMPBOOKBETA
-            </div>
-        </div>
-        
-        <div class="disclaimer">
-            TestFlight (iOS) only. Stamps are primarily in San Francisco. <a href="https://stampbook-app.web.app/privacy-policy.html" target="_blank">Privacy policy</a>.
         </div>
     </div>
 </body>

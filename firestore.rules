@@ -83,6 +83,18 @@ service cloud.firestore {
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likeCount', 'commentCount']);
     }
     
+    // User's bookmarked stamps (saved for later)
+    match /users/{userId}/bookmarkedStamps/{stampId} {
+      allow read: if request.auth != null;  // Any authenticated user can read (privacy handled client-side)
+      // Users can only create/delete their own bookmarks
+      allow create, delete: if request.auth.uid == userId;
+      // Validation: Ensure bookmarks have required fields
+      allow create: if request.auth.uid == userId
+        && request.resource.data.stampId is string
+        && request.resource.data.userId == userId
+        && request.resource.data.bookmarkedDate is timestamp;
+    }
+    
     // IMPORTANT: Allow collectionGroup queries for Instagram-style feed
     // This enables fetchFollowingFeed() to search across all users' collectedStamps chronologically
     match /{path=**}/collectedStamps/{stampId} {
@@ -121,6 +133,7 @@ service cloud.firestore {
       // Validation: Require text, userId, postId, timestamps
       // Rate limiting note: Max comment length prevents storage abuse
       // @mentions: Optional mentionedUserIds array (max 3 mentions per comment)
+      // Reply threading: Optional parentCommentId field for threaded conversations
       allow create: if request.auth != null 
         && request.resource.data.userId == request.auth.uid
         && request.resource.data.text is string
@@ -129,10 +142,15 @@ service cloud.firestore {
         && request.resource.data.createdAt is timestamp
         && (!('mentionedUserIds' in request.resource.data) ||  // Optional field
             (request.resource.data.mentionedUserIds is list
-             && request.resource.data.mentionedUserIds.size() <= 3));  // Max 3 mentions (spam prevention)
+             && request.resource.data.mentionedUserIds.size() <= 3))  // Max 3 mentions (spam prevention)
+        && (!('parentCommentId' in request.resource.data) ||  // Optional field for replies
+            request.resource.data.parentCommentId is string);
       allow delete: if request.auth != null && 
                        (resource.data.userId == request.auth.uid ||  // Your own comment
                         resource.data.postOwnerId == request.auth.uid);  // Or your post
+      // Allow updating parentCommentId to null (for orphaning replies when parent is deleted)
+      allow update: if request.auth != null
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['parentCommentId']);
     }
     
     // Notifications - users see engagement on their content

@@ -674,7 +674,8 @@ struct StampDetailView: View {
                                         name: collection.name,
                                         collectedCount: collectedInCollection,
                                         totalCount: totalActiveStamps,
-                                        completionPercentage: percentage
+                                        completionPercentage: percentage,
+                                        isParent: collection.isParent
                                     )
                                 }
                                 .buttonStyle(PlainButtonStyle())
@@ -758,6 +759,22 @@ struct StampDetailView: View {
             }
         }
         .toolbar {
+            // Bookmark button - only show for signed-in users
+            if !stamp.isWelcomeStamp && authManager.isSignedIn {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(action: {
+                        if let userId = authManager.userId {
+                            stampsManager.toggleBookmark(stamp.id, userId: userId)
+                        }
+                    }) {
+                        Image(systemName: stampsManager.isBookmarked(stamp.id) ? "bookmark.fill" : "bookmark")
+                            .font(.title3)
+                            .symbolRenderingMode(.hierarchical)
+                            .foregroundStyle(stampsManager.isBookmarked(stamp.id) ? .yellow : .secondary)
+                    }
+                }
+            }
+            
             // Triple dot menu - hide for welcome stamp
             if !stamp.isWelcomeStamp {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -769,20 +786,6 @@ struct StampDetailView: View {
                         }
                     } label: {
                         Image(systemName: "ellipsis")
-                            .font(.title3)
-                            .symbolRenderingMode(.hierarchical)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
-            
-            // X button - only shown in sheet mode (no back button)
-            if !showBackButton {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button(action: {
-                        dismiss()
-                    }) {
-                        Image(systemName: "xmark")
                             .font(.title3)
                             .symbolRenderingMode(.hierarchical)
                             .foregroundStyle(.secondary)

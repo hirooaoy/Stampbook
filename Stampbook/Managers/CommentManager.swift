@@ -71,7 +71,7 @@ class CommentManager: ObservableObject {
     
     /// Add a comment to a post with optimistic UI update
     @MainActor
-    func addComment(postId: String, stampId: String, postOwnerId: String, userId: String, text: String, userProfile: UserProfile) {
+    func addComment(postId: String, stampId: String, postOwnerId: String, userId: String, text: String, userProfile: UserProfile, parentCommentId: String? = nil) {
         // Debounce: Prevent rapid comment posting (Instagram-style - silently ignore)
         if let lastTime = lastCommentTime,
            Date().timeIntervalSince(lastTime) < debounceInterval {
@@ -90,6 +90,7 @@ class CommentManager: ObservableObject {
             userDisplayName: userProfile.displayName,
             userUsername: userProfile.username,
             userAvatarUrl: userProfile.avatarUrl,
+            parentCommentId: parentCommentId,
             createdAt: Date()
         )
         
@@ -120,7 +121,8 @@ class CommentManager: ObservableObject {
                     postOwnerId: postOwnerId,
                     userId: userId,
                     text: text,
-                    userProfile: userProfile
+                    userProfile: userProfile,
+                    parentCommentId: parentCommentId
                 )
                 
                 // Replace optimistic comment with actual comment (which has Firebase ID)
@@ -167,7 +169,9 @@ class CommentManager: ObservableObject {
     /// Delete a comment
     @MainActor
     func deleteComment(commentId: String, postId: String, postOwnerId: String, stampId: String) {
-        // Optimistic update
+        // Optimistic update: Remove the comment from local cache
+        // Note: Firebase will handle orphaning replies (setting parentCommentId to nil)
+        // We'll refetch on error to sync with Firebase's authoritative state
         let removedCount = comments[postId]?.count ?? 0
         comments[postId]?.removeAll(where: { $0.id == commentId })
         let newCount = comments[postId]?.count ?? 0
@@ -189,10 +193,12 @@ class CommentManager: ObservableObject {
         // Sync to Firebase in background
         Task {
             do {
+                // Pass flag to orphan replies when deleting parent
                 try await firebaseService.deleteComment(
                     commentId: commentId,
                     postOwnerId: postOwnerId,
-                    stampId: stampId
+                    stampId: stampId,
+                    orphanReplies: true
                 )
                 
                 print("✅ Comment deleted from Firebase: \(commentId)")
@@ -222,9 +228,32 @@ class CommentManager: ObservableObject {
         }
     }
     
-    /// Get comments for a post
+    /// Get comments for a post, organized into threads
+    /// Top-level comments sorted by date, with replies grouped under parents
     func getComments(postId: String) -> [Comment] {
-        return comments[postId] ?? []
+        guard let allComments = comments[postId] else { return [] }
+        
+        // Separate top-level comments and replies
+        let topLevel = allComments.filter { $0.parentCommentId == nil }
+        let replies = allComments.filter { $0.parentCommentId != nil }
+        
+        // Sort top-level comments by date (oldest first for now - can adjust)
+        let sortedTopLevel = topLevel.sorted { $0.createdAt < $1.createdAt }
+        
+        // Build threaded list
+        var threaded: [Comment] = []
+        
+        for parent in sortedTopLevel {
+            // Add parent
+            threaded.append(parent)
+            
+            // Find and add its replies (sorted oldest first)
+            let parentReplies = replies.filter { $0.parentCommentId == parent.id }
+                .sorted { $0.createdAt < $1.createdAt }
+            threaded.append(contentsOf: parentReplies)
+        }
+        
+        return threaded
     }
     
     /// Get comment count for a post

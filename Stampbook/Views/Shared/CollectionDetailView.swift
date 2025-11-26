@@ -52,7 +52,7 @@ struct CollectionDetailView: View {
                                 VStack(spacing: 12) {
                                     RoundedRectangle(cornerRadius: 12)
                                         .fill(Color.gray.opacity(0.3))
-                                        .frame(height: 160)
+                                        .frame(width: 148, height: 148)
                                     
                                     Text("Loading...")
                                         .font(.subheadline)

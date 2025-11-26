@@ -152,6 +152,49 @@ class FirebaseService {
         try docRef.setData(from: stamp, merge: true)
     }
     
+    // MARK: - Bookmarked Stamps
+    
+    /// Fetch bookmarked stamps for a user from Firestore
+    func fetchBookmarkedStamps(for userId: String, forceRefresh: Bool = false) async throws -> [BookmarkedStamp] {
+        let source: FirestoreSource = forceRefresh ? .server : .default
+        
+        let querySnapshot = try await db
+            .collection("users")
+            .document(userId)
+            .collection("bookmarkedStamps")
+            .order(by: "bookmarkedDate", descending: true)
+            .getDocuments(source: source)
+        
+        let bookmarks = querySnapshot.documents.compactMap { document -> BookmarkedStamp? in
+            try? document.data(as: BookmarkedStamp.self)
+        }
+        
+        print("✅ Fetched \(bookmarks.count) bookmarked stamps for user \(userId)")
+        return bookmarks
+    }
+    
+    /// Save a bookmarked stamp to Firestore
+    func saveBookmarkedStamp(_ bookmark: BookmarkedStamp, for userId: String) async throws {
+        let docRef = db
+            .collection("users")
+            .document(userId)
+            .collection("bookmarkedStamps")
+            .document(bookmark.stampId)
+        
+        try docRef.setData(from: bookmark, merge: true)
+    }
+    
+    /// Delete a bookmarked stamp from Firestore
+    func deleteBookmarkedStamp(stampId: String, for userId: String) async throws {
+        let docRef = db
+            .collection("users")
+            .document(userId)
+            .collection("bookmarkedStamps")
+            .document(stampId)
+        
+        try await docRef.delete()
+    }
+    
     /// Update notes for a collected stamp
     func updateStampNotes(stampId: String, userId: String, notes: String) async throws {
         let docRef = db
@@ -1458,7 +1501,7 @@ class FirebaseService {
     
     /// Add a comment to a post
     @discardableResult
-    func addComment(postId: String, stampId: String, postOwnerId: String, userId: String, text: String, userProfile: UserProfile) async throws -> Comment {
+    func addComment(postId: String, stampId: String, postOwnerId: String, userId: String, text: String, userProfile: UserProfile, parentCommentId: String? = nil) async throws -> Comment {
         let commentRef = db.collection("comments").document()
         _ = commentRef.documentID  // Auto-generated ID is handled by @DocumentID in Comment model
         
@@ -1471,6 +1514,7 @@ class FirebaseService {
             userDisplayName: userProfile.displayName,
             userUsername: userProfile.username,
             userAvatarUrl: userProfile.avatarUrl,
+            parentCommentId: parentCommentId,
             createdAt: Date()
         )
         
@@ -1508,8 +1552,24 @@ class FirebaseService {
     }
     
     /// Delete a comment (only by comment author or post owner)
-    func deleteComment(commentId: String, postOwnerId: String, stampId: String) async throws {
+    func deleteComment(commentId: String, postOwnerId: String, stampId: String, orphanReplies: Bool = false) async throws {
         let commentRef = db.collection("comments").document(commentId)
+        
+        // If orphanReplies is true, update all child comments to have nil parentCommentId
+        if orphanReplies {
+            let repliesSnapshot = try await db.collection("comments")
+                .whereField("parentCommentId", isEqualTo: commentId)
+                .getDocuments()
+            
+            // Update all replies to be top-level comments
+            for replyDoc in repliesSnapshot.documents {
+                try await replyDoc.reference.updateData([
+                    "parentCommentId": FieldValue.delete()
+                ])
+            }
+            
+            print("✅ Orphaned \(repliesSnapshot.documents.count) replies from comment: \(commentId)")
+        }
         
         // Delete the comment document
         try await commentRef.delete()

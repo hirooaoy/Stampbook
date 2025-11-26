@@ -81,47 +81,12 @@ struct FeedView: View {
     /// Build the common menu items shared between signed-in and signed-out states
     @ViewBuilder
     private var menuContent: some View {
-        Button(action: {
-            showAboutStampbook = true
-        }) {
-            Label("About Stampbook", systemImage: "info.circle")
-        }
-        
-        // TODO: Add back later
-        // Button(action: {
-        //     copyAppStoreUrl()
-        // }) {
-        //     Label("Share Stampbook", systemImage: "square.and.arrow.up")
-        // }
-        
-        Divider()
-        
-        Button(action: {
-            showForLocalBusiness = true
-        }) {
-            Label("For local business", systemImage: "storefront")
-        }
-        
-        // TODO: Add back later
-        // Button(action: {
-        //     showForCreators = true
-        // }) {
-        //     Label("For creators", systemImage: "sparkles")
-        // }
-        
-        Divider()
-        
-        Button(action: {
-            showProblemReport = true
-        }) {
-            Label("Report a problem", systemImage: "exclamationmark.bubble")
-        }
-        
-        Button(action: {
-            showFeedback = true
-        }) {
-            Label("Send feedback", systemImage: "envelope")
-        }
+        AppMenuContent.commonItems(
+            showAboutStampbook: $showAboutStampbook,
+            showForLocalBusiness: $showForLocalBusiness,
+            showProblemReport: $showProblemReport,
+            showFeedback: $showFeedback
+        )
     }
     
     /// Refresh feed data without clearing cached statistics

@@ -16,6 +16,9 @@ struct CommentView: View {
     @State private var selectedUserId: IdentifiableString? // For navigation to user profile
     @FocusState private var isTextFieldFocused: Bool
     
+    // Reply state
+    @State private var replyingTo: Comment? = nil
+    
     // @mention autocomplete states
     @State private var mentionQuery: String = ""  // Current @mention being typed (e.g., "hir")
     @State private var mentionSuggestions: [UserProfile] = []  // Search results
@@ -82,8 +85,14 @@ struct CommentView: View {
                                     },
                                     onProfileTap: { userId, username, displayName in
                                         selectedUserId = IdentifiableString(value: userId, username: username, displayName: displayName)
+                                    },
+                                    onReply: { replyingComment in
+                                        replyingTo = replyingComment
+                                        newCommentText = "@\(replyingComment.userUsername) "
+                                        isTextFieldFocused = true
                                     }
                                 )
+                                .padding(.leading, comment.parentCommentId != nil ? 40 : 0) // Indent replies
                             }
                         }
                         .padding(.horizontal, 16)
@@ -226,11 +235,13 @@ struct CommentView: View {
                         postOwnerId: postOwnerId,
                         userId: userId,
                         text: trimmedText,
-                        userProfile: userProfile
+                        userProfile: userProfile,
+                        parentCommentId: replyingTo?.id
                     )
                     
-                    // Clear input
+                    // Clear input and reply state
                     newCommentText = ""
+                    replyingTo = nil
                     isTextFieldFocused = false
     }
     
@@ -341,6 +352,7 @@ struct CommentRow: View {
     let postOwnerId: String
     let onDelete: () -> Void
     let onProfileTap: (String, String, String) -> Void // (userId, username, displayName)
+    let onReply: (Comment) -> Void // Callback for reply button
     @State private var showingMenu = false
     @State private var showingReportSheet = false
     
@@ -365,7 +377,7 @@ struct CommentRow: View {
     }
     
     var body: some View {
-        HStack(alignment: .center, spacing: 12) {
+        HStack(alignment: .top, spacing: 12) {
             // Profile picture - tappable to navigate to profile
             Button(action: {
                 onProfileTap(comment.userId, comment.userUsername, comment.userDisplayName)
@@ -399,35 +411,47 @@ struct CommentRow: View {
             
             Spacer()
             
-            // Show loading indicator for optimistic comments, menu for saved comments
+            // Show loading indicator for optimistic comments, Reply + menu for saved comments
             if isOptimisticComment {
                 ProgressView()
                     .scaleEffect(0.7)
                     .frame(width: 24, height: 24)
             } else {
-                // Triple dot menu for saved comments
-                Menu {
-                    // Delete option (for own comments OR own post)
-                    if canDelete {
-                        Button(role: .destructive, action: onDelete) {
-                            Label(isOwnComment ? "Delete comment" : "Remove comment", systemImage: "trash")
-                        }
+                HStack(spacing: 8) {
+                    // Reply button (text only, no background)
+                    Button(action: {
+                        onReply(comment)
+                    }) {
+                        Text("Reply")
+                            .font(.system(size: 14))
+                            .foregroundColor(.gray)
                     }
+                    .buttonStyle(PlainButtonStyle())
                     
-                    // Report option (only for OTHER people's comments)
-                    if !isOwnComment {
-                        Button(role: .destructive, action: { showingReportSheet = true }) {
-                            Label("Report comment", systemImage: "exclamationmark.triangle")
+                    // Triple dot menu for saved comments
+                    Menu {
+                        // Delete option (for own comments OR own post)
+                        if canDelete {
+                            Button(role: .destructive, action: onDelete) {
+                                Label(isOwnComment ? "Delete comment" : "Remove comment", systemImage: "trash")
+                            }
                         }
+                        
+                        // Report option (only for OTHER people's comments)
+                        if !isOwnComment {
+                            Button(role: .destructive, action: { showingReportSheet = true }) {
+                                Label("Report comment", systemImage: "exclamationmark.triangle")
+                            }
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis")
+                            .font(.system(size: 18))
+                            .foregroundColor(.gray)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
                     }
-                } label: {
-                    Image(systemName: "ellipsis")
-                        .font(.system(size: 18))
-                        .foregroundColor(.gray)
-                        .frame(width: 44, height: 44)
-                        .contentShape(Rectangle())
+                    .buttonStyle(PlainButtonStyle())
                 }
-                .buttonStyle(PlainButtonStyle())
             }
         }
         .sheet(isPresented: $showingReportSheet) {

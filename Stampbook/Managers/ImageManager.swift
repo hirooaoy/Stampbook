@@ -372,6 +372,11 @@ class ImageManager: ObservableObject {
             // User photos stored at: users/{userId}/stamps/{stampId}/photo.jpg (starts with "users/")
             let isStampImage = storagePath.hasPrefix("stamps/") || filename.hasSuffix(".png")
             
+            // Notify widget that stamp image is now cached
+            if isStampImage {
+                NotificationCenter.default.post(name: Notification.Name("stampImageDownloaded"), object: nil, userInfo: ["stampId": stampId])
+            }
+            
             // Generate and cache thumbnail (512x512 for crisp @3x retina displays)
             // USER PHOTOS: Use aspect-fill (cropped) for square display
             // STAMP IMAGES: Use aspect-fit (with padding) to preserve full artwork

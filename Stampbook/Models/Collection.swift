@@ -7,10 +7,12 @@ struct Collection: Identifiable, Codable {
     let description: String
     let region: String
     let totalStamps: Int
+    let parentId: String?
+    let isParent: Bool
     
     // Custom decoding for backward compatibility with old Firebase data
     enum CodingKeys: String, CodingKey {
-        case id, emoji, name, description, region, totalStamps
+        case id, emoji, name, description, region, totalStamps, parentId, isParent
     }
     
     init(from decoder: Decoder) throws {
@@ -21,6 +23,8 @@ struct Collection: Identifiable, Codable {
         description = try container.decode(String.self, forKey: .description)
         region = try container.decodeIfPresent(String.self, forKey: .region) ?? ""
         totalStamps = try container.decodeIfPresent(Int.self, forKey: .totalStamps) ?? 0
+        parentId = try container.decodeIfPresent(String.self, forKey: .parentId)
+        isParent = try container.decodeIfPresent(Bool.self, forKey: .isParent) ?? false
     }
 }
 

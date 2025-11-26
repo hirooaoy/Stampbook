@@ -140,25 +140,25 @@ These requirements apply to **all three modes**.
 - Use hyphens between ALL words (not smashed together)
 - Remove special characters (', &, etc.)
 - Country: us, japan, uk, france, etc.
-- State/region: california, newyork (for US states - no hyphen for two-word states)
+- State/region: For US states, use 2-letter postal codes (ca, ny, nd, tx, etc.)
 - City: sanfrancisco, tokyo, paris (no hyphen for two-word cities)
 - Place name: descriptive, hyphenated between words, no "the" prefix
 
 **National Park Naming:**
 - Include "national-park" in the ID: `us-state-parkname-national-park-location`
 - Examples:
-  - `us-wyoming-yellowstone-national-park-old-faithful-geyser`
-  - `us-california-sequoia-national-park-general-sherman-tree`
-  - `us-florida-everglades-national-park-anhinga-trail`
+  - `us-wy-yellowstone-national-park-old-faithful-geyser`
+  - `us-ca-sequoia-national-park-general-sherman-tree`
+  - `us-fl-everglades-national-park-anhinga-trail`
 - Exception: Grand Canyon uses `us-az-grand-canyon-location` (no "national-park")
 
 **Examples:**
-- `us-california-sanfrancisco-golden-gate-bridge`
-- `us-wyoming-yellowstone-national-park-old-faithful-geyser`
+- `us-ca-sanfrancisco-golden-gate-bridge`
+- `us-wy-yellowstone-national-park-old-faithful-geyser`
 - `japan-tokyo-tokyo-senso-ji-temple`
-- `us-california-monterey-monterey-bay-aquarium`
-- `us-california-alameda-alameda-point-antiques-faire`
-- `us-california-pescadero-araceli-farms`
+- `us-ca-monterey-monterey-bay-aquarium`
+- `us-ca-alameda-alameda-point-antiques-faire`
+- `us-ca-pescadero-araceli-farms`
 
 ### ChatGPT Image Prompt Format
 
@@ -324,6 +324,7 @@ Track which parks are done:
 - ✅ Acadia (5 stamps)
 - ✅ Sequoia (5 stamps)
 - ✅ Everglades (5 stamps)
+- ✅ Theodore Roosevelt (6 stamps)
 
 **Goal:** Add all 63 U.S. National Parks with 4-7 stamps each = ~250-400 stamps total
 
@@ -373,9 +374,9 @@ Agent provides all ChatGPT image prompts at once so user can start generating im
 At the bottom, include a **Figma Layer Names** section:
 ```
 **Figma Layer Names:**
-- us-california-sanfrancisco-goldengatebridge
-- us-california-sanfrancisco-alcatraz
-- us-california-sanfrancisco-paintedladies
+- us-ca-sanfrancisco-goldengatebridge
+- us-ca-sanfrancisco-alcatraz
+- us-ca-sanfrancisco-paintedladies
 ```
 
 Then asks: **"Ready to move on?"**

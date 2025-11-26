@@ -2,16 +2,38 @@ import SwiftUI
 
 /// A card view that displays collection information with a progress indicator
 /// Shows collection name, completion status, and visual progress bar
+/// Parent collections show a stacked card effect to indicate they contain child collections
 struct CollectionCardView: View {
     let emoji: String
     let name: String
     let collectedCount: Int
     let totalCount: Int
     let completionPercentage: Double
+    let isParent: Bool
     
     @Environment(\.colorScheme) var colorScheme
     
     var body: some View {
+        ZStack(alignment: .topLeading) {
+            // Stack effect for parent collections - gradient from dark to light
+            if isParent {
+                // Layer 3 (back-most) - darker
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(.systemGray4))
+                    .offset(x: 10, y: 10)
+                
+                // Layer 2 (middle) - lighter
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(.systemGray5))
+                    .offset(x: 5, y: 5)
+            }
+            
+            // Main card
+            mainCardContent
+        }
+    }
+    
+    private var mainCardContent: some View {
         ZStack(alignment: .leading) {
             // Base gray background
             Color(.secondarySystemBackground)
@@ -45,10 +67,18 @@ struct CollectionCardView: View {
                         .foregroundColor(.secondary)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
+                
+                // Chevron indicator for parent collections
+                if isParent {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.secondary)
+                        .padding(.trailing, 4)
+                }
             }
             .padding(.vertical, 24)
             .padding(.leading, 16)
-            .padding(.trailing, 24)
+            .padding(.trailing, isParent ? 16 : 24)
         }
         .cornerRadius(12)
     }

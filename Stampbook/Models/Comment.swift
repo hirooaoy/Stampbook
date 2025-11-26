@@ -2,7 +2,7 @@ import Foundation
 import FirebaseFirestore
 
 /// Represents a comment on a collected stamp post
-struct Comment: Codable, Identifiable {
+struct Comment: Codable, Identifiable, Equatable {
     @DocumentID var id: String?
     let userId: String
     let postId: String // Format: "{userId}-{stampId}"
@@ -20,13 +20,17 @@ struct Comment: Codable, Identifiable {
     // Format: ["userId1", "userId2"] - max 3 mentions per comment
     let mentionedUserIds: [String]?
     
+    // Reply threading - stores parent comment ID for replies
+    // nil = top-level comment, non-nil = reply to another comment
+    let parentCommentId: String?
+    
     // Temporary ID for optimistic UI updates (not stored in Firebase)
     private let tempId: String
     
     // Coding keys to exclude tempId from Firebase encoding
     enum CodingKeys: String, CodingKey {
         case id, userId, postId, stampId, postOwnerId, text, createdAt
-        case userDisplayName, userUsername, userAvatarUrl, mentionedUserIds
+        case userDisplayName, userUsername, userAvatarUrl, mentionedUserIds, parentCommentId
     }
     
     // Computed ID that uses tempId if Firebase ID is nil
@@ -38,6 +42,7 @@ struct Comment: Codable, Identifiable {
     init(userId: String, postId: String, stampId: String, postOwnerId: String, text: String, 
          userDisplayName: String, userUsername: String, userAvatarUrl: String?, 
          mentionedUserIds: [String]? = nil,
+         parentCommentId: String? = nil,
          createdAt: Date = Date(), tempId: String = UUID().uuidString) {
         // Note: @DocumentID is managed by Firebase - it will be nil until document is saved
         self.userId = userId
@@ -49,6 +54,7 @@ struct Comment: Codable, Identifiable {
         self.userUsername = userUsername
         self.userAvatarUrl = userAvatarUrl
         self.mentionedUserIds = mentionedUserIds
+        self.parentCommentId = parentCommentId
         self.createdAt = createdAt
         self.tempId = tempId
     }
@@ -72,9 +78,21 @@ struct Comment: Codable, Identifiable {
         self.userUsername = try container.decode(String.self, forKey: .userUsername)
         self.userAvatarUrl = try container.decodeIfPresent(String.self, forKey: .userAvatarUrl)
         self.mentionedUserIds = try container.decodeIfPresent([String].self, forKey: .mentionedUserIds)
+        self.parentCommentId = try container.decodeIfPresent(String.self, forKey: .parentCommentId)
         
         // Generate a temp ID (won't be used since Firebase comments have real IDs)
         self.tempId = UUID().uuidString
+    }
+    
+    // MARK: - Equatable
+    
+    // Custom Equatable implementation to compare based on meaningful fields
+    static func == (lhs: Comment, rhs: Comment) -> Bool {
+        return lhs.id == rhs.id &&
+               lhs.userId == rhs.userId &&
+               lhs.postId == rhs.postId &&
+               lhs.text == rhs.text &&
+               lhs.parentCommentId == rhs.parentCommentId
     }
 }
 

@@ -17,6 +17,7 @@ class StampsManager: ObservableObject {
     @Published var isLoadingCollections: Bool = true // Start as true since we load collections in init()
     @Published var isLoadingUserStamps: Bool = false // Track user stamps loading state
     @Published var userCollection = UserStampCollection()
+    @Published var userBookmarks = UserBookmarkCollection()
     @Published var isLoading: Bool = false
     @Published var loadError: String?
     
@@ -64,6 +65,13 @@ class StampsManager: ObservableObject {
             }
             .store(in: &cancellables)
         
+        // Forward changes from userBookmarks to this manager
+        userBookmarks.objectWillChange
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
+            .store(in: &cancellables)
+        
         // Listen for user stamps loaded notification (for widget sync)
         NotificationCenter.default.addObserver(
             forName: .userStampsDidLoad,
@@ -72,6 +80,18 @@ class StampsManager: ObservableObject {
         ) { [weak self] _ in
             print("🔔 [StampsManager] Received userStampsDidLoad notification")
             self?.syncWidgetData()
+        }
+        
+        // Listen for stamp image downloads to update widget in real-time
+        NotificationCenter.default.addObserver(
+            forName: Notification.Name("stampImageDownloaded"),
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            if let stampId = notification.userInfo?["stampId"] as? String {
+                print("🔔 [Widget] Stamp image downloaded: \(stampId)")
+                self?.syncStampImageToWidget(stampId: stampId)
+            }
         }
         
         if DEBUG_STAMPS {
@@ -543,6 +563,11 @@ class StampsManager: ObservableObject {
         userCollection.isCollected(stamp.id)
     }
     
+    /// Check if a stamp is bookmarked
+    func isBookmarked(_ stampId: String) -> Bool {
+        userBookmarks.isBookmarked(stampId)
+    }
+    
     /// Check if the user has claimed the welcome stamp
     func hasClaimedWelcomeStamp() -> Bool {
         return userCollection.isCollected("your-first-stamp")
@@ -551,6 +576,7 @@ class StampsManager: ObservableObject {
     /// Set the current user - filters collected stamps to show only this user's stamps
     func setCurrentUser(_ userId: String?, profileManager: ProfileManager? = nil) {
         userCollection.setCurrentUser(userId)
+        userBookmarks.setCurrentUser(userId)
         
         // Reconcile user stats when user changes (signs in/out)
         if let userId = userId {
@@ -559,6 +585,27 @@ class StampsManager: ObservableObject {
             }
         }
         // Note: Widget sync happens automatically via .userStampsDidLoad notification
+    }
+    
+    // MARK: - Bookmark Actions
+    
+    /// Bookmark a stamp
+    func bookmarkStamp(_ stampId: String, userId: String) {
+        userBookmarks.addBookmark(stampId, userId: userId)
+    }
+    
+    /// Remove bookmark from a stamp
+    func unbookmarkStamp(_ stampId: String, userId: String) {
+        userBookmarks.removeBookmark(stampId, userId: userId)
+    }
+    
+    /// Toggle bookmark status
+    func toggleBookmark(_ stampId: String, userId: String) {
+        if isBookmarked(stampId) {
+            unbookmarkStamp(stampId, userId: userId)
+        } else {
+            bookmarkStamp(stampId, userId: userId)
+        }
     }
     
     // MARK: - User Actions
@@ -724,6 +771,19 @@ class StampsManager: ObservableObject {
             #if canImport(WidgetKit)
             WidgetCenter.shared.reloadAllTimelines()
             print("✅ [Widget] Widget timelines reloaded")
+            #endif
+        }
+    }
+    
+    /// Copy stamp image and refresh widget (called when image is downloaded)
+    func syncStampImageToWidget(stampId: String) {
+        Task {
+            await copyStampImageToSharedContainer(stampId: stampId)
+            
+            // Refresh widget to show new image
+            #if canImport(WidgetKit)
+            WidgetCenter.shared.reloadAllTimelines()
+            print("✅ [Widget] Widget refreshed after image download for: \(stampId)")
             #endif
         }
     }

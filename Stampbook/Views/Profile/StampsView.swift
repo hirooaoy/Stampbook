@@ -156,50 +156,17 @@ struct StampsView: View {
     // MARK: - Signed-in Options Menu
     private var signedInOptionsMenu: some View {
         Menu {
-            Button(action: {
-                showAboutStampbook = true
-            }) {
-                Label("About Stampbook", systemImage: "info.circle")
-            }
-            
-            // TODO: Add back later
-            // Button(action: {
-            //     copyAppStoreUrl()
-            // }) {
-            //     Label("Share app", systemImage: "square.and.arrow.up")
-            // }
+            // Common items (shared with FeedView)
+            AppMenuContent.commonItems(
+                showAboutStampbook: $showAboutStampbook,
+                showForLocalBusiness: $showForLocalBusiness,
+                showProblemReport: $showProblemReport,
+                showFeedback: $showFeedback
+            )
             
             Divider()
             
-            Button(action: {
-                showForLocalBusiness = true
-            }) {
-                Label("For local business", systemImage: "storefront")
-            }
-            
-            // TODO: Add back later
-            // Button(action: {
-            //     showForCreators = true
-            // }) {
-            //     Label("For creators", systemImage: "sparkles")
-            // }
-            
-            Divider()
-            
-            Button(action: {
-                showProblemReport = true
-            }) {
-                Label("Report a problem", systemImage: "exclamationmark.bubble")
-            }
-            
-            Button(action: {
-                showFeedback = true
-            }) {
-                Label("Send feedback", systemImage: "envelope")
-            }
-            
-            Divider()
-            
+            // Account management (unique to StampsView)
             Button(action: {
                 showDataDownload = true
             }) {
@@ -370,12 +337,45 @@ struct StampsView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 12) {
                 countriesCard
+                bookmarksCard
                 followersCard
                 followingCard
             }
             .padding(.horizontal, 20)
         }
         .padding(.bottom, 20)
+    }
+    
+    // MARK: - Bookmarks Card
+    private var bookmarksCard: some View {
+        NavigationLink(destination: BookmarksView()) {
+            HStack(spacing: 12) {
+                Image(systemName: "bookmark.fill")
+                    .font(.system(size: 24))
+                    .foregroundColor(.yellow)
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Bookmarks")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text("\(stampsManager.userBookmarks.bookmarkedStamps.count)")
+                        .font(.body)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                }
+                
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .frame(width: 160)
+            .frame(height: 70)
+            .background(Color.gray.opacity(0.1))
+            .cornerRadius(12)
+        }
+        .buttonStyle(PlainButtonStyle())
     }
     
     // MARK: - Countries Card
@@ -1053,19 +1053,39 @@ struct StampsView: View {
                     .frame(height: 300)
                 } else {
                     ForEach(sortedCollections()) { collection in
-                        NavigationLink(destination: CollectionDetailView(collection: collection)) {
-                            let metadata = collectionMetadata[collection.id] ?? (total: 0, collected: 0)
-                            let percentage = metadata.total > 0 ? Double(metadata.collected) / Double(metadata.total) : 0.0
-                            
-                            CollectionCardView(
-                                emoji: collection.emoji,
-                                name: collection.name,
-                                collectedCount: metadata.collected,
-                                totalCount: metadata.total,
-                                completionPercentage: percentage
-                            )
+                        if collection.isParent {
+                            // Navigate to ParentCollectionDetailView for parent collections
+                            NavigationLink(destination: ParentCollectionDetailView(parentCollection: collection)) {
+                                let metadata = collectionMetadata[collection.id] ?? (total: 0, collected: 0)
+                                let percentage = metadata.total > 0 ? Double(metadata.collected) / Double(metadata.total) : 0.0
+                                
+                                CollectionCardView(
+                                    emoji: collection.emoji,
+                                    name: collection.name,
+                                    collectedCount: metadata.collected,
+                                    totalCount: metadata.total,
+                                    completionPercentage: percentage,
+                                    isParent: true
+                                )
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        } else {
+                            // Navigate to CollectionDetailView for standalone collections
+                            NavigationLink(destination: CollectionDetailView(collection: collection)) {
+                                let metadata = collectionMetadata[collection.id] ?? (total: 0, collected: 0)
+                                let percentage = metadata.total > 0 ? Double(metadata.collected) / Double(metadata.total) : 0.0
+                                
+                                CollectionCardView(
+                                    emoji: collection.emoji,
+                                    name: collection.name,
+                                    collectedCount: metadata.collected,
+                                    totalCount: metadata.total,
+                                    completionPercentage: percentage,
+                                    isParent: false
+                                )
+                            }
+                            .buttonStyle(PlainButtonStyle())
                         }
-                        .buttonStyle(PlainButtonStyle())
                     }
                 }
             }
@@ -1111,7 +1131,8 @@ struct StampsView: View {
                 // Count how many collected stamps belong to each collection
                 var metadata: [String: (total: Int, collected: Int)] = [:]
                 
-                for collection in stampsManager.collections {
+                // First, calculate metadata for all child collections
+                for collection in stampsManager.collections where !collection.isParent {
                     // Use the hard-coded totalStamps from the collection
                     let total = collection.totalStamps
                     
@@ -1122,6 +1143,19 @@ struct StampsView: View {
                     
                     metadata[collection.id] = (total: total, collected: collected)
                     print("✅ [CollectionsContent] \(collection.name): \(collected)/\(total)")
+                }
+                
+                // Then, calculate aggregate metadata for parent collections
+                for parentCollection in stampsManager.collections where parentCollection.isParent {
+                    let childCollections = stampsManager.collections.filter { $0.parentId == parentCollection.id }
+                    
+                    let totalStamps = childCollections.reduce(0) { $0 + $1.totalStamps }
+                    let collectedStamps = childCollections.reduce(0) { sum, child in
+                        sum + (metadata[child.id]?.collected ?? 0)
+                    }
+                    
+                    metadata[parentCollection.id] = (total: totalStamps, collected: collectedStamps)
+                    print("✅ [CollectionsContent] \(parentCollection.name) (parent): \(collectedStamps)/\(totalStamps)")
                 }
                 
                 let totalTime = Date().timeIntervalSince(startTime)
@@ -1138,7 +1172,12 @@ struct StampsView: View {
         private struct TimeoutError: Error {}
         
         private func sortedCollections() -> [Collection] {
-            stampsManager.collections.sorted { collection1, collection2 in
+            // Filter to show only parent collections and standalone collections (not children)
+            let displayedCollections = stampsManager.collections.filter { collection in
+                collection.isParent || collection.parentId == nil
+            }
+            
+            return displayedCollections.sorted { collection1, collection2 in
                 let metadata1 = collectionMetadata[collection1.id] ?? (total: 0, collected: 0)
                 let metadata2 = collectionMetadata[collection2.id] ?? (total: 0, collected: 0)
                 

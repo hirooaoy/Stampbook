@@ -22,6 +22,8 @@ struct UserProfileView: View {
     @State private var showUnfollowConfirmation = false
     @State private var userCollectedStamps: [CollectedStamp] = [] // Stamps for the viewed user
     @State private var isLoadingStamps = false
+    @State private var userBookmarks: [BookmarkedStamp] = [] // Bookmarks for the viewed user
+    @State private var bookmarkCount: Int = 0 // Bookmark count (for card display)
     
     var isCurrentUser: Bool {
         authManager.userId == userId
@@ -85,6 +87,7 @@ struct UserProfileView: View {
             HStack(spacing: 12) {
                 // rankCard // TODO: POST-MVP - Rank display disabled
                 countriesCard
+                bookmarksCard
                 followersCard
                 followingCard
             }
@@ -240,6 +243,41 @@ struct UserProfileView: View {
         .buttonStyle(PlainButtonStyle())
     }
     
+    private var bookmarksCard: some View {
+        NavigationLink(destination: BookmarksView(
+            viewingUserId: userId,
+            viewingDisplayName: userProfile?.displayName ?? displayName,
+            isFollowing: isFollowing
+        )) {
+            HStack(spacing: 12) {
+                Image(systemName: "bookmark.fill")
+                    .font(.system(size: 24))
+                    .foregroundColor(.yellow)
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Bookmarks")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text("\(bookmarkCount)")
+                        .font(.body)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                }
+                
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .frame(width: 160)
+            .frame(height: 70)
+            .background(Color.gray.opacity(0.1))
+            .cornerRadius(12)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+    
     @ViewBuilder
     private var followButtonSection: some View {
         // Follow button
@@ -373,6 +411,9 @@ struct UserProfileView: View {
             // Load user's collected stamps
             loadUserStamps()
             
+            // Load user's bookmark count
+            loadBookmarkCount()
+            
             // Cache initial counts in FollowManager (merge with optimistic updates if they exist)
             if let profile = userProfile {
                 if let optimisticCounts = followManager.followCounts[userId] {
@@ -439,6 +480,26 @@ struct UserProfileView: View {
                     self.isLoadingStamps = false
                 }
                 print("❌ Failed to load user stamps: \(error.localizedDescription)")
+            }
+        }
+    }
+    
+    /// Load bookmark count for the viewed user
+    private func loadBookmarkCount() {
+        Task {
+            do {
+                // Fetch bookmarks from Firebase for this specific user
+                let bookmarks = try await FirebaseService.shared.fetchBookmarkedStamps(for: userId)
+                await MainActor.run {
+                    self.userBookmarks = bookmarks
+                    self.bookmarkCount = bookmarks.count
+                }
+                print("✅ Loaded \(bookmarks.count) bookmarks for user: \(userId)")
+            } catch {
+                await MainActor.run {
+                    self.bookmarkCount = 0
+                }
+                print("❌ Failed to load user bookmarks: \(error.localizedDescription)")
             }
         }
     }
