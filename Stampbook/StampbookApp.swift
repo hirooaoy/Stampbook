@@ -166,10 +166,24 @@ struct StampbookApp: App {
         return manager
     }()
     
+    @StateObject private var commentLikeManager: CommentLikeManager = {
+        Logger.debug("Creating CommentLikeManager...")
+        let manager = CommentLikeManager()
+        Logger.debug("CommentLikeManager created")
+        return manager
+    }()
+    
     @StateObject private var notificationManager: NotificationManager = {
         Logger.debug("Creating NotificationManager...")
         let manager = NotificationManager()
         Logger.debug("NotificationManager created")
+        return manager
+    }()
+    
+    @StateObject private var deepLinkManager: DeepLinkManager = {
+        Logger.debug("Creating DeepLinkManager...")
+        let manager = DeepLinkManager()
+        Logger.debug("DeepLinkManager created")
         return manager
     }()
     
@@ -184,7 +198,9 @@ struct StampbookApp: App {
                 .environmentObject(profileManager)
                 .environmentObject(likeManager)
                 .environmentObject(commentManager)
+                .environmentObject(commentLikeManager)
                 .environmentObject(notificationManager)
+                .environmentObject(deepLinkManager)
                 .onAppear {
                     // Link ProfileManager to AuthManager BEFORE starting auth check
                     // This prevents race condition where checkAuthState() completes before profileManager is linked
@@ -223,6 +239,7 @@ struct StampbookApp: App {
             // Without this, User B would see User A's liked posts, comments, feed, and follow data
             likeManager.clearCache()
             commentManager.clearCache()
+            commentLikeManager.clearCache()
             followManager.clearFollowData()
             // Note: FeedManager is created in FeedView (@StateObject), cleared automatically when view destroyed
             Logger.success("All manager caches cleared on sign out", category: "StampbookApp")

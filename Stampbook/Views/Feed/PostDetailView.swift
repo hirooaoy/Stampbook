@@ -3,6 +3,13 @@ import SwiftUI
 /// Full-screen view for displaying a single post (used for notifications, deep links)
 struct PostDetailView: View {
     let postId: String // Format: "userId-stampId"
+    let highlightCommentId: String? // Optional: Comment to scroll to (from notification)
+    
+    init(postId: String, highlightCommentId: String? = nil) {
+        self.postId = postId
+        self.highlightCommentId = highlightCommentId
+        print("🔵 [PostDetailView] INIT - postId: \(postId), highlightCommentId: \(highlightCommentId ?? "NIL")")
+    }
     
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var stampsManager: StampsManager
@@ -10,20 +17,27 @@ struct PostDetailView: View {
     @EnvironmentObject var followManager: FollowManager
     @EnvironmentObject var likeManager: LikeManager
     @EnvironmentObject var commentManager: CommentManager
+    @EnvironmentObject var deepLinkManager: DeepLinkManager
     @StateObject private var feedManager = FeedManager()
+    @StateObject private var commentLikeManager = CommentLikeManager()
     
     @State private var post: FeedManager.FeedPost? = nil
     @State private var isLoading = true
     @State private var errorMessage: String? = nil
     @State private var showNotesEditor = false
     @State private var showLikes = false
+    @State private var showCommentLikes = false
+    @State private var selectedCommentId: String? // For showing comment likes
     @State private var editingNotes = ""
     @State private var navigateToStampDetail = false
     @State private var stamp: Stamp? = nil
     @State private var selectedUserId: IdentifiableString? // For navigation to user profile from comments
     @State private var replyingTo: Comment? = nil // For comment replies
+    @State private var scrollToCommentId: String? // Dynamic target for scrolling (can change via deep link)
+    @State private var highlightedCommentId: String? // Comment to highlight temporarily
     @FocusState private var commentInputFocused: Bool
     @Environment(\.dismiss) var dismiss
+    @Environment(\.colorScheme) var colorScheme
     
     // Computed properties for real-time updates
     private var isLiked: Bool {
@@ -55,9 +69,10 @@ struct PostDetailView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Scrollable content
-            ScrollView {
-                if isLoading {
+            // Scrollable content with scroll-to-comment capability
+            ScrollViewReader { proxy in
+                ScrollView {
+                    if isLoading {
                     VStack(spacing: 16) {
                         ProgressView()
                         Text("Loading post...")
@@ -100,7 +115,91 @@ struct PostDetailView: View {
                     }
                     .padding(.bottom, 16)
                 }
+             } // ScrollView
+             .task(id: commentManager.getComments(postId: postId).count) {
+                 print("📜 [PostDetailView] ==== SCROLL TASK STARTED ====")
+                 print("📜 [PostDetailView] highlightCommentId: \(highlightCommentId ?? "NIL")")
+                 print("📜 [PostDetailView] scrollToCommentId: \(scrollToCommentId ?? "NIL")")
+                 
+                 // Auto-scroll to target comment after comments load
+                 let targetId = scrollToCommentId ?? highlightCommentId
+                 
+                 print("📜 [PostDetailView] targetId: \(targetId ?? "NIL")")
+                 print("📜 [PostDetailView] Comment count: \(commentManager.getComments(postId: postId).count)")
+                 
+                 guard let targetId = targetId else { 
+                     print("⚠️ [PostDetailView] No targetId, exiting scroll task")
+                     return 
+                 }
+                 
+                 let comments = commentManager.getComments(postId: postId)
+                 guard !comments.isEmpty else { 
+                     print("⚠️ [PostDetailView] No comments loaded yet")
+                     return 
+                 }
+                 
+                 print("📜 [PostDetailView] Checking if target exists in \(comments.count) comments")
+                 print("📜 [PostDetailView] Comment IDs: \(comments.compactMap { $0.id })")
+                 
+                 // Check if target comment exists
+                 if comments.contains(where: { $0.id == targetId }) {
+                     print("✅ [PostDetailView] Found target comment! Scrolling...")
+                     
+                     // Small delay to ensure layout is complete
+                     try? await Task.sleep(nanoseconds: 300_000_000)  // 300ms
+                     
+                     await MainActor.run {
+                         // Set highlight and scroll
+                         highlightedCommentId = targetId
+                         print("✨ [PostDetailView] Set highlightedCommentId: \(targetId)")
+                         
+                         withAnimation(.easeInOut(duration: 0.3)) {
+                             proxy.scrollTo(targetId, anchor: .center)
+                             print("🎯 [PostDetailView] Called scrollTo for: \(targetId)")
+                         }
+                         
+                        // Remove highlight after 2 seconds
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                            print("✨ [PostDetailView] Removing highlight")
+                            highlightedCommentId = nil
+                        }
+                     }
+                 } else {
+                     print("❌ [PostDetailView] Target comment NOT FOUND in loaded comments")
+                 }
+             }
+            .onChange(of: deepLinkManager.pendingDeepLink) { _, newValue in
+                // Handle deep link while already on PostDetailView
+                guard let deepLink = newValue else { return }
+                
+                switch deepLink {
+                case .post(let deepLinkPostId, let commentId):
+                    // Only handle if it's for the same post we're viewing
+                    guard deepLinkPostId == postId else { return }
+                    
+                    Logger.info("🔗 [PostDetailView] Refreshing for deep link to same post: commentId=\(commentId ?? "nil")", category: "DeepLink")
+                    
+                    // Refresh comments to get the new one
+                    Task {
+                        await commentManager.fetchComments(postId: postId)
+                        
+                        // Scroll to the new comment if specified
+                        if let targetCommentId = commentId {
+                            await MainActor.run {
+                                scrollToCommentId = targetCommentId
+                            }
+                        }
+                    }
+                    
+                    // Clear the deep link
+                    deepLinkManager.clearPendingDeepLink()
+                    
+                case .profile:
+                    // Profile links don't affect this view
+                    break
+                }
             }
+            } // ScrollViewReader
             
             // Fixed comment input at bottom
             if authManager.isSignedIn, let post = post {
@@ -138,6 +237,13 @@ struct PostDetailView: View {
                 .environmentObject(authManager)
                 .environmentObject(followManager)
                 .environmentObject(profileManager)
+            }
+        }
+        .sheet(isPresented: $showCommentLikes) {
+            if let commentId = selectedCommentId {
+                CommentLikesView(commentId: commentId)
+                    .environmentObject(authManager)
+                    .environmentObject(profileManager)
             }
         }
         .navigationDestination(isPresented: $navigateToStampDetail) {
@@ -228,10 +334,26 @@ struct PostDetailView: View {
             
             // Note section
             if let note = currentNote, !note.isEmpty {
-                Text(note)
-                    .font(.subheadline)
-                    .foregroundColor(.primary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                if post.isCurrentUser {
+                    // Current user's note - tappable to edit
+                    Button(action: {
+                        editingNotes = currentNote ?? ""
+                        showNotesEditor = true
+                    }) {
+                        Text(note)
+                            .font(.subheadline)
+                            .foregroundColor(.primary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .multilineTextAlignment(.leading)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                } else {
+                    // Other user's note - read-only
+                    Text(note)
+                        .font(.subheadline)
+                        .foregroundColor(.primary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
             } else if post.isCurrentUser {
                 // Add Notes button (only for current user)
                 Button(action: {
@@ -318,16 +440,70 @@ struct PostDetailView: View {
                         comment: comment,
                         postId: postId,
                         postOwnerId: post?.userId ?? "",
+                        isHighlighted: comment.id == highlightedCommentId,
                         commentManager: commentManager,
+                        commentLikeManager: commentLikeManager,
                         onProfileTap: { userId, username, displayName in
                             selectedUserId = IdentifiableString(value: userId, username: username, displayName: displayName)
                         },
                         onReply: { replyingComment in
                             replyingTo = replyingComment
                             commentInputFocused = true
+                        },
+                        onShowLikes: { commentId in
+                            selectedCommentId = commentId
+                            showCommentLikes = true
                         }
                     )
-                    .padding(.leading, comment.parentCommentId != nil ? 40 : 0) // Indent replies
+                    .id(comment.id)  // ✅ ADDED: Anchor for ScrollViewReader
+                    .padding(.leading, comment.parentCommentId != nil ? 40 : 0) // Single indent for all replies
+                    .background(
+                        // Edge-to-edge highlight background
+                        Group {
+                            if comment.id == highlightedCommentId {
+                                (colorScheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.06))
+                                    .padding(.horizontal, -16) // Extend to screen edges (compensate for parent padding)
+                                    .padding(.leading, comment.parentCommentId != nil ? -40 : 0) // Extend past reply indent
+                                    .padding(.vertical, -8) // Extend to cover entire row + 2pt breathing room
+                            }
+                        }
+                    )
+                    .animation(.easeInOut(duration: 0.3), value: highlightedCommentId)
+                }
+                
+                // Load More button (if there are more comments)
+                if commentManager.hasMoreComments[postId] == true {
+                    Button(action: {
+                        Task {
+                            await commentManager.fetchComments(postId: postId, loadMore: true)
+                            
+                            // Fetch like status for newly loaded comments
+                            if let userId = authManager.userId {
+                                let commentIds = comments.compactMap { $0.id }
+                                await commentLikeManager.fetchLikeStatus(commentIds: commentIds, userId: userId)
+                            }
+                        }
+                    }) {
+                        HStack(spacing: 8) {
+                            if commentManager.isLoading[postId] == true {
+                                ProgressView()
+                                    .scaleEffect(0.8)
+                            } else {
+                                Image(systemName: "arrow.down.circle")
+                                    .font(.system(size: 16))
+                            }
+                            Text(commentManager.isLoading[postId] == true ? "Loading..." : "Load More Comments")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                        }
+                        .foregroundColor(.blue)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(8)
+                    }
+                    .disabled(commentManager.isLoading[postId] == true)
+                    .padding(.top, 8)
                 }
             }
         }
@@ -365,7 +541,15 @@ struct PostDetailView: View {
                         if let userId = authManager.userId {
                             await likeManager.fetchLikeStatus(postIds: [postId], userId: userId)
                         }
-                        await commentManager.fetchComments(postId: postId)
+                        await commentManager.fetchComments(postId: postId, loadMore: false)
+                        
+                        print("📝 [PostDetailView] Fetched \(commentManager.getComments(postId: postId).count) comments")
+                        
+                        // Fetch like status for all comments
+                        if let userId = authManager.userId {
+                            let commentIds = commentManager.getComments(postId: postId).compactMap { $0.id }
+                            await commentLikeManager.fetchLikeStatus(commentIds: commentIds, userId: userId)
+                        }
                     }
                 }
             } catch {
@@ -452,9 +636,12 @@ private struct CommentRowView: View {
     let comment: Comment
     let postId: String
     let postOwnerId: String
+    let isHighlighted: Bool
     @ObservedObject var commentManager: CommentManager
+    @ObservedObject var commentLikeManager: CommentLikeManager
     let onProfileTap: (String, String, String) -> Void // (userId, username, displayName)
     let onReply: (Comment) -> Void // Callback for reply button
+    let onShowLikes: (String) -> Void // Show likes sheet for this comment
     
     @EnvironmentObject var authManager: AuthManager
     @State private var showDeleteAlert = false
@@ -475,6 +662,21 @@ private struct CommentRowView: View {
     // ✅ FIX: Disable delete for optimistic comments (not yet saved to Firebase)
     private var isOptimisticComment: Bool {
         return comment.id == nil
+    }
+    
+    // Like state
+    private var isLiked: Bool {
+        guard let commentId = comment.id else { return false }
+        return commentLikeManager.isLiked(commentId: commentId)
+    }
+    
+    private var currentLikeCount: Int {
+        guard let commentId = comment.id else { return 0 }
+        if commentLikeManager.hasCountData(commentId: commentId) {
+            return commentLikeManager.getLikeCount(commentId: commentId)
+        } else {
+            return comment.likeCount
+        }
     }
     
     var body: some View {
@@ -503,27 +705,71 @@ private struct CommentRowView: View {
                     .foregroundColor(.primary)
                     .fixedSize(horizontal: false, vertical: true)
                 
-                Text(comment.createdAt.timeAgoDisplay())
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                // Timestamp • Likes • Reply
+                HStack(spacing: 4) {
+                    Text(comment.createdAt.timeAgoDisplay())
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    if !isOptimisticComment {
+                        // Show likes if count > 0
+                        if currentLikeCount > 0 {
+                            Text("•")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            
+                            Button(action: {
+                                if let commentId = comment.id {
+                                    onShowLikes(commentId)
+                                }
+                            }) {
+                                Text("\(currentLikeCount) \(currentLikeCount == 1 ? "like" : "likes")")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                        
+                        Text("•")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        Button(action: {
+                            onReply(comment)
+                        }) {
+                            Text("Reply")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                }
             }
             
             Spacer()
             
-            // Show loading indicator for optimistic comments, Reply + menu for saved comments
+            // Show loading indicator for optimistic comments, heart + menu for saved comments
             if isOptimisticComment {
                 ProgressView()
                     .scaleEffect(0.7)
                     .frame(width: 24, height: 24)
             } else {
-                HStack(spacing: 8) {
-                    // Reply button (text only, no background)
+                HStack(spacing: 12) {
+                    // Like button (heart icon)
                     Button(action: {
-                        onReply(comment)
+                        guard let commentId = comment.id,
+                              let userId = authManager.userId else { return }
+                        commentLikeManager.toggleLike(
+                            commentId: commentId,
+                            postId: comment.postId,
+                            stampId: comment.stampId,
+                            userId: userId,
+                            commentOwnerId: comment.userId
+                        )
                     }) {
-                        Text("Reply")
-                            .font(.system(size: 14))
-                            .foregroundColor(.gray)
+                        Image(systemName: isLiked ? "heart.fill" : "heart")
+                            .font(.system(size: 16))
+                            .foregroundColor(isLiked ? .red : .gray)
                     }
                     .buttonStyle(PlainButtonStyle())
                     

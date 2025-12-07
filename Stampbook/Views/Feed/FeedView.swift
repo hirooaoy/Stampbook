@@ -28,7 +28,9 @@ struct FeedView: View {
     @EnvironmentObject var followManager: FollowManager // Shared instance from StampbookApp
     @EnvironmentObject var likeManager: LikeManager // Shared instance from StampbookApp
     @EnvironmentObject var commentManager: CommentManager // Shared instance from StampbookApp
+    @EnvironmentObject var commentLikeManager: CommentLikeManager // Shared instance from StampbookApp
     @EnvironmentObject var notificationManager: NotificationManager // Shared instance from StampbookApp
+    @EnvironmentObject var deepLinkManager: DeepLinkManager // Deep link handler
     @StateObject private var feedManager = FeedManager() // Persists across tab switches
     @Environment(\.colorScheme) var colorScheme
     @Binding var selectedTab: Int
@@ -287,6 +289,7 @@ struct FeedView: View {
                                     feedManager: feedManager,
                                     likeManager: likeManager,
                                     commentManager: commentManager,
+                                    commentLikeManager: commentLikeManager,
                                     debugEnabled: DEBUG_FEED
                                 )
                             }
@@ -358,9 +361,27 @@ struct FeedView: View {
                     activeSheetCount -= 1
                     #if DEBUG
                     print("🔔 [FeedView] Notifications sheet closed - activeSheetCount: \(activeSheetCount)")
-                    print("✅ [FeedView] OPTIMIZED: No refresh needed - viewing notifications doesn't change feed (saved 113 reads)")
                     #endif
-                    // NotificationView fetches its own data on open, badge updates via polling
+                    
+                    // ✅ Check if user followed/unfollowed from a profile navigated from notifications
+                    if followManager.didFollowingListChange {
+                        print("🔄 [FeedView] Following list changed in notifications - checking debounce window")
+                        followManager.didFollowingListChange = false // Reset flag
+                        
+                        // DEBOUNCE: Skip refresh if we just refreshed within last 10 seconds
+                        if let lastRefresh = lastFeedRefreshTime,
+                           Date().timeIntervalSince(lastRefresh) < refreshDebounceInterval {
+                            print("⏭️ [FeedView] Skipping refresh - too soon (last refresh \(String(format: "%.1f", Date().timeIntervalSince(lastRefresh)))s ago)")
+                            return
+                        }
+                        
+                        Task {
+                            await refreshFeedData()
+                            lastFeedRefreshTime = Date() // Update timestamp
+                        }
+                    } else {
+                        print("✅ [FeedView] OPTIMIZED: No refresh needed - viewing notifications doesn't change feed (saved 113 reads)")
+                    }
                 }
         }
         .sheet(isPresented: $showUserSearch) {
@@ -612,6 +633,7 @@ struct FeedView: View {
         @ObservedObject var feedManager: FeedManager
         @ObservedObject var likeManager: LikeManager
         @ObservedObject var commentManager: CommentManager
+        @ObservedObject var commentLikeManager: CommentLikeManager
         let debugEnabled: Bool
         @EnvironmentObject var stampsManager: StampsManager
         @EnvironmentObject var authManager: AuthManager
@@ -700,6 +722,7 @@ struct FeedView: View {
                             refreshFeed: refreshFeed,  // Pass refresh function directly
                             likeManager: likeManager,
                             commentManager: commentManager,
+                            commentLikeManager: commentLikeManager,
                             onStampTap: { stamp in 
                                 selectedStampForDetail = StampDetailNavigation(
                                     stamp: stamp,
@@ -937,6 +960,7 @@ struct FeedView: View {
         let refreshFeed: () async -> Void // Direct refresh function (replaces complex pending system)
         @ObservedObject var likeManager: LikeManager
         @ObservedObject var commentManager: CommentManager
+        @ObservedObject var commentLikeManager: CommentLikeManager
         let onStampTap: (Stamp) -> Void
         let onPostTap: (String) -> Void
         let onUserTap: (String, String, String) -> Void
@@ -1221,7 +1245,8 @@ struct FeedView: View {
                     postId: postId,
                     postOwnerId: userId,
                     stampId: stamp.id,
-                    commentManager: commentManager
+                    commentManager: commentManager,
+                    commentLikeManager: commentLikeManager
                 )
                 .environmentObject(authManager)
                 .environmentObject(profileManager)

@@ -747,11 +747,14 @@ class StampsManager: ObservableObject {
                         .map { String($0).capitalized }
                         .joined(separator: " ")
                     
+                    // Detect actual file extension from cached image (could be .png or .jpg)
+                    let actualExtension = self.findCachedImageExtension(stampId: collectedStamp.stampId)
+                    
                     return WidgetStamp(
                         id: collectedStamp.stampId,
                         name: stampName.isEmpty ? "Stamp" : stampName,
                         collectedDate: collectedStamp.collectedDate,
-                        imageFileName: "\(collectedStamp.stampId).png"
+                        imageFileName: "\(collectedStamp.stampId).\(actualExtension)"
                     )
                 }
                 
@@ -788,22 +791,47 @@ class StampsManager: ObservableObject {
         }
     }
     
+    /// Find the actual file extension of a cached stamp thumbnail (.png or .jpg)
+    private func findCachedImageExtension(stampId: String) -> String {
+        let documentsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        
+        guard let allFiles = try? FileManager.default.contentsOfDirectory(atPath: documentsDir.path) else {
+            return "jpg" // Default fallback (thumbnails are typically .jpg)
+        }
+        
+        // Find thumbnail file that starts with the stampId
+        // Format: "stampId_hash_thumb.jpg" or "stampId_hash_thumb.png"
+        let matchingFiles = allFiles.filter { filename in
+            filename.hasPrefix(stampId) && 
+            filename.contains("_thumb") &&
+            (filename.hasSuffix(".png") || filename.hasSuffix(".jpg"))
+        }
+        
+        if let firstMatch = matchingFiles.first {
+            // Extract extension from actual cached thumbnail
+            return (firstMatch as NSString).pathExtension
+        }
+        
+        return "jpg" // Default fallback (thumbnails are typically .jpg)
+    }
+    
     /// Copy stamp image from app cache to shared container for widget access
+    /// If image is not yet cached, downloads it from Firebase first
     private func copyStampImageToSharedContainer(stampId: String) async {
         let documentsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
         
-        // List all files in Documents directory
+        // First, try to find cached image in Documents directory
         guard let allFiles = try? FileManager.default.contentsOfDirectory(atPath: documentsDir.path) else {
             print("⚠️ [Widget] Could not list Documents directory")
             return
         }
         
-        // Find any file that starts with the stampId (handles hash suffixes)
-        // Format: "stampId_hash.png" or "stampId_hash_thumb.png"
+        // Find thumbnail file that starts with the stampId (handles hash suffixes)
+        // Format: "stampId_hash_thumb.png" or "stampId_hash_thumb.jpg"
         let matchingFiles = allFiles.filter { filename in
             filename.hasPrefix(stampId) && 
-            (filename.hasSuffix(".png") || filename.hasSuffix(".jpg")) &&
-            !filename.contains("_thumb") // Skip thumbnails, we want full-res
+            filename.contains("_thumb") && // Use thumbnails for widget (smaller, faster)
+            (filename.hasSuffix(".png") || filename.hasSuffix(".jpg"))
         }
         
         if let firstMatch = matchingFiles.first {
@@ -817,7 +845,40 @@ class StampsManager: ObservableObject {
                 print("⚠️ [Widget] Failed to copy image for: \(stampId)")
             }
         } else {
-            print("⚠️ [Widget] No cached image found for: \(stampId) (searched \(allFiles.count) files)")
+            // Image not yet cached - try to download it from Firebase first
+            print("📥 [Widget] Image not cached yet, attempting download for: \(stampId)")
+            
+            // Find the stamp to get its Firebase URL
+            if let stamp = stamps.first(where: { $0.id == stampId }),
+               let imageUrl = stamp.imageUrl,
+               let storagePath = stamp.imageStoragePath,
+               !imageUrl.isEmpty {
+                
+                do {
+                    // Download and cache the image (we only need the side effect of caching)
+                    _ = try await ImageManager.shared.downloadAndCacheImage(
+                        storagePath: storagePath,
+                        stampId: stampId,
+                        imageUrl: imageUrl
+                    )
+                    
+                    print("✅ [Widget] Downloaded image from Firebase for: \(stampId)")
+                    
+                    // Now try again to find the cached file
+                    if let newFiles = try? FileManager.default.contentsOfDirectory(atPath: documentsDir.path),
+                       let newMatch = newFiles.first(where: { $0.hasPrefix(stampId) && !$0.contains("_thumb") && ($0.hasSuffix(".png") || $0.hasSuffix(".jpg")) }) {
+                        
+                        let sourceURL = documentsDir.appendingPathComponent(newMatch)
+                        if let _ = WidgetDataManager.shared.copyImageToSharedContainer(from: sourceURL, stampId: stampId) {
+                            print("📸 [Widget] ✅ Copied downloaded image for stamp: \(stampId)")
+                        }
+                    }
+                } catch {
+                    print("⚠️ [Widget] Failed to download image for \(stampId): \(error.localizedDescription)")
+                }
+            } else {
+                print("⚠️ [Widget] No Firebase URL found for stamp: \(stampId)")
+            }
         }
     }
     

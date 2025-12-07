@@ -414,17 +414,11 @@ struct UserProfileView: View {
             // Load user's bookmark count
             loadBookmarkCount()
             
-            // Cache initial counts in FollowManager (merge with optimistic updates if they exist)
-            if let profile = userProfile {
-                if let optimisticCounts = followManager.followCounts[userId] {
-                    // Merge: keep optimistic followers, but update following from profile
-                    print("📊 [UserProfileView] Merging optimistic followers=\(optimisticCounts.followers) with profile following=\(profile.followingCount)")
-                    followManager.updateFollowCounts(userId: userId, followerCount: optimisticCounts.followers, followingCount: profile.followingCount)
-                } else {
-                    // No optimistic counts, use profile data
-                    print("📊 [UserProfileView] Caching initial counts: followers=\(profile.followerCount), following=\(profile.followingCount)")
-                    followManager.updateFollowCounts(userId: userId, followerCount: profile.followerCount, followingCount: profile.followingCount)
-                }
+            // ✅ SIMPLIFIED (Dec 5, 2025): Always fetch fresh counts from Firebase
+            // In-memory cache is only for optimistic updates during follow/unfollow
+            // When viewing a profile, always prefer fresh Firebase data for accuracy
+            Task {
+                await followManager.refreshFollowCounts(userId: userId)
             }
             
             // Check follow status if not current user
@@ -438,13 +432,8 @@ struct UserProfileView: View {
             if let profile = profile {
                 print("📊 [UserProfileView] Profile loaded: \(profile.username)")
                 print("📊 [UserProfileView] Counts: followers=\(profile.followerCount), following=\(profile.followingCount)")
-                // Merge: keep optimistic followers if they exist, but always update following from profile
-                if let optimisticCounts = followManager.followCounts[userId] {
-                    print("📊 [UserProfileView] Merging optimistic followers=\(optimisticCounts.followers) with profile following=\(profile.followingCount)")
-                    followManager.updateFollowCounts(userId: userId, followerCount: optimisticCounts.followers, followingCount: profile.followingCount)
-                } else {
-                    followManager.updateFollowCounts(userId: userId, followerCount: profile.followerCount, followingCount: profile.followingCount)
-                }
+                // ✅ SIMPLIFIED (Dec 5, 2025): Profile loaded, counts will be fetched by refreshFollowCounts in onAppear
+                // No need to merge or cache here - single source of truth from Firebase
                 
                 // TODO: POST-MVP - Rank fetch disabled
                 // if userRank == nil {

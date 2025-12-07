@@ -7,15 +7,15 @@ class CommentManager: ObservableObject {
     @Published private(set) var commentCounts: [String: Int] = [:] // postId -> comment count
     @Published var isLoading: [String: Bool] = [:] // postId -> loading state
     @Published var errorMessage: String? // Error message to display to user
+    @Published var hasMoreComments: [String: Bool] = [:] // postId -> has more to load
     
     private let firebaseService = FirebaseService.shared
     
     // Callback to notify FeedManager when comment count changes
     var onCommentCountChanged: ((String, Int) -> Void)?
     
-    // Debouncing: Prevent rapid-fire comment posting
-    private var lastCommentTime: Date?
-    private let debounceInterval: TimeInterval = 0.5 // 500ms cooldown
+    // Pagination state
+    private var lastCommentDate: [String: Date] = [:] // postId -> last comment's createdAt
     
     init() {
         print("⏱️ [CommentManager] init() started")
@@ -24,30 +24,58 @@ class CommentManager: ObservableObject {
         print("⏱️ [CommentManager] init() completed with \(commentCounts.count) cached comment counts")
     }
     
-    /// Fetch comments for a post
-    func fetchComments(postId: String) async {
+    /// Fetch comments for a post (initial load or pagination)
+    /// - Parameters:
+    ///   - postId: The post ID
+    ///   - loadMore: If true, loads next page. If false, refreshes from start.
+    func fetchComments(postId: String, loadMore: Bool = false) async {
         await MainActor.run {
             isLoading[postId] = true
         }
         
+        // Get pagination cursor (nil for initial load)
+        let afterDate = loadMore ? lastCommentDate[postId] : nil
+        
         do {
-            let fetchedComments = try await firebaseService.fetchComments(postId: postId, limit: 100)
+            let fetchedComments = try await firebaseService.fetchComments(
+                postId: postId,
+                limit: 50,
+                after: afterDate
+            )
             
             await MainActor.run {
-                comments[postId] = fetchedComments
-                // Always update count to match actual fetched comments
-                // This fixes desync between cached feed count and actual Firebase count
-                commentCounts[postId] = fetchedComments.count
+                if loadMore {
+                    // Append to existing comments
+                    comments[postId]?.append(contentsOf: fetchedComments)
+                } else {
+                    // Replace with fresh data
+                    comments[postId] = fetchedComments
+                    // Always update count to match actual fetched comments
+                    // This fixes desync between cached feed count and actual Firebase count
+                    commentCounts[postId] = fetchedComments.count
+                }
+                
+                // Update pagination state
+                if let lastComment = fetchedComments.last {
+                    lastCommentDate[postId] = lastComment.createdAt
+                }
+                
+                // If we got fewer than the limit, there are no more comments
+                hasMoreComments[postId] = fetchedComments.count >= 50
+                
                 isLoading[postId] = false
                 
                 // Save to cache for next session
                 saveCachedCommentCounts()
                 
-                // Notify FeedManager of the updated count
-                onCommentCountChanged?(postId, fetchedComments.count)
+                // Notify FeedManager of the updated count (only for initial load)
+                if !loadMore {
+                    let currentCount = comments[postId]?.count ?? 0
+                    onCommentCountChanged?(postId, currentCount)
+                }
             }
             
-            print("✅ Fetched \(fetchedComments.count) comments for post: \(postId)")
+            print("✅ Fetched \(fetchedComments.count) comments for post: \(postId) (loadMore: \(loadMore))")
         } catch {
             print("⚠️ Failed to fetch comments: \(error.localizedDescription)")
             await MainActor.run {
@@ -72,13 +100,8 @@ class CommentManager: ObservableObject {
     /// Add a comment to a post with optimistic UI update
     @MainActor
     func addComment(postId: String, stampId: String, postOwnerId: String, userId: String, text: String, userProfile: UserProfile, parentCommentId: String? = nil) {
-        // Debounce: Prevent rapid comment posting (Instagram-style - silently ignore)
-        if let lastTime = lastCommentTime,
-           Date().timeIntervalSince(lastTime) < debounceInterval {
-            print("🚫 [CommentManager] Debounced: Too soon to post another comment")
-            return
-        }
-        lastCommentTime = Date()
+        // ✅ REMOVED DEBOUNCE: Allow rapid commenting
+        // Users should be able to post multiple comments quickly without blocking
         
         // Create optimistic comment with temp ID
         let optimisticComment = Comment(
@@ -202,8 +225,10 @@ class CommentManager: ObservableObject {
                 )
                 
                 print("✅ Comment deleted from Firebase: \(commentId)")
-                // ✅ No refetch needed - optimistic update is already accurate
-                // This makes delete consistent with add (neither refetch on success)
+                
+                // Refetch to sync with Firebase's orphaning of replies
+                // (Backend sets parentCommentId to null for child replies)
+                await fetchComments(postId: postId)
             } catch {
                 print("❌ Failed to delete comment: \(error.localizedDescription)")
                 
@@ -240,20 +265,33 @@ class CommentManager: ObservableObject {
         // Sort top-level comments by date (oldest first for now - can adjust)
         let sortedTopLevel = topLevel.sorted { $0.createdAt < $1.createdAt }
         
-        // Build threaded list
+        // Build threaded list with recursive reply gathering
         var threaded: [Comment] = []
         
         for parent in sortedTopLevel {
             // Add parent
             threaded.append(parent)
             
-            // Find and add its replies (sorted oldest first)
-            let parentReplies = replies.filter { $0.parentCommentId == parent.id }
-                .sorted { $0.createdAt < $1.createdAt }
-            threaded.append(contentsOf: parentReplies)
+            // Recursively add all nested replies
+            addReplies(to: parent, from: replies, into: &threaded)
         }
         
         return threaded
+    }
+    
+    /// Recursively add replies and their nested replies
+    private func addReplies(to parent: Comment, from allReplies: [Comment], into threaded: inout [Comment]) {
+        guard let parentId = parent.id else { return }
+        
+        // Find direct replies to this parent
+        let directReplies = allReplies.filter { $0.parentCommentId == parentId }
+            .sorted { $0.createdAt < $1.createdAt }
+        
+        // Add each reply and recursively add its replies
+        for reply in directReplies {
+            threaded.append(reply)
+            addReplies(to: reply, from: allReplies, into: &threaded)
+        }
     }
     
     /// Get comment count for a post
@@ -311,6 +349,8 @@ class CommentManager: ObservableObject {
         comments.removeAll()
         commentCounts.removeAll()
         isLoading.removeAll()
+        hasMoreComments.removeAll()
+        lastCommentDate.removeAll()
         UserDefaults.standard.removeObject(forKey: "commentCounts")
     }
     

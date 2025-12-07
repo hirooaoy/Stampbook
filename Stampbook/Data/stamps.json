@@ -586,7 +586,7 @@
       "Hike up Bernal Hill right after for 360-degree city views"
     ],
     "geohash": "9q8ywqv8",
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "aspectRatio": 0.99
   },
   {
@@ -624,7 +624,7 @@
       "Visit in peak summer for the most colorful flower displays"
     ],
     "geohash": "9q8ytxz9",
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "aspectRatio": 0.98
   },
   {
@@ -716,7 +716,7 @@
     ],
     "about": "One of SF's first community gardens from 1978, perched on terraced slopes with bay views on historic military grounds.",
     "geohash": "9q8zn46g",
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "aspectRatio": 0.99,
     "thingsToDoFromEditors": [
       "Walk through terraced gardens then continue to Fort Mason waterfront",
@@ -967,7 +967,7 @@
       "Visit during monthly open houses to meet gardeners and learn tips"
     ],
     "geohash": "9q8yy9gn",
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "aspectRatio": 1
   },
   {
@@ -1137,23 +1137,6 @@
     ],
     "geohash": "9q4sf1tt",
     "collectionRadius": "regular",
-    "aspectRatio": 1
-  },
-  {
-    "id": "us-ca-tahoe-heavenly",
-    "name": "Heavenly Mountain Resort",
-    "latitude": 38.93744594803447,
-    "longitude": -119.92229922230797,
-    "address": "South Lake Tahoe, CA",
-    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-tahoe-heavenly.png?alt=media&token=3779b04b-3b6b-43a1-a495-9f9f8449594e",
-    "collectionIds": [],
-    "about": "Heavenly is one of the few resorts where you can ski across two states—California and Nevada—literally crossing state lines on skis.",
-    "thingsToDoFromEditors": [
-      "Take the Heavenly Gondola to the summit for panoramic Lake Tahoe views",
-      "Enjoy terrain for all skill levels from beginner runs like First Ride to challenging expert runs like Gunbarrel"
-    ],
-    "geohash": "9qftx075",
-    "collectionRadius": "xlarge",
     "aspectRatio": 1
   },
   {

@@ -133,14 +133,39 @@ class WidgetDataManager {
     
     /// Load image from shared container (for widget)
     func loadImageFromSharedContainer(fileName: String) -> URL? {
-        guard let sharedURL = sharedContainerURL else { return nil }
-        let imageURL = sharedURL.appendingPathComponent("Images").appendingPathComponent(fileName)
-        
-        guard FileManager.default.fileExists(atPath: imageURL.path) else {
+        guard let sharedURL = sharedContainerURL else {
+            print("⚠️ [Widget] Shared container URL not available")
             return nil
         }
         
-        return imageURL
+        let imageURL = sharedURL.appendingPathComponent("Images").appendingPathComponent(fileName)
+        
+        // Try the exact filename first
+        if FileManager.default.fileExists(atPath: imageURL.path) {
+            print("✅ [Widget] Found image: \(fileName)")
+            return imageURL
+        }
+        
+        // Fallback: Try alternate extension (.png if .jpg was requested, or vice versa)
+        // This handles edge cases where extension mismatch occurs
+        let baseName = (fileName as NSString).deletingPathExtension
+        let alternateExtension = fileName.hasSuffix(".png") ? "jpg" : "png"
+        let alternateFileName = "\(baseName).\(alternateExtension)"
+        let alternateURL = sharedURL.appendingPathComponent("Images").appendingPathComponent(alternateFileName)
+        
+        if FileManager.default.fileExists(atPath: alternateURL.path) {
+            print("✅ [Widget] Found image with alternate extension: \(alternateFileName)")
+            return alternateURL
+        }
+        
+        // Not found - log for debugging
+        print("⚠️ [Widget] Image not found at: \(imageURL.path)")
+        // List available images for debugging
+        let imagesDir = sharedURL.appendingPathComponent("Images")
+        if let files = try? FileManager.default.contentsOfDirectory(atPath: imagesDir.path) {
+            print("📂 [Widget] Available images (\(files.count)): \(files.prefix(5).joined(separator: ", "))")
+        }
+        return nil
     }
 }
 

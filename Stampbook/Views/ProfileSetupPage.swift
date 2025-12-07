@@ -227,10 +227,11 @@ struct ProfileSetupPage: View {
             errorMessage = nil
             
             do {
-                // Update profile in Firestore (displayName same as username)
+                // Update profile in Firestore (capitalize first letter for display name)
+                let displayName = username.prefix(1).uppercased() + username.dropFirst()
                 try await firebaseService.updateUserProfile(
                     userId: userId,
-                    displayName: username,
+                    displayName: displayName,
                     username: username,
                     hasSeenOnboarding: true
                 )

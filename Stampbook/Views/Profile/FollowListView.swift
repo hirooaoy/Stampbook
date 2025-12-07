@@ -77,16 +77,24 @@ struct FollowListView: View {
         .navigationTitle(userDisplayName)
         .navigationBarTitleDisplayMode(.inline)
         // .toolbar(.hidden, for: .tabBar)
+        // ✅ FIX: Force view recreation AND immediate data clear when userId changes
+        // The .id() modifier forces SwiftUI to treat this as a completely new view
+        .id(userId)
         .onAppear {
+            print("👤 [FollowListView] onAppear for userId: \(userId)")
+            
+            // ✅ CRITICAL FIX: ALWAYS clear lists on appear to ensure fresh data
+            // This prevents showing stale data from previously viewed users
+            // The shared FollowManager persists across view instances
+            if !followManager.followers.isEmpty || !followManager.following.isEmpty {
+                print("👤 [FollowListView] Clearing existing data for fresh load")
+                followManager.clearFollowLists()
+            }
+            
             // Load both followers and following data to show accurate counts
             // Pass current user ID to batch check follow statuses
-            // ✅ FIX: Only fetch if lists are empty (preserves optimistic updates from unfollow)
-            if followManager.followers.isEmpty {
-                followManager.fetchFollowers(userId: userId, currentUserId: authManager.userId)
-            }
-            if followManager.following.isEmpty {
-                followManager.fetchFollowing(userId: userId, currentUserId: authManager.userId)
-            }
+            followManager.fetchFollowers(userId: userId, currentUserId: authManager.userId)
+            followManager.fetchFollowing(userId: userId, currentUserId: authManager.userId)
         }
     }
 }

@@ -7,93 +7,49 @@ struct NotificationView: View {
     @EnvironmentObject var stampsManager: StampsManager
     @EnvironmentObject var profileManager: ProfileManager
     @EnvironmentObject var notificationManager: NotificationManager
+    
     @State private var isInitialLoad = true
-    @State private var hasFetchedProfiles = false // NEW: Block rendering until profiles are fetched
-    @State private var selectedProfile: (userId: String, profile: UserProfile)?
-    @State private var selectedPostId: String?
+    @State private var hasFetchedProfiles = false
     @State private var selectedNotificationForProfile: AppNotification?
     @State private var selectedNotificationForPost: AppNotification?
-    @State private var actorProfiles: [String: UserProfile] = [:] // Pre-fetched actor profiles (batch optimization)
+    @State private var actorProfiles: [String: UserProfile] = [:]
     
     var body: some View {
         NavigationStack {
             ZStack {
-                // Content
                 if notificationManager.isLoading && isInitialLoad {
-                    // Loading state
-                    VStack(spacing: 16) {
-                        ProgressView()
-                        Text("Loading notifications...")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    loadingView
                 } else if !hasFetchedProfiles {
-                    // NEW: Loading profiles state (prevents race condition)
-                    // This blocks rendering until batch profile fetch completes
-                    VStack(spacing: 16) {
-                        ProgressView()
-                        Text("Loading profiles...")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    profileLoadingView
                 } else if notificationManager.notifications.isEmpty {
-                    // Empty state
-                    VStack(spacing: 16) {
-                        Image(systemName: "bell.slash")
-                            .font(.system(size: 60))
-                            .foregroundColor(.gray)
-                        
-                        VStack(spacing: 8) {
-                            Text("No notifications yet")
-                                .font(.title3)
-                                .fontWeight(.semibold)
-                            
-                            Text("New notifications will appear here")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    emptyStateView
                 } else {
-                    // Notifications list - only renders AFTER profiles are fetched
-                    ScrollView {
-                        LazyVStack(spacing: 0) {
-                            ForEach(notificationManager.notifications) { notification in
-                                NotificationRow(
-                                    notification: notification,
-                                    preFetchedProfile: actorProfiles[notification.actorId],
-                                    onProfileTap: { selectedNotificationForProfile = notification },
-                                    onPostTap: { selectedNotificationForPost = notification }
-                                )
-                                    .environmentObject(stampsManager)
-                                    .environmentObject(profileManager)
-                                
-                                if notification.id != notificationManager.notifications.last?.id {
-                                    Divider()
-                                        .padding(.leading, 48)
-                                }
-                            }
-                        }
-                        .padding(.horizontal, 20)
-                    }
+                    notificationsList
                 }
             }
             .navigationTitle("Notifications")
             .navigationBarTitleDisplayMode(.inline)
             .navigationDestination(item: $selectedNotificationForProfile) { notification in
-                // Navigate to user profile (UserProfileView will fetch the profile data)
                 UserProfileView(
                     userId: notification.actorId,
-                    username: "",
-                    displayName: ""
+                    username: actorProfiles[notification.actorId]?.username ?? "",
+                    displayName: actorProfiles[notification.actorId]?.displayName ?? ""
                 )
             }
             .navigationDestination(item: $selectedNotificationForPost) { notification in
-                // Navigate to post detail
                 if let postId = notification.postId {
-                    PostDetailView(postId: postId)
+                    PostDetailView(
+                        postId: postId,
+                        highlightCommentId: notification.commentId
+                    )
+                    .onAppear {
+                        print("🔔 [NotificationView] Navigating to PostDetailView - postId: \(postId), commentId: \(notification.commentId ?? "NIL")")
+                    }
+                } else {
+                    EmptyView()
+                        .onAppear {
+                            print("❌ [NotificationView] No postId in notification!")
+                        }
                 }
             }
             .toolbar {
@@ -106,63 +62,114 @@ struct NotificationView: View {
                 }
             }
             .task {
-                // Initial load
-                if let userId = authManager.userId {
-                    await notificationManager.fetchNotifications(userId: userId)
-                    isInitialLoad = false
-                    
-                    // ✅ OPTIMIZATION: Batch fetch all actor profiles
-                    // Instead of each notification row fetching individually (50 reads),
-                    // we fetch all unique actors in one batch query (~5 reads)
-                    let uniqueActorIds = Array(Set(notificationManager.notifications.map { $0.actorId }))
-                    
-                    if !uniqueActorIds.isEmpty {
-                        #if DEBUG
-                        print("🔄 [NotificationView] Batch fetching \(uniqueActorIds.count) actor profiles...")
-                        let batchStart = CFAbsoluteTimeGetCurrent()
-                        #endif
-                        
-                        do {
-                            let profiles = try await FirebaseService.shared.fetchProfilesBatched(userIds: uniqueActorIds)
-                            
-                            // Store in dictionary for O(1) lookup
-                            actorProfiles = Dictionary(uniqueKeysWithValues: profiles.map { ($0.id, $0) })
-                            
-                            #if DEBUG
-                            let batchTime = CFAbsoluteTimeGetCurrent() - batchStart
-                            
-                            // ✅ FIXED: Calculate actual cost savings percentage
-                            let oldReads = uniqueActorIds.count
-                            let newReads = (uniqueActorIds.count + 9) / 10 // Batch size 10
-                            let reduction = oldReads > 0 ? Int(((Double(oldReads - newReads) / Double(oldReads)) * 100)) : 0
-                            
-                            print("✅ [NotificationView] Batch fetched \(profiles.count) profiles in \(String(format: "%.3f", batchTime))s")
-                            print("💰 [NotificationView] Cost savings: \(oldReads) reads → \(newReads) reads (\(reduction)% reduction)")
-                            #endif
-                        } catch {
-                            print("⚠️ [NotificationView] Batch profile fetch failed: \(error.localizedDescription)")
-                            // Fallback: Rows will fetch individually (slower but still works)
-                        }
-                    }
-                    
-                    // ✅ FIXED: Set flag AFTER batch fetch completes to prevent race condition
-                    // This ensures NotificationRows render AFTER actorProfiles is populated
-                    hasFetchedProfiles = true
-                    
-                    // Mark all as read when sheet appears
-                    await notificationManager.markAllAsRead(userId: userId)
-                }
+                await loadNotifications()
+            }
+            .onAppear {
+                // ✅ FIX (Dec 5, 2025): Reset navigation state to always start at notification list
+                // This prevents the bug where reopening the sheet sometimes starts at PostDetailView
+                // instead of the notification list. Safe because:
+                // - Doesn't interfere with feed refresh logic (happens in .onDisappear)
+                // - Doesn't affect deep links (uses separate DeepLinkManager)
+                // - Only clears navigation within this sheet session
+                selectedNotificationForProfile = nil
+                selectedNotificationForPost = nil
             }
         }
+    }
+    
+    private var loadingView: some View {
+        VStack(spacing: 16) {
+            ProgressView()
+            Text("Loading notifications...")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+    
+    private var profileLoadingView: some View {
+        VStack(spacing: 16) {
+            ProgressView()
+            Text("Loading profiles...")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+    
+    private var emptyStateView: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "bell.slash")
+                .font(.system(size: 60))
+                .foregroundColor(.gray)
+            
+            VStack(spacing: 8) {
+                Text("No notifications yet")
+                    .font(.title3)
+                    .fontWeight(.semibold)
+                
+                Text("New notifications will appear here")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+    
+    private var notificationsList: some View {
+        ScrollView {
+            LazyVStack(spacing: 0) {
+                ForEach(notificationManager.notifications) { notification in
+                    NotificationRow(
+                        notification: notification,
+                        preFetchedProfile: actorProfiles[notification.actorId],
+                    onProfileTap: { selectedNotificationForProfile = notification },
+                    onPostTap: { 
+                        print("🔔 [NotificationView] Tapped notification - type: \(notification.type), postId: \(notification.postId ?? "NIL"), commentId: \(notification.commentId ?? "NIL")")
+                        selectedNotificationForPost = notification 
+                    }
+                    )
+                    .environmentObject(stampsManager)
+                    .environmentObject(profileManager)
+                    
+                    if notification.id != notificationManager.notifications.last?.id {
+                        Divider()
+                            .padding(.leading, 48)
+                    }
+                }
+            }
+            .padding(.horizontal, 20)
+        }
+    }
+    
+    private func loadNotifications() async {
+        guard let userId = authManager.userId else { return }
+        
+        await notificationManager.fetchNotifications(userId: userId)
+        isInitialLoad = false
+        
+        let uniqueActorIds = Array(Set(notificationManager.notifications.map { $0.actorId }))
+        if !uniqueActorIds.isEmpty {
+            do {
+                let profiles = try await FirebaseService.shared.fetchProfilesBatched(userIds: uniqueActorIds)
+                actorProfiles = Dictionary(uniqueKeysWithValues: profiles.map { ($0.id, $0) })
+            } catch {
+                print("⚠️ Failed to fetch profiles: \(error)")
+            }
+        }
+        
+        hasFetchedProfiles = true
+        await notificationManager.markAllAsRead(userId: userId)
     }
 }
 
 /// Individual notification row
 struct NotificationRow: View {
     let notification: AppNotification
-    let preFetchedProfile: UserProfile? // ✅ Pre-fetched profile for instant rendering
+    let preFetchedProfile: UserProfile?
     let onProfileTap: () -> Void
     let onPostTap: () -> Void
+    
     @EnvironmentObject var stampsManager: StampsManager
     @EnvironmentObject var profileManager: ProfileManager
     @State private var actorProfile: UserProfile?
@@ -170,10 +177,7 @@ struct NotificationRow: View {
     
     var body: some View {
         HStack(alignment: .center, spacing: 12) {
-            // Actor profile image - always navigates to profile
-            Button(action: {
-                onProfileTap()
-            }) {
+            Button(action: onProfileTap) {
                 ProfileImageView(
                     avatarUrl: actorProfile?.avatarUrl,
                     userId: notification.actorId,
@@ -182,17 +186,12 @@ struct NotificationRow: View {
             }
             .buttonStyle(PlainButtonStyle())
             
-            // Notification content - navigates based on type
-            Button(action: {
-                handleNotificationTap()
-            }) {
+            Button(action: handleNotificationTap) {
                 VStack(alignment: .leading, spacing: 4) {
-                    // Main text
                     notificationText
                         .foregroundColor(.primary)
                         .lineLimit(3)
                     
-                    // Timestamp
                     Text(timeAgoText(from: notification.createdAt))
                         .font(.caption)
                         .foregroundColor(.secondary)
@@ -203,25 +202,16 @@ struct NotificationRow: View {
             .buttonStyle(PlainButtonStyle())
         }
         .task {
-            // ✅ OPTIMIZED: Use pre-fetched profile if available (instant rendering)
             if let preFetched = preFetchedProfile {
                 actorProfile = preFetched
-                #if DEBUG
-                print("⚡️ [NotificationRow] Using pre-fetched profile for \(notification.actorId)")
-                #endif
             } else {
-                // Fallback: Fetch individually (only happens if batch fetch failed)
-                #if DEBUG
-                print("🐌 [NotificationRow] Fetching profile individually for \(notification.actorId)")
-                #endif
-            do {
-                actorProfile = try await FirebaseService.shared.fetchUserProfile(userId: notification.actorId)
-            } catch {
-                print("❌ Error fetching actor profile: \(error.localizedDescription)")
+                do {
+                    actorProfile = try await FirebaseService.shared.fetchUserProfile(userId: notification.actorId)
+                } catch {
+                    print("❌ Error fetching profile: \(error)")
                 }
             }
             
-            // Prefetch stamp data if applicable
             if let stampId = notification.stampId {
                 stamp = await stampsManager.fetchStamps(ids: [stampId], includeRemoved: true).first
             }
@@ -270,17 +260,25 @@ struct NotificationRow: View {
                     .font(.subheadline)
                     .fontWeight(notification.isRead ? .regular : .medium)
             }
+            
+        case .commentLike:
+            if let stampName = stamp?.name {
+                Text("\(Text(actorName).fontWeight(.semibold)) liked your comment on \(Text(stampName).fontWeight(.semibold))")
+                    .font(.subheadline)
+                    .fontWeight(notification.isRead ? .regular : .medium)
+            } else {
+                Text("\(Text(actorName).fontWeight(.semibold)) liked your comment")
+                    .font(.subheadline)
+                    .fontWeight(notification.isRead ? .regular : .medium)
+            }
         }
     }
     
     private func handleNotificationTap() {
         switch notification.type {
         case .follow:
-            // Navigate to user profile
             onProfileTap()
-            
-        case .like, .comment, .mention:
-            // Navigate to post detail
+        case .like, .comment, .mention, .commentLike:
             if notification.postId != nil {
                 onPostTap()
             }
@@ -305,4 +303,3 @@ struct NotificationRow: View {
         }
     }
 }
-

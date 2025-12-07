@@ -39,6 +39,16 @@ class ProfileManager: ObservableObject {
     /// Pattern: "currentUserProfile_[userId]" allows multiple accounts
     private let profileCacheKeyPrefix = "currentUserProfile"
     
+    /// Maximum age for cached profile (24 hours)
+    /// Prevents stale data from being loaded (e.g., outdated follow counts)
+    private let maxCacheAge: TimeInterval = 24 * 60 * 60 // 24 hours
+    
+    /// Wrapper for cached profile that includes cache timestamp
+    private struct CachedProfile: Codable {
+        let profile: UserProfile
+        let cachedAt: Date
+    }
+    
     // MARK: - Lifecycle
     
     init() {
@@ -56,44 +66,27 @@ class ProfileManager: ObservableObject {
     }
     
     /// Handle following list change notification
-    /// Force refresh current user's profile to get updated follow counts
+    /// Clears profile cache so next app launch fetches fresh counts from Firebase
+    /// DOES NOT refresh immediately - optimistic updates already show correct UX
     @objc private func handleFollowingListChange(_ notification: Notification) {
         print("🔔 [ProfileManager] ========================================")
-        print("🔔 [ProfileManager] Received following list change notification - refreshing profile")
+        print("🔔 [ProfileManager] Received following list change notification")
         
         guard let userId = currentUserProfile?.id else {
-            print("⚠️ [ProfileManager] No current user profile to refresh")
+            print("⚠️ [ProfileManager] No current user profile, skipping cache clear")
+            print("🔔 [ProfileManager] ========================================")
             return
         }
         
-        print("🔔 [ProfileManager] Current profile BEFORE refresh:")
-        print("🔔 [ProfileManager]   userId: \(userId)")
-        print("🔔 [ProfileManager]   followers: \(currentUserProfile?.followerCount ?? -1)")
-        print("🔔 [ProfileManager]   following: \(currentUserProfile?.followingCount ?? -1)")
+        // Clear persistent cache so next app launch gets fresh data
+        // Don't refresh now - optimistic updates already correct, Cloud Function needs time to update Firebase
+        let cacheKey = "\(profileCacheKeyPrefix)_\(userId)"
+        UserDefaults.standard.removeObject(forKey: cacheKey)
         
-        // Force refresh profile from Firebase to get latest follow counts
-        Task {
-            do {
-                print("🔔 [ProfileManager] Fetching fresh profile from Firebase...")
-                let profile = try await firebaseService.fetchUserProfile(userId: userId, forceRefresh: true)
-                print("🔔 [ProfileManager] Fresh profile fetched:")
-                print("🔔 [ProfileManager]   followers: \(profile.followerCount)")
-                print("🔔 [ProfileManager]   following: \(profile.followingCount)")
-                await MainActor.run {
-                    print("🔔 [ProfileManager] About to update currentUserProfile...")
-                    self.currentUserProfile = profile
-                    
-                    // Save updated profile to cache
-                    self.saveCachedProfile(profile)
-                    
-                    print("✅ [ProfileManager] Profile refreshed and @Published property updated")
-                    print("✅ [ProfileManager]   followers: \(profile.followerCount), following: \(profile.followingCount)")
-                    print("🔔 [ProfileManager] ========================================")
-                }
-            } catch {
-                Logger.error("Failed to refresh profile after follow change", error: error, category: "ProfileManager")
-            }
-        }
+        print("✅ [ProfileManager] Cleared profile cache for \(userId)")
+        print("ℹ️ [ProfileManager] Optimistic counts stay visible, Cloud Function will sync Firebase")
+        print("ℹ️ [ProfileManager] Next app launch will fetch updated counts")
+        print("🔔 [ProfileManager] ========================================")
     }
     
     /// Load a user's profile from Firebase
@@ -318,7 +311,7 @@ class ProfileManager: ObservableObject {
     // MARK: - Persistent Cache Helpers
     
     /// Load profile from UserDefaults cache
-    /// Returns cached profile if available, nil otherwise
+    /// Returns cached profile if available and not expired, nil otherwise
     private func loadCachedProfile(userId: String) -> UserProfile? {
         let cacheKey = "\(profileCacheKeyPrefix)_\(userId)"
         
@@ -330,17 +323,37 @@ class ProfileManager: ObservableObject {
         do {
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = .iso8601
-            let profile = try decoder.decode(UserProfile.self, from: data)
+            let cachedProfile = try decoder.decode(CachedProfile.self, from: data)
             
-            // Log cache age for debugging
-            let cacheAge = Date().timeIntervalSince(profile.createdAt)
+            // Check if cache is expired
+            let cacheAge = Date().timeIntervalSince(cachedProfile.cachedAt)
+            
+            if cacheAge > maxCacheAge {
+                Logger.debug("Cached profile expired (age: \(String(format: "%.0f", cacheAge))s > \(String(format: "%.0f", maxCacheAge))s), clearing")
+                UserDefaults.standard.removeObject(forKey: cacheKey)
+                return nil
+            }
+            
             Logger.debug("Found cached profile (age: \(String(format: "%.0f", cacheAge))s)")
-            
-            return profile
+            return cachedProfile.profile
         } catch {
-            Logger.warning("Failed to decode cached profile, clearing corrupt cache", category: "ProfileManager")
-            UserDefaults.standard.removeObject(forKey: cacheKey)
-            return nil
+            // Try to migrate old cache format (profile without wrapper)
+            do {
+                let decoder = JSONDecoder()
+                decoder.dateDecodingStrategy = .iso8601
+                let profile = try decoder.decode(UserProfile.self, from: data)
+                
+                Logger.warning("Found legacy cached profile format, migrating to new format", category: "ProfileManager")
+                
+                // Re-save in new format with current timestamp
+                saveCachedProfile(profile)
+                
+                return profile
+            } catch {
+                Logger.warning("Failed to decode cached profile, clearing corrupt cache", category: "ProfileManager")
+                UserDefaults.standard.removeObject(forKey: cacheKey)
+                return nil
+            }
         }
     }
     
@@ -352,7 +365,11 @@ class ProfileManager: ObservableObject {
         do {
             let encoder = JSONEncoder()
             encoder.dateEncodingStrategy = .iso8601
-            let data = try encoder.encode(profile)
+            
+            // Wrap profile with cache timestamp
+            let cachedProfile = CachedProfile(profile: profile, cachedAt: Date())
+            let data = try encoder.encode(cachedProfile)
+            
             UserDefaults.standard.set(data, forKey: cacheKey)
             Logger.debug("💾 Cached profile for @\(profile.username)")
         } catch {

@@ -33,6 +33,7 @@ struct StampWidgetView: View {
                     .resizable()
                     .aspectRatio(contentMode: .fit) // Shows full stamp without cropping
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .clipped()
             } else {
                 // Fallback: Beautiful branded placeholder when image not yet cached
                 ZStack {
@@ -49,7 +50,7 @@ struct StampWidgetView: View {
                     VStack(spacing: 8) {
                         // Stamp icon
                         Image(systemName: "map.fill")
-                            .font(.system(size: 36, weight: .light))
+                            .font(.system(size: 32, weight: .light))
                             .foregroundStyle(
                                 LinearGradient(
                                     colors: [Color(red: 0.4, green: 0.45, blue: 0.5), Color(red: 0.5, green: 0.55, blue: 0.6)],
@@ -58,12 +59,13 @@ struct StampWidgetView: View {
                                 )
                             )
                         
-                        // Stamp name
+                        // Stamp name (shorter for better readability)
                         Text(stamp.name)
-                            .font(.system(size: 11, weight: .medium))
+                            .font(.system(size: 10, weight: .medium))
                             .foregroundColor(Color(red: 0.3, green: 0.35, blue: 0.4))
                             .multilineTextAlignment(.center)
                             .lineLimit(2)
+                            .padding(.horizontal, 4)
                     }
                     .padding(.horizontal, 8)
                 }

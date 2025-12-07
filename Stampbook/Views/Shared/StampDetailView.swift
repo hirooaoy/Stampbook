@@ -358,7 +358,7 @@ struct StampDetailView: View {
                     if shouldShowMemory && showMemorySection {
                         VStack(alignment: .leading, spacing: 0) {
                             // Memory heading - show username if viewing someone else's profile
-                            Text(isViewingOtherUser ? "\(viewingDisplayName ?? "User")'s memory" : "Memory")
+                            Text(isViewingOtherUser ? "\(viewingDisplayName?.isEmpty == false ? viewingDisplayName! : "User")'s memory" : "Memory")
                                 .font(.headline)
                                 .foregroundColor(.secondary)
                                 .padding(.bottom, 8)
@@ -661,7 +661,9 @@ struct StampDetailView: View {
                                 .font(.headline)
                                 .foregroundColor(.secondary)
                             
-                            ForEach(stampCollections) { collection in
+                            // Only show leaf collections (collections that actually contain stamps)
+                            // Filter out container collections (Japan, Osaka, etc.) - only show the final level (Osaka Must Visits, etc.)
+                            ForEach(stampCollections.filter { !$0.hasChildren(in: stampsManager.collections) }) { collection in
                                 NavigationLink(destination: CollectionDetailView(collection: collection)) {
                                     // Use pre-calculated progress from state
                                     let collectedInCollection = collectionProgress[collection.id] ?? 0
@@ -675,7 +677,7 @@ struct StampDetailView: View {
                                         collectedCount: collectedInCollection,
                                         totalCount: totalActiveStamps,
                                         completionPercentage: percentage,
-                                        isParent: collection.isParent
+                                        isParent: false  // Leaf collections only
                                     )
                                 }
                                 .buttonStyle(PlainButtonStyle())
@@ -759,7 +761,7 @@ struct StampDetailView: View {
             }
         }
         .toolbar {
-            // Bookmark button - only show for signed-in users
+            // Bookmark button - leftmost, only show for signed-in users
             if !stamp.isWelcomeStamp && authManager.isSignedIn {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(action: {
@@ -775,7 +777,7 @@ struct StampDetailView: View {
                 }
             }
             
-            // Triple dot menu - hide for welcome stamp
+            // Triple dot menu - middle, hide for welcome stamp
             if !stamp.isWelcomeStamp {
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
@@ -786,6 +788,20 @@ struct StampDetailView: View {
                         }
                     } label: {
                         Image(systemName: "ellipsis")
+                            .font(.title3)
+                            .symbolRenderingMode(.hierarchical)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            
+            // Close/dismiss button - rightmost, always show when not using back button
+            if !showBackButton {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(action: {
+                        dismiss()
+                    }) {
+                        Image(systemName: "xmark")
                             .font(.title3)
                             .symbolRenderingMode(.hierarchical)
                             .foregroundStyle(.secondary)

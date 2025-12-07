@@ -11,8 +11,14 @@ class FollowManager: ObservableObject {
     @Published var error: String?
     @Published var isProcessingFollow: [String: Bool] = [:] // userId -> isProcessing (for button loading state)
     
-    // Cache for follow counts (userId -> (followerCount, followingCount))
+    // ✅ SIMPLIFIED (Dec 5, 2025): In-memory cache ONLY for optimistic updates
+    // No persistence to UserDefaults - always fetch fresh from Firebase
+    // Cache is cleared on app restart for guaranteed correctness
     @Published var followCounts: [String: (followers: Int, following: Int)] = [:]
+    
+    // Track when counts were cached (for optimistic update validity)
+    private var followCountTimestamps: [String: Date] = [:] // userId -> timestamp when cached
+    private let cacheValidityDuration: TimeInterval = 5.0 // 5 seconds for optimistic updates
     
     // ✅ NEW (Nov 13, 2025): Track if following list changed (for smart feed refresh)
     // Set to true when user follows/unfollows, reset by FeedView after refresh
@@ -25,9 +31,8 @@ class FollowManager: ObservableObject {
     
     private let firebaseService = FirebaseService.shared
     
-    init() {
-        loadCachedFollowCounts()
-    }
+    // ✅ SIMPLIFIED: No need to load from UserDefaults anymore
+    init() {}
     
     // MARK: - Follow Status Checking
     
@@ -142,8 +147,9 @@ class FollowManager: ObservableObject {
                         // FeedView checks this flag and only refreshes if true (60% cost reduction)
                         self.didFollowingListChange = true
                         
-                        // ⚠️ DEPRECATED: NotificationCenter post removed (replaced with didFollowingListChange flag)
-                        // NotificationCenter.default.post(name: .followingListDidChange, object: nil)
+                        // ✅ CRITICAL: Notify ProfileManager to invalidate profile cache
+                        // This ensures follow counts are refreshed on next app open (prevents 24h stale cache)
+                        NotificationCenter.default.post(name: .followingListDidChange, object: nil)
                         
                         // Try to fetch the target user's profile to add to list
                         Task {
@@ -260,8 +266,9 @@ class FollowManager: ObservableObject {
                         self.didFollowingListChange = true
                     }
                     
-                    // ⚠️ DEPRECATED: NotificationCenter post removed (replaced with didFollowingListChange flag)
-                    // NotificationCenter.default.post(name: .followingListDidChange, object: nil)
+                    // ✅ CRITICAL: Notify ProfileManager to invalidate profile cache
+                    // This ensures follow counts are refreshed on next app open (prevents 24h stale cache)
+                    NotificationCenter.default.post(name: .followingListDidChange, object: nil)
                     
                     onSuccess?(nil)
                 } else {
@@ -385,63 +392,56 @@ class FollowManager: ObservableObject {
     
     // MARK: - Count Management (Deprecated - counts are fetched on-demand now)
     
-    /// Legacy method - kept for backwards compatibility
-    /// For MVP scale, fetch counts directly using FirebaseService.fetchFollowerCount/fetchFollowingCount
+    /// Check if cached counts are still valid (cached within last 5 seconds)
+    /// Used to determine if we should trust cached optimistic updates or prefer fresh profile data
+    func isCachedCountValid(userId: String) -> Bool {
+        guard let timestamp = followCountTimestamps[userId] else {
+            return false
+        }
+        let age = Date().timeIntervalSince(timestamp)
+        let isValid = age < cacheValidityDuration
+        print("📊 [FollowManager] Cache validity for \(userId): age=\(String(format: "%.1f", age))s, valid=\(isValid)")
+        return isValid
+    }
+    
+    /// Update follow counts in memory (for optimistic updates during follow/unfollow)
+    /// NOTE: In-memory only - not persisted to disk
     func updateFollowCounts(userId: String, followerCount: Int, followingCount: Int) {
-        print("📊 [FollowManager] updateFollowCounts called")
+        print("📊 [FollowManager] updateFollowCounts (in-memory only)")
         print("📊 [FollowManager]   userId: \(userId)")
         print("📊 [FollowManager]   NEW followers: \(followerCount), following: \(followingCount)")
         print("📊 [FollowManager]   OLD followers: \(followCounts[userId]?.followers ?? -1), following: \(followCounts[userId]?.following ?? -1)")
         followCounts[userId] = (followerCount, followingCount)
-        saveCachedFollowCounts() // Persist to disk for instant display on next launch
-        print("📊 [FollowManager]   Cache updated. Current cache count: \(followCounts.count) users")
-        print("📊 [FollowManager]   Verified cache for \(userId): followers=\(followCounts[userId]?.followers ?? -1), following=\(followCounts[userId]?.following ?? -1)")
+        followCountTimestamps[userId] = Date() // Track when this count was cached
+        print("📊 [FollowManager]   Cache updated (in-memory only). Current cache count: \(followCounts.count) users")
     }
     
     /// Fetch and cache follow counts for a user (from denormalized profile data)
+    /// NOTE: In-memory cache only - cleared on app restart
     func refreshFollowCounts(userId: String) async {
         print("🔄 [FollowManager] refreshFollowCounts called for userId: \(userId)")
         do {
             // IMPORTANT: Force refresh to bypass cache and get latest counts from Firebase
-            // This ensures optimistic updates don't get overwritten by stale cached data
             let profile = try await firebaseService.fetchUserProfile(userId: userId, forceRefresh: true)
             await MainActor.run {
                 self.followCounts[userId] = (profile.followerCount, profile.followingCount)
-                self.saveCachedFollowCounts() // Persist to disk for instant display on next launch
-                print("✅ [FollowManager] Updated counts for \(userId): followers=\(profile.followerCount), following=\(profile.followingCount)")
+                self.followCountTimestamps[userId] = Date() // Track when this count was cached
+                print("✅ [FollowManager] Updated counts (in-memory) for \(userId): followers=\(profile.followerCount), following=\(profile.followingCount)")
             }
         } catch {
             Logger.error("Failed to refresh follow counts", error: error, category: "FollowManager")
         }
     }
     
-    // MARK: - Persistence
-    
-    /// Save follow counts to UserDefaults for instant display on next launch
-    private func saveCachedFollowCounts() {
-        // Convert tuple dictionary to encodable format
-        var encodableDict: [String: [String: Int]] = [:]
-        for (userId, counts) in followCounts {
-            encodableDict[userId] = ["followers": counts.followers, "following": counts.following]
-        }
-        UserDefaults.standard.set(encodableDict, forKey: "followCounts")
-    }
-    
-    /// Load cached follow counts from UserDefaults
-    private func loadCachedFollowCounts() {
-        if let cachedDict = UserDefaults.standard.dictionary(forKey: "followCounts") as? [String: [String: Int]] {
-            var loadedCounts: [String: (followers: Int, following: Int)] = [:]
-            for (userId, counts) in cachedDict {
-                if let followers = counts["followers"], let following = counts["following"] {
-                    loadedCounts[userId] = (followers, following)
-                }
-            }
-            followCounts = loadedCounts
-            print("📊 [FollowManager] Loaded cached counts for \(loadedCounts.count) users")
-        }
-    }
-    
     // MARK: - Cleanup
+    
+    /// Clear followers and following lists (when viewing different user)
+    /// Used by FollowListView to prevent showing stale data from previously viewed user
+    func clearFollowLists() {
+        followers.removeAll()
+        following.removeAll()
+        print("🧹 [FollowManager] Cleared followers/following lists")
+    }
     
     /// Clear all follow data (on sign out)
     func clearFollowData() {
@@ -449,6 +449,7 @@ class FollowManager: ObservableObject {
         followers.removeAll()
         following.removeAll()
         followCounts.removeAll()
+        followCountTimestamps.removeAll() // ✅ Clear timestamps too
         isProcessingFollow.removeAll()
         error = nil
         UserDefaults.standard.removeObject(forKey: "followCounts")

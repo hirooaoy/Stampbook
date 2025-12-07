@@ -6,6 +6,7 @@ struct CommentView: View {
     let postOwnerId: String
     let stampId: String
     @ObservedObject var commentManager: CommentManager
+    @ObservedObject var commentLikeManager: CommentLikeManager
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var profileManager: ProfileManager
     @Environment(\.dismiss) var dismiss
@@ -14,6 +15,8 @@ struct CommentView: View {
     @State private var showingDeleteAlert = false
     @State private var commentToDelete: Comment?
     @State private var selectedUserId: IdentifiableString? // For navigation to user profile
+    @State private var showCommentLikes = false
+    @State private var selectedCommentId: String? // For showing likes
     @FocusState private var isTextFieldFocused: Bool
     
     // Reply state
@@ -27,7 +30,7 @@ struct CommentView: View {
     
     // Changed to directly observe the published property to trigger view updates
     private var comments: [Comment] {
-        commentManager.comments[postId] ?? []
+        commentManager.getComments(postId: postId)
     }
     
     private var isLoading: Bool {
@@ -38,8 +41,8 @@ struct CommentView: View {
         NavigationStack {
             VStack(spacing: 0) {
                 // Comments list
-                if isLoading && comments.isEmpty {
-                    // Loading state
+                if comments.isEmpty && isLoading {
+                    // Loading state (only show spinner on initial load when no comments cached)
                     VStack(spacing: 16) {
                         ProgressView()
                         Text("Loading comments...")
@@ -90,9 +93,49 @@ struct CommentView: View {
                                         replyingTo = replyingComment
                                         newCommentText = "@\(replyingComment.userUsername) "
                                         isTextFieldFocused = true
-                                    }
+                                    },
+                                    onShowLikes: { commentId in
+                                        selectedCommentId = commentId
+                                        showCommentLikes = true
+                                    },
+                                    commentLikeManager: commentLikeManager
                                 )
-                                .padding(.leading, comment.parentCommentId != nil ? 40 : 0) // Indent replies
+                                .padding(.leading, comment.parentCommentId != nil ? 40 : 0) // Single indent for all replies
+                            }
+                            
+                            // Load More button (if there are more comments)
+                            if commentManager.hasMoreComments[postId] == true {
+                                Button(action: {
+                                    Task {
+                                        await commentManager.fetchComments(postId: postId, loadMore: true)
+                                        
+                                        // Fetch like status for newly loaded comments
+                                        if let userId = authManager.userId {
+                                            let commentIds = comments.compactMap { $0.id }
+                                            await commentLikeManager.fetchLikeStatus(commentIds: commentIds, userId: userId)
+                                        }
+                                    }
+                                }) {
+                                    HStack(spacing: 8) {
+                                        if isLoading {
+                                            ProgressView()
+                                                .scaleEffect(0.8)
+                                        } else {
+                                            Image(systemName: "arrow.down.circle")
+                                                .font(.system(size: 16))
+                                        }
+                                        Text(isLoading ? "Loading..." : "Load More Comments")
+                                            .font(.subheadline)
+                                            .fontWeight(.medium)
+                                    }
+                                    .foregroundColor(.blue)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 12)
+                                    .background(Color(.systemGray6))
+                                    .cornerRadius(8)
+                                }
+                                .disabled(isLoading)
+                                .padding(.top, 8)
                             }
                         }
                         .padding(.horizontal, 16)
@@ -171,9 +214,15 @@ struct CommentView: View {
                 )
             }
             .onAppear {
-                // Fetch comments when view appears
+                // Fetch comments when view appears (initial load)
                 Task {
-                    await commentManager.fetchComments(postId: postId)
+                    await commentManager.fetchComments(postId: postId, loadMore: false)
+                    
+                    // Fetch like status for all comments
+                    if let userId = authManager.userId {
+                        let commentIds = comments.compactMap { $0.id }
+                        await commentLikeManager.fetchLikeStatus(commentIds: commentIds, userId: userId)
+                    }
                 }
             }
             .alert(commentToDelete?.userId == authManager.userId ? "Delete Comment" : "Remove Comment", isPresented: $showingDeleteAlert) {
@@ -202,6 +251,13 @@ struct CommentView: View {
                 }
             }
             .toolbar(.visible, for: .tabBar)
+        }
+        .sheet(isPresented: $showCommentLikes) {
+            if let commentId = selectedCommentId {
+                CommentLikesView(commentId: commentId)
+                    .environmentObject(authManager)
+                    .environmentObject(profileManager)
+            }
         }
     }
     
@@ -353,6 +409,8 @@ struct CommentRow: View {
     let onDelete: () -> Void
     let onProfileTap: (String, String, String) -> Void // (userId, username, displayName)
     let onReply: (Comment) -> Void // Callback for reply button
+    let onShowLikes: (String) -> Void // Show likes sheet for this comment
+    @ObservedObject var commentLikeManager: CommentLikeManager
     @State private var showingMenu = false
     @State private var showingReportSheet = false
     
@@ -376,6 +434,21 @@ struct CommentRow: View {
         return comment.id == nil
     }
     
+    // Like state
+    private var isLiked: Bool {
+        guard let commentId = comment.id else { return false }
+        return commentLikeManager.isLiked(commentId: commentId)
+    }
+    
+    private var currentLikeCount: Int {
+        guard let commentId = comment.id else { return 0 }
+        if commentLikeManager.hasCountData(commentId: commentId) {
+            return commentLikeManager.getLikeCount(commentId: commentId)
+        } else {
+            return comment.likeCount
+        }
+    }
+    
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
             // Profile picture - tappable to navigate to profile
@@ -397,34 +470,76 @@ struct CommentRow: View {
                     .fontWeight(.semibold)
                 
                 // Display comment text with @mentions highlighted in blue
-                // TODO: Make @mentions tappable to navigate to user profiles (Phase 2)
-                // Currently mentions are only highlighted, not interactive
                 Text(formatCommentWithMentions(comment.text))
                     .font(.subheadline)
                     .foregroundColor(.primary)
                     .fixedSize(horizontal: false, vertical: true)
                 
-                Text(comment.createdAt.timeAgoDisplay())
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                // Timestamp • Likes • Reply
+                HStack(spacing: 4) {
+                    Text(comment.createdAt.timeAgoDisplay())
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    if !isOptimisticComment {
+                        // Show likes if count > 0
+                        if currentLikeCount > 0 {
+                            Text("•")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            
+                            Button(action: {
+                                if let commentId = comment.id {
+                                    onShowLikes(commentId)
+                                }
+                            }) {
+                                Text("\(currentLikeCount) \(currentLikeCount == 1 ? "like" : "likes")")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                        
+                        Text("•")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        Button(action: {
+                            onReply(comment)
+                        }) {
+                            Text("Reply")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                }
             }
             
             Spacer()
             
-            // Show loading indicator for optimistic comments, Reply + menu for saved comments
+            // Show loading indicator for optimistic comments, heart + menu for saved comments
             if isOptimisticComment {
                 ProgressView()
                     .scaleEffect(0.7)
                     .frame(width: 24, height: 24)
             } else {
-                HStack(spacing: 8) {
-                    // Reply button (text only, no background)
+                HStack(spacing: 12) {
+                    // Like button (heart icon)
                     Button(action: {
-                        onReply(comment)
+                        guard let commentId = comment.id,
+                              let userId = currentUserId else { return }
+                        commentLikeManager.toggleLike(
+                            commentId: commentId,
+                            postId: comment.postId,
+                            stampId: comment.stampId,
+                            userId: userId,
+                            commentOwnerId: comment.userId
+                        )
                     }) {
-                        Text("Reply")
-                            .font(.system(size: 14))
-                            .foregroundColor(.gray)
+                        Image(systemName: isLiked ? "heart.fill" : "heart")
+                            .font(.system(size: 16))
+                            .foregroundColor(isLiked ? .red : .gray)
                     }
                     .buttonStyle(PlainButtonStyle())
                     
@@ -499,12 +614,12 @@ fileprivate func formatCommentWithMentions(_ text: String) -> AttributedString {
     let regex = try? NSRegularExpression(pattern: mentionPattern, options: [.caseInsensitive])
     let matches = regex?.matches(in: text, options: [], range: NSRange(location: 0, length: nsString.length)) ?? []
     
-    // Highlight each @mention in blue
+    // Highlight each @mention in blue with semibold weight
     for match in matches {
         if let range = Range(match.range, in: text) {
             if let attrRange = Range(range, in: attributedString) {
                 attributedString[attrRange].foregroundColor = .blue
-                attributedString[attrRange].font = .subheadline.weight(.semibold)
+                attributedString[attrRange].font = .system(size: 15, weight: .semibold)  // Explicit size to match .subheadline
             }
         }
     }

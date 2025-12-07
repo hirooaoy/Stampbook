@@ -3,7 +3,7 @@ import FirebaseFirestore
 
 /// Represents a comment on a collected stamp post
 struct Comment: Codable, Identifiable, Equatable {
-    @DocumentID var id: String?
+    var id: String?  // ✅ BEST PRACTICE: We manage the ID ourselves (not @DocumentID)
     let userId: String
     let postId: String // Format: "{userId}-{stampId}"
     let stampId: String
@@ -24,13 +24,16 @@ struct Comment: Codable, Identifiable, Equatable {
     // nil = top-level comment, non-nil = reply to another comment
     let parentCommentId: String?
     
+    // Like count for this comment
+    let likeCount: Int
+    
     // Temporary ID for optimistic UI updates (not stored in Firebase)
     private let tempId: String
     
     // Coding keys to exclude tempId from Firebase encoding
     enum CodingKeys: String, CodingKey {
         case id, userId, postId, stampId, postOwnerId, text, createdAt
-        case userDisplayName, userUsername, userAvatarUrl, mentionedUserIds, parentCommentId
+        case userDisplayName, userUsername, userAvatarUrl, mentionedUserIds, parentCommentId, likeCount
     }
     
     // Computed ID that uses tempId if Firebase ID is nil
@@ -43,8 +46,12 @@ struct Comment: Codable, Identifiable, Equatable {
          userDisplayName: String, userUsername: String, userAvatarUrl: String?, 
          mentionedUserIds: [String]? = nil,
          parentCommentId: String? = nil,
-         createdAt: Date = Date(), tempId: String = UUID().uuidString) {
-        // Note: @DocumentID is managed by Firebase - it will be nil until document is saved
+         likeCount: Int = 0,
+         createdAt: Date = Date(), 
+         id: String? = nil,  // ✅ BEST PRACTICE: Pass Firebase ID directly
+         tempId: String = UUID().uuidString) {
+        // ✅ BEST PRACTICE: Set ID directly (no @DocumentID annotation)
+        self.id = id
         self.userId = userId
         self.postId = postId
         self.stampId = stampId
@@ -55,6 +62,7 @@ struct Comment: Codable, Identifiable, Equatable {
         self.userAvatarUrl = userAvatarUrl
         self.mentionedUserIds = mentionedUserIds
         self.parentCommentId = parentCommentId
+        self.likeCount = likeCount
         self.createdAt = createdAt
         self.tempId = tempId
     }
@@ -63,9 +71,8 @@ struct Comment: Codable, Identifiable, Equatable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         
-        // ✅ FIX: Manually decode @DocumentID before decoding other fields
-        // This ensures the id is populated from Firebase document
-        self._id = try DocumentID<String>(from: decoder)
+        // ✅ BEST PRACTICE: Decode ID as regular field (no @DocumentID magic)
+        self.id = try container.decodeIfPresent(String.self, forKey: .id)
         
         // Decode all Firebase fields
         self.userId = try container.decode(String.self, forKey: .userId)
@@ -79,6 +86,7 @@ struct Comment: Codable, Identifiable, Equatable {
         self.userAvatarUrl = try container.decodeIfPresent(String.self, forKey: .userAvatarUrl)
         self.mentionedUserIds = try container.decodeIfPresent([String].self, forKey: .mentionedUserIds)
         self.parentCommentId = try container.decodeIfPresent(String.self, forKey: .parentCommentId)
+        self.likeCount = try container.decodeIfPresent(Int.self, forKey: .likeCount) ?? 0 // Default to 0 for backwards compatibility
         
         // Generate a temp ID (won't be used since Firebase comments have real IDs)
         self.tempId = UUID().uuidString
@@ -92,7 +100,8 @@ struct Comment: Codable, Identifiable, Equatable {
                lhs.userId == rhs.userId &&
                lhs.postId == rhs.postId &&
                lhs.text == rhs.text &&
-               lhs.parentCommentId == rhs.parentCommentId
+               lhs.parentCommentId == rhs.parentCommentId &&
+               lhs.likeCount == rhs.likeCount
     }
 }
 

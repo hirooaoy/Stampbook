@@ -3,6 +3,7 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var profileManager: ProfileManager // Shared profile manager
+    @EnvironmentObject var deepLinkManager: DeepLinkManager // Deep link handler for notifications
     @StateObject private var stampsManager: StampsManager = {
         Logger.debug("Creating StampsManager...")
         let manager = StampsManager()
@@ -13,7 +14,7 @@ struct ContentView: View {
     @State private var selectedTab = 0
     @State private var previousTab = 0 // Track previous tab
     @State private var shouldResetStampsNavigation = false // Flag to reset StampsView navigation
-    @State private var deepLinkedStampId: String? = nil // For widget deep linking
+    @State private var deepLinkedStamp: Stamp? = nil // Stamp to show from deep link
     
     // Safety net for broken account state (signed in but no profile cached)
     @State private var isLoadingMissingProfile = false
@@ -102,7 +103,7 @@ struct ContentView: View {
             }
                 .tag(1)
             
-            StampsView(shouldResetNavigation: $shouldResetStampsNavigation, deepLinkedStampId: $deepLinkedStampId)
+            StampsView(shouldResetNavigation: $shouldResetStampsNavigation)
                 .tabItem {
                     Label("Stamps", systemImage: "book.closed.fill")
                 }
@@ -122,6 +123,21 @@ struct ContentView: View {
         }
         .onOpenURL { url in
             handleDeepLink(url)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OpenPost"))) { notification in
+            // Handle notification banner taps for post-related notifications
+            guard let postId = notification.userInfo?["postId"] as? String else { return }
+            let commentId = notification.userInfo?["commentId"] as? String
+            
+            Logger.info("🔔 [ContentView] Received OpenPost notification: postId=\(postId), commentId=\(commentId ?? "nil")", category: "DeepLink")
+            deepLinkManager.handlePostNotification(postId: postId, commentId: commentId)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("OpenProfile"))) { notification in
+            // Handle notification banner taps for profile-related notifications (follows)
+            guard let userId = notification.userInfo?["userId"] as? String else { return }
+            
+            Logger.info("🔔 [ContentView] Received OpenProfile notification: userId=\(userId)", category: "DeepLink")
+            deepLinkManager.handleProfileNotification(userId: userId)
         }
         .onAppear {
             Logger.debug("onAppear started")
@@ -167,6 +183,22 @@ struct ContentView: View {
                 checkIfShouldShowProfileSetup()
             }
         }
+        .fullScreenCover(item: $deepLinkedStamp) { stamp in
+            // Present stamp detail from widget deep link (works from any tab)
+            NavigationStack {
+                StampDetailView(
+                    stamp: stamp,
+                    isCollected: stampsManager.isCollected(stamp),
+                    userLocation: nil,
+                    showBackButton: false
+                )
+                .sheetContentBackground()
+                .environmentObject(stampsManager)
+                .environmentObject(authManager)
+                .environmentObject(MapCoordinator())
+                .toolbar(.visible, for: .tabBar)
+            }
+        }
         }
     }
     
@@ -186,11 +218,19 @@ struct ContentView: View {
         
         Logger.info("Opening stamp from widget: \(stampId)", category: "DeepLink")
         
-        // Don't force tab switch - let user stay on their current tab
-        // The fullScreenCover will present modally over any tab
-        
-        // Set the stamp ID to open (StampsView will detect and open detail sheet)
-        deepLinkedStampId = stampId
+        // Fetch the stamp and present it at ContentView level
+        // This works from any tab without needing StampsView to be initialized
+        Task {
+            let stamps = await stampsManager.fetchStamps(ids: [stampId])
+            await MainActor.run {
+                if let stamp = stamps.first {
+                    deepLinkedStamp = stamp // Opens the fullScreenCover
+                    Logger.success("✅ [ContentView] Opened stamp detail for: \(stamp.name)", category: "DeepLink")
+                } else {
+                    Logger.warning("⚠️ [ContentView] Could not find stamp: \(stampId)", category: "DeepLink")
+                }
+            }
+        }
     }
     
     // MARK: - Profile Setup Check

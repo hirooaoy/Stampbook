@@ -83,7 +83,7 @@ struct BookmarksView: View {
                             .multilineTextAlignment(.center)
                             .fixedSize(horizontal: false, vertical: true)
                         
-                        Text(isViewingOtherUser ? "\(viewingDisplayName ?? "User")'s bucket list" : "Your personal bucket list")
+                        Text(isViewingOtherUser ? "\(viewingDisplayName?.isEmpty == false ? viewingDisplayName! : "User")'s bucket list" : "Your personal bucket list")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                     }

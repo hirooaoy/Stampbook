@@ -72,22 +72,66 @@ Stampbook uses Firebase Cloud Messaging (FCM) with Apple Push Notification servi
 ✅ **Working**: Push notifications deliver successfully
 
 ### Development (Xcode Debug)
-⚠️ **Known Issue**: APNs registration sometimes fails in debug builds due to provisioning profile quirks. This doesn't affect production.
+❌ **DOES NOT WORK**: Push notifications are unreliable or fail completely in debug builds from Xcode.
 
-**Workaround**: Test push notifications via TestFlight builds instead of debug builds.
+**This is NOT a bug - it's a normal Apple/Firebase limitation!**
+
+**Why Debug Builds Fail:**
+- Debug builds use development provisioning profiles
+- APNs requires production certificates for reliable delivery
+- Firebase may not be able to authenticate with APNs for debug builds
+- Error: `messaging/third-party-auth-error`
+
+**How to Test Push Notifications:**
+1. ✅ **Use TestFlight builds** (production environment)
+2. ✅ **Use Ad Hoc builds** with production provisioning profile
+3. ❌ **Do NOT test with Xcode debug builds** - they won't work
+
+**What DOES Work in Debug Builds:**
+- ✅ In-app notifications (bell icon)
+- ✅ Notification badge counts
+- ✅ Notification data saved to Firestore
+- ✅ FCM token registration
+- ❌ Push notification banners/sounds (unreliable)
 
 ## Troubleshooting
 
-### If push notifications stop working:
+### "Push notifications aren't working!"
 
-1. **Check Firebase Console** → Cloud Messaging → Verify APNs keys are still valid
-2. **Check Apple Developer** → Keys → Verify `8UNPWH7396` key exists and hasn't been revoked
-3. **Check Cloud Functions logs**: 
+**FIRST: Are you testing with a Debug build from Xcode?**
+- ❌ Debug builds DO NOT support push notifications reliably
+- ✅ Use TestFlight or Ad Hoc builds instead
+
+**If using TestFlight and still not working:**
+
+1. **Check if in-app notifications work:**
+   - Open app → Tap bell icon → Do you see notifications?
+   - If YES → Push notifications are being created, just not delivered
+   - If NO → Problem is with notification creation (Cloud Functions)
+
+2. **Check user's notification permissions:**
+   - Settings → Stampbook → Notifications → Allow Notifications = ON
+   - Check Do Not Disturb / Focus mode is OFF
+
+3. **Check Firebase Console** → Cloud Messaging → Verify APNs keys are still valid
+
+4. **Check Apple Developer** → Keys → Verify `8UNPWH7396` key exists and hasn't been revoked
+
+5. **Check Cloud Functions logs**: 
    ```bash
-   firebase functions:log --limit 50
+   firebase functions:log
    ```
-4. **Verify FCM tokens** are being saved:
+   Look for `❌ Failed to send push notification` errors
+
+6. **Verify FCM tokens** are being saved:
    - Check Firestore → `users/{userId}` → Look for `fcmToken` field
+   - If missing, user needs to sign out and sign back in
+
+7. **Test with script:**
+   ```bash
+   node test_push_notification_to_hiroo.js
+   ```
+   If this fails with `messaging/third-party-auth-error` → Re-upload APNs key
 
 ### Re-uploading APNs Key (if needed):
 

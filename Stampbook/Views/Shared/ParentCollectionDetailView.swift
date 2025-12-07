@@ -49,20 +49,40 @@ struct ParentCollectionDetailView: View {
                             }
                         } else {
                             ForEach(sortedChildCollections()) { collection in
-                                NavigationLink(destination: CollectionDetailView(collection: collection)) {
-                                    let metadata = collectionMetadata[collection.id] ?? (total: 0, collected: 0)
-                                    let percentage = metadata.total > 0 ? Double(metadata.collected) / Double(metadata.total) : 0.0
-                                    
-                                    CollectionCardView(
-                                        emoji: collection.emoji,
-                                        name: collection.name,
-                                        collectedCount: metadata.collected,
-                                        totalCount: metadata.total,
-                                        completionPercentage: percentage,
-                                        isParent: false  // Child collections in parent view
-                                    )
+                                // Smart navigation: check if this child has children of its own
+                                if collection.hasChildren(in: stampsManager.collections) {
+                                    // This child is also a container - navigate to another ParentCollectionDetailView
+                                    NavigationLink(destination: ParentCollectionDetailView(parentCollection: collection)) {
+                                        let metadata = collectionMetadata[collection.id] ?? (total: 0, collected: 0)
+                                        let percentage = metadata.total > 0 ? Double(metadata.collected) / Double(metadata.total) : 0.0
+                                        
+                                        CollectionCardView(
+                                            emoji: collection.emoji,
+                                            name: collection.name,
+                                            collectedCount: metadata.collected,
+                                            totalCount: metadata.total,
+                                            completionPercentage: percentage,
+                                            isParent: true  // Show as container
+                                        )
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                } else {
+                                    // This child is a leaf collection - navigate to CollectionDetailView (stamps)
+                                    NavigationLink(destination: CollectionDetailView(collection: collection)) {
+                                        let metadata = collectionMetadata[collection.id] ?? (total: 0, collected: 0)
+                                        let percentage = metadata.total > 0 ? Double(metadata.collected) / Double(metadata.total) : 0.0
+                                        
+                                        CollectionCardView(
+                                            emoji: collection.emoji,
+                                            name: collection.name,
+                                            collectedCount: metadata.collected,
+                                            totalCount: metadata.total,
+                                            completionPercentage: percentage,
+                                            isParent: false  // Show as leaf
+                                        )
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
                                 }
-                                .buttonStyle(PlainButtonStyle())
                             }
                         }
                     }
@@ -102,15 +122,18 @@ struct ParentCollectionDetailView: View {
             
             var metadata: [String: (total: Int, collected: Int)] = [:]
             
+            // Calculate metadata for each child collection
             for collection in childCollections {
-                let total = collection.totalStamps
-                
-                let collected = collectedStamps.filter { stamp in
-                    stamp.collectionIds.contains(collection.id)
-                }.count
+                let (total, collected) = calculateMetadataForCollection(
+                    collection: collection,
+                    collectedStamps: collectedStamps,
+                    allCollections: stampsManager.collections,
+                    metadata: &metadata
+                )
                 
                 metadata[collection.id] = (total: total, collected: collected)
-                print("✅ [ParentCollectionDetailView] \(collection.name): \(collected)/\(total)")
+                let collectionType = collection.hasChildren(in: stampsManager.collections) ? "container" : "leaf"
+                print("✅ [ParentCollectionDetailView] \(collection.name) (\(collectionType)): \(collected)/\(total)")
             }
             
             let totalTime = Date().timeIntervalSince(startTime)
@@ -120,6 +143,44 @@ struct ParentCollectionDetailView: View {
                 collectionMetadata = metadata
                 isLoadingMetadata = false
             }
+        }
+    }
+    
+    /// Calculate metadata for a collection (works for both leaf and container collections)
+    private func calculateMetadataForCollection(
+        collection: Collection,
+        collectedStamps: [Stamp],
+        allCollections: [Collection],
+        metadata: inout [String: (total: Int, collected: Int)]
+    ) -> (total: Int, collected: Int) {
+        // If it's a leaf collection (has stamps, no children), count directly
+        if !collection.hasChildren(in: allCollections) {
+            let total = collection.totalStamps
+            let collected = collectedStamps.filter { stamp in
+                stamp.collectionIds.contains(collection.id)
+            }.count
+            return (total: total, collected: collected)
+        }
+        
+        // If it's a container (has children), aggregate from descendants
+        let children = collection.getChildren(from: allCollections)
+        return children.reduce((0, 0)) { sum, child in
+            // Check if we already calculated this child
+            if let childData = metadata[child.id] {
+                return (sum.0 + childData.total, sum.1 + childData.collected)
+            }
+            
+            // Recursively calculate child's metadata
+            let childData = calculateMetadataForCollection(
+                collection: child,
+                collectedStamps: collectedStamps,
+                allCollections: allCollections,
+                metadata: &metadata
+            )
+            
+            // Cache it
+            metadata[child.id] = childData
+            return (sum.0 + childData.total, sum.1 + childData.collected)
         }
     }
     

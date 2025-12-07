@@ -9,7 +9,6 @@ struct StampsView: View {
     @EnvironmentObject var followManager: FollowManager
     @Environment(\.colorScheme) var colorScheme
     @Binding var shouldResetNavigation: Bool // Binding to reset navigation when tab is selected
-    @Binding var deepLinkedStampId: String? // For widget deep linking
     @State private var selectedTab: StampTab = .all
     
     // SHEET MANAGEMENT: This view has 12 sheet modifiers which triggers SwiftUI warnings
@@ -61,29 +60,6 @@ struct StampsView: View {
                             }
                         } catch {
                             print("⚠️ [StampsView] Failed to refresh profile on app active: \(error)")
-                        }
-                    }
-                }
-            }
-            .onChange(of: deepLinkedStampId) { _, stampId in
-                guard let stampId = stampId else { return }
-                
-                Logger.info("🔗 [StampsView] Deep link detected for stamp: \(stampId)", category: "DeepLink")
-                
-                // Capture stampsManager before Task
-                let manager = stampsManager
-                
-                // Fetch the stamp and open detail sheet
-                Task {
-                    let stamps = await manager.fetchStamps(ids: [stampId])
-                    await MainActor.run {
-                        if let stamp = stamps.first {
-                            welcomeStamp = stamp // Opens the sheet
-                            deepLinkedStampId = nil // Clear so it can be triggered again
-                            Logger.success("✅ [StampsView] Opened stamp detail for: \(stamp.name)", category: "DeepLink")
-                        } else {
-                            Logger.warning("⚠️ [StampsView] Could not find stamp: \(stampId)", category: "DeepLink")
-                            deepLinkedStampId = nil
                         }
                     }
                 }
@@ -410,6 +386,8 @@ struct StampsView: View {
     // MARK: - Followers Card
     private var followersCard: some View {
         let userId = authManager.userId ?? ""
+        // ✅ SIMPLIFIED (Dec 5, 2025): Prefer in-memory cache (for instant display), fallback to profile
+        // Cache is populated from fresh Firebase data, not persisted to disk
         let cachedCount = followManager.followCounts[userId]?.followers
         let profileCount = profileManager.currentUserProfile?.followerCount
         let displayCount = cachedCount ?? profileCount ?? 0
@@ -458,6 +436,8 @@ struct StampsView: View {
     // MARK: - Following Card
     private var followingCard: some View {
         let userId = authManager.userId ?? ""
+        // ✅ SIMPLIFIED (Dec 5, 2025): Prefer in-memory cache (for instant display), fallback to profile
+        // Cache is populated from fresh Firebase data, not persisted to disk
         let cachedCount = followManager.followCounts[userId]?.following
         let profileCount = profileManager.currentUserProfile?.followingCount
         let displayCount = cachedCount ?? profileCount ?? 0
@@ -1053,8 +1033,10 @@ struct StampsView: View {
                     .frame(height: 300)
                 } else {
                     ForEach(sortedCollections()) { collection in
-                        if collection.isParent {
-                            // Navigate to ParentCollectionDetailView for parent collections
+                        // Smart navigation: if collection has children, show ParentCollectionDetailView
+                        // If it's a leaf collection (contains stamps), show CollectionDetailView
+                        if collection.hasChildren(in: stampsManager.collections) {
+                            // Navigate to ParentCollectionDetailView for container collections
                             NavigationLink(destination: ParentCollectionDetailView(parentCollection: collection)) {
                                 let metadata = collectionMetadata[collection.id] ?? (total: 0, collected: 0)
                                 let percentage = metadata.total > 0 ? Double(metadata.collected) / Double(metadata.total) : 0.0
@@ -1065,12 +1047,12 @@ struct StampsView: View {
                                     collectedCount: metadata.collected,
                                     totalCount: metadata.total,
                                     completionPercentage: percentage,
-                                    isParent: true
+                                    isParent: true  // Show as container
                                 )
                             }
                             .buttonStyle(PlainButtonStyle())
                         } else {
-                            // Navigate to CollectionDetailView for standalone collections
+                            // Navigate to CollectionDetailView for leaf collections (with stamps)
                             NavigationLink(destination: CollectionDetailView(collection: collection)) {
                                 let metadata = collectionMetadata[collection.id] ?? (total: 0, collected: 0)
                                 let percentage = metadata.total > 0 ? Double(metadata.collected) / Double(metadata.total) : 0.0
@@ -1081,7 +1063,7 @@ struct StampsView: View {
                                     collectedCount: metadata.collected,
                                     totalCount: metadata.total,
                                     completionPercentage: percentage,
-                                    isParent: false
+                                    isParent: false  // Show as leaf
                                 )
                             }
                             .buttonStyle(PlainButtonStyle())
@@ -1131,9 +1113,9 @@ struct StampsView: View {
                 // Count how many collected stamps belong to each collection
                 var metadata: [String: (total: Int, collected: Int)] = [:]
                 
-                // First, calculate metadata for all child collections
-                for collection in stampsManager.collections where !collection.isParent {
-                    // Use the hard-coded totalStamps from the collection
+                // First, calculate metadata for all leaf collections (collections with stamps, no children)
+                for collection in stampsManager.collections where !collection.hasChildren(in: stampsManager.collections) {
+                    // Leaf collections - count stamps directly
                     let total = collection.totalStamps
                     
                     // Count how many of the user's collected stamps belong to this collection
@@ -1142,20 +1124,19 @@ struct StampsView: View {
                     }.count
                     
                     metadata[collection.id] = (total: total, collected: collected)
-                    print("✅ [CollectionsContent] \(collection.name): \(collected)/\(total)")
+                    print("✅ [CollectionsContent] \(collection.name) (leaf): \(collected)/\(total)")
                 }
                 
-                // Then, calculate aggregate metadata for parent collections
-                for parentCollection in stampsManager.collections where parentCollection.isParent {
-                    let childCollections = stampsManager.collections.filter { $0.parentId == parentCollection.id }
-                    
-                    let totalStamps = childCollections.reduce(0) { $0 + $1.totalStamps }
-                    let collectedStamps = childCollections.reduce(0) { sum, child in
-                        sum + (metadata[child.id]?.collected ?? 0)
-                    }
-                    
-                    metadata[parentCollection.id] = (total: totalStamps, collected: collectedStamps)
-                    print("✅ [CollectionsContent] \(parentCollection.name) (parent): \(collectedStamps)/\(totalStamps)")
+                // Then, recursively calculate metadata for parent/container collections
+                // This works for any depth: grandparents get data from parents, parents from children
+                for collection in stampsManager.collections where collection.hasChildren(in: stampsManager.collections) {
+                    let (total, collected) = calculateAggregateMetadata(
+                        for: collection,
+                        allCollections: stampsManager.collections,
+                        leafMetadata: &metadata
+                    )
+                    metadata[collection.id] = (total: total, collected: collected)
+                    print("✅ [CollectionsContent] \(collection.name) (container): \(collected)/\(total)")
                 }
                 
                 let totalTime = Date().timeIntervalSince(startTime)
@@ -1171,10 +1152,43 @@ struct StampsView: View {
         
         private struct TimeoutError: Error {}
         
+        /// Recursively calculate aggregate metadata for a container collection
+        /// Sums up totals and collected counts from all descendants (children, grandchildren, etc.)
+        private func calculateAggregateMetadata(
+            for collection: Collection,
+            allCollections: [Collection],
+            leafMetadata: inout [String: (total: Int, collected: Int)]
+        ) -> (total: Int, collected: Int) {
+            let children = collection.getChildren(from: allCollections)
+            
+            return children.reduce((0, 0)) { sum, child in
+                // If child already has metadata (leaf or already calculated), use it
+                if let childData = leafMetadata[child.id] {
+                    return (sum.0 + childData.total, sum.1 + childData.collected)
+                }
+                
+                // If child is also a container, recursively calculate its metadata first
+                if child.hasChildren(in: allCollections) {
+                    let childData = calculateAggregateMetadata(
+                        for: child,
+                        allCollections: allCollections,
+                        leafMetadata: &leafMetadata
+                    )
+                    // Cache the calculated data
+                    leafMetadata[child.id] = childData
+                    return (sum.0 + childData.total, sum.1 + childData.collected)
+                }
+                
+                // Shouldn't reach here, but return sum unchanged if we do
+                return sum
+            }
+        }
+        
         private func sortedCollections() -> [Collection] {
-            // Filter to show only parent collections and standalone collections (not children)
+            // Filter to show only top-level collections (no parent)
+            // This supports unlimited nesting: any collection without a parent appears at top level
             let displayedCollections = stampsManager.collections.filter { collection in
-                collection.isParent || collection.parentId == nil
+                collection.parentId == nil
             }
             
             return displayedCollections.sorted { collection1, collection2 in

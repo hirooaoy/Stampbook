@@ -150,7 +150,7 @@ struct ProfileEditView: View {
                             }
                         }
                 } header: {
-                    Text("Name")
+                    Text("Display name")
                 } footer: {
                     // Show validation errors first, then character limit
                     if let error = displayNameError {

@@ -28,3 +28,29 @@ struct Collection: Identifiable, Codable {
     }
 }
 
+// MARK: - Collection Helpers
+extension Collection {
+    /// Check if this collection has child collections
+    /// - Parameter allCollections: Array of all collections to search through
+    /// - Returns: True if any collection has this collection as its parent
+    func hasChildren(in allCollections: [Collection]) -> Bool {
+        return allCollections.contains { $0.parentId == self.id }
+    }
+    
+    /// Get all direct children of this collection
+    /// - Parameter allCollections: Array of all collections to search through
+    /// - Returns: Array of child collections
+    func getChildren(from allCollections: [Collection]) -> [Collection] {
+        return allCollections.filter { $0.parentId == self.id }
+    }
+    
+    /// Get all descendants (children, grandchildren, etc.) recursively
+    /// - Parameter allCollections: Array of all collections to search through
+    /// - Returns: Array of all descendant collections
+    func getAllDescendants(from allCollections: [Collection]) -> [Collection] {
+        let children = getChildren(from: allCollections)
+        let grandchildren = children.flatMap { $0.getAllDescendants(from: allCollections) }
+        return children + grandchildren
+    }
+}
+

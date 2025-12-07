@@ -196,10 +196,12 @@ class InviteManager: ObservableObject {
                 
                 // Create user profile with personal code
                 let createdBy = data["createdBy"] as? String ?? "admin"
+                // Capitalize first letter of username for display name (e.g. "dylan" -> "Dylan")
+                let displayName = username.prefix(1).uppercased() + username.dropFirst()
                 transaction.setData([
                     "id": userId,  // Required field for UserProfile decoder
                     "username": username,
-                    "displayName": username,  // Default to username, user can change later
+                    "displayName": displayName,  // Capitalized first letter of username
                     "inviteCodeUsed": codeString,
                     "invitedBy": createdBy,
                     "personalInviteCode": personalCode,  // Their personal code to share
