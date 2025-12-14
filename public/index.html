@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stampbook - Collect stamps around the world</title>
+    <title>Stampbook - Collect stamps as you travel</title>
     <meta name="description" content="Stampbook is a location-based stamp collection app that turns exploring the real world into a rewarding adventure.">
     
     <style>
@@ -17,17 +17,39 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             background: #000000;
             min-height: 100vh;
+            height: 100vh;
             padding: 20px;
             color: #fff;
             position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding-top: 0;
         }
 
         .container {
-            max-width: 600px;
+            max-width: 1000px;
             width: 100%;
-            text-align: center;
             margin: 0 auto;
-            padding-top: 80px;
+            padding: 0 40px;
+            display: flex;
+            gap: 60px;
+            align-items: center;
+            justify-content: center;
+            margin-top: -3vh;
+        }
+
+        .left-column {
+            flex: 1;
+            text-align: center;
+        }
+
+        .right-column {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         @keyframes fadeIn {
@@ -75,15 +97,6 @@
             display: flex;
             gap: 15px;
             justify-content: center;
-            margin-bottom: 35px;
-        }
-
-        .bottom-section {
-            position: fixed;
-            bottom: 40px;
-            left: 0;
-            right: 0;
-            text-align: center;
         }
 
         .stamp-example {
@@ -100,22 +113,22 @@
             object-fit: cover;
         }
 
-        .qr-code {
-            display: inline-block;
-            margin-bottom: 10px;
-        }
-
         .qr-code img {
-            width: 80px;
-            height: 80px;
+            width: 200px;
+            height: 200px;
             display: block;
         }
 
         .disclaimer {
-            margin-top: 0;
+            position: fixed;
+            bottom: 30px;
+            left: 0;
+            right: 0;
+            text-align: center;
             font-size: 13px;
             opacity: 0.6;
             line-height: 1.6;
+            padding: 0 20px;
         }
 
         .disclaimer a {
@@ -129,7 +142,22 @@
             opacity: 1;
         }
 
-        @media (max-width: 600px) {
+        @media (max-width: 768px) {
+            body {
+                padding: 20px;
+            }
+
+            .container {
+                flex-direction: column;
+                gap: 40px;
+                padding: 0 20px;
+            }
+
+            .left-column,
+            .right-column {
+                width: 100%;
+            }
+
             .logo {
                 width: 90px;
                 height: 90px;
@@ -146,7 +174,6 @@
 
             .stamps-preview {
                 gap: 10px;
-                margin-bottom: 30px;
             }
 
             .stamp-example {
@@ -154,46 +181,49 @@
                 height: 70px;
             }
 
-            .qr-section {
-                padding: 30px 40px;
+            .qr-code img {
+                width: 150px;
+                height: 150px;
             }
 
             .disclaimer {
                 font-size: 12px;
-                margin-top: 30px;
+                bottom: 20px;
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="logo">
-            <img src="logo.png" alt="Stampbook Logo">
-        </div>
-        
-        <p class="subtitle">Collect stamps around the world</p>
-        
-        <div class="stamps-preview">
-            <div class="stamp-example">
-                <img src="https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-japantown.png?alt=media&token=6a2d1d5c-2d67-479b-b124-fc97c22e7b6e" alt="Japantown">
-            </div>
-            <div class="stamp-example">
-                <img src="https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-dolores-park.png?alt=media&token=a38384a5-a529-4790-bc1d-5edf58a4626f" alt="Dolores Park">
-            </div>
-            <div class="stamp-example">
-                <img src="https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-ballast-coffee.png?alt=media&token=35e8ae9d-78ed-4e9b-8c1e-0985f871f8ff" alt="Ballast Coffee">
-            </div>
-        </div>
-        
-        <div class="bottom-section">
-            <div class="qr-code">
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=https://testflight.apple.com/join/tFseAr5C&color=ffffff&bgcolor=000000" alt="TestFlight QR Code">
+        <div class="left-column">
+            <div class="logo">
+                <img src="logo.png" alt="Stampbook Logo">
             </div>
             
-            <div class="disclaimer">
-                TestFlight (iOS) only. In the app, enter STAMPBOOKBETA to skip waitlist. <a href="https://stampbook-app.web.app/privacy-policy.html" target="_blank">Privacy policy</a>.
+            <p class="subtitle">Collect stamps as you travel</p>
+            
+            <div class="stamps-preview">
+                <div class="stamp-example">
+                    <img src="https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-japantown.png?alt=media&token=6a2d1d5c-2d67-479b-b124-fc97c22e7b6e" alt="Japantown">
+                </div>
+                <div class="stamp-example">
+                    <img src="https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-dolores-park.png?alt=media&token=a38384a5-a529-4790-bc1d-5edf58a4626f" alt="Dolores Park">
+                </div>
+                <div class="stamp-example">
+                    <img src="https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-sf-ballast-coffee.png?alt=media&token=35e8ae9d-78ed-4e9b-8c1e-0985f871f8ff" alt="Ballast Coffee">
+                </div>
             </div>
         </div>
+        
+        <div class="right-column">
+            <div class="qr-code">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://testflight.apple.com/join/tFseAr5C&color=ffffff&bgcolor=000000" alt="TestFlight QR Code">
+            </div>
+        </div>
+    </div>
+    
+    <div class="disclaimer">
+        TestFlight (iOS) only. In the app, enter STAMPBOOKBETA to skip waitlist. <a href="https://stampbook-app.web.app/privacy-policy.html" target="_blank">Privacy policy</a>.
     </div>
 </body>
 </html>

@@ -7,7 +7,7 @@ extension Notification.Name {
 }
 
 // TODO: BACKEND - Consider adding collectionLocation (lat/long where user actually collected it)
-struct CollectedStamp: Codable, Identifiable, Equatable {
+struct CollectedStamp: Codable, Identifiable, Equatable, Hashable {
     var id: String { stampId } // Make it Identifiable for Firestore
     let stampId: String
     let userId: String

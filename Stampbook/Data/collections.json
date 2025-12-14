@@ -1,5 +1,14 @@
 [
   {
+    "id": "hawaii",
+    "emoji": "🌺",
+    "name": "Hawaii",
+    "description": "Discover the best of the Hawaiian Islands from local favorites to hidden gems",
+    "region": "hawaii",
+    "totalStamps": 0,
+    "isParent": true
+  },
+  {
     "id": "new-york",
     "emoji": "🗽",
     "name": "New York",
@@ -80,6 +89,15 @@
     "parentId": "new-york"
   },
   {
+    "id": "new-york-must-visits",
+    "emoji": "🗽",
+    "name": "New York Must Visits",
+    "description": "Essential landmarks and iconic spots every visitor should experience in New York City",
+    "region": "new-york",
+    "totalStamps": 6,
+    "parentId": "new-york"
+  },
+  {
     "id": "everglades-must-visits",
     "emoji": "🐊",
     "totalStamps": 5,
@@ -105,6 +123,15 @@
     "region": "arizona",
     "description": "Observe the layered bands of red rock revealing millions of years of geological history",
     "parentId": "us-national-parks"
+  },
+  {
+    "id": "hawaii-best-eats",
+    "emoji": "🍱",
+    "name": "Hawaii Best Eats",
+    "description": "Local favorites and must-try eateries across the Hawaiian Islands",
+    "region": "hawaii",
+    "totalStamps": 8,
+    "parentId": "hawaii"
   },
   {
     "id": "libraries-that-make-you-forget-time",

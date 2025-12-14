@@ -596,14 +596,16 @@ struct UserProfileView: View {
                     // Grid view
                     LazyVGrid(columns: columns, spacing: 24) {
                         ForEach(Array(displayedStamps.enumerated()), id: \.element.stamp.id) { index, item in
+                            // ✅ CORRECT: UserProfileView already passes viewingUserId/viewingDisplayName correctly
+                            // This ensures StampDetailView shows the profile owner's notes/photos when viewing their profile
                             NavigationLink(destination:
                                             StampDetailView(
                                                 stamp: item.stamp,
-                                                isCollected: stampsManager.isCollected(item.stamp),  // Check if CURRENT USER has collected it
+                                                isCollected: stampsManager.isCollected(item.stamp),  // Check if CURRENT USER has collected it (shows lock icon if you haven't)
                                                 userLocation: nil,
                                                 showBackButton: true,
-                                                viewingUserId: isCurrentUser ? nil : userId,  // Pass userId if viewing someone else's profile
-                                                viewingDisplayName: isCurrentUser ? nil : displayName  // Pass displayName for "Justin's Memory" heading
+                                                viewingUserId: isCurrentUser ? nil : userId,  // Pass profile owner's userId when viewing their stamps
+                                                viewingDisplayName: isCurrentUser ? nil : displayName  // Pass profile owner's displayName for "Dylan's Memory" heading
                                             )
                                                 .environmentObject(stampsManager)
                             ) {

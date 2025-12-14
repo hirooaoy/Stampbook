@@ -1,5 +1,163 @@
 [
   {
+    "id": "us-hi-captaincook-honaunau-poke-shop",
+    "name": "Honaunau Poke Shop",
+    "latitude": 19.44643546158133,
+    "longitude": -155.879684114127,
+    "address": "83-5308 Mamalahoa Hwy\nCaptain Cook, HI USA 96704",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-hi-captaincook-honaunau-poke-shop.png?alt=media&token=e1ff6b16d7f255d0e6662a4bd256a5a3",
+    "collectionIds": [
+      "hawaii-best-eats"
+    ],
+    "about": "Local favorite poke shop in Captain Cook serving fresh daily catch since the 1990s, beloved by locals and visitors for authentic Hawaiian poke.",
+    "geohash": "8e3nsu5g",
+    "collectionRadius": "regular",
+    "aspectRatio": 1,
+    "thingsToDoFromEditors": [
+      "Order the ahi poke bowl with limu seaweed",
+      "Try the daily catch specials",
+      "Come early as they often sell out by afternoon"
+    ]
+  },
+  {
+    "id": "us-hi-kukuihaele-waipio-fruit-shack",
+    "name": "Waipio Fruit Shack",
+    "latitude": 20.113369822859237,
+    "longitude": -155.55586564527297,
+    "address": "48-5561 Waipio Valley Rd\nHonokaa, HI USA 96727",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-hi-kukuihaele-waipio-fruit-shack.png?alt=media&token=eb5cd98fea67fd5cba21c0ed2f3c846a",
+    "collectionIds": [
+      "hawaii-best-eats"
+    ],
+    "about": "Roadside fruit stand at the Waipio Valley lookout offering fresh local produce, smoothies, and baked goods with breathtaking valley views below.",
+    "geohash": "8e96kjx8",
+    "collectionRadius": "regular",
+    "aspectRatio": 1,
+    "thingsToDoFromEditors": [
+      "Try the fresh papaya or mango smoothie",
+      "Grab snacks before hiking into the valley",
+      "They accept cash and Venmo for payment"
+    ]
+  },
+  {
+    "id": "us-hi-honolulu-tamuras-manoa",
+    "name": "Tamura's Fine Wines & Liquors",
+    "latitude": 21.284203702825938,
+    "longitude": -157.8012830462068,
+    "address": "3496 Waialae Ave\nHonolulu, HI USA 96816",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-hi-honolulu-tamuras-manoa.png?alt=media&token=1c0563bcbffe8537077a3a9cb0a0b970",
+    "collectionIds": [
+      "hawaii-best-eats"
+    ],
+    "about": "Family-owned liquor store since 1966 famous among locals for their fresh daily poke, consistently ranked as some of the best on the island.",
+    "geohash": "87zc14st",
+    "collectionRadius": "regular",
+    "aspectRatio": 0.99,
+    "thingsToDoFromEditors": [
+      "Order the ahi or tako poke by the pound",
+      "Browse their impressive sake and wine selection",
+      "Go early in the day for the freshest poke selection"
+    ]
+  },
+  {
+    "id": "us-hi-maui-aunty-sandys-banana-bread",
+    "name": "Aunty Sandy's Banana Bread",
+    "latitude": 20.863171008764407,
+    "longitude": -156.14730449359567,
+    "address": "Hana Hwy\nKeanae, HI USA 96708",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-hi-maui-aunty-sandys-banana-bread.png?alt=media&token=8ae2cbe7ed15f93fba43d411a7bb8ff5",
+    "collectionIds": [
+      "hawaii-best-eats"
+    ],
+    "about": "Famous roadside banana bread stand on the Hana Highway, where Aunty Sandy has been baking her legendary warm loaves daily for decades using local bananas.",
+    "geohash": "8e8ywy10",
+    "collectionRadius": "regular",
+    "aspectRatio": 1,
+    "thingsToDoFromEditors": [
+      "Try the classic banana bread warm from the oven",
+      "Sample the coconut or pineapple varieties too",
+      "Cash only, and they sell out fast so arrive early"
+    ]
+  },
+  {
+    "id": "us-hi-honolulu-tonkatsu-tamafuji",
+    "name": "Tonkatsu Tamafuji",
+    "latitude": 21.274979724476154,
+    "longitude": -157.8154367774797,
+    "address": "3588 Waialae Ave\nHonolulu, HI USA 96816",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-hi-honolulu-tonkatsu-tamafuji.png?alt=media&token=bed60d87186222a4ecbc5de6817fe5b4",
+    "collectionIds": [
+      "hawaii-best-eats"
+    ],
+    "about": "Beloved Kaimuki restaurant serving authentic Japanese tonkatsu since 1952, famous for their perfectly crispy panko-breaded pork cutlets and secret sauce.",
+    "geohash": "87zc0bfr",
+    "collectionRadius": "regular",
+    "aspectRatio": 0.99,
+    "thingsToDoFromEditors": [
+      "Order the hire katsu set with rice and miso soup",
+      "Try their homemade tonkatsu sauce",
+      "Expect a wait during dinner hours, it's very popular"
+    ]
+  },
+  {
+    "id": "us-hi-honolulu-off-the-hook-poke-market",
+    "name": "Off the Hook Poke Market",
+    "latitude": 21.309965165200857,
+    "longitude": -157.8102007390656,
+    "address": "1118 Ala Moana Blvd\nHonolulu, HI USA 96814",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-hi-honolulu-off-the-hook-poke-market.png?alt=media&token=85b01964dd6f60eab2338737e19b460f",
+    "collectionIds": [
+      "hawaii-best-eats"
+    ],
+    "about": "Popular Oahu poke chain known for fresh daily catches and creative poke bowl combinations, offering traditional Hawaiian and fusion-style options.",
+    "geohash": "87zc0zq5",
+    "collectionRadius": "regular",
+    "aspectRatio": 0.99,
+    "thingsToDoFromEditors": [
+      "Build your own poke bowl with multiple fish options",
+      "Try their spicy ahi or shoyu ahi poke",
+      "Order online ahead to skip the lunch rush line"
+    ]
+  },
+  {
+    "id": "us-hi-hanalei-wishing-well-shave-ice",
+    "name": "Wishing Well Shave Ice",
+    "latitude": 22.203932689160165,
+    "longitude": -159.49320065228378,
+    "address": "5-5080 Kuhio Hwy\nHanalei, HI USA 96714",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-hi-hanalei-wishing-well-shave-ice.png?alt=media&token=23035e999b2bb57145198c7eaf0c345e",
+    "collectionIds": [
+      "hawaii-best-eats"
+    ],
+    "about": "Popular Hanalei shave ice stand serving fluffy Hawaiian shave ice since 1983, famous for their natural fruit syrups and snow-like texture ice shavings.",
+    "geohash": "87yw6dhe",
+    "collectionRadius": "regular",
+    "aspectRatio": 1,
+    "thingsToDoFromEditors": [
+      "Try the local favorite lilikoi or guava syrup",
+      "Add ice cream or azuki beans to your shave ice"
+    ]
+  },
+  {
+    "id": "us-hi-honolulu-helenas-hawaiian-food",
+    "name": "Helena's Hawaiian Food",
+    "latitude": 21.33091949976864,
+    "longitude": -157.86509039598766,
+    "address": "1240 N School St\nHonolulu, HI USA 96817",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-hi-honolulu-helenas-hawaiian-food.png?alt=media&token=a284283d08106992dbb045f97ef247b9",
+    "collectionIds": [
+      "hawaii-best-eats"
+    ],
+    "about": "Family-run Hawaiian restaurant since 1946 serving traditional local dishes like pipikaula short ribs, laulau, and poi in a no-frills dining room.",
+    "geohash": "87z9renj",
+    "collectionRadius": "regular",
+    "aspectRatio": 1,
+    "thingsToDoFromEditors": [
+      "Order the signature pipikaula short ribs",
+      "Try traditional poi with kalua pig or laulau"
+    ]
+  },
+  {
     "id": "france-nice-ilovenice-sign",
     "name": "ILOVENICE Sign",
     "latitude": 43.69361555453938,
@@ -2155,7 +2313,9 @@
     "longitude": -73.99238717289444,
     "address": "1 Old, Dock St, Brooklyn, NY 11201",
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ny-brooklyn-janes-carousel.png?alt=media&token=5d3066f1-5460-472f-9591-dc710f626ee6",
-    "collectionIds": [],
+    "collectionIds": [
+      "new-york-must-visits"
+    ],
     "about": "Jane's Carousel is a century-old wood carousel built in 1922 that was rescued from a closed Ohio amusement park. It reopened to the public in 2011.",
     "geohash": "dr5rs602",
     "collectionRadius": "regular",
@@ -2192,7 +2352,8 @@
     "address": "Bethesda Fountain\nNew York, NY, USA 10024",
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ny-nyc-bethesda-fountain.png?alt=media&token=dd5ed11b-36c5-435b-9c55-1fec9bdc4ad8",
     "collectionIds": [
-      "discover-central-park"
+      "discover-central-park",
+      "new-york-must-visits"
     ],
     "about": "Iconic Central Park fountain featuring Angel of the Waters by Emma Stebbins, the first woman to receive a public art commission in NYC in 1863.",
     "geohash": "dr5ruy8p",
@@ -2267,7 +2428,9 @@
     "longitude": -73.9834150425368,
     "address": "Lincoln Center Plaza\nNew York, NY, USA 10023",
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ny-nyc-lincoln-center-for-the-performing-arts.png?alt=media&token=30934da4-0550-4781-9714-32feeef87b46",
-    "collectionIds": [],
+    "collectionIds": [
+      "new-york-must-visits"
+    ],
     "about": "The world's largest performing arts center, built in the 1960s and home to the Met Opera, NY Philharmonic, NYC Ballet, and Juilliard.",
     "geohash": "dr5ruqqg",
     "collectionRadius": "regular",
@@ -2284,7 +2447,9 @@
     "longitude": -74.01062815667991,
     "address": "Pier 55 at Hudson River Park, Hudson River Greenway\nNew York, NY, USA 10014",
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ny-nyc-little-island.png?alt=media&token=bcddbc7b-faa8-49d1-92dc-84ae601da908",
-    "collectionIds": [],
+    "collectionIds": [
+      "new-york-must-visits"
+    ],
     "about": "Floating park built on 132 tulip-shaped pillars rising from the Hudson River, opened in 2021.",
     "geohash": "dr5rgbg5",
     "collectionRadius": "regular",
@@ -2301,7 +2466,9 @@
     "longitude": -74.04454705879492,
     "address": "New York, NY 10004",
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ny-nyc-statue-of-libery.png?alt=media&token=90373a0a-0427-4d7a-bd21-10016a56077c",
-    "collectionIds": [],
+    "collectionIds": [
+      "new-york-must-visits"
+    ],
     "about": "The Statue of Liberty was gifted by France to the United States in 1886. The seven spikes on her crown represent the seven continents and seven seas.",
     "geohash": "dr5r7p62",
     "collectionRadius": "regular",
@@ -2356,7 +2523,9 @@
     "longitude": -73.96792078995901,
     "address": "15 River St\nBrooklyn, NY, USA 11249",
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ny-williamsburg-domino-park.png?alt=media&token=456f5774-e436-4614-9cf5-21d0806e2746",
-    "collectionIds": [],
+    "collectionIds": [
+      "new-york-must-visits"
+    ],
     "about": "Waterfront park built on the historic Domino Sugar Refinery site with Manhattan skyline views and preserved industrial artifacts.",
     "geohash": "dr5rsgfn",
     "collectionRadius": "regular",

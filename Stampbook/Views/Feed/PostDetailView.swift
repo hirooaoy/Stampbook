@@ -246,13 +246,35 @@ struct PostDetailView: View {
                     .environmentObject(profileManager)
             }
         }
+        // ✅ FIX (Dec 2025): Pass viewingUserId and viewingDisplayName when navigating to StampDetailView
+        // This ensures that when viewing someone else's stamp, StampDetailView shows THEIR notes/photos,
+        // not the current user's notes. Without this, viewing Dylan's Oracle Park stamp would incorrectly
+        // show Justin's notes instead of Dylan's (empty) notes.
+        // Note: isCollected checks if CURRENT USER collected it (correct behavior - shows lock icon
+        // if you haven't collected it yet, even if the post author collected it)
         .navigationDestination(isPresented: $navigateToStampDetail) {
-            if let stamp = stamp {
+            if let stamp = stamp, let post = post {
+                // Construct CollectedStamp from FeedPost data for instant display
+                let collectedStamp: CollectedStamp? = post.isCurrentUser ? nil : CollectedStamp(
+                    stampId: post.stampId,
+                    userId: post.userId,
+                    collectedDate: post.actualDate,
+                    userNotes: post.note ?? "",
+                    userImageNames: post.userPhotos,
+                    userImagePaths: post.userImagePaths,
+                    likeCount: post.likeCount,
+                    commentCount: post.commentCount,
+                    userRank: nil // Will be fetched in background
+                )
+                
                 StampDetailView(
                     stamp: stamp,
                     isCollected: stampsManager.isCollected(stamp),
                     userLocation: nil,
-                    showBackButton: true
+                    showBackButton: true,
+                    viewingUserId: post.isCurrentUser ? nil : post.userId,  // Pass post author's userId when viewing their stamp
+                    viewingDisplayName: post.isCurrentUser ? nil : post.displayName,  // Pass post author's displayName for "Dylan's Memory" heading
+                    initialCollectedStamp: collectedStamp  // Pre-populated data from FeedPost
                 )
             }
         }

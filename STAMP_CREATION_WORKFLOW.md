@@ -163,7 +163,7 @@ These requirements apply to **all three modes**.
 ### ChatGPT Image Prompt Format
 
 ```
-Create a Japanese-style eki stamp of [NAME] in a [SHAPE] format.
+Generate a Japanese-style eki stamp of [NAME] in a [SHAPE] format.
 
 Use English letters only and feature [NAME] prominently.
 
@@ -176,7 +176,7 @@ Include:
 
 Style: crisp, simple, authentic ink-stamp look.
 
-Preferred color: [color options based on subject].
+Preferred color: [single best color based on subject].
 
 IMPORTANT:
 - PNG with transparent background outside the border only.
@@ -184,7 +184,9 @@ IMPORTANT:
 - Ensure the entire stamp design fits within the border with no cropping at edges.
 ```
 
-**Note:** Do NOT include state/country outlines in prompts - keep stamps clean and focused on the subject.
+**Note:** 
+- Choose ONE best color for each stamp that matches the subject
+- Do NOT include state/country outlines in prompts - keep stamps clean and focused on the subject.
 
 **Shape Selection Guide:**
 - **Wide horizontal rectangle** - valleys, panoramic views, waterfront buildings, beaches, wide landscapes, historic districts
@@ -193,15 +195,16 @@ IMPORTANT:
 - **Circle** - focal points, single monuments, central subjects, domes
 - **Arched/dome top** - gates, archways, domes, traditional structures, classic aesthetic
 
-**Color Selection Guide:**
-- **Sunset/canyon:** sunset gold, canyon orange, desert brown
-- **Mountain:** mountain green, sunrise orange, ridge brown
-- **Valley:** valley green, warm earth brown, river blue
-- **Historic:** barn brown, rustic red, prairie gold, heritage orange
-- **Forest:** forest green, pine green, sierra brown
-- **Water:** ocean blue, waterfall blue, lake teal, seafoam green
-- **Urban/modern:** steel gray, city blue, metropolitan red, skyline gold
-- **Cultural:** temple red, shrine gold, traditional purple
+**Color Selection Guide (choose ONE best color per stamp):**
+- **Sunset/canyon:** sunset gold, canyon orange, or desert brown
+- **Mountain:** mountain green, sunrise orange, or ridge brown
+- **Valley:** valley green, warm earth brown, or river blue
+- **Historic:** barn brown, rustic red, prairie gold, or heritage orange
+- **Forest:** forest green, pine green, or sierra brown
+- **Water:** ocean blue, waterfall blue, lake teal, or seafoam green
+- **Urban/modern:** steel gray, city blue, metropolitan red, or skyline gold
+- **Cultural:** temple red, shrine gold, or traditional purple
+- **Food/restaurants:** traditional red, warm brown, or subject-appropriate color
 
 ### Address Format
 

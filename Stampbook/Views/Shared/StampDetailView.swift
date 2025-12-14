@@ -36,13 +36,25 @@ struct StampDetailView: View {
     @State private var showStampImage: Bool
     @State private var showLockIcon: Bool
     
-    init(stamp: Stamp, isCollected: Bool, userLocation: CLLocation? = nil, showBackButton: Bool = false, viewingUserId: String? = nil, viewingDisplayName: String? = nil) {
+    init(stamp: Stamp, isCollected: Bool, userLocation: CLLocation? = nil, showBackButton: Bool = false, viewingUserId: String? = nil, viewingDisplayName: String? = nil, initialCollectedStamp: CollectedStamp? = nil) {
         self.stamp = stamp
         self.isCollectedAtInit = isCollected
         self.userLocation = userLocation
         self.showBackButton = showBackButton
         self.viewingUserId = viewingUserId
         self.viewingDisplayName = viewingDisplayName
+        
+        // Pre-populate collected stamp data if provided (from FeedPost)
+        if let initialStamp = initialCollectedStamp {
+            _viewingUserCollectedStamp = State(initialValue: initialStamp)
+            // Show memory section immediately if we have data (no animation needed - it's instant)
+            _showMemorySection = State(initialValue: true)
+        } else if isCollectedAtInit && viewingUserId == nil {
+            // Viewing own collected stamp - show memory section immediately
+            _showMemorySection = State(initialValue: true)
+        } else {
+            _showMemorySection = State(initialValue: false)
+        }
         
         // Set correct initial animation states - no .onAppear updates needed!
         if isCollected {
@@ -837,14 +849,24 @@ struct StampDetailView: View {
                 }
             }
             
+            // If we have initial collected stamp data (from FeedPost), memory is already shown
+            // (set in init, no animation needed since it's instant)
+            
             // Single task to load data sequentially (prevents race conditions)
             Task {
                 // 1. If viewing someone else's profile, fetch their collected stamp data
-                if isViewingOtherUser, let viewingUserId = viewingUserId {
+                // (Only fetch if we don't already have it from FeedPost)
+                if isViewingOtherUser, let viewingUserId = viewingUserId, viewingUserCollectedStamp == nil {
                     do {
                         let fetchedStamp = try await FirebaseService.shared.fetchCollectedStamp(userId: viewingUserId, stampId: stamp.id)
                         await MainActor.run {
                             viewingUserCollectedStamp = fetchedStamp
+                            // Show memory section if we just fetched it
+                            if shouldShowMemory {
+                                withAnimation(.easeInOut(duration: 0.6)) {
+                                    showMemorySection = true
+                                }
+                            }
                         }
                     } catch {
                         print("⚠️ Error fetching viewing user's collected stamp: \(error)")
@@ -857,14 +879,29 @@ struct StampDetailView: View {
                     _ = await stampsManager.fetchStampStatistics(stampId: stamp.id)
                 }
                 
-                // 3. Then handle collected-specific logic
-                if shouldShowMemory {
-                    showMemorySection = true
-                    
+                // 3. Fetch userRank in background if we have initial data but missing rank
+                // (FeedPost doesn't include userRank, so fetch it separately)
+                if isViewingOtherUser, let currentStamp = viewingUserCollectedStamp, currentStamp.userRank == nil, let viewingUserId = viewingUserId {
+                    do {
+                        let fetchedStamp = try await FirebaseService.shared.fetchCollectedStamp(userId: viewingUserId, stampId: stamp.id)
+                        await MainActor.run {
+                            // Update with rank if we got it
+                            if let fetchedStamp = fetchedStamp, fetchedStamp.userRank != nil {
+                                // Replace the stamp with one that has rank
+                                viewingUserCollectedStamp = fetchedStamp
+                            }
+                        }
+                    } catch {
+                        print("⚠️ Error fetching userRank: \(error)")
+                    }
+                }
+                
+                // 4. Then handle collected-specific logic (for own profile or if we just fetched)
+                if shouldShowMemory, !isViewingOtherUser || viewingUserCollectedStamp != nil {
                     // Only fetch user rank if not cached (for old stamps collected before rank caching)
                     // Rank is permanent (your position in collector line), so cache is always valid
                     if isViewingOtherUser {
-                        // Viewing someone else - rank already loaded in viewingUserCollectedStamp
+                        // Viewing someone else - rank already loaded or being fetched above
                     } else if cachedUserRank == nil, let userId = authManager.userId {
                         let fetchedRank = await stampsManager.getUserRankForStamp(stampId: stamp.id, userId: userId)
                         userRank = fetchedRank  // Already on MainActor

@@ -15,6 +15,7 @@ struct StampDetailNavigation: Hashable, Identifiable {
     let stamp: Stamp
     let authorUserId: String?      // Who posted this stamp (for showing their memory)
     let authorDisplayName: String?  // Author's display name
+    let initialCollectedStamp: CollectedStamp? // Pre-populated data from FeedPost for instant display
 }
 
 struct FeedView: View {
@@ -724,10 +725,24 @@ struct FeedView: View {
                             commentManager: commentManager,
                             commentLikeManager: commentLikeManager,
                             onStampTap: { stamp in 
+                                // Construct CollectedStamp from FeedPost data for instant display
+                                let collectedStamp = CollectedStamp(
+                                    stampId: post.stampId,
+                                    userId: post.userId,
+                                    collectedDate: post.actualDate,
+                                    userNotes: post.note ?? "",
+                                    userImageNames: post.userPhotos,
+                                    userImagePaths: post.userImagePaths,
+                                    likeCount: post.likeCount,
+                                    commentCount: post.commentCount,
+                                    userRank: nil // Will be fetched in background
+                                )
+                                
                                 selectedStampForDetail = StampDetailNavigation(
                                     stamp: stamp,
                                     authorUserId: post.userId,
-                                    authorDisplayName: post.displayName
+                                    authorDisplayName: post.displayName,
+                                    initialCollectedStamp: collectedStamp
                                 )
                             },
                             onPostTap: { postId in selectedPostForDetail = postId },
@@ -768,14 +783,17 @@ struct FeedView: View {
             .padding(.horizontal, 20)
             .padding(.top, 8)
             .padding(.bottom, 32)
+            // ✅ CORRECT: FeedView already passes viewingUserId/viewingDisplayName correctly
+            // This ensures StampDetailView shows the post author's notes/photos, not current user's
             .navigationDestination(item: $selectedStampForDetail) { stampNav in
                 StampDetailView(
                     stamp: stampNav.stamp,
                     isCollected: stampsManager.isCollected(stampNav.stamp),
                     userLocation: nil,
                     showBackButton: true,
-                    viewingUserId: stampNav.authorUserId,
-                    viewingDisplayName: stampNav.authorDisplayName
+                    viewingUserId: stampNav.authorUserId,  // Post author's userId (for showing their notes/photos)
+                    viewingDisplayName: stampNav.authorDisplayName,  // Post author's displayName (for "Dylan's Memory" heading)
+                    initialCollectedStamp: stampNav.initialCollectedStamp  // Pre-populated data from FeedPost
                 )
             }
             .navigationDestination(item: $selectedPostForDetail) { postId in
