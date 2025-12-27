@@ -114,6 +114,9 @@ struct ProfileImageView: View {
         guard let avatarUrl = avatarUrl, !avatarUrl.isEmpty else {
             // No avatar URL - show placeholder (already visible)
             #if DEBUG
+            // ℹ️ NORMAL DEBUG LOG - NOT AN ERROR
+            // This logs when users haven't set a profile picture yet (valid user choice)
+            // Placeholder shows correctly - this is just informational logging
             print("🖼️ [ProfileImageView] No avatar URL for userId: \(userId)")
             #endif
             return

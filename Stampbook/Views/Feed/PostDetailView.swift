@@ -35,6 +35,7 @@ struct PostDetailView: View {
     @State private var replyingTo: Comment? = nil // For comment replies
     @State private var scrollToCommentId: String? // Dynamic target for scrolling (can change via deep link)
     @State private var highlightedCommentId: String? // Comment to highlight temporarily
+    @State private var showReportSheet = false // For reporting posts
     @FocusState private var commentInputFocused: Bool
     @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) var colorScheme
@@ -217,6 +218,23 @@ struct PostDetailView: View {
                 .background(Color(.systemBackground))
             }
         }
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                if let post = post, !post.isCurrentUser {
+                    Menu {
+                        Button(role: .destructive, action: { showReportSheet = true }) {
+                            Label("Report post", systemImage: "exclamationmark.triangle")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis")
+                            .font(.system(size: 18))
+                            .foregroundColor(.primary)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
+                    }
+                }
+            }
+        }
         // .toolbar(.hidden, for: .tabBar)
         .onAppear {
             loadPost()
@@ -244,6 +262,19 @@ struct PostDetailView: View {
                 CommentLikesView(commentId: commentId)
                     .environmentObject(authManager)
                     .environmentObject(profileManager)
+            }
+        }
+        .sheet(isPresented: $showReportSheet) {
+            if let post = post {
+                NavigationStack {
+                    SimplePostReportView(
+                        postId: postId,
+                        postAuthorUsername: post.userName,
+                        postAuthorId: post.userId,
+                        stampName: post.stampName
+                    )
+                    .environmentObject(authManager)
+                }
             }
         }
         // ✅ FIX (Dec 2025): Pass viewingUserId and viewingDisplayName when navigating to StampDetailView
@@ -1064,5 +1095,112 @@ private struct IdentifiableString: Identifiable, Hashable {
     let value: String
     let username: String
     let displayName: String
+}
+
+// MARK: - Post Report View
+
+struct SimplePostReportView: View {
+    let postId: String
+    let postAuthorUsername: String
+    let postAuthorId: String
+    let stampName: String
+    
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject var authManager: AuthManager
+    
+    @State private var reportText = ""
+    @State private var isSending = false
+    @State private var showSuccessAlert = false
+    @State private var showErrorAlert = false
+    @State private var errorMessage = ""
+    
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            // TextEditor
+            TextEditor(text: $reportText)
+                .font(.body)
+                .padding(.horizontal, 8)
+                .padding(.top, 12)
+            
+            // Placeholder
+            if reportText.isEmpty {
+                Text("Tell us what's wrong (this is spam, inappropriate content, harassment, etc.).")
+                    .font(.body)
+                    .foregroundColor(.gray.opacity(0.5))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 16)
+                    .allowsHitTesting(false)
+            }
+        }
+        .navigationTitle("Report post")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button("Cancel") {
+                    dismiss()
+                }
+                .disabled(isSending)
+            }
+            
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("Send") {
+                    sendReport()
+                }
+                .disabled(reportText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSending)
+                .fontWeight(.semibold)
+            }
+        }
+        .alert("Report Sent", isPresented: $showSuccessAlert) {
+            Button("OK") {
+                dismiss()
+            }
+        } message: {
+            Text("Thank you. We'll review this report within 24 hours.")
+        }
+        .alert("Error", isPresented: $showErrorAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(errorMessage)
+        }
+    }
+    
+    private func sendReport() {
+        let trimmedText = reportText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedText.isEmpty else { return }
+        
+        isSending = true
+        
+        Task {
+            do {
+                // Submit feedback to Firestore
+                let userId = authManager.userId ?? "anonymous"
+                let reportMessage = """
+                Reported Post by @\(postAuthorUsername) (ID: \(postAuthorId))
+                Post ID: \(postId)
+                Stamp: \(stampName)
+                
+                Report:
+                \(trimmedText)
+                """
+                
+                try await FirebaseService.shared.submitFeedback(
+                    userId: userId,
+                    type: "Post Report",
+                    message: reportMessage
+                )
+                
+                await MainActor.run {
+                    isSending = false
+                    showSuccessAlert = true
+                }
+            } catch {
+                await MainActor.run {
+                    isSending = false
+                    showErrorAlert = true
+                    errorMessage = error.localizedDescription
+                }
+            }
+        }
+    }
 }
 

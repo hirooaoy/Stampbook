@@ -519,6 +519,11 @@ class ImageManager: ObservableObject {
             } catch {
                 // Thumbnail doesn't exist in Firebase, fall back to downloading full image
                 #if DEBUG
+                // ℹ️ EXPECTED WARNING FOR LEGACY USER PHOTOS
+                // Photos uploaded before thumbnail system was implemented don't have thumbnails
+                // System gracefully falls back to full image (0.6-0.8s download - acceptable)
+                // ALL NEW photos generate thumbnails correctly
+                // Can run fix_firebase_thumbnails.js to backfill legacy thumbnails if desired
                 print("⚠️ Thumbnail not found in Firebase, downloading full image: \(error.localizedDescription)")
                 #endif
             }

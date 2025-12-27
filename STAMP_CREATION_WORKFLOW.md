@@ -163,9 +163,7 @@ These requirements apply to **all three modes**.
 ### ChatGPT Image Prompt Format
 
 ```
-Generate a Japanese-style eki stamp of [NAME] in a [SHAPE] format.
-
-Use English letters only and feature [NAME] prominently.
+Generate a Japanese-style eki stamp of [NAME] in a [SHAPE] format. Use English letters only and feature [NAME] prominently. 
 
 Include:
 - [Visual element 1]
@@ -184,9 +182,31 @@ IMPORTANT:
 - Ensure the entire stamp design fits within the border with no cropping at edges.
 ```
 
+**Example:**
+```
+Generate a Japanese-style eki stamp of WAILEA BEACH in a wide horizontal rectangle format. Use English letters only and feature WAILEA BEACH prominently.
+
+Include:
+- Golden sand beach with calm waters
+- Clear turquoise water perfect for swimming
+- Luxury resort silhouettes in background
+- Snorkelers exploring the water
+- Tropical flowers (hibiscus) along the beach
+
+Style: crisp, simple, authentic ink-stamp look.
+
+Preferred color: sunset gold.
+
+IMPORTANT:
+- PNG with transparent background outside the border only.
+- Interior must be solid white or cream like a real stamp impression.
+- Ensure the entire stamp design fits within the border with no cropping at edges.
+```
+
 **Note:** 
+- Include 3-5 specific visual elements that capture the location's essence
 - Choose ONE best color for each stamp that matches the subject
-- Do NOT include state/country outlines in prompts - keep stamps clean and focused on the subject.
+- Do NOT include state/country outlines in prompts - keep stamps clean and focused on the subject
 
 **Shape Selection Guide:**
 - **Wide horizontal rectangle** - valleys, panoramic views, waterfront buildings, beaches, wide landscapes, historic districts

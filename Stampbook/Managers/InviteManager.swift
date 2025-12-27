@@ -213,7 +213,8 @@ class InviteManager: ObservableObject {
                     "avatarUrl": "",
                     "followerCount": 0,
                     "followingCount": 0,
-                    "hasSeenOnboarding": false  // Show profile setup sheet to new users
+                    "hasSeenOnboarding": false,  // Show profile setup sheet to new users
+                    "acceptedTermsAt": FieldValue.serverTimestamp()  // Track terms acceptance for App Store compliance
                 ], forDocument: userRef)
                 
                 // Create personal invite code document

@@ -5,9 +5,11 @@ struct BookmarksView: View {
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var followManager: FollowManager
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.blockedUserIds) private var blockedUserIds
     @State private var displayedCount = 20 // Initial load
     @State private var bookmarkedStamps: [Stamp] = [] // Lazy-loaded stamps
     @State private var hasLoadedOnce = false
+    @State private var showBlockedAlert = false
     
     // Optional parameters for viewing other users' bookmarks
     let viewingUserId: String?
@@ -33,6 +35,12 @@ struct BookmarksView: View {
             return true // Always show own bookmarks
         }
         return isFollowing // Show if following
+    }
+    
+    // Is the viewing user blocked?
+    private var isViewingUserBlocked: Bool {
+        guard let viewingUserId = viewingUserId else { return false }
+        return blockedUserIds.contains(viewingUserId)
     }
     
     // State for other users' bookmarks
@@ -212,10 +220,15 @@ struct BookmarksView: View {
             if let viewingUserId = viewingUserId {
                 Button(action: {
                     guard let currentUserId = authManager.userId else { return }
-                    followManager.toggleFollow(currentUserId: currentUserId, targetUserId: viewingUserId, profileManager: nil) { _ in
-                        // After following, reload bookmarks
-                        Task {
-                            await loadOtherUserBookmarks(userId: viewingUserId)
+                    // Check if user is blocked before allowing follow
+                    if isViewingUserBlocked {
+                        showBlockedAlert = true
+                    } else {
+                        followManager.toggleFollow(currentUserId: currentUserId, targetUserId: viewingUserId, profileManager: nil) { _ in
+                            // After following, reload bookmarks
+                            Task {
+                                await loadOtherUserBookmarks(userId: viewingUserId)
+                            }
                         }
                     }
                 }) {
@@ -238,6 +251,11 @@ struct BookmarksView: View {
                 }
                 .disabled(followManager.isProcessingFollow[viewingUserId] == true)
                 .padding(.horizontal, 20)
+                .alert("Unblock to follow", isPresented: $showBlockedAlert) {
+                    Button("OK", role: .cancel) {}
+                } message: {
+                    Text("You've blocked this user. Unblock them from their profile to follow.")
+                }
             }
         }
         .padding(.top, 60)

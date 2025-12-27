@@ -2,6 +2,7 @@ import SwiftUI
 import AuthenticationServices
 import PhotosUI
 import MessageUI
+import FirebasePerformance
 
 struct UserProfileNavigation: Hashable, Identifiable {
     let id = UUID()
@@ -34,6 +35,7 @@ struct FeedView: View {
     @EnvironmentObject var deepLinkManager: DeepLinkManager // Deep link handler
     @StateObject private var feedManager = FeedManager() // Persists across tab switches
     @Environment(\.colorScheme) var colorScheme
+    @Environment(\.blockedUserIds) private var blockedUserIds
     @Binding var selectedTab: Int
     @Binding var shouldResetStampsNavigation: Bool // Binding to reset StampsView navigation
     @State private var showNotifications = false
@@ -287,6 +289,7 @@ struct FeedView: View {
                                         showLikes = true
                                     },
                                     refreshFeed: refreshFeedData,  // Pass refresh function directly
+                                    blockedUserIds: blockedUserIds,
                                     feedManager: feedManager,
                                     likeManager: likeManager,
                                     commentManager: commentManager,
@@ -554,6 +557,8 @@ struct FeedView: View {
             // This prevents the complex pending refresh queue system
             // See individual sheet .onDisappear handlers for direct refresh logic
             
+            // ✅ FIX (Dec 2025): Set up callbacks immediately on appear (not just once)
+            // This ensures callbacks are always set even if view was already visible
             // Hook up comment count updates to feed
             commentManager.onCommentCountChanged = { [weak feedManager] postId, newCount in
                 feedManager?.updatePostCommentCount(postId: postId, newCount: newCount)
@@ -583,7 +588,7 @@ struct FeedView: View {
                         }
                         
                         // Force refresh feed since following list changed
-                        await feedManager.loadFeed(userId: userId, stampsManager: stampsManager, forceRefresh: true)
+                        await feedManager.loadFeed(userId: userId, stampsManager: stampsManager, forceRefresh: true, blockedUserIds: blockedUserIds)
                         await MainActor.run {
                             lastFeedRefreshTime = Date()
                         }
@@ -631,6 +636,7 @@ struct FeedView: View {
         let refreshDebounceInterval: TimeInterval // Debounce threshold
         let onShowLikes: (String, String) -> Void // Show likes sheet for a post (postId, ownerId)
         let refreshFeed: () async -> Void // Direct refresh function (replaces complex pending system)
+        let blockedUserIds: Set<String> // Blocked user IDs passed from parent
         @ObservedObject var feedManager: FeedManager
         @ObservedObject var likeManager: LikeManager
         @ObservedObject var commentManager: CommentManager
@@ -874,12 +880,17 @@ struct FeedView: View {
                 print("🔍 [DEBUG] FeedContent calling feedManager.load\(feedType == .all ? "Feed" : "MyPosts")()")
             }
             Task {
+                // Start performance trace
+                let trace = Performance.startTrace(name: "feed_load")
+                defer { trace?.stop() }
+                
                 // Load appropriate feed based on selected tab
                 if feedType == .all {
                     await feedManager.loadFeed(
                         userId: userId,
                         stampsManager: stampsManager,
-                        forceRefresh: false
+                        forceRefresh: false,
+                        blockedUserIds: blockedUserIds
                     )
                 } else {
                     await feedManager.loadMyPosts(
@@ -928,7 +939,8 @@ struct FeedView: View {
                 if feedType == .all {
                     await feedManager.loadMorePosts(
                         userId: userId,
-                        stampsManager: stampsManager
+                        stampsManager: stampsManager,
+                        blockedUserIds: blockedUserIds
                     )
                 } else {
                     await feedManager.loadMoreMyPosts(

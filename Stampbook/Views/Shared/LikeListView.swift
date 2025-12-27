@@ -129,7 +129,9 @@ struct LikeUserRow: View {
     @EnvironmentObject var followManager: FollowManager
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var profileManager: ProfileManager
+    @Environment(\.blockedUserIds) private var blockedUserIds
     @State private var showUnfollowConfirmation = false
+    @State private var showBlockedAlert = false
     
     var isCurrentUser: Bool {
         authManager.userId == user.id
@@ -137,6 +139,10 @@ struct LikeUserRow: View {
     
     var isFollowing: Bool {
         followManager.isFollowing[user.id] ?? false
+    }
+    
+    var isBlocked: Bool {
+        blockedUserIds.contains(user.id)
     }
     
     var body: some View {
@@ -170,8 +176,13 @@ struct LikeUserRow: View {
                         // Show confirmation for unfollow
                         showUnfollowConfirmation = true
                     } else {
-                        // Follow immediately without confirmation
-                        followManager.toggleFollow(currentUserId: currentUserId, targetUserId: user.id, profileManager: profileManager)
+                        // Check if user is blocked before allowing follow
+                        if isBlocked {
+                            showBlockedAlert = true
+                        } else {
+                            // Follow immediately without confirmation
+                            followManager.toggleFollow(currentUserId: currentUserId, targetUserId: user.id, profileManager: profileManager)
+                        }
                     }
                 }) {
                     Text(isFollowing ? "Following" : "Follow")
@@ -191,6 +202,11 @@ struct LikeUserRow: View {
                     }
                 } message: {
                     Text("Are you sure you want to unfollow @\(user.username)?")
+                }
+                .alert("Unblock to follow", isPresented: $showBlockedAlert) {
+                    Button("OK", role: .cancel) {}
+                } message: {
+                    Text("You've blocked @\(user.username). Unblock them from their profile to follow.")
                 }
             }
         }

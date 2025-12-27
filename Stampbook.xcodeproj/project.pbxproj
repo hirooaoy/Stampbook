@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		2B00C40A2F00724100FAC3B2 /* FirebasePerformance in Frameworks */ = {isa = PBXBuildFile; productRef = 2B00C4092F00724100FAC3B2 /* FirebasePerformance */; };
 		2B5C51992ECFBBBE005A2B10 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B5C51982ECFBBBE005A2B10 /* WidgetKit.framework */; };
 		2B5C519B2ECFBBBE005A2B10 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B5C519A2ECFBBBE005A2B10 /* SwiftUI.framework */; };
 		2B5C51A62ECFBBC0005A2B10 /* StampbookWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 2B5C51972ECFBBBE005A2B10 /* StampbookWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -161,6 +162,7 @@
 				2B7648442EC158CF00AAD53E /* FirebaseFunctions in Frameworks */,
 				2BFBBEEA2EA9BF9A00124BD5 /* FirebaseFirestore in Frameworks */,
 				2BFBBEEC2EA9BF9A00124BD5 /* FirebaseStorage in Frameworks */,
+				2B00C40A2F00724100FAC3B2 /* FirebasePerformance in Frameworks */,
 				2BFBBEED2EA9BF9A00124BD5 /* FirebaseMessaging in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -281,6 +283,7 @@
 				2BFBBEEE2EA9BF9A00124BD5 /* FirebaseMessaging */,
 				2B6227432EBA94EE00FA4B1F /* FirebaseCrashlytics */,
 				2B7648432EC158CF00AAD53E /* FirebaseFunctions */,
+				2B00C4092F00724100FAC3B2 /* FirebasePerformance */,
 			);
 			productName = Stampbook;
 			productReference = 2BB670D62EA2C2020089DBAB /* Stampbook.app */;
@@ -486,7 +489,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = watagumostudio.StampbookApp.StampbookWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -520,7 +523,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = watagumostudio.StampbookApp.StampbookWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -684,7 +687,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = watagumostudio.StampbookApp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -726,7 +729,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = watagumostudio.StampbookApp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -749,7 +752,7 @@
 				DEVELOPMENT_TEAM = 28VYBXMX82;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = watagumostudio.StampbookTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
@@ -771,7 +774,7 @@
 				DEVELOPMENT_TEAM = 28VYBXMX82;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = watagumostudio.StampbookTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
@@ -791,7 +794,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 28VYBXMX82;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = watagumostudio.StampbookUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
@@ -811,7 +814,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 28VYBXMX82;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = watagumostudio.StampbookUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
@@ -886,6 +889,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		2B00C4092F00724100FAC3B2 /* FirebasePerformance */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2BFBBEE62EA9BF9A00124BD5 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebasePerformance;
+		};
 		2B6227432EBA94EE00FA4B1F /* FirebaseCrashlytics */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 2BFBBEE62EA9BF9A00124BD5 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;

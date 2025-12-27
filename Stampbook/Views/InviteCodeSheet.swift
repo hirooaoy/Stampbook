@@ -22,6 +22,7 @@ struct InviteCodeSheet: View {
     @State private var showInlineError = false // Show error inline instead of alert
     @State private var showProfileLoadError = false
     @State private var pendingUserId: String? // Store userId for retry
+    @State private var acceptedTerms = false // Terms of Service acceptance
     
     enum Page {
         case codeEntry
@@ -86,7 +87,7 @@ struct InviteCodeSheet: View {
         } message: {
             Text("Your account was created successfully, but we couldn't load your profile due to a connection issue. Check your internet and try again.")
         }
-        .presentationDetents(currentPage == .codeEntry ? [.height(480), .large] : [.height(360)])
+        .presentationDetents(currentPage == .codeEntry ? [.height(480), .large] : [.height(380)])
         .presentationDragIndicator(.visible)
         .interactiveDismissDisabled(isCreatingAccount || isValidating)
     }
@@ -223,6 +224,52 @@ struct InviteCodeSheet: View {
             }
             .padding(.bottom, 24)
             
+            // Terms of Service Checkbox
+            HStack(alignment: .center, spacing: 8) {
+                Button(action: {
+                    acceptedTerms.toggle()
+                }) {
+                    Image(systemName: acceptedTerms ? "checkmark.square.fill" : "square")
+                        .font(.system(size: 22))
+                        .foregroundColor(acceptedTerms ? .blue : .gray)
+                }
+                .buttonStyle(PlainButtonStyle())
+                
+                HStack(spacing: 0) {
+                    Text("I agree to the ")
+                        .font(.footnote)
+                        .foregroundColor(.primary)
+                    
+                    Button(action: {
+                        if let url = URL(string: "https://stampbook-app.web.app/terms-of-service.html") {
+                            UIApplication.shared.open(url)
+                        }
+                    }) {
+                        Text("Terms of Service")
+                            .font(.footnote)
+                            .foregroundColor(.blue)
+                            .underline()
+                    }
+                    
+                    Text(" and ")
+                        .font(.footnote)
+                        .foregroundColor(.primary)
+                    
+                    Button(action: {
+                        if let url = URL(string: "https://stampbook-app.web.app/privacy-policy.html") {
+                            UIApplication.shared.open(url)
+                        }
+                    }) {
+                        Text("Privacy Policy")
+                            .font(.footnote)
+                            .foregroundColor(.blue)
+                            .underline()
+                    }
+                }
+                .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.horizontal, 20)
+            
             // Custom Sign in with Apple Button
             Button(action: signInWithApple) {
                 HStack(spacing: 8) {
@@ -236,17 +283,17 @@ struct InviteCodeSheet: View {
                             .font(.system(size: 17, weight: .semibold))
                     }
                 }
-                .foregroundColor(.black)
+                .foregroundColor(acceptedTerms && !isCreatingAccount ? .black : .gray)
                 .frame(height: 54)
                 .frame(maxWidth: .infinity)
-                .background(Color.white)
+                .background(acceptedTerms && !isCreatingAccount ? Color.white : Color.gray.opacity(0.2))
                 .cornerRadius(12)
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.black.opacity(0.1), lineWidth: 1)
+                        .stroke(Color.black.opacity(acceptedTerms && !isCreatingAccount ? 0.1 : 0.05), lineWidth: 1)
                 )
             }
-            .disabled(isCreatingAccount)
+            .disabled(!acceptedTerms || isCreatingAccount)
             .padding(.horizontal)
             
             Spacer()

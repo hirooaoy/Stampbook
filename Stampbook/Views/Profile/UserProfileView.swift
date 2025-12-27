@@ -14,8 +14,14 @@ struct UserProfileView: View {
     @EnvironmentObject var currentUserProfileManager: ProfileManager // BEST PRACTICE: Global ProfileManager for current user counts
     @StateObject private var profileManager = ProfileManager() // Local ProfileManager for viewing this user's profile
     @Environment(\.dismiss) var dismiss
+    @Environment(\.blockedUserIds) private var blockedUserIds
     
     @State private var showUserReport = false // Show user report sheet
+    @State private var showBlockConfirmation = false // Show block confirmation
+    @State private var showUnblockConfirmation = false // Show unblock confirmation
+    @State private var localBlockedIds: Set<String> = [] // Local copy for optimistic updates
+    @State private var isBlockedByThisUser = false // Check if this user has blocked you
+    @State private var isCheckingBlockStatus = true // Loading state for block check
     @State private var userProfile: UserProfile?
     // @State private var userRank: Int? // TODO: POST-MVP - Rank for the viewed user
     @State private var showFollowError = false
@@ -31,6 +37,10 @@ struct UserProfileView: View {
     
     var isFollowing: Bool {
         followManager.isFollowing[userId] ?? false
+    }
+    
+    var isBlocked: Bool {
+        blockedUserIds.contains(userId) || localBlockedIds.contains(userId)
     }
     
     // MARK: - View Components
@@ -280,43 +290,62 @@ struct UserProfileView: View {
     
     @ViewBuilder
     private var followButtonSection: some View {
-        // Follow button
+        // Follow button (or Unblock button if user is blocked)
         // Don't show for current user
         if !isCurrentUser {
-            Button(action: {
-                guard let currentUserId = authManager.userId else { return }
-                if isFollowing {
-                    // Show confirmation for unfollow
-                    showUnfollowConfirmation = true
-                } else {
-                    // Follow immediately without confirmation
-                    followManager.toggleFollow(currentUserId: currentUserId, targetUserId: userId, profileManager: currentUserProfileManager) { updatedProfile in
-                        // Update local profile state with returned profile
-                        if let profile = updatedProfile {
-                            userProfile = profile
+            if isBlocked {
+                // Instagram style: Show Unblock button instead of Follow when user is blocked
+                Button(action: {
+                    showUnblockConfirmation = true
+                }) {
+                    Text("Unblock")
+                        .font(.footnote)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
+                        .background(Color(.systemGray5))
+                        .cornerRadius(10)
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
+            } else {
+                // Normal Follow/Following button
+                Button(action: {
+                    guard let currentUserId = authManager.userId else { return }
+                    if isFollowing {
+                        // Show confirmation for unfollow
+                        showUnfollowConfirmation = true
+                    } else {
+                        // Follow immediately without confirmation
+                        followManager.toggleFollow(currentUserId: currentUserId, targetUserId: userId, profileManager: currentUserProfileManager) { updatedProfile in
+                            // Update local profile state with returned profile
+                            if let profile = updatedProfile {
+                                userProfile = profile
+                            }
                         }
                     }
-                }
-            }) {
-                HStack(spacing: 8) {
-                    if followManager.isProcessingFollow[userId] == true {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle())
-                            .scaleEffect(0.8)
+                }) {
+                    HStack(spacing: 8) {
+                        if followManager.isProcessingFollow[userId] == true {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle())
+                                .scaleEffect(0.8)
+                        }
+                        Text(isFollowing ? "Following" : "Follow")
                     }
-                    Text(isFollowing ? "Following" : "Follow")
+                    .font(.footnote)
+                    .fontWeight(.semibold)
+                    .foregroundColor(isFollowing ? .primary : .white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 44)
+                    .background(isFollowing ? Color(.systemGray5) : Color.blue)
+                    .cornerRadius(10)
                 }
-                .font(.footnote)
-                .fontWeight(.semibold)
-                .foregroundColor(isFollowing ? .primary : .white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 44)
-                .background(isFollowing ? Color(.systemGray5) : Color.blue)
-                .cornerRadius(10)
+                .disabled(followManager.isProcessingFollow[userId] == true)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
             }
-            .disabled(followManager.isProcessingFollow[userId] == true)
-            .padding(.horizontal, 20)
-            .padding(.bottom, 20)
             
             // TODO: POST-MVP - Implement Profile Sharing with Universal Links
             // Option 3: Universal Links (https://stampbook.app/user/username)
@@ -337,19 +366,51 @@ struct UserProfileView: View {
     
     var body: some View {
         Group {
-            // Profile content
-            ScrollView {
-                VStack(spacing: 0) {
-                    profileSection
-                    statsSection
-                    followButtonSection
-                    AllStampsContent(
-                        userCollectedStamps: userCollectedStamps,
-                        isLoadingStamps: isLoadingStamps,
-                        isCurrentUser: isCurrentUser,
-                        userId: userId,
-                        displayName: displayName
-                    )
+            if isCheckingBlockStatus {
+                // Loading state while checking if blocked
+                VStack {
+                    Spacer()
+                    ProgressView()
+                        .scaleEffect(1.2)
+                    Spacer()
+                }
+            } else if isBlockedByThisUser {
+                // Show blocked message (Instagram style)
+                VStack(spacing: 24) {
+                    Spacer()
+                    
+                    Image(systemName: "hand.raised.fill")
+                        .font(.system(size: 60))
+                        .foregroundColor(.gray)
+                    
+                    VStack(spacing: 8) {
+                        Text("You can't view this profile")
+                            .font(.title3)
+                            .fontWeight(.semibold)
+                        
+                        Text("@\(username) has blocked you")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Spacer()
+                }
+                .padding()
+            } else {
+                // Normal profile content
+                ScrollView {
+                    VStack(spacing: 0) {
+                        profileSection
+                        statsSection
+                        followButtonSection
+                        AllStampsContent(
+                            userCollectedStamps: userCollectedStamps,
+                            isLoadingStamps: isLoadingStamps,
+                            isCurrentUser: isCurrentUser,
+                            userId: userId,
+                            displayName: displayName
+                        )
+                    }
                 }
             }
         }
@@ -360,6 +421,24 @@ struct UserProfileView: View {
             if !isCurrentUser {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
+                        // Block/Unblock option
+                        if isBlocked {
+                            Button(action: {
+                                showUnblockConfirmation = true
+                            }) {
+                                Label("Unblock user", systemImage: "person.badge.minus")
+                            }
+                        } else {
+                            Button(role: .destructive, action: {
+                                showBlockConfirmation = true
+                            }) {
+                                Label("Block user", systemImage: "hand.raised.fill")
+                            }
+                        }
+                        
+                        Divider()
+                        
+                        // Report option
                         Button(role: .destructive, action: {
                             showUserReport = true
                         }) {
@@ -398,10 +477,91 @@ struct UserProfileView: View {
         }
         .sheet(isPresented: $showUserReport) {
             SimpleUserReportView(reportedUserId: userId, reportedUsername: username)
+                .environmentObject(authManager)
+        }
+        .alert("Block @\(username)?", isPresented: $showBlockConfirmation) {
+            Button("Cancel", role: .cancel) {}
+            Button("Block", role: .destructive) {
+                Task {
+                    guard let currentUserId = authManager.userId else { return }
+                    do {
+                        try await FirebaseService.shared.blockUser(blockerId: currentUserId, blockedId: userId)
+                        _ = await MainActor.run {
+                            localBlockedIds.insert(userId)
+                            // Update follow status if we were following them (blockUser auto-unfollows)
+                            followManager.isFollowing[userId] = false
+                        }
+                        // Notify app to refresh blocked list
+                        NotificationCenter.default.post(name: NSNotification.Name("UserBlockedListChanged"), object: nil)
+                        // Go back after blocking
+                        dismiss()
+                    } catch {
+                        Logger.error("Failed to block user: \(error.localizedDescription)", category: "UserProfileView")
+                    }
+                }
+            }
+        } message: {
+            Text("You won't see their posts. They won't be able to see your posts or interact with you.")
+        }
+        .alert("Unblock @\(username)?", isPresented: $showUnblockConfirmation) {
+            Button("Cancel", role: .cancel) {}
+            Button("Unblock") {
+                Task {
+                    guard let currentUserId = authManager.userId else { return }
+                    do {
+                        try await FirebaseService.shared.unblockUser(blockerId: currentUserId, blockedId: userId)
+                        _ = await MainActor.run {
+                            localBlockedIds.remove(userId)
+                        }
+                        // Notify app to refresh blocked list
+                        NotificationCenter.default.post(name: NSNotification.Name("UserBlockedListChanged"), object: nil)
+                    } catch {
+                        Logger.error("Failed to unblock user: \(error.localizedDescription)", category: "UserProfileView")
+                    }
+                }
+            }
+        } message: {
+            Text("They will be able to see your posts and interact with you again.")
         }
         .onAppear {
             // Load user profile
             print("👤 [UserProfileView] onAppear for userId: \(userId)")
+            
+            // FIRST: Check if this user has blocked you (Instagram behavior)
+            Task {
+                guard let currentUserId = authManager.userId, !isCurrentUser else {
+                    // Not signed in or viewing own profile - skip block check
+                    await MainActor.run {
+                        isCheckingBlockStatus = false
+                    }
+                    return
+                }
+                
+                do {
+                    let blocked = try await FirebaseService.shared.isBlockedBy(viewerId: currentUserId, profileOwnerId: userId)
+                    await MainActor.run {
+                        isBlockedByThisUser = blocked
+                        isCheckingBlockStatus = false
+                    }
+                    
+                    // If blocked, don't load profile data
+                    if blocked {
+                        print("🚫 [UserProfileView] You are blocked by \(userId) - not loading profile")
+                        return
+                    }
+                } catch {
+                    // ⚠️ EXPECTED ERROR IN CONSOLE:
+                    // "Listen for query at users/.../blocked/... failed: Missing or insufficient permissions"
+                    // This is INTENTIONAL security - users can't query if they're blocked (privacy protection)
+                    // Error is caught gracefully here, system continues normally, user sees loading state clear
+                    print("❌ [UserProfileView] Failed to check block status: \(error)")
+                    await MainActor.run {
+                        isCheckingBlockStatus = false
+                    }
+                }
+            }
+            
+            // Continue with normal profile loading
             // ✅ FIX: Always pass isCurrentUser: false to prevent clearing feed cache
             // UserProfileView uses a local ProfileManager for VIEWING profiles only
             // The global ProfileManager (currentUserProfileManager) manages the current user's profile

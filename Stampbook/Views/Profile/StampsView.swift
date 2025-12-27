@@ -1,6 +1,7 @@
 import SwiftUI
 import AuthenticationServices
 import MessageUI
+import FirebasePerformance
 
 struct StampsView: View {
     @EnvironmentObject var stampsManager: StampsManager
@@ -910,6 +911,10 @@ struct StampsView: View {
             print("📊 [AllStampsContent] Current collectedStamps count: \(stampsManager.userCollection.collectedStamps.count)")
             
             Task {
+                // Start performance trace
+                let trace = Performance.startTrace(name: "profile_load")
+                defer { trace?.stop() }
+                
                 // Set loading state at view level
                 await MainActor.run {
                     stampsManager.isLoadingUserStamps = true

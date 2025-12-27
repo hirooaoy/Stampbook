@@ -91,10 +91,11 @@ struct FollowListView: View {
                 followManager.clearFollowLists()
             }
             
-            // Load both followers and following data to show accurate counts
-            // Pass current user ID to batch check follow statuses
-            followManager.fetchFollowers(userId: userId, currentUserId: authManager.userId)
-            followManager.fetchFollowing(userId: userId, currentUserId: authManager.userId)
+            // ✅ CRITICAL FIX: Force fresh fetch (bypass cache) to ensure we get latest data
+            // This prevents showing stale cached following list after follow/unfollow actions
+            // Cache invalidation happens in FollowManager, but we want to be extra safe here
+            followManager.fetchFollowers(userId: userId, currentUserId: authManager.userId, forceRefresh: true)
+            followManager.fetchFollowing(userId: userId, currentUserId: authManager.userId, forceRefresh: true)
         }
     }
 }
@@ -104,7 +105,9 @@ struct UserRow: View {
     @EnvironmentObject var followManager: FollowManager // Shared instance
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var profileManager: ProfileManager // BEST PRACTICE: Pass to keep counts synced
+    @Environment(\.blockedUserIds) private var blockedUserIds
     @State private var showUnfollowConfirmation = false
+    @State private var showBlockedAlert = false
     
     var isCurrentUser: Bool {
         authManager.userId == user.id
@@ -112,6 +115,10 @@ struct UserRow: View {
     
     var isFollowing: Bool {
         followManager.isFollowing[user.id] ?? false
+    }
+    
+    var isBlocked: Bool {
+        blockedUserIds.contains(user.id)
     }
     
     var body: some View {
@@ -145,8 +152,13 @@ struct UserRow: View {
                         // Show confirmation for unfollow
                         showUnfollowConfirmation = true
                     } else {
-                        // Follow immediately without confirmation
-                        followManager.toggleFollow(currentUserId: currentUserId, targetUserId: user.id, profileManager: profileManager)
+                        // Check if user is blocked before allowing follow
+                        if isBlocked {
+                            showBlockedAlert = true
+                        } else {
+                            // Follow immediately without confirmation
+                            followManager.toggleFollow(currentUserId: currentUserId, targetUserId: user.id, profileManager: profileManager)
+                        }
                     }
                 }) {
                     Text(isFollowing ? "Following" : "Follow")
@@ -166,6 +178,11 @@ struct UserRow: View {
                     }
                 } message: {
                     Text("Are you sure you want to unfollow @\(user.username)?")
+                }
+                .alert("Unblock to follow", isPresented: $showBlockedAlert) {
+                    Button("OK", role: .cancel) {}
+                } message: {
+                    Text("You've blocked @\(user.username). Unblock them from their profile to follow.")
                 }
             }
         }

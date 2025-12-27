@@ -17,6 +17,7 @@ struct FullScreenPhotoView: View {
     @State private var showDeleteError = false
     @State private var deleteErrorMessage = ""
     @State private var isDeleting = false
+    @State private var showReportSheet = false
     
     // Computed property to get image names
     // If viewing another user's post, use provided photos; otherwise fetch from stampsManager
@@ -91,13 +92,25 @@ struct FullScreenPhotoView: View {
                     
                     Spacer()
                     
-                    // Menu button (only show for current user's photos)
-                    if !imageNames.isEmpty && !isViewingOtherUser {
+                    // Menu button (show for both own and other users' photos)
+                    if !imageNames.isEmpty {
                         Menu {
-                            Button(role: .destructive, action: {
-                                showDeleteConfirmation = true
-                            }) {
-                                Label("Delete photo", systemImage: "trash")
+                            // Delete option (only for own photos)
+                            if !isViewingOtherUser {
+                                Button(role: .destructive, action: {
+                                    showDeleteConfirmation = true
+                                }) {
+                                    Label("Delete photo", systemImage: "trash")
+                                }
+                            }
+                            
+                            // Report option (only for other users' photos)
+                            if isViewingOtherUser {
+                                Button(role: .destructive, action: {
+                                    showReportSheet = true
+                                }) {
+                                    Label("Report photo", systemImage: "exclamationmark.triangle")
+                                }
                             }
                         } label: {
                             Image(systemName: "ellipsis")
@@ -157,6 +170,17 @@ struct FullScreenPhotoView: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text(deleteErrorMessage)
+        }
+        .sheet(isPresented: $showReportSheet) {
+            if let userId = userId {
+                NavigationStack {
+                    SimplePhotoReportView(
+                        photoOwnerId: userId,
+                        stampId: stampId,
+                        imageName: currentIndex < imageNames.count ? imageNames[currentIndex] : ""
+                    )
+                }
+            }
         }
     }
     
@@ -369,6 +393,135 @@ struct LazyPhotoView: View {
         await MainActor.run {
             self.image = nil
             self.isLoading = false
+        }
+    }
+}
+
+// MARK: - Photo Report View
+
+struct SimplePhotoReportView: View {
+    let photoOwnerId: String
+    let stampId: String
+    let imageName: String
+    
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject var authManager: AuthManager
+    
+    @State private var reportText = ""
+    @State private var isSending = false
+    @State private var showSuccessAlert = false
+    @State private var showErrorAlert = false
+    @State private var errorMessage = ""
+    @State private var photoOwnerUsername = ""
+    @State private var photoOwnerDisplayName = ""
+    @State private var isLoadingUserInfo = true
+    
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            // TextEditor
+            TextEditor(text: $reportText)
+                .font(.body)
+                .padding(.horizontal, 8)
+                .padding(.top, 12)
+            
+            // Placeholder
+            if reportText.isEmpty {
+                Text("Tell us what's wrong (this is inappropriate, violates guidelines, etc.).")
+                    .font(.body)
+                    .foregroundColor(.gray.opacity(0.5))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 16)
+                    .allowsHitTesting(false)
+            }
+        }
+        .navigationTitle("Report photo")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button("Cancel") {
+                    dismiss()
+                }
+                .disabled(isSending)
+            }
+            
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("Send") {
+                    sendReport()
+                }
+                .disabled(reportText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSending)
+                .fontWeight(.semibold)
+            }
+        }
+        .alert("Report Sent", isPresented: $showSuccessAlert) {
+            Button("OK") {
+                dismiss()
+            }
+        } message: {
+            Text("Thank you. We'll review this report within 24 hours.")
+        }
+        .alert("Error", isPresented: $showErrorAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(errorMessage)
+        }
+        .task {
+            await loadUserInfo()
+        }
+    }
+    
+    private func loadUserInfo() async {
+        do {
+            let profile = try await FirebaseService.shared.fetchUserProfile(userId: photoOwnerId)
+            await MainActor.run {
+                photoOwnerUsername = profile.username
+                photoOwnerDisplayName = profile.displayName
+                isLoadingUserInfo = false
+            }
+        } catch {
+            print("❌ Failed to load user info for photo report: \(error.localizedDescription)")
+            await MainActor.run {
+                isLoadingUserInfo = false
+            }
+        }
+    }
+    
+    private func sendReport() {
+        let trimmedText = reportText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedText.isEmpty else { return }
+        
+        isSending = true
+        
+        Task {
+            do {
+                // Submit feedback to Firestore
+                let userId = authManager.userId ?? "anonymous"
+                let reportMessage = """
+                Reported Photo by @\(photoOwnerUsername) (\(photoOwnerDisplayName))
+                User ID: \(photoOwnerId)
+                Stamp ID: \(stampId)
+                Image: \(imageName)
+                
+                Report:
+                \(trimmedText)
+                """
+                
+                try await FirebaseService.shared.submitFeedback(
+                    userId: userId,
+                    type: "Photo Report",
+                    message: reportMessage
+                )
+                
+                await MainActor.run {
+                    isSending = false
+                    showSuccessAlert = true
+                }
+            } catch {
+                await MainActor.run {
+                    isSending = false
+                    showErrorAlert = true
+                    errorMessage = error.localizedDescription
+                }
+            }
         }
     }
 }

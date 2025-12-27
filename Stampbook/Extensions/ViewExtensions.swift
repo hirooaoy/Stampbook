@@ -41,5 +41,33 @@ extension View {
             self.background(Color(uiColor: .systemBackground))
         }
     }
+    
+    /// Handles safe area for map view based on iOS version
+    /// iOS 26+: Full screen map (original behavior)
+    /// iOS 18: Keep tab bar visible (fixes navigation issue)
+    @ViewBuilder
+    func mapSafeArea() -> some View {
+        if #available(iOS 26.0, *) {
+            // iOS 26+: Full screen map (original behavior)
+            self.ignoresSafeArea()
+        } else {
+            // iOS 18: Only ignore top safe area, keep bottom (tab bar) visible
+            self.ignoresSafeArea(.container, edges: .top)
+        }
+    }
+    
+    /// Handles tab bar visibility for map view based on iOS version
+    /// iOS 26+: Original behavior (no explicit visibility control)
+    /// iOS 18: Explicitly ensure tab bar is visible
+    @ViewBuilder
+    func mapTabBarVisibility() -> some View {
+        if #available(iOS 26.0, *) {
+            // iOS 26+: Original behavior
+            self
+        } else {
+            // iOS 18: Ensure tab bar is always visible
+            self.toolbar(.visible, for: .tabBar)
+        }
+    }
 }
 

@@ -2,6 +2,7 @@ import SwiftUI
 import FirebaseCore
 import FirebaseCrashlytics
 import FirebaseMessaging
+import FirebasePerformance
 import UserNotifications
 
 // MARK: - Future Features
@@ -89,6 +90,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         Logger.info("Notification received in foreground: \(userInfo)", category: "AppDelegate")
         
         // Show banner and sound even when app is in foreground
+        // .banner is available from iOS 14+, works on iOS 18 and iOS 26
         completionHandler([.banner, .sound, .badge])
     }
     
@@ -187,6 +189,9 @@ struct StampbookApp: App {
         return manager
     }()
     
+    // Blocked users cache (loaded once per session)
+    @State private var blockedUserIds: Set<String> = []
+    
     @Environment(\.scenePhase) private var scenePhase
     
     var body: some Scene {
@@ -201,6 +206,7 @@ struct StampbookApp: App {
                 .environmentObject(commentLikeManager)
                 .environmentObject(notificationManager)
                 .environmentObject(deepLinkManager)
+                .environment(\.blockedUserIds, blockedUserIds)
                 .onAppear {
                     // Link ProfileManager to AuthManager BEFORE starting auth check
                     // This prevents race condition where checkAuthState() completes before profileManager is linked
@@ -211,12 +217,45 @@ struct StampbookApp: App {
                     authManager.startAuthCheck()
                     Logger.debug("Started auth check after profileManager linkage")
                 }
+                .task(id: authManager.userId) {
+                    // Fetch blocked users when user signs in
+                    guard let userId = authManager.userId else {
+                        // User signed out - clear blocked list
+                        blockedUserIds = []
+                        return
+                    }
+                    
+                    // Fetch blocked users list
+                    await refreshBlockedUsers(userId: userId)
+                }
+                .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("UserBlockedListChanged"))) { _ in
+                    // Refresh blocked list when a user blocks/unblocks someone
+                    guard let userId = authManager.userId else { return }
+                    Task {
+                        await refreshBlockedUsers(userId: userId)
+                    }
+                }
         }
         .onChange(of: scenePhase) { oldPhase, newPhase in
             handleScenePhaseChange(from: oldPhase, to: newPhase)
         }
         .onChange(of: authManager.isSignedIn) { _, isSignedIn in
             handleAuthStateChange(isSignedIn: isSignedIn)
+        }
+    }
+    
+    // MARK: - Blocked Users Management
+    
+    /// Refresh the blocked users list from Firestore
+    private func refreshBlockedUsers(userId: String) async {
+        do {
+            let blocked = try await FirebaseService.shared.fetchBlockedUsers(userId: userId)
+            await MainActor.run {
+                blockedUserIds = Set(blocked)
+                Logger.info("Loaded \(blocked.count) blocked users", category: "StampbookApp")
+            }
+        } catch {
+            Logger.error("Failed to fetch blocked users: \(error.localizedDescription)", category: "StampbookApp")
         }
     }
     
@@ -287,3 +326,16 @@ struct StampbookApp: App {
     }
 }
 
+// MARK: - Environment Keys
+
+/// Environment key for blocked user IDs
+struct BlockedUserIDsKey: EnvironmentKey {
+    static let defaultValue: Set<String> = []
+}
+
+extension EnvironmentValues {
+    var blockedUserIds: Set<String> {
+        get { self[BlockedUserIDsKey.self] }
+        set { self[BlockedUserIDsKey.self] = newValue }
+    }
+}

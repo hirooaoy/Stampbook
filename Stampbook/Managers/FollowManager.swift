@@ -151,6 +151,10 @@ class FollowManager: ObservableObject {
                         // This ensures follow counts are refreshed on next app open (prevents 24h stale cache)
                         NotificationCenter.default.post(name: .followingListDidChange, object: nil)
                         
+                        // ✅ CRITICAL FIX: Force invalidate FirebaseService cache to prevent stale following list
+                        // This ensures that when FollowListView refetches, it gets fresh data, not cached stale data
+                        firebaseService.invalidateFollowingCache(userId: currentUserId)
+                        
                         // Try to fetch the target user's profile to add to list
                         Task {
                             if let profile = try? await firebaseService.fetchUserProfile(userId: targetUserId) {
@@ -270,6 +274,10 @@ class FollowManager: ObservableObject {
                     // This ensures follow counts are refreshed on next app open (prevents 24h stale cache)
                     NotificationCenter.default.post(name: .followingListDidChange, object: nil)
                     
+                    // ✅ CRITICAL FIX: Force invalidate FirebaseService cache to prevent stale following list
+                    // This ensures that when FollowListView refetches, it gets fresh data, not cached stale data
+                    firebaseService.invalidateFollowingCache(userId: currentUserId)
+                    
                     onSuccess?(nil)
                 } else {
                     Logger.warning("Wasn't following, rolling back optimistic updates", category: "FollowManager")
@@ -333,12 +341,13 @@ class FollowManager: ObservableObject {
     // MARK: - List Fetching
     
     /// Fetch followers for a user
-    func fetchFollowers(userId: String, currentUserId: String? = nil) {
+    func fetchFollowers(userId: String, currentUserId: String? = nil, forceRefresh: Bool = false) {
         isLoading = true
         error = nil
         
         Task {
             do {
+                // Note: fetchFollowers doesn't use cache, so forceRefresh is for future use
                 let profiles = try await firebaseService.fetchFollowers(userId: userId)
                 await MainActor.run {
                     self.followers = profiles
@@ -362,13 +371,15 @@ class FollowManager: ObservableObject {
     }
     
     /// Fetch following for a user
-    func fetchFollowing(userId: String, currentUserId: String? = nil) {
+    func fetchFollowing(userId: String, currentUserId: String? = nil, forceRefresh: Bool = false) {
         isLoading = true
         error = nil
         
         Task {
             do {
-                let profiles = try await firebaseService.fetchFollowing(userId: userId)
+                // ✅ CRITICAL FIX: Pass forceRefresh to bypass cache when needed
+                // This ensures fresh data after follow/unfollow actions
+                let profiles = try await firebaseService.fetchFollowing(userId: userId, useCache: !forceRefresh)
                 await MainActor.run {
                     self.following = profiles
                     self.isLoading = false

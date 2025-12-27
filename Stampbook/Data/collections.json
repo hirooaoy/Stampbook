@@ -134,12 +134,21 @@
     "parentId": "hawaii"
   },
   {
+    "id": "hawaii-best-beaches",
+    "emoji": "🏖️",
+    "name": "Hawaii Best Beaches",
+    "description": "The most beautiful and iconic beaches across the Hawaiian Islands",
+    "region": "hawaii",
+    "totalStamps": 11,
+    "parentId": "hawaii"
+  },
+  {
     "id": "libraries-that-make-you-forget-time",
     "emoji": "📚",
     "name": "Libraries to Forget Time",
     "description": "Beautiful libraries where you can lose yourself in thought and tranquility",
     "region": "global",
-    "totalStamps": 1
+    "totalStamps": 11
   },
   {
     "id": "movie-landmarks",
@@ -160,6 +169,15 @@
     "parentId": "movie-tv-landmarks"
   },
   {
+    "id": "first-love-hokkaido-japan",
+    "emoji": "❄️",
+    "name": "First Love in Hokkaido, Japan",
+    "description": "Visit the iconic locations from the beloved Japanese drama First Love",
+    "region": "japan",
+    "totalStamps": 5,
+    "parentId": "movie-tv-landmarks"
+  },
+  {
     "id": "olympic-must-visits",
     "totalStamps": 6,
     "name": "Olympic National Park",
@@ -175,6 +193,15 @@
     "region": "colorado",
     "emoji": "⛰️",
     "description": "Alpine peaks, pristine lakes, and the highest continuous paved road in North America",
+    "parentId": "us-national-parks"
+  },
+  {
+    "id": "saguaro-national-park-must-visits",
+    "totalStamps": 6,
+    "name": "Saguaro National Park",
+    "region": "arizona",
+    "emoji": "🌵",
+    "description": "Protecting America's largest cacti in the Sonoran Desert, where iconic saguaros can grow over 40 feet tall and live for 200 years",
     "parentId": "us-national-parks"
   },
   {

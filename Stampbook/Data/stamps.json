@@ -303,7 +303,7 @@
     ],
     "about": "This 70-feet tall watchtower is the tallest major structure on the South Rim. On clear days, visitors can see over 100 miles toward the Painted Desert.",
     "geohash": "9w2mp3ds",
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "aspectRatio": 0.63,
     "thingsToDoFromEditors": [
       "Climb the tower for panoramic views",
@@ -322,7 +322,7 @@
     ],
     "about": "The point is named after the Hopi Tribe, whose cultural stories link the Grand Canyon to their ancestral migrations.",
     "geohash": "9w2jpz5h",
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "aspectRatio": 0.64,
     "thingsToDoFromEditors": [
       "Watch sunset with canyon colors",
@@ -341,7 +341,7 @@
     ],
     "about": "Mather Point is named after Stephen Tyng Mather, the first director of the U.S. National Park Service from 1917. It's a short walk from the Visitor Center.",
     "geohash": "9w2m0uvd",
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "aspectRatio": 0.62,
     "thingsToDoFromEditors": [
       "Walk to overlook from visitor center for instant canyon views",
@@ -360,7 +360,7 @@
     ],
     "about": "Moran Point is named after Thomas Moran, the painter whose 19th-century artworks helped convince Congress to protect American landscapes like Yellowstone and the Grand Canyon.",
     "geohash": "9w2kv4e1",
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "aspectRatio": 0.6,
     "thingsToDoFromEditors": [
       "Watch sunrise for pastel colors",
@@ -380,11 +380,131 @@
     ],
     "about": "From Yavapai Point you can see deep into the canyon and catch glimpses of the Colorado River channel across vast terrain.",
     "geohash": "9w2m0tjy",
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "aspectRatio": 0.61,
     "thingsToDoFromEditors": [
       "Walk Rim Trail from visitor center for unobstructed canyon views",
       "Visit Geology Museum learn canyon formation"
+    ]
+  },
+  {
+    "id": "us-az-saguaro-national-park-bajada-loop-drive-desert-ecology-trail",
+    "name": "Bajada Loop Drive (Desert Ecology Trail)",
+    "latitude": 32.20326234400152,
+    "longitude": -110.72506543168403,
+    "address": "Desert Ecology Trail\nTucson, AZ USA 85743",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-az-saguaro-national-park-bajada-loop-drive-desert-ecology-trail.png?alt=media&token=d0e6e47ef8cb1f0737671622a518ee31",
+    "collectionIds": [
+      "saguaro-national-park-must-visits"
+    ],
+    "about": "Scenic 6-mile gravel loop drive through the Tucson Mountain District's bajada ecosystem, showcasing diverse desert plant communities and offering access to the Desert Ecology Trail with interpretive exhibits.",
+    "geohash": "9t9r0qkm",
+    "collectionRadius": "regularplus",
+    "aspectRatio": 0.63,
+    "thingsToDoFromEditors": [
+      "Drive the 6-mile gravel loop slowly",
+      "Stop at Desert Ecology Trail for exhibits",
+      "Watch for desert wildlife along the route"
+    ]
+  },
+  {
+    "id": "us-az-saguaro-national-park-cactus-forest-drive-javelina-picnic-area",
+    "name": "Cactus Forest Drive (Javelina Picnic Area)",
+    "latitude": 32.165808270281424,
+    "longitude": -110.72362619031732,
+    "address": "Javelina Picnic Area\nTucson, AZ USA 85748",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-az-saguaro-national-park-cactus-forest-drive-javelina-picnic-area.png?alt=media&token=e5cc90e86fe9dcd397fcec6d869a93ac",
+    "collectionIds": [
+      "saguaro-national-park-must-visits"
+    ],
+    "about": "Scenic 8-mile one-way loop drive through one of the densest saguaro forests in the park, passing through classic Sonoran Desert landscape with picnic areas and trailheads along the route.",
+    "geohash": "9t9qbrte",
+    "collectionRadius": "regularplus",
+    "aspectRatio": 0.62,
+    "thingsToDoFromEditors": [
+      "Drive the full 8-mile one-way loop slowly",
+      "Stop at Javelina Picnic Area for lunch",
+      "Use pullouts to photograph the saguaro forest"
+    ]
+  },
+  {
+    "id": "us-az-saguaro-national-park-desert-discovery-nature-trail",
+    "name": "Desert Discovery Nature Trail",
+    "latitude": 32.26170431410234,
+    "longitude": -111.21196665263699,
+    "address": "Desert Discovery Nature Trail\nTucson, AZ USA 85743",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-az-saguaro-national-park-desert-discovery-nature-trail.png?alt=media&token=c36fd3a9a1c2fe5031b178a095f7cdff",
+    "collectionIds": [
+      "saguaro-national-park-must-visits"
+    ],
+    "about": "Short accessible 0.4-mile loop trail with interpretive signs explaining Sonoran Desert ecology, featuring saguaro cacti, desert plants, and wildlife adapted to survive in this harsh environment.",
+    "geohash": "9t8zt31f",
+    "collectionRadius": "regularplus",
+    "aspectRatio": 0.98,
+    "thingsToDoFromEditors": [
+      "Read interpretive signs along the trail",
+      "Perfect for families and all ability levels",
+      "Look for lizards and birds in the desert"
+    ]
+  },
+  {
+    "id": "us-az-saguaro-national-park-mica-view-trail",
+    "name": "Mica View Trail",
+    "latitude": 32.21164243990624,
+    "longitude": -110.72454008001951,
+    "address": "Mica View Trail\nTucson, AZ USA 85748",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-az-saguaro-national-park-mica-view-trail.png?alt=media&token=e35f1a6d5e50b15c0ae59fb83e6ffbe1",
+    "collectionIds": [
+      "saguaro-national-park-must-visits"
+    ],
+    "about": "Popular 2-mile loop trail winding through classic Sonoran Desert showcasing dense saguaro forests, desert wildflowers, and panoramic views of the Rincon Mountains from multiple vantage points.",
+    "geohash": "9t9r0ruy",
+    "collectionRadius": "regularplus",
+    "aspectRatio": 0.99,
+    "thingsToDoFromEditors": [
+      "Hike the 2-mile loop counterclockwise",
+      "Bring water and sun protection",
+      "Look for desert wildlife along the trail"
+    ]
+  },
+  {
+    "id": "us-az-saguaro-national-park-signal-hill-petroglyphs",
+    "name": "Signal Hill Petroglyphs",
+    "latitude": 32.29107921186038,
+    "longitude": -111.20851764586891,
+    "address": "Signal Hill Petroglyphs\nTucson, AZ USA 85743",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-az-saguaro-national-park-signal-hill-petroglyphs.png?alt=media&token=ace8e958e15629f514932693d05f1e6d",
+    "collectionIds": [
+      "saguaro-national-park-must-visits"
+    ],
+    "about": "Ancient Hohokam petroglyphs carved into Signal Hill's volcanic rocks over 800 years ago, featuring hundreds of geometric patterns, spirals, and animal symbols representing the region's earliest inhabitants.",
+    "geohash": "9t8ztqkm",
+    "collectionRadius": "regularplus",
+    "aspectRatio": 0.97,
+    "thingsToDoFromEditors": [
+      "Follow the short trail to view hundreds of petroglyphs",
+      "Bring binoculars for better viewing of higher panels",
+      "Visit early morning or late afternoon for best lighting"
+    ]
+  },
+  {
+    "id": "us-az-saguaro-national-park-valley-view-overlook",
+    "name": "Valley View Overlook",
+    "latitude": 32.277077191775945,
+    "longitude": -111.19778738527705,
+    "address": "Valley View Overlook\nTucson, AZ USA 85748",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-az-saguaro-national-park-valley-view-overlook.png?alt=media&token=935854b1077e6561576c88eb0e7dd682",
+    "collectionIds": [
+      "saguaro-national-park-must-visits"
+    ],
+    "about": "Scenic overlook offering panoramic views of Rincon Valley's vast saguaro forest, with the Rincon Mountains rising dramatically in the background and desert wildflowers dotting the landscape below.",
+    "geohash": "9t8zteu5",
+    "collectionRadius": "regularplus",
+    "aspectRatio": 0.64,
+    "thingsToDoFromEditors": [
+      "Arrive at sunrise or sunset for best lighting",
+      "Bring binoculars to spot wildlife in the valley",
+      "Walk the short trail to multiple viewing angles"
     ]
   },
   {
@@ -433,7 +553,7 @@
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ca-fern-canyon.png?alt=media&token=ee569636-23e9-4f5a-87b9-43ca4de141a4",
     "about": "The unique landscape features 50-foot high walls covered in lush ferns and mosses. It served as a filming location for 1997 film The Lost World: Jurassic Park.",
     "geohash": "9prg8bfw",
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "aspectRatio": 1.48,
     "collectionIds": [
       "movie-landmarks"
@@ -573,7 +693,7 @@
       "Enjoy a peaceful picnic surrounded by ancient trees (pack out what you pack in)"
     ],
     "geohash": "9q7xcz64",
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "aspectRatio": 1.19
   },
   {
@@ -588,7 +708,7 @@
     ],
     "about": "The General Sherman Tree is the world's largest living tree by volume at 52,508 cubic feet. It is estimated to be between 2,300 and 2,700 years old.",
     "geohash": "9qe81erz",
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "aspectRatio": 1.29,
     "thingsToDoFromEditors": [
       "Walk Congress Trail loop to see General Sherman and giant sequoias",
@@ -611,7 +731,7 @@
       "Walk the Big Trees Trail loop (starts right outside)"
     ],
     "geohash": "9qe8122k",
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "aspectRatio": 1.15
   },
   {
@@ -645,7 +765,7 @@
     ],
     "about": "This giant sequoia fell across Crescent Meadow Road in 1937. Rather than removing it, park workers carved an 8-foot tunnel through it in 1938.",
     "geohash": "9q7xcw0w",
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "aspectRatio": 1.15,
     "thingsToDoFromEditors": [
       "Drive through tunnel carved into fallen sequoia",
@@ -702,7 +822,7 @@
     ],
     "about": "A former military site that became a public beach in 1897. It has one of the most iconic Golden Gate Bridge views.",
     "geohash": "9q8zhb45",
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "aspectRatio": 1,
     "thingsToDoFromEditors": [
       "Bring a picnic blanket and relax with Golden Gate",
@@ -935,7 +1055,7 @@
       "You can see the Golden Gate with San Francisco from the other side"
     ],
     "geohash": "9q8zhy82",
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "aspectRatio": 0.93
   },
   {
@@ -1309,7 +1429,7 @@
     ],
     "about": "Tumbling 620 feet from a hanging valley formed by glaciers, the mist blows sideways in wind like a bride's veil, giving the waterfall its name.",
     "geohash": "9qdyt6h5",
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "aspectRatio": 1.6,
     "thingsToDoFromEditors": [
       "Feel the cool mist on warm spring and summer days",
@@ -1334,7 +1454,7 @@
       "Photograph it from Tunnel View at sunrise"
     ],
     "geohash": "9qdytt63",
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "aspectRatio": 1.67
   },
   {
@@ -1477,7 +1597,7 @@
     "id": "us-california-mill-valley-muir-woods",
     "address": "1 Muir Woods Rd\nMill Valley, CA USA 94941",
     "collectionIds": [],
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "geohash": "9q8zdf1m",
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-california-mill-valley-muir-woods.png?alt=media&token=beb64ba568ab7796b2156730f265a44c",
     "latitude": 37.89284920359298,
@@ -1610,7 +1730,7 @@
     "collectionIds": [
       "rocky-mountain-must-visits"
     ],
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "geohash": "9xj4hxd8",
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-co-rocky-mountain-national-park-alberta-falls.png?alt=media&token=bbb875b5d60d224071f92fa3a6d7d53d",
     "latitude": 40.30360857155947,
@@ -1629,7 +1749,7 @@
     "collectionIds": [
       "rocky-mountain-must-visits"
     ],
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "geohash": "9xj4k8p1",
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-co-rocky-mountain-national-park-bear-lake.png?alt=media&token=f641464647e3c30fb609882b03c6bdc8",
     "latitude": 40.31378581833264,
@@ -1648,7 +1768,7 @@
     "collectionIds": [
       "rocky-mountain-must-visits"
     ],
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "geohash": "9xj4jkgj",
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-co-rocky-mountain-national-park-dream-lake.png?alt=media&token=6dbf61cbd68cba02a106a33991876245",
     "latitude": 40.30961908307693,
@@ -1686,7 +1806,7 @@
     "collectionIds": [
       "rocky-mountain-must-visits"
     ],
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "geohash": "9xj4p3px",
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-co-rocky-mountain-national-park-sprague-lake.png?alt=media&token=9453d6dc3deb020e4161d3b38b81726c",
     "latitude": 40.32051316379384,
@@ -1705,7 +1825,7 @@
     "collectionIds": [
       "rocky-mountain-must-visits"
     ],
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "geohash": "9xj6m79w",
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-co-rocky-mountain-national-park-trail-ridge-road.png?alt=media&token=f0e667515b3bff36948461ca8e56f551",
     "latitude": 40.44127046166831,
@@ -1803,7 +1923,7 @@
     "collectionIds": [
       "everglades-must-visits"
     ],
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "geohash": "dhw8mubc",
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-florida-everglades-national-park-anhinga-trail.png?alt=media&token=033415f81b11030213423a1c487e916a",
     "latitude": 25.38286569166472,
@@ -1822,7 +1942,7 @@
     "collectionIds": [
       "everglades-must-visits"
     ],
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "geohash": "dhqrn8c4",
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-florida-everglades-national-park-guy-bradley-visitor-center.png?alt=media&token=247df79999acbf1414af6401463c41d3",
     "latitude": 25.141292546043946,
@@ -1841,7 +1961,7 @@
     "collectionIds": [
       "everglades-must-visits"
     ],
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "geohash": "dhw809fd",
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-florida-everglades-national-park-mahogany-hammock.png?alt=media&token=cb32bc69a50b65e486c9e7e54b0ff236",
     "latitude": 25.322504681299318,
@@ -1860,7 +1980,7 @@
     "collectionIds": [
       "everglades-must-visits"
     ],
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "geohash": "dhw89xwb",
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-florida-everglades-national-park-pa-hay-okee-overlook.png?alt=media&token=266232ac702aee7cca1747dc1f954965",
     "latitude": 25.44159063849541,
@@ -1879,7 +1999,7 @@
     "collectionIds": [
       "everglades-must-visits"
     ],
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "geohash": "dhw9fned",
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-florida-everglades-national-park-shark-valley-observation-tower.png?alt=media&token=14034f83a83aecb2723b2f15ad22fd04",
     "latitude": 25.656208848990094,
@@ -1918,10 +2038,12 @@
     "longitude": -156.69270590314878,
     "address": "65 Kai Ala Dr\nLahaina, HI, USA 96761",
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-hi-maui-kahekili-beach-park.png?alt=media&token=1d26c6d8-fa32-4f12-8dfa-a4bebd6c65f1",
-    "collectionIds": [],
+    "collectionIds": [
+      "hawaii-best-beaches"
+    ],
     "about": "Named after Maui's last ruling chief, King Kahekili Nui ʻAhumanu. Also called \"Airport Beach\" after Ka'anapali Airport that operated 1961-1986.",
     "geohash": "8e8x477u",
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "aspectRatio": 1,
     "thingsToDoFromEditors": [
       "Snorkel with green sea turtles among the vibrant coral reefs (stay 10 feet away)",
@@ -1940,11 +2062,211 @@
     ],
     "about": "Hawaii's highest peak at 13,796 feet. The Keck Observatory here helped discover the supermassive black hole at our galaxy's center, earning a 2020 Nobel Prize.",
     "geohash": "8e92y0u4",
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "aspectRatio": 1,
     "thingsToDoFromEditors": [
       "Drive to summit with 4WD for spectacular sunset views",
       "Join free nightly stargazing at Visitor Station"
+    ]
+  },
+  {
+    "id": "us-hi-honolulu-waikiki-beach",
+    "name": "Waikiki Beach",
+    "latitude": 21.276257375302713,
+    "longitude": -157.82731587469988,
+    "address": "Waikiki Beach\nHonolulu, HI USA 96815",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-hi-honolulu-waikiki-beach.png?alt=media&token=758fbe94d3201fa1a2876da1f73de15a",
+    "collectionIds": [
+      "hawaii-best-beaches"
+    ],
+    "about": "World-famous 2-mile beach where Hawaiian royalty once surfed, now lined with resorts and offering gentle waves perfect for beginner surfers since the 1900s.",
+    "geohash": "87zc091x",
+    "collectionRadius": "regularplus",
+    "aspectRatio": 0.5,
+    "thingsToDoFromEditors": [
+      "Rent a surfboard or book a beginner lesson",
+      "Watch sunset with Diamond Head as backdrop",
+      "Walk along Kalakaua Avenue for shops and dining"
+    ]
+  },
+  {
+    "id": "us-hi-kailua-lanikai-beach",
+    "name": "Lanikai Beach",
+    "latitude": 21.392487800139854,
+    "longitude": -157.71511519620685,
+    "address": "Lanikai Beach\nKailua, HI USA 96734",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-hi-kailua-lanikai-beach.png?alt=media&token=f46fa12eab3e032a4abb80cdb973cff7",
+    "collectionIds": [
+      "hawaii-best-beaches"
+    ],
+    "about": "Half-mile of powdery white sand often called the most beautiful beach in the world, with views of the twin Mokulua Islands rising from turquoise waters.",
+    "geohash": "87zcen7k",
+    "collectionRadius": "regularplus",
+    "aspectRatio": 0.49,
+    "thingsToDoFromEditors": [
+      "Kayak to the Mokulua Islands offshore",
+      "Arrive at sunrise for stunning photos between the Mokes",
+      "Parking is very limited, arrive early or use rideshare"
+    ]
+  },
+  {
+    "id": "us-hi-poipu-poipu-beach",
+    "name": "Poipu Beach",
+    "latitude": 21.873330960082313,
+    "longitude": -159.45421565037154,
+    "address": "Poipu Beach Park\nKoloa, HI USA 96756",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-hi-poipu-poipu-beach.png?alt=media&token=38f6fe6576d081ec712bd11096ababe4",
+    "collectionIds": [
+      "hawaii-best-beaches"
+    ],
+    "about": "Family-friendly beach with two golden crescents separated by a narrow sandbar, where Hawaiian monk seals and green sea turtles frequently bask on shore.",
+    "geohash": "87ys7tbv",
+    "collectionRadius": "regularplus",
+    "aspectRatio": 0.99,
+    "thingsToDoFromEditors": [
+      "Snorkel in the protected bay with tropical fish",
+      "Watch for monk seals and sea turtles (keep 10 feet away)",
+      "Use the natural wading pool perfect for young children"
+    ]
+  },
+  {
+    "id": "us-hi-lahaina-kaanapali-beach",
+    "name": "Ka'anapali Beach",
+    "latitude": 20.91780261467243,
+    "longitude": -156.69672318380586,
+    "address": "Ka'anapali Beach\nLahaina, HI USA 96761",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-hi-lahaina-kaanapali-beach.png?alt=media&token=521eb3327622643e14791cb795effa35",
+    "collectionIds": [
+      "hawaii-best-beaches"
+    ],
+    "about": "Three-mile stretch of white sand on Maui's west coast, famous for Black Rock where cliff divers perform traditional sunset ceremonies honoring ancient warriors.",
+    "geohash": "8e8wfrbz",
+    "collectionRadius": "regularplus",
+    "aspectRatio": 0.94,
+    "thingsToDoFromEditors": [
+      "Snorkel at Black Rock to see tropical fish and turtles",
+      "Watch the sunset cliff diving ceremony at Black Rock",
+      "Walk the beachfront path connecting resorts and shops"
+    ]
+  },
+  {
+    "id": "us-hi-naalehu-punaluu-black-sand-beach",
+    "name": "Punalu'u Black Sand Beach",
+    "latitude": 19.135799398593598,
+    "longitude": -155.50478069679997,
+    "address": "Punalu'u Black Sand Beach\nNaalehu, HI USA 96772",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-hi-naalehu-punaluu-black-sand-beach.png?alt=media&token=73f2f9e8ee975e1d0962b1be3f268539",
+    "collectionIds": [
+      "hawaii-best-beaches"
+    ],
+    "about": "Dramatic jet-black volcanic sand beach created by lava meeting the ocean, where endangered Hawaiian green sea turtles and hawksbill turtles bask in the sun.",
+    "geohash": "8e3kv7sf",
+    "collectionRadius": "regularplus",
+    "aspectRatio": 0.97,
+    "thingsToDoFromEditors": [
+      "Watch for sea turtles on the black sand (stay 10 feet away)",
+      "Explore the freshwater pools fed by underground springs",
+      "Swimming not recommended due to strong currents and rocks"
+    ]
+  },
+  {
+    "id": "us-hi-wailea-wailea-beach",
+    "name": "Wailea Beach",
+    "latitude": 20.681278589178596,
+    "longitude": -156.44342247308617,
+    "address": "Wailea Beach\nWailea, HI USA 96753",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-hi-wailea-wailea-beach.png?alt=media&token=8aa910f1095e68ec11ffcb6ffa272be7",
+    "collectionIds": [
+      "hawaii-best-beaches"
+    ],
+    "about": "Golden sand beach in Maui's upscale resort area, consistently ranked among America's best beaches for its calm waters and excellent snorkeling conditions.",
+    "geohash": "8e8v8hcm",
+    "collectionRadius": "regularplus",
+    "aspectRatio": 0.41,
+    "thingsToDoFromEditors": [
+      "Snorkel along the rocky edges for tropical fish",
+      "Walk the coastal path connecting five resort beaches",
+      "Arrive early for free public parking near the beach"
+    ]
+  },
+  {
+    "id": "us-hi-kohala-hapuna-beach",
+    "name": "Hapuna Beach",
+    "latitude": 19.992381281470085,
+    "longitude": -155.82573427298908,
+    "address": "Hapuna Beach State Park\nWaimea, HI USA 96743",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-hi-kohala-hapuna-beach.png?alt=media&token=916bc988589bbe18f4ec91d08c07f021",
+    "collectionIds": [
+      "hawaii-best-beaches"
+    ],
+    "about": "One of Hawaii's largest white sand beaches at over 200 feet wide, offering expansive space and crystal clear waters ideal for swimming and bodyboarding.",
+    "geohash": "8e91wpe0",
+    "collectionRadius": "regularplus",
+    "aspectRatio": 0.49,
+    "thingsToDoFromEditors": [
+      "Swim in the clear calm waters during summer months",
+      "Bodyboard in the gentle waves near the shore",
+      "Use the facilities including showers, restrooms, and picnic areas"
+    ]
+  },
+  {
+    "id": "us-hi-honolulu-hanauma-bay",
+    "name": "Hanauma Bay",
+    "latitude": 21.271628818084224,
+    "longitude": -157.69668613736368,
+    "address": "Hanauma Bay Nature Preserve\nHonolulu, HI USA 96825",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-hi-honolulu-hanauma-bay.png?alt=media&token=b267513d157635e4411de60dbc7b2f8d",
+    "collectionIds": [
+      "hawaii-best-beaches"
+    ],
+    "about": "Protected marine sanctuary formed in a volcanic crater 32,000 years ago, home to over 400 species of fish making it Oahu's premier snorkeling destination.",
+    "geohash": "87zc582u",
+    "collectionRadius": "regularplus",
+    "aspectRatio": 0.98,
+    "thingsToDoFromEditors": [
+      "Book reservations online in advance (required for entry)",
+      "Snorkel to see butterflyfish, tangs, and sea turtles",
+      "Watch the educational video before entering the bay"
+    ]
+  },
+  {
+    "id": "us-hi-kailua-kona-kua-bay",
+    "name": "Kua Bay",
+    "latitude": 19.810665421392667,
+    "longitude": -156.00631912479375,
+    "address": "Kua Bay (Manini'owali Beach)\nKailua-Kona, HI USA 96740",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-hi-kailua-kona-kua-bay.png?alt=media&token=14f8161a79048b7b523f2f08046e7607",
+    "collectionIds": [
+      "hawaii-best-beaches"
+    ],
+    "about": "Also known as Manini'owali Beach, this Big Island gem features crystal-clear turquoise waters and pristine white sand, best visited during calm summer months.",
+    "geohash": "8e909yrt",
+    "collectionRadius": "regularplus",
+    "aspectRatio": 0.96,
+    "thingsToDoFromEditors": [
+      "Snorkel when waters are calm (conditions vary by season)",
+      "Arrive early as parking fills up quickly",
+      "Bring plenty of water and shade, limited facilities available"
+    ]
+  },
+  {
+    "id": "us-hi-haleiwa-waimea-bay",
+    "name": "Waimea Bay",
+    "latitude": 21.640100430765322,
+    "longitude": -158.0635725360378,
+    "address": "Waimea Bay Beach Park\nHaleiwa, HI USA 96712",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-hi-haleiwa-waimea-bay.png?alt=media&token=754e110d0f40375e005a062ff1feea70",
+    "collectionIds": [
+      "hawaii-best-beaches"
+    ],
+    "about": "Legendary North Shore beach famous for massive 30+ foot winter waves that attract world-class surfers, transforming to calm swimming waters in summer months.",
+    "geohash": "87ze55mw",
+    "collectionRadius": "regularplus",
+    "aspectRatio": 0.99,
+    "thingsToDoFromEditors": [
+      "Jump from the famous rock into the bay during calm summer",
+      "Watch big wave surfers tackle winter swells from the beach",
+      "Visit nearby Waimea Valley for botanical gardens and waterfall"
     ]
   },
   {
@@ -1995,7 +2317,7 @@
     ],
     "about": "Thrilling 1.5-mile climb with iron rungs and ladders bolted into exposed cliff faces, reaching a 520-foot summit with panoramic ocean views.",
     "geohash": "drzs0r0b",
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "aspectRatio": 1,
     "thingsToDoFromEditors": [
       "Arrive before 7am to avoid waiting at the iron rungs sections",
@@ -2018,7 +2340,7 @@
       "Continue to South Bubble summit for panoramic Jordan Pond views"
     ],
     "geohash": "drzknzer",
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "aspectRatio": 0.99
   },
   {
@@ -2038,7 +2360,7 @@
     ],
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-me-acadia-national-park-cadillac-mountain-summit-overlook.png?alt=media&token=a6c78e82-f69c-4562-9c69-415d865c1d8e",
     "aspectRatio": 1,
-    "collectionRadius": "regular"
+    "collectionRadius": "regularplus"
   },
   {
     "id": "us-me-acadia-national-park-jordan-pond-path-trailhead",
@@ -2058,7 +2380,7 @@
     ],
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-me-acadia-national-park-jordan-pond-path-trailhead.png?alt=media&token=12375aef-8d80-47e3-ada0-528f180462c4",
     "aspectRatio": 0.99,
-    "collectionRadius": "regular"
+    "collectionRadius": "regularplus"
   },
   {
     "id": "us-me-acadia-national-park-sand-beach-shoreline",
@@ -2070,10 +2392,10 @@
     "collectionIds": [
       "acadia-must-visits"
     ],
-    "about": "Sand Beach’s sand is made largely of crushed shell fragments, giving it a slight pink tint. It is framed by cliffs and turquoise water.",
+    "about": "Sand Beach's sand is made largely of crushed shell fragments, giving it a slight pink tint. It is framed by cliffs and turquoise water.",
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-me-acadia-national-park-sand-beach-shoreline.png?alt=media&token=a8fc61d1-93c4-45a6-a540-620195727353",
     "aspectRatio": 1,
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "thingsToDoFromEditors": [
       "Walk the full shoreline curve for the classic beach view",
       "Photograph waves against the granite cliffs"
@@ -2198,7 +2520,7 @@
     "collectionIds": [
       "theodore-roosevelt-must-visits"
     ],
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "geohash": "c8q6uhyq",
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-nd-theodore-roosevelt-national-park-maltese-cross-cabin.png?alt=media&token=1764020181001",
     "latitude": 46.91693457131479,
@@ -2541,7 +2863,7 @@
     "collectionIds": [
       "crater-lake-must-visits"
     ],
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "geohash": "c20n62zg",
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-or-crater-lake-national-park-cleetwood-cove.png?alt=media&token=7dc115915cb9f9a7430c3e76fbf49ff8",
     "latitude": 42.97588316215738,
@@ -2560,7 +2882,7 @@
     "collectionIds": [
       "crater-lake-must-visits"
     ],
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "geohash": "c20n07kh",
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-or-crater-lake-national-park-discovery-point.png?alt=media&token=5f8738a64885ffdeda94c4f0d28958e1",
     "latitude": 42.924849588395205,
@@ -2598,7 +2920,7 @@
     "collectionIds": [
       "crater-lake-must-visits"
     ],
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "geohash": "c20n0t3s",
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-or-crater-lake-national-park-watchman-overlook.png?alt=media&token=7add48f28110ea23391372a4dccf6ce9",
     "latitude": 42.94295461569216,
@@ -2676,7 +2998,7 @@
     "collectionIds": [
       "big-bend-must-visits"
     ],
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "geohash": "9tntj5rb",
     "latitude": 29.39891081689475,
     "about": "Balanced Rock is a massive boulder that rests precariously on a narrow pedestal, sculpted by millions of years of erosion in the volcanic Grapevine Hills.",
@@ -2713,7 +3035,7 @@
     "collectionIds": [
       "big-bend-must-visits"
     ],
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "geohash": "9tnmxx43",
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-tx-big-bend-national-park-hot-springs.png?alt=media&token=ee6ac28e506f8771250ac5eed15d34ee",
     "latitude": 29.177531511888162,
@@ -2732,7 +3054,7 @@
     "collectionIds": [
       "big-bend-must-visits"
     ],
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "geohash": "9tnr1mvq",
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-tx-big-bend-national-park-lost-mine-trail.png?alt=media&token=4169961bdbd3a2c7f43846f0174e056f",
     "latitude": 29.270656015400384,
@@ -2770,7 +3092,7 @@
     "collectionIds": [
       "big-bend-must-visits"
     ],
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "geohash": "9tnr0vzr",
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-tx-big-bend-national-park-the-window.png?alt=media&token=0e8f28f7942ec787edaacaace218a4ac",
     "latitude": 29.27111666475465,
@@ -2926,7 +3248,7 @@
     "collectionIds": [
       "olympic-must-visits"
     ],
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "geohash": "c23m0kru",
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-wa-olympic-national-park-hoh-rain-forest.png?alt=media&token=6d0529eb39627599b284a5785e6fd701",
     "latitude": 47.86090559415114,
@@ -2983,7 +3305,7 @@
     "collectionIds": [
       "olympic-must-visits"
     ],
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "geohash": "c24p6g5m",
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-wa-olympic-national-park-marymere-falls.png?alt=media&token=28b4b692f89adcce91a6459aaa283800",
     "latitude": 48.05105277315626,
@@ -3002,7 +3324,7 @@
     "collectionIds": [
       "olympic-must-visits"
     ],
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "geohash": "c23jv8yq",
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-wa-olympic-national-park-ruby-beach.png?alt=media&token=505aeb0539ac74cf77a51d57922cfeaf",
     "latitude": 47.71091611479072,
@@ -3021,7 +3343,7 @@
     "collectionIds": [
       "olympic-must-visits"
     ],
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "geohash": "c23x9p7w",
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-wa-olympic-national-park-sol-duc-falls.png?alt=media&token=06fe2860d963f8756d23cca6fb45eba3",
     "latitude": 47.950684815131815,
@@ -3063,14 +3385,14 @@
     "collectionIds": [
       "yellowstone-must-visits"
     ],
-    "about": "Early explorers believed the canyon colors came from “painted” minerals, which inspired the name. It's one of the most photographed viewpoints in Yellowstone.",
+    "about": "Early explorers believed the canyon colors came from \"painted\" minerals, which inspired the name. It's one of the most photographed viewpoints in Yellowstone.",
     "thingsToDoFromEditors": [
       "Park in the nearby lot and walk the short path to the viewpoint",
       "Take photos of the Lower Falls and the colorful canyon walls"
     ],
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-wy-yellowstone-national-park-artist-point.png?alt=media&token=b6665330-2afd-457a-b7c2-247ad9dc16fb",
     "aspectRatio": 0.67,
-    "collectionRadius": "regular"
+    "collectionRadius": "regularplus"
   },
   {
     "id": "us-wy-yellowstone-national-park-grand-prismatic-spring-overlook",
@@ -3085,7 +3407,7 @@
     "about": "The vivid rainbow colors come from heat-loving bacteria that thrive in mineral-rich water. It is the largest hot spring in the United States (3rd in the world).",
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-wy-yellowstone-national-park-grand-prismatic-spring-overlook.png?alt=media&token=b6ef01e3-eda4-4e1d-9926-b68c2ade58ca",
     "aspectRatio": 0.67,
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "thingsToDoFromEditors": [
       "Park at Fairy Falls lot and walk the short uphill trail to the overlook",
       "Photograph the full rainbow colors viewing platform",
@@ -3162,10 +3484,10 @@
     "collectionIds": [
       "yellowstone-must-visits"
     ],
-    "about": "Norris Geyser Basin is Yellowstone’s hottest and most active thermal area, with underground temperatures reaching extremely high levels that shape the landscape.",
+    "about": "Norris Geyser Basin is Yellowstone's hottest and most active thermal area, with underground temperatures reaching extremely high levels that shape the landscape.",
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-wy-yellowstone-national-park-norris-geyser-basin.png?alt=media&token=6f9d0aeb-f1e7-4c60-a948-0666a7159f72",
     "aspectRatio": 0.59,
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "thingsToDoFromEditors": [
       "Walk both the Porcelain Basin and Back Basin boardwalk loops main parking",
       "Take photos of Steamboat Geyser, even if it is not erupting"
@@ -3184,7 +3506,7 @@
     "about": "Old Faithful erupts roughly every 60 to 90 minutes and has done so for over a century. Rangers can predict its eruption times with surprising accuracy thanks to long-term data.",
     "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-wy-yellowstone-national-park-old-faithful-geyser.png?alt=media&token=0cac4c9f-342f-4ce4-9cad-bc83fdb2c38e",
     "aspectRatio": 1.8,
-    "collectionRadius": "regular",
+    "collectionRadius": "regularplus",
     "thingsToDoFromEditors": [
       "Check eruption prediction times at visitor center before walking",
       "Arrive early for front row viewing"
@@ -3226,5 +3548,306 @@
     "geohash": "7zzzzzzz",
     "collectionRadius": "regular",
     "aspectRatio": 1
+  },
+  {
+    "id": "japan-hokkaido-otaru-canal",
+    "name": "Otaru Canal",
+    "latitude": 43.202165733848105,
+    "longitude": 141.00066316502,
+    "address": "小樽運河\n小樽市, 北海道, 日本 047-0031",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fjapan-hokkaido-otaru-canal.png?alt=media&token=2f509ed4038bac3017f42343be7ad8bd",
+    "collectionIds": [
+      "first-love-hokkaido-japan"
+    ],
+    "about": "Completed in 1923, this historic canal is lined with preserved brick warehouses and illuminated by gas lamps, creating a romantic evening atmosphere where Yae reunited with her father in First Love.",
+    "geohash": "xpsmb89w",
+    "collectionRadius": "regular",
+    "aspectRatio": 0.64,
+    "thingsToDoFromEditors": [
+      "Visit at dusk when gas lamps illuminate the canal",
+      "Walk along the canal promenade to see historic warehouses",
+      "Take photos from the bridge where the reunion scene was filmed"
+    ]
+  },
+  {
+    "id": "japan-hokkaido-sapporo-mt-moiwa-observatory",
+    "name": "Mt. Moiwa Observatory",
+    "latitude": 43.02222883631877,
+    "longitude": 141.32241993422062,
+    "address": "藻岩山展望台\n札幌市中央区, 北海道, 日本 064-0944",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fjapan-hokkaido-sapporo-mt-moiwa-observatory.png?alt=media&token=980c67e9cfec533f7f0f88d4f8d67209",
+    "collectionIds": [
+      "first-love-hokkaido-japan"
+    ],
+    "about": "Observatory atop Mt. Moiwa offering panoramic views of Sapporo and starry night skies. Yae and Harumichi visited here to stargaze together, symbolizing their shared dreams in First Love.",
+    "geohash": "xpskxzgy",
+    "collectionRadius": "regular",
+    "aspectRatio": 1.76,
+    "thingsToDoFromEditors": [
+      "Take the ropeway to the summit for city views",
+      "Visit at night for stargazing like in the drama",
+      "Check observatory hours before visiting"
+    ]
+  },
+  {
+    "id": "japan-hokkaido-sapporo-clock-tower",
+    "name": "Sapporo Clock Tower",
+    "latitude": 43.06257422606107,
+    "longitude": 141.35348931330145,
+    "address": "札幌市時計台\n札幌市中央区北1条西2丁目\n北海道, 日本 060-0001",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fjapan-hokkaido-sapporo-clock-tower.png?alt=media&token=07f4da1c84800da4d8836ef4b29c1242",
+    "collectionIds": [
+      "first-love-hokkaido-japan"
+    ],
+    "about": "Built in 1878, this white wooden clock tower is Sapporo's most iconic landmark and oldest building. The clock symbolizes the passage of time and enduring memories in First Love.",
+    "geohash": "xpssbx63",
+    "collectionRadius": "regular",
+    "aspectRatio": 1.02,
+    "thingsToDoFromEditors": [
+      "Visit the clock tower museum inside",
+      "Take photos of the historic Western-style architecture",
+      "Check the clock face showing the actual time"
+    ]
+  },
+  {
+    "id": "japan-hokkaido-asahikawa-station",
+    "name": "Asahikawa Station",
+    "latitude": 43.76368164178145,
+    "longitude": 142.35840248149012,
+    "address": "旭川駅前\n旭川市宮下通\n北海道, 日本 070-0030",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fjapan-hokkaido-asahikawa-station.png?alt=media&token=efa2129a4422f924b64da75dea46b1a8",
+    "collectionIds": [
+      "first-love-hokkaido-japan"
+    ],
+    "about": "Modern train station in Asahikawa where a pivotal snow scene unfolds in First Love. The winter setting captures a moment where feelings intersect and emotions collide between the characters.",
+    "geohash": "xpv0zqyj",
+    "collectionRadius": "regularplus",
+    "aspectRatio": 0.63,
+    "thingsToDoFromEditors": [
+      "Visit during winter to experience the snow scene atmosphere",
+      "Explore the station area and surrounding shops",
+      "Take photos of the station building and platform"
+    ]
+  },
+  {
+    "id": "japan-hokkaido-sapporo-odori-bus-center",
+    "name": "Odori Bus Center",
+    "latitude": 43.060642137848156,
+    "longitude": 141.35788263437044,
+    "address": "大通バスセンター\n札幌市中央区大通西1丁目\n北海道, 日本 060-0042",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fjapan-hokkaido-sapporo-odori-bus-center.png?alt=media&token=6f8a792aabd9cbeb5369f03cc13776e5",
+    "collectionIds": [
+      "first-love-hokkaido-japan"
+    ],
+    "about": "Central bus terminal in Sapporo's Odori district where Wataru delivers an impassioned encouragement to Yae, reflecting their evolving relationship and his support for her aspirations in First Love.",
+    "geohash": "xpssbwvw",
+    "collectionRadius": "regular",
+    "aspectRatio": 0.99,
+    "thingsToDoFromEditors": [
+      "Use as a transportation hub to explore Sapporo",
+      "Visit nearby Odori Park and shopping areas",
+      "Experience the central Sapporo location"
+    ]
+  },
+  {
+    "id": "ireland-dublin-trinity-college-old-library",
+    "name": "Old Library of Trinity College",
+    "latitude": 53.3439998008486,
+    "longitude": -6.256634250607597,
+    "address": "College Green\nDublin 2, Ireland",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fireland-dublin-trinity-college-old-library.png?alt=media&token=5a89ea68392e24c6b66ab71de0980598",
+    "collectionIds": [
+      "libraries-that-make-you-forget-time"
+    ],
+    "about": "Home to the famous 9th-century Book of Kells, the Long Room features a barrel-vaulted ceiling and houses 200,000 of the library's oldest books, with marble busts of great thinkers lining the central aisle.",
+    "geohash": "gc7x3wup",
+    "collectionRadius": "regular",
+    "aspectRatio": 1.66,
+    "thingsToDoFromEditors": [
+      "Purchase tickets online in advance to avoid queues",
+      "See the Book of Kells exhibition before entering the Long Room",
+      "Look for the busts of famous writers like Jonathan Swift and Oscar Wilde"
+    ]
+  },
+  {
+    "id": "us-ny-new-york-new-york-public-library-schwarzman",
+    "name": "Stephen A. Schwarzman Building at New York Public Library",
+    "latitude": 40.75317843067032,
+    "longitude": -73.98224484535496,
+    "address": "476 5th Ave\nNew York, NY USA 10018",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-ny-new-york-new-york-public-library-schwarzman.png?alt=media&token=3e1737b10adc27572aed65a24989730b",
+    "collectionIds": [
+      "libraries-that-make-you-forget-time",
+      "new-york-must-visits"
+    ],
+    "about": "Beaux Arts masterpiece built in 1911, the main branch houses 2.5 million volumes and features the iconic Rose Main Reading Room measuring 78 by 297 feet, roughly the size of two city blocks.",
+    "geohash": "dr5ru6zu",
+    "collectionRadius": "regular",
+    "aspectRatio": 0.64,
+    "thingsToDoFromEditors": [
+      "Visit the Rose Main Reading Room on the third floor",
+      "See the stone lions Patience and Fortitude at the entrance",
+      "Take a free guided tour to learn about the building's history"
+    ]
+  },
+  {
+    "id": "austria-admont-admont-monastery-library",
+    "name": "Admont Monastery Library",
+    "latitude": 47.57463210884801,
+    "longitude": 14.463034450974494,
+    "address": "Kirchplatz 1\n8911 Admont, Austria",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Faustria-admont-admont-monastery-library.png?alt=media&token=0ca478b3e16e804a92aa0e9e337e586d",
+    "collectionIds": [
+      "libraries-that-make-you-forget-time"
+    ],
+    "about": "Completed in 1776 by architect Josef Hueber, this is the world's largest monastic library hall, featuring seven ceiling frescoes by Bartolomeo Altomonte, ornate bookcases holding 70,000 volumes, and wood sculptures by Joseph Stammel.",
+    "geohash": "u26q9hew",
+    "collectionRadius": "regular",
+    "aspectRatio": 0.64,
+    "thingsToDoFromEditors": [
+      "Purchase admission ticket at the monastery museum entrance",
+      "Admire the seven ceiling frescoes depicting phases of human knowledge",
+      "Look for the wood sculptures by Joseph Stammel throughout the hall"
+    ]
+  },
+  {
+    "id": "brazil-rio-de-janeiro-royal-portuguese-cabinet-reading",
+    "name": "Royal Portuguese Cabinet of Reading",
+    "latitude": -22.905321482813797,
+    "longitude": -43.18224603128359,
+    "address": "R. Luís de Camões, 30\nCentro, Rio de Janeiro - RJ, Brazil 20051-020",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fbrazil-rio-de-janeiro-royal-portuguese-cabinet-reading.png?alt=media&token=98608c7f88b251f5f49c60110af3a488",
+    "collectionIds": [
+      "libraries-that-make-you-forget-time"
+    ],
+    "about": "Established in 1837 by Portuguese immigrants, this neo-Manueline library inspired by Lisbon's Jerónimos Monastery houses the largest collection of Portuguese literature outside Portugal in a stunning Gothic revival building.",
+    "geohash": "75cm9q5w",
+    "collectionRadius": "regular",
+    "aspectRatio": 1.58,
+    "thingsToDoFromEditors": [
+      "Visit during weekday hours when the library is open to the public",
+      "Admire the neo-Manueline architecture and stained glass ceiling",
+      "See rare Portuguese manuscripts and first editions"
+    ]
+  },
+  {
+    "id": "czech-republic-prague-strahov-monastery-library",
+    "name": "Library of Strahov Monastery",
+    "latitude": 50.086349497329174,
+    "longitude": 14.388702159207021,
+    "address": "Strahovské nádvoří 1/132\n118 00 Praha 1-Hradčany, Czech Republic",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fczech-republic-prague-strahov-monastery-library.png?alt=media&token=75820f4b0e59bb69d9fb6cf9ae8f4e97",
+    "collectionIds": [
+      "libraries-that-make-you-forget-time"
+    ],
+    "about": "Established between 1671 and 1674, the Baroque Theological Hall is one of the oldest and best-preserved historical libraries in the world, housing over 200,000 volumes with many texts printed between 1501 and 1800.",
+    "geohash": "u2fhzmvw",
+    "collectionRadius": "regularplus",
+    "aspectRatio": 0.6,
+    "thingsToDoFromEditors": [
+      "Purchase admission ticket for the monastery complex",
+      "Visit both the Philosophical Hall and Theological Hall",
+      "Admire the ceiling frescoes and historic globes on display"
+    ]
+  },
+  {
+    "id": "us-md-baltimore-george-peabody-library",
+    "name": "George Peabody Library",
+    "latitude": 39.29723701145467,
+    "longitude": -76.61499578605657,
+    "address": "17 E Mount Vernon Pl\nBaltimore, MD USA 21202",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fus-md-baltimore-george-peabody-library.png?alt=media&token=9cac5703c5463b3b28561ebd414a40d0",
+    "collectionIds": [
+      "libraries-that-make-you-forget-time"
+    ],
+    "about": "Founded in 1857 by philanthropist George Peabody, this five-story library features a stunning cast-iron balcony atrium with a glass ceiling, housing over 300,000 volumes in the heart of Baltimore.",
+    "geohash": "dqcx89fd",
+    "collectionRadius": "regular",
+    "aspectRatio": 1.82,
+    "thingsToDoFromEditors": [
+      "Visit during public hours for free access to the reading room",
+      "Look up at the five-story cast-iron balcony atrium",
+      "Attend special events and exhibitions held in the library"
+    ]
+  },
+  {
+    "id": "germany-stuttgart-stuttgart-city-library",
+    "name": "Stuttgart City Library",
+    "latitude": 48.78999923970346,
+    "longitude": 9.183078425931377,
+    "address": "Mailänder Platz 1\n70173 Stuttgart, Germany",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fgermany-stuttgart-stuttgart-city-library.png?alt=media&token=0a01dd45ceee713979dc348c74fe0f7c",
+    "collectionIds": [
+      "libraries-that-make-you-forget-time"
+    ],
+    "about": "Designed by Yi Architects as a perfect cube, this minimalist library combines tradition with innovation, inspired by the ancient Pantheon with a modern brutalist aesthetic and open reading spaces.",
+    "geohash": "u0wt8cyy",
+    "collectionRadius": "regular",
+    "aspectRatio": 1,
+    "thingsToDoFromEditors": [
+      "Explore the open floor plan and concrete colonnades",
+      "Visit the rooftop terrace for city views",
+      "See the central atrium inspired by the Pantheon design"
+    ]
+  },
+  {
+    "id": "south-korea-seoul-starfield-library",
+    "name": "Starfield Library",
+    "latitude": 37.510058499994656,
+    "longitude": 127.06014023531944,
+    "address": "513 Yeongdong-daero\nGangnam-gu, Seoul, South Korea",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fsouth-korea-seoul-starfield-library.png?alt=media&token=4ce4f787f959b00cebd513667e0c40f6",
+    "collectionIds": [
+      "libraries-that-make-you-forget-time"
+    ],
+    "about": "Located in the center of COEX Mall in Gangnam, this soaring subterranean library features 43-foot-tall curved bookcases housing 70,000 books, 600 magazines, and free e-books on iPads, all accessible to shoppers.",
+    "geohash": "wydm7k6r",
+    "collectionRadius": "regular",
+    "aspectRatio": 0.6,
+    "thingsToDoFromEditors": [
+      "Visit while shopping at COEX Mall in Gangnam",
+      "Take photos of the 43-foot-tall curved bookcases",
+      "Browse books and use the free iPads with e-books"
+    ]
+  },
+  {
+    "id": "switzerland-st-gallen-monastery-st-gall-library",
+    "name": "Library of the Monastery of St. Gall",
+    "latitude": 47.422762612220986,
+    "longitude": 9.377005754693927,
+    "address": "Klosterhof 6D\n9000 St. Gallen, Switzerland",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fswitzerland-st-gallen-monastery-st-gall-library.png?alt=media&token=c8ef2e5285a19eb3a54e3b0c2077b22a",
+    "collectionIds": [
+      "libraries-that-make-you-forget-time"
+    ],
+    "about": "Designed by Peter Thumb in Rococo style and designated a UNESCO World Heritage Site in 1983, this library was one of Europe's most important cultural centers, with a Greek inscription above the entrance meaning 'healing place for the soul'.",
+    "geohash": "u0qtv3h1",
+    "collectionRadius": "regularplus",
+    "aspectRatio": 0.63,
+    "thingsToDoFromEditors": [
+      "Purchase admission ticket for the abbey museum",
+      "Look for the Greek inscription above the library entrance",
+      "See the medieval manuscripts and historic book collections"
+    ]
+  },
+  {
+    "id": "mexico-mexico-city-biblioteca-vasconcelos",
+    "name": "Biblioteca Vasconcelos",
+    "latitude": 19.446485065049767,
+    "longitude": -99.1509679752314,
+    "address": "Eje 1 Nte. S/N, Buenavista\nCuauhtémoc, 06350 Ciudad de México, CDMX, Mexico",
+    "imageUrl": "https://firebasestorage.googleapis.com/v0/b/stampbook-app.firebasestorage.app/o/stamps%2Fmexico-mexico-city-biblioteca-vasconcelos.png?alt=media&token=932b42a36efe586404f550dc1c311e4f",
+    "collectionIds": [
+      "libraries-that-make-you-forget-time"
+    ],
+    "about": "Opened in 2006, this futuristic library features gravity-defying bookshelves arranged in a pixelated pattern, decorated with art and sculptures by Mexican artists, creating an otherworldly reading experience.",
+    "geohash": "9g3qxu07",
+    "collectionRadius": "regularplus",
+    "aspectRatio": 1.69,
+    "thingsToDoFromEditors": [
+      "Explore the futuristic gravity-defying bookshelf design",
+      "See the art installations and sculptures by Mexican artists",
+      "Visit the rooftop garden for views of Mexico City"
+    ]
   }
 ]

@@ -122,6 +122,13 @@ service cloud.firestore {
       allow read: if request.auth != null;
     }
     
+    // Blocked users: who this user has blocked
+    // Users can only manage their own blocked list
+    match /users/{userId}/blocked/{blockedId} {
+      allow read: if request.auth.uid == userId;
+      allow create, delete: if request.auth.uid == userId;
+    }
+    
     // Likes
     match /likes/{likeId} {
       allow read: if request.auth != null;

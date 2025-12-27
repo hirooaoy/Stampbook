@@ -1,6 +1,7 @@
 import SwiftUI
 import MapKit
 import Combine
+import FirebasePerformance
 
 // MARK: - Privacy-First Map View
 // ==========================================
@@ -116,7 +117,7 @@ struct MapView: View {
                 searchRegion: $searchRegion,
                 onRegionChange: nil  // No need for region change tracking
             )
-            .ignoresSafeArea()
+            .mapSafeArea()  // iOS 26: full screen, iOS 18: keep tab bar visible
             
             // Connection status banner at top
             VStack {
@@ -319,6 +320,7 @@ struct MapView: View {
             SuggestCollectionView()
                 .environmentObject(authManager)
         }
+        .mapTabBarVisibility()  // iOS 18: Ensure tab bar visible, iOS 26: original behavior
     }
     
     // MARK: - Simple Stamp Loading
@@ -328,6 +330,10 @@ struct MapView: View {
         guard !isLoadingStamps else { return }
         
         isLoadingStamps = true
+        
+        // Start performance trace
+        let trace = Performance.startTrace(name: "map_load")
+        defer { trace?.stop() }
         
         let stamps = await stampsManager.fetchAllStamps()
         
@@ -392,6 +398,9 @@ struct NativeMapView: UIViewRepresentable {
         config.emphasisStyle = .default
         config.pointOfInterestFilter = .excludingAll
         mapView.preferredConfiguration = config
+        
+        // Limit maximum zoom out to keep stamps visible (native prevention, no bounce)
+        mapView.cameraZoomRange = MKMapView.CameraZoomRange(maxCenterCoordinateDistance: 20_000_000)
         
         // Set initial region
         let initialRegion = MKCoordinateRegion(
@@ -766,24 +775,27 @@ struct NativeMapView: UIViewRepresentable {
             let isBookmarked = currentBookmarkedStampIds.contains(stampAnnotation.stamp.id)  // ← LIVE DATA FROM COORDINATOR
             let isWithinRange = stampAnnotation.isWithinRange
             
-            // PURE DEFAULT CLUSTERING: Let MapKit handle everything automatically
-            // No displayPriority manipulation - MapKit naturally creates more clusters as you zoom in
-            // This scales globally without defining regions
+            // AGGRESSIVE CLUSTERING: Use .required priority for maximum clustering
+            // This creates larger clusters that group more stamps together
             if isCollected {
                 // Collected stamps cluster together (green)
                 annotationView?.clusteringIdentifier = Self.collectedClusteringIdentifier
+                annotationView?.displayPriority = .required  // Aggressive clustering
                 annotationView?.zPriority = Self.greenZPriority  // Green above yellow
             } else if isBookmarked {
                 // Bookmarked stamps cluster together (yellow)
                 annotationView?.clusteringIdentifier = Self.bookmarkedClusteringIdentifier
+                annotationView?.displayPriority = .required  // Aggressive clustering
                 annotationView?.zPriority = Self.yellowZPriority  // Yellow above grey
             } else if !isWithinRange {
                 // Locked stamps cluster together (grey/white)
                 annotationView?.clusteringIdentifier = Self.lockedClusteringIdentifier
+                annotationView?.displayPriority = .required  // Aggressive clustering
                 annotationView?.zPriority = Self.greyZPriority  // Grey below yellow
             } else {
                 // Unlocked (blue) stamps don't cluster - highest priority, always on top
                 annotationView?.clusteringIdentifier = nil
+                annotationView?.displayPriority = .required  // Always visible
                 annotationView?.zPriority = Self.blueZPriority  // Blue always on top
             }
             

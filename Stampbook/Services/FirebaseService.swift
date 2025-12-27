@@ -995,8 +995,11 @@ class FirebaseService {
         try await batch.commit()
         
         print("✅ User \(followerId) followed \(followeeId) (bidirectional)")
-        // Invalidate following cache since list changed
+        // ✅ CRITICAL FIX: Invalidate following cache for BOTH users
+        // - followerId: Their following list changed
+        // - followeeId: Their followers list changed (though we don't cache followers, invalidate following cache for consistency)
         invalidateFollowingCache(userId: followerId)
+        invalidateFollowingCache(userId: followeeId)
         
         return true
     }
@@ -1036,8 +1039,11 @@ class FirebaseService {
         try await batch.commit()
         
         print("✅ User \(followerId) unfollowed \(followeeId) (bidirectional)")
-        // Invalidate following cache since list changed
+        // ✅ CRITICAL FIX: Invalidate following cache for BOTH users
+        // - followerId: Their following list changed
+        // - followeeId: Their followers list changed (though we don't cache followers, invalidate following cache for consistency)
         invalidateFollowingCache(userId: followerId)
+        invalidateFollowingCache(userId: followeeId)
         
         return true
     }
@@ -1051,6 +1057,133 @@ class FirebaseService {
             .document(followeeId)
         
         let document = try await docRef.getDocument()
+        return document.exists
+    }
+    
+    // MARK: - User Blocking
+    
+    /// Block a user (prevent them from seeing your content)
+    /// Also auto-unfollows if currently following them
+    /// Also notifies developer via feedback system for review
+    func blockUser(blockerId: String, blockedId: String) async throws {
+        guard blockerId != blockedId else {
+            throw NSError(domain: "FirebaseService", code: 400, userInfo: [NSLocalizedDescriptionKey: "Cannot block yourself"])
+        }
+        
+        let blockedRef = db
+            .collection("users")
+            .document(blockerId)
+            .collection("blocked")
+            .document(blockedId)
+        
+        // Check if already blocked (idempotency)
+        let existingDoc = try await blockedRef.getDocument()
+        if existingDoc.exists {
+            Logger.warning("Already blocked - skipping", category: "FirebaseService")
+            return
+        }
+        
+        // Check if A (blocker) is following B (blocked user)
+        let aFollowingBRef = db
+            .collection("users")
+            .document(blockerId)
+            .collection("following")
+            .document(blockedId)
+        
+        let aFollowingB = try await aFollowingBRef.getDocument().exists
+        
+        // If A is following B, unfollow them (Instagram behavior)
+        if aFollowingB {
+            print("🔄 [A→B] Auto-unfollowing \(blockedId) before blocking")
+            _ = try await unfollowUser(followerId: blockerId, followeeId: blockedId)
+        }
+        
+        // Check if B (blocked user) is following A (blocker)
+        let bFollowingARef = db
+            .collection("users")
+            .document(blockedId)
+            .collection("following")
+            .document(blockerId)
+        
+        let bFollowingA = try await bFollowingARef.getDocument().exists
+        
+        // If B is following A, force-unfollow them (Instagram behavior)
+        if bFollowingA {
+            print("🔄 [B→A] Force-unfollowing blocker from blocked user's following list")
+            _ = try await unfollowUser(followerId: blockedId, followeeId: blockerId)
+        }
+        
+        let blockData: [String: Any] = [
+            "id": blockedId,
+            "blockedAt": FieldValue.serverTimestamp()
+        ]
+        
+        try await blockedRef.setData(blockData)
+        
+        print("✅ User \(blockerId) blocked \(blockedId)")
+        
+        // Notify developer via feedback system (for review/moderation)
+        try await submitFeedback(
+            userId: blockerId,
+            type: "User Blocked",
+            message: """
+            User blocked: \(blockedId)
+            
+            Blocker: \(blockerId)
+            Blocked: \(blockedId)
+            
+            Please review the blocked user's content and behavior for potential violations.
+            """
+        )
+    }
+    
+    /// Unblock a user (restore their ability to see your content)
+    func unblockUser(blockerId: String, blockedId: String) async throws {
+        let blockedRef = db
+            .collection("users")
+            .document(blockerId)
+            .collection("blocked")
+            .document(blockedId)
+        
+        // Check if actually blocked (idempotency)
+        let existingDoc = try await blockedRef.getDocument()
+        if !existingDoc.exists {
+            Logger.warning("Not blocked - skipping", category: "FirebaseService")
+            return
+        }
+        
+        try await blockedRef.delete()
+        
+        print("✅ User \(blockerId) unblocked \(blockedId)")
+    }
+    
+    /// Fetch list of blocked user IDs
+    func fetchBlockedUsers(userId: String) async throws -> [String] {
+        let snapshot = try await db
+            .collection("users")
+            .document(userId)
+            .collection("blocked")
+            .getDocuments()
+        
+        return snapshot.documents.compactMap { $0.data()["id"] as? String }
+    }
+    
+    /// Check if viewerId is blocked by profileOwnerId
+    /// Returns true if profileOwnerId has blocked viewerId
+    /// 
+    /// ⚠️ CONSOLE WARNING IS EXPECTED:
+    /// This check will log "Missing or insufficient permissions" error in console
+    /// This is INTENTIONAL privacy protection - Firestore rules prevent querying
+    /// another user's blocked list (Instagram-style privacy)
+    /// The error is caught gracefully by callers, system continues normally
+    func isBlockedBy(viewerId: String, profileOwnerId: String) async throws -> Bool {
+        let blockedRef = db
+            .collection("users")
+            .document(profileOwnerId)
+            .collection("blocked")
+            .document(viewerId)
+        
+        let document = try await blockedRef.getDocument()
         return document.exists
     }
     

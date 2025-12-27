@@ -3,6 +3,7 @@ const {onDocumentWritten, onDocumentCreated, onDocumentDeleted} = require('fireb
 const {onSchedule} = require('firebase-functions/v2/scheduler');
 const admin = require('firebase-admin');
 const Filter = require('bad-words');
+const nodemailer = require('nodemailer');
 
 admin.initializeApp();
 
@@ -1107,6 +1108,112 @@ exports.cleanupOldNotifications = onSchedule('0 0 * * *', async (event) => {
   } catch (error) {
     console.error('❌ Error during notification cleanup:', error);
     throw error; // Re-throw so Cloud Functions logs the failure
+  }
+  
+  return null;
+});
+
+/**
+ * Cloud Function: Email notification for user blocking events
+ * 
+ * Triggers when a new feedback document is created with type "User Blocked"
+ * Sends immediate email notification to developer for ALL feedback submissions
+ * 
+ * App Store Requirement: Apps with UGC must respond to reports within 24 hours
+ */
+exports.notifyFeedback = onDocumentCreated('feedback/{feedbackId}', async (event) => {
+  const feedback = event.data.data();
+  const feedbackType = feedback.type || 'Unknown';
+  
+  console.log(`📬 New feedback received: ${feedbackType}`);
+  
+  // Determine urgency and emoji based on feedback type
+  const urgentTypes = ['User Blocked', 'User Report', 'Comment Report', 'Post Report', 'Photo Report', 'Account Deletion Request'];
+  const isUrgent = urgentTypes.includes(feedbackType);
+  
+  const emojiMap = {
+    'User Blocked': '🚫',
+    'User Report': '⚠️',
+    'Comment Report': '💬',
+    'Post Report': '📮',
+    'Photo Report': '📷',
+    'Problem Report': '🐛',
+    'Feedback': '💭',
+    'Stamp Edit Suggestion': '🏷️',
+    'Collection Edit Suggestion': '📚',
+    'Account Deletion Request': '🗑️',
+    'Data Download Request': '📥',
+    'User Unblocked': '✅'
+  };
+  const emoji = emojiMap[feedbackType] || '📋';
+  
+  try {
+    // Configure email transporter
+    // TODO: Move to environment variables for production
+    const gmailEmail = 'watagumo.studio@gmail.com';
+    const gmailPassword = 'qpbw erhy ijcf inwl';
+    
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: gmailEmail,
+        pass: gmailPassword
+      }
+    });
+    
+    // Build email subject
+    const subject = isUrgent 
+      ? `🚨 [STAMPBOOK] ${feedbackType} - Review Required (24h)`
+      : `${emoji} [STAMPBOOK] New ${feedbackType}`;
+    
+    // Build email body
+    const urgencyNotice = isUrgent 
+      ? '<p style="color: red; font-weight: bold;">⏰ App Store Compliance: You must review this within 24 hours.</p>'
+      : '';
+    
+    const mailOptions = {
+      from: gmailEmail,
+      to: gmailEmail, // Send to yourself
+      subject: subject,
+      html: `
+        <h2>${emoji} ${feedbackType}</h2>
+        
+        ${urgencyNotice}
+        
+        <hr>
+        
+        <h3>📋 Details</h3>
+        <ul>
+          <li><strong>Type:</strong> ${feedbackType}</li>
+          <li><strong>From:</strong> ${feedback.username || 'Anonymous'} (${feedback.userId || 'N/A'})</li>
+          <li><strong>Time:</strong> ${new Date().toISOString()}</li>
+          <li><strong>Device:</strong> ${feedback.deviceModel || 'Unknown'} (iOS ${feedback.osVersion || 'Unknown'})</li>
+          <li><strong>App Version:</strong> ${feedback.appVersion || 'Unknown'}</li>
+        </ul>
+        
+        <h3>💬 Message</h3>
+        <pre style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; white-space: pre-wrap; word-wrap: break-word;">${feedback.message}</pre>
+        
+        <h3>🔗 Quick Actions</h3>
+        <ul>
+          <li><a href="https://console.firebase.google.com/project/stampbook-app/firestore/data/~2Ffeedback~2F${event.params.feedbackId}">View Feedback Document in Firebase</a></li>
+          ${feedback.userId && feedback.userId !== 'anonymous' ? `<li><a href="https://console.firebase.google.com/project/stampbook-app/firestore/data/~2Fusers~2F${feedback.userId}">View User Profile in Firebase</a></li>` : ''}
+        </ul>
+        
+        <hr>
+        
+        <p><em>This is an automated notification from Stampbook Cloud Functions.</em></p>
+      `
+    };
+    
+    // Send email
+    await transporter.sendMail(mailOptions);
+    console.log(`✅ Email notification sent successfully for ${feedbackType}`);
+    
+  } catch (error) {
+    console.error('❌ Failed to send email notification:', error);
+    // Don't throw - we don't want the Cloud Function to fail if email fails
+    // The feedback document is still saved in Firestore for manual review
   }
   
   return null;

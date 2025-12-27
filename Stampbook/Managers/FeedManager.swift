@@ -156,9 +156,9 @@ class FeedManager: ObservableObject {
     /// T+500ms: Fresh data replaces stale cache
     /// 
     /// User perceives: <100ms "instant" load
-    func loadFeed(userId: String, stampsManager: StampsManager, forceRefresh: Bool = false) async {
+    func loadFeed(userId: String, stampsManager: StampsManager, forceRefresh: Bool = false, blockedUserIds: Set<String> = []) async {
         #if DEBUG
-        print("🔍 [DEBUG] FeedManager.loadFeed called (forceRefresh: \(forceRefresh), hasPosts: \(!feedPosts.isEmpty))")
+        print("🔍 [DEBUG] FeedManager.loadFeed called (forceRefresh: \(forceRefresh), hasPosts: \(!feedPosts.isEmpty), blockedUsers: \(blockedUserIds.count))")
         #endif
         
         // STEP 1: Check if memory cache is fresh
@@ -191,13 +191,13 @@ class FeedManager: ObservableObject {
         if !forceRefresh && hadMemoryCachedData {
             // Refresh in background
             Task {
-                await fetchFeedAndPrefetch(userId: userId, stampsManager: stampsManager, isInitialLoad: false)
+                await fetchFeedAndPrefetch(userId: userId, stampsManager: stampsManager, isInitialLoad: false, blockedUserIds: blockedUserIds)
             }
             return
         }
         
         // First load or force refresh
-        await fetchFeedAndPrefetch(userId: userId, stampsManager: stampsManager, isInitialLoad: true)
+        await fetchFeedAndPrefetch(userId: userId, stampsManager: stampsManager, isInitialLoad: true, blockedUserIds: blockedUserIds)
     }
     
     /// Load "Only Yours" feed (all your stamps in chronological order)
@@ -443,7 +443,7 @@ class FeedManager: ObservableObject {
     }
     
     /// Load more posts (pagination)
-    func loadMorePosts(userId: String, stampsManager: StampsManager) async {
+    func loadMorePosts(userId: String, stampsManager: StampsManager, blockedUserIds: Set<String> = []) async {
         guard !isLoadingMore && hasMorePosts else { return }
         
         #if DEBUG
@@ -514,9 +514,18 @@ class FeedManager: ObservableObject {
                 lastFetchedPostDate = lastPost.actualDate
             }
             
+            // Filter out blocked users
+            let unblockedPosts = newPosts.filter { !blockedUserIds.contains($0.userId) }
+            
             // Filter out any duplicates before appending (safety check)
             let existingIds = Set(feedPosts.map { $0.id })
-            let uniqueNewPosts = newPosts.filter { !existingIds.contains($0.id) }
+            let uniqueNewPosts = unblockedPosts.filter { !existingIds.contains($0.id) }
+            
+            #if DEBUG
+            if uniqueNewPosts.count < newPosts.count {
+                print("🚫 [FeedManager] Filtered out \(newPosts.count - uniqueNewPosts.count) posts (blocked or duplicate)")
+            }
+            #endif
             
             // Append to existing posts
             await MainActor.run {
@@ -553,7 +562,7 @@ class FeedManager: ObservableObject {
     /// - Create feed/{userId}/posts/{postId} collection via Cloud Function
     /// - Reduces reads from 150 to 20 per feed load (87% savings)
     /// - ACTION TRIGGER: Feed load time > 3s consistently OR 1000+ users
-    private func fetchFeedAndPrefetch(userId: String, stampsManager: StampsManager, isInitialLoad: Bool) async {
+    private func fetchFeedAndPrefetch(userId: String, stampsManager: StampsManager, isInitialLoad: Bool, blockedUserIds: Set<String> = []) async {
         #if DEBUG
         let overallStart = CFAbsoluteTimeGetCurrent()
         print("⏱️ [FeedManager] Starting feed fetch...")
@@ -646,24 +655,33 @@ class FeedManager: ObservableObject {
                 lastFetchedPostDate = lastPost.actualDate
             }
             
+            // Filter out blocked users
+            let filteredPosts = posts.filter { !blockedUserIds.contains($0.userId) }
+            
+            #if DEBUG
+            if filteredPosts.count < posts.count {
+                print("🚫 [FeedManager] Filtered out \(posts.count - filteredPosts.count) posts from blocked users")
+            }
+            #endif
+            
             // Update UI immediately
             await MainActor.run {
-                self.feedPosts = posts
+                self.feedPosts = filteredPosts
                 self.lastRefreshTime = Date()
                 self.isDataFresh = true // Mark as fresh Firebase data
                 self.isLoading = false
                 self.isLoadingMore = false
                 // Only set hasMorePosts if we got a full page (exactly 20 = might be more)
-                self.hasMorePosts = posts.count == 20
+                self.hasMorePosts = filteredPosts.count == 20
             }
             
             #if DEBUG
-            print("⏱️ [FeedManager] UI updated with \(posts.count) posts")
+            print("⏱️ [FeedManager] UI updated with \(filteredPosts.count) posts")
             #endif
             
             // Prefetch images in background (non-blocking)
             Task {
-                await prefetchFeedImages(posts: posts)
+                await prefetchFeedImages(posts: filteredPosts)
             }
             
             // Save to disk for next cold start
@@ -760,6 +778,7 @@ class FeedManager: ObservableObject {
     
     /// Update like count for a specific post (called after like/unlike)
     func updatePostLikeCount(postId: String, newCount: Int) {
+        print("🔄 [FeedManager] updatePostLikeCount called for post \(postId) with count \(newCount)")
         // Update in "All" feed
         if let index = feedPosts.firstIndex(where: { $0.id == postId }) {
             let updatedPost = feedPosts[index]
@@ -784,6 +803,8 @@ class FeedManager: ObservableObject {
                 commentCount: updatedPost.commentCount
             )
             print("✅ [FeedManager] Updated like count for post \(postId) in 'All' feed: \(newCount)")
+        } else {
+            print("⚠️ [FeedManager] Post \(postId) not found in 'All' feed (feedPosts.count: \(feedPosts.count))")
         }
         
         // Update in "Only Yours" feed
@@ -810,6 +831,8 @@ class FeedManager: ObservableObject {
                 commentCount: updatedPost.commentCount
             )
             print("✅ [FeedManager] Updated like count for post \(postId) in 'Only Yours' feed: \(newCount)")
+        } else {
+            print("⚠️ [FeedManager] Post \(postId) not found in 'Only Yours' feed (myPosts.count: \(myPosts.count))")
         }
     }
     

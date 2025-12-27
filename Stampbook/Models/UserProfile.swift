@@ -16,6 +16,7 @@ struct UserProfile: Codable, Identifiable, Equatable, Sendable {
     var lastActiveAt: Date
     var usernameLastChanged: Date? // Tracks when username was last changed - enforces 14-day cooldown between changes
     var hasSeenOnboarding: Bool // Tracks if user has seen the profile setup sheet (for first-time username customization)
+    var acceptedTermsAt: Date? // Tracks when user accepted Terms of Service - required for App Store compliance
     
     // TODO: Future enhancement for preventing username squatting
     // var previousUsername: String? // Stores previous username - reserved for 14 days to prevent squatting/impersonation
@@ -34,9 +35,10 @@ struct UserProfile: Codable, Identifiable, Equatable, Sendable {
         case lastActiveAt
         case usernameLastChanged
         case hasSeenOnboarding
+        case acceptedTermsAt
     }
     
-    init(id: String, username: String, displayName: String, bio: String = "", avatarUrl: String? = nil, totalStamps: Int = 0, uniqueCountriesVisited: Int = 0, followerCount: Int = 0, followingCount: Int = 0, createdAt: Date = Date(), lastActiveAt: Date = Date(), usernameLastChanged: Date? = nil, hasSeenOnboarding: Bool = false) {
+    init(id: String, username: String, displayName: String, bio: String = "", avatarUrl: String? = nil, totalStamps: Int = 0, uniqueCountriesVisited: Int = 0, followerCount: Int = 0, followingCount: Int = 0, createdAt: Date = Date(), lastActiveAt: Date = Date(), usernameLastChanged: Date? = nil, hasSeenOnboarding: Bool = false, acceptedTermsAt: Date? = nil) {
         self.id = id
         self.username = username
         self.displayName = displayName
@@ -50,6 +52,7 @@ struct UserProfile: Codable, Identifiable, Equatable, Sendable {
         self.lastActiveAt = lastActiveAt
         self.usernameLastChanged = usernameLastChanged
         self.hasSeenOnboarding = hasSeenOnboarding
+        self.acceptedTermsAt = acceptedTermsAt
     }
     
     init(from decoder: Decoder) throws {
@@ -99,6 +102,15 @@ struct UserProfile: Codable, Identifiable, Equatable, Sendable {
         // Handle hasSeenOnboarding (optional field for backward compatibility)
         // For existing users without this field, treat as true (they already onboarded)
         hasSeenOnboarding = try container.decodeIfPresent(Bool.self, forKey: .hasSeenOnboarding) ?? true
+        
+        // Handle acceptedTermsAt (optional field for backward compatibility)
+        // For existing users without this field, assume they accepted terms on account creation
+        if let timestamp = try? container.decode(Timestamp.self, forKey: .acceptedTermsAt) {
+            acceptedTermsAt = timestamp.dateValue()
+        } else {
+            // Legacy accounts: assume they accepted terms at account creation
+            acceptedTermsAt = createdAt
+        }
     }
     
     func encode(to encoder: Encoder) throws {
@@ -118,6 +130,9 @@ struct UserProfile: Codable, Identifiable, Equatable, Sendable {
             try container.encode(Timestamp(date: usernameLastChanged), forKey: .usernameLastChanged)
         }
         try container.encode(hasSeenOnboarding, forKey: .hasSeenOnboarding)
+        if let acceptedTermsAt = acceptedTermsAt {
+            try container.encode(Timestamp(date: acceptedTermsAt), forKey: .acceptedTermsAt)
+        }
     }
 }
 

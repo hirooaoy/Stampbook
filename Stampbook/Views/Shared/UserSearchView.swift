@@ -167,15 +167,30 @@ struct UserSearchView: View {
             do {
                 let results = try await firebaseService.searchUsers(query: searchText, currentUserId: authManager.userId, limit: 50)
                 
+                // Filter out users who have blocked you (Instagram behavior)
+                // But keep users YOU blocked (so you can unblock them)
+                var filteredResults: [UserProfile] = []
+                if let currentUserId = authManager.userId {
+                    for user in results {
+                        // Check if this user has blocked you
+                        let isBlockedByThem = try? await firebaseService.isBlockedBy(viewerId: currentUserId, profileOwnerId: user.id)
+                        if isBlockedByThem != true {
+                            filteredResults.append(user)
+                        }
+                    }
+                } else {
+                    filteredResults = results
+                }
+                
                 await MainActor.run {
-                    self.searchResults = results
+                    self.searchResults = filteredResults
                     self.hasSearched = true
                     self.isSearching = false
                 }
                 
                 // Batch check follow statuses for all search results
                 if let currentUserId = authManager.userId {
-                    let userIds = results.map { $0.id }
+                    let userIds = filteredResults.map { $0.id }
                     await followManager.checkFollowStatuses(currentUserId: currentUserId, targetUserIds: userIds)
                 }
             } catch {
@@ -195,7 +210,9 @@ struct UserSearchRow: View {
     @EnvironmentObject var followManager: FollowManager
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var profileManager: ProfileManager // BEST PRACTICE: Pass to keep counts synced
+    @Environment(\.blockedUserIds) private var blockedUserIds
     @State private var showUnfollowConfirmation = false
+    @State private var showBlockedAlert = false
     
     var isCurrentUser: Bool {
         authManager.userId == user.id
@@ -203,6 +220,10 @@ struct UserSearchRow: View {
     
     var isFollowing: Bool {
         followManager.isFollowing[user.id] ?? false
+    }
+    
+    var isBlocked: Bool {
+        blockedUserIds.contains(user.id)
     }
     
     var body: some View {
@@ -236,8 +257,13 @@ struct UserSearchRow: View {
                         // Show confirmation for unfollow
                         showUnfollowConfirmation = true
                     } else {
-                        // Follow immediately without confirmation
-                        followManager.toggleFollow(currentUserId: currentUserId, targetUserId: user.id, profileManager: profileManager)
+                        // Check if user is blocked before allowing follow
+                        if isBlocked {
+                            showBlockedAlert = true
+                        } else {
+                            // Follow immediately without confirmation
+                            followManager.toggleFollow(currentUserId: currentUserId, targetUserId: user.id, profileManager: profileManager)
+                        }
                     }
                 }) {
                     Text(isFollowing ? "Following" : "Follow")
@@ -257,6 +283,11 @@ struct UserSearchRow: View {
                     }
                 } message: {
                     Text("Are you sure you want to unfollow @\(user.username)?")
+                }
+                .alert("Unblock to follow", isPresented: $showBlockedAlert) {
+                    Button("OK", role: .cancel) {}
+                } message: {
+                    Text("You've blocked @\(user.username). Unblock them from their profile to follow.")
                 }
             }
         }
