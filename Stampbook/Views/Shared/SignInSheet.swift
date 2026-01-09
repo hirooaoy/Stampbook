@@ -1,12 +1,12 @@
 import SwiftUI
 
-/// Reusable sign-in bottom sheet with invite code gate
+/// Reusable sign-in bottom sheet (now simplified - no invite code)
 /// Shows when user needs to authenticate to access a feature
 struct SignInSheet: View {
     @EnvironmentObject var authManager: AuthManager
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.dismiss) var dismiss
-    @State private var showInviteCodeSheet = false
+    @State private var showDirectSignInSheet = false
     
     let title: String
     let message: String
@@ -49,7 +49,7 @@ struct SignInSheet: View {
             
             // Get Started button
             Button(action: {
-                showInviteCodeSheet = true
+                showDirectSignInSheet = true
             }) {
                 Text("Get Started")
                     .font(.headline)
@@ -73,9 +73,11 @@ struct SignInSheet: View {
         }
         .presentationDetents([.height(400)])
         .presentationDragIndicator(.visible)
-        .sheet(isPresented: $showInviteCodeSheet) {
-            InviteCodeSheet(isAuthenticated: $authManager.isSignedIn)
-                .environmentObject(authManager)
+        .sheet(isPresented: $showDirectSignInSheet) {
+            NavigationStack {
+                DirectSignInSheet(isAuthenticated: $authManager.isSignedIn)
+                    .environmentObject(authManager)
+            }
         }
         .onChange(of: authManager.isSignedIn) { oldValue, newValue in
             // Dismiss this sheet when user successfully signs in

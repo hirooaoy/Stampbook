@@ -265,6 +265,7 @@
 				2BB670D32EA2C2020089DBAB /* Frameworks */,
 				2BB670D42EA2C2020089DBAB /* Resources */,
 				2B5C51AB2ECFBBC0005A2B10 /* Embed Foundation Extensions */,
+				2B00C40B2F00740100FAC3B2 /* ShellScript */,
 			);
 			buildRules = (
 			);
@@ -412,6 +413,27 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		2B00C40B2F00740100FAC3B2 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 8;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+			shellPath = /bin/sh;
+			shellScript = "\"${BUILD_DIR%/Build/*}/SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/run\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		2B5C51932ECFBBBE005A2B10 /* Sources */ = {
@@ -670,6 +692,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 28VYBXMX82;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Stampbook/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Stampbook;
@@ -712,6 +735,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 28VYBXMX82;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Stampbook/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Stampbook;

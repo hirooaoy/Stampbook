@@ -26,7 +26,7 @@ struct StampDetailView: View {
     @State private var showSuggestEdit = false
     @State private var showAddressOptions = false
     @State private var showCopyConfirmation = false
-    @State private var showInviteCodeSheet = false
+    @State private var showDirectSignInSheet = false
     @State private var isAnimatingCollection = false // Track if we're in collection animation
     @State private var displayStats: StampStatistics? = nil // Stats to display (frozen during animation)
     @State private var viewingUserCollectedStamp: CollectedStamp? = nil // When viewing someone else's profile, their collected stamp data
@@ -715,7 +715,7 @@ struct StampDetailView: View {
                             .foregroundColor(.primary)
                         
                         Button(action: {
-                            showInviteCodeSheet = true
+                            showDirectSignInSheet = true
                         }) {
                             Text("Get Started")
                                 .font(.headline)
@@ -964,9 +964,11 @@ struct StampDetailView: View {
             SuggestEditView(stampId: stamp.id, stampName: stamp.name)
                 .environmentObject(authManager)
         }
-        .sheet(isPresented: $showInviteCodeSheet) {
-            InviteCodeSheet(isAuthenticated: $authManager.isSignedIn)
-                .environmentObject(authManager)
+        .sheet(isPresented: $showDirectSignInSheet) {
+            NavigationStack {
+                DirectSignInSheet(isAuthenticated: $authManager.isSignedIn)
+                    .environmentObject(authManager)
+            }
         }
         .sheet(isPresented: $showAddressOptions) {
             VStack(spacing: 0) {

@@ -92,7 +92,7 @@ struct ProfileEditView: View {
                             .foregroundColor(.secondary)
                         TextField("username", text: $username)
                             .autocorrectionDisabled()
-                            .autocapitalization(.none)
+                            .textInputAutocapitalization(.never)
                             .onChange(of: username) { oldValue, newValue in
                                 // Real-time sanitization: enforce lowercase, alphanumeric + underscore only
                                 let filtered = newValue.lowercased()

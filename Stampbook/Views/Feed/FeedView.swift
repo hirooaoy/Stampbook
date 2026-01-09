@@ -48,7 +48,7 @@ struct FeedView: View {
     @State private var showForLocalBusiness = false
     @State private var showForCreators = false
     @State private var showAppStoreUrlCopied = false // Show confirmation when App Store URL is copied
-    @State private var showInviteCodeSheet = false // Show invite code sheet for new users
+    @State private var showDirectSignInSheet = false // Show direct sign in sheet (no invite code)
     @State private var showLikes = false // Show likes sheet for a post
     @State private var selectedPostForLikes: (postId: String, ownerId: String)? = nil // Track which post's likes to show
     
@@ -327,17 +327,17 @@ struct FeedView: View {
                                         .padding(.horizontal, 32)
                                 }
                                 
-                                // Get Started button (replaced Sign in with Apple)
+                                // Get Started button
                                 Button(action: {
-                                    showInviteCodeSheet = true
+                                    showDirectSignInSheet = true
                                 }) {
                                     Text("Get Started")
                                         .font(.headline)
                                         .foregroundColor(.white)
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 50)
+                                        .frame(maxWidth: .infinity)
+                                        .frame(height: 50)
                                         .background(Color.blue)
-                                    .cornerRadius(8)
+                                        .cornerRadius(12)
                                 }
                                 .padding(.horizontal, 32)
                                 .padding(.top, 8)
@@ -443,9 +443,11 @@ struct FeedView: View {
         .sheet(isPresented: $showForCreators) {
             ForCreatorsView()
         }
-        .sheet(isPresented: $showInviteCodeSheet) {
-            InviteCodeSheet(isAuthenticated: $authManager.isSignedIn)
-                .environmentObject(authManager)
+        .sheet(isPresented: $showDirectSignInSheet) {
+            NavigationStack {
+                DirectSignInSheet(isAuthenticated: $authManager.isSignedIn)
+                    .environmentObject(authManager)
+            }
         }
         .sheet(isPresented: $showLikes) {
             if let selectedPost = selectedPostForLikes {

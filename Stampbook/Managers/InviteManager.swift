@@ -91,32 +91,75 @@ class InviteManager: ObservableObject {
     
     // MARK: - Account Creation
     
-    /// Creates user account with invite code
-    /// This performs atomic transaction: create user profile + mark code as used
+    /// Creates user account with optional invite code
+    /// This performs atomic transaction: create user profile + mark code as used (if code provided)
+    /// 
+    /// - Parameters:
+    ///   - userId: Firebase user ID
+    ///   - username: Auto-generated username
+    ///   - code: Optional invite code (nil = open registration)
     /// 
     /// NOTE: Auto-generated usernames (user_abc12345) are NOT validated via Cloud Functions
     /// because they are safe by design (no profanity, not reserved, unique by Firebase UID).
     /// Validation only happens when users manually change their username in profile settings.
-    func createAccountWithInviteCode(userId: String, username: String, code: String) async throws {
+    func createAccountWithInviteCode(userId: String, username: String, code: String?) async throws {
         print("✅ [InviteManager] Creating account with auto-generated username: \(username)")
         
-        let codeString = code.uppercased().trimmingCharacters(in: .whitespaces)
-        let codeRef = db.collection("invite_codes").document(codeString)
+        let codeString = code?.uppercased().trimmingCharacters(in: .whitespaces)
+        let codeRef = codeString.map { db.collection("invite_codes").document($0) }
         let userRef = db.collection("users").document(userId)
         
         do {
             _ = try await db.runTransaction { transaction, errorPointer in
-                // Read the code document
-                let codeDoc: DocumentSnapshot
-                do {
-                    codeDoc = try transaction.getDocument(codeRef)
-                } catch {
-                    errorPointer?.pointee = NSError(
-                        domain: "InviteError",
-                        code: 1,
-                        userInfo: [NSLocalizedDescriptionKey: "Failed to read invite code"]
-                    )
-                    return nil
+                // Variables for invite code tracking (if code provided)
+                var createdBy: String = "direct_signup"  // Default for open registration
+                var usedByArray: [String] = []
+                var usedCount = 0
+                var maxUses = 0
+                
+                // Read the code document (if code provided)
+                if let codeRef = codeRef, let _ = codeString {
+                    let codeDoc: DocumentSnapshot
+                    do {
+                        codeDoc = try transaction.getDocument(codeRef)
+                    } catch {
+                        errorPointer?.pointee = NSError(
+                            domain: "InviteError",
+                            code: 1,
+                            userInfo: [NSLocalizedDescriptionKey: "Failed to read invite code"]
+                        )
+                        return nil
+                    }
+                    
+                    // Validate the code (race condition protection)
+                    guard codeDoc.exists,
+                          let data = codeDoc.data(),
+                          let status = data["status"] as? String,
+                          let used = data["usedCount"] as? Int,
+                          let max = data["maxUses"] as? Int,
+                          let usedBy = data["usedBy"] as? [String] else {
+                        errorPointer?.pointee = NSError(
+                            domain: "InviteError",
+                            code: 2,
+                            userInfo: [NSLocalizedDescriptionKey: "Invalid invite code"]
+                        )
+                        return nil
+                    }
+                    
+                    // Check if code is still valid
+                    guard status == "active", used < max else {
+                        errorPointer?.pointee = NSError(
+                            domain: "InviteError",
+                            code: 3,
+                            userInfo: [NSLocalizedDescriptionKey: "Code no longer valid"]
+                        )
+                        return nil
+                    }
+                    
+                    createdBy = data["createdBy"] as? String ?? "admin"
+                    usedByArray = usedBy
+                    usedCount = used
+                    maxUses = max
                 }
                 
                 // Check if user already exists (SAFETY CHECK)
@@ -138,31 +181,6 @@ class InviteManager: ObservableObject {
                         domain: "InviteError",
                         code: 5,
                         userInfo: [NSLocalizedDescriptionKey: "Account already exists"]
-                    )
-                    return nil
-                }
-                
-                // Validate the code again (race condition protection)
-                guard codeDoc.exists,
-                      let data = codeDoc.data(),
-                      let status = data["status"] as? String,
-                      let usedCount = data["usedCount"] as? Int,
-                      let maxUses = data["maxUses"] as? Int,
-                      var usedBy = data["usedBy"] as? [String] else {
-                    errorPointer?.pointee = NSError(
-                        domain: "InviteError",
-                        code: 2,
-                        userInfo: [NSLocalizedDescriptionKey: "Invalid invite code"]
-                    )
-                    return nil
-                }
-                
-                // Check if code is still valid
-                guard status == "active", usedCount < maxUses else {
-                    errorPointer?.pointee = NSError(
-                        domain: "InviteError",
-                        code: 3,
-                        userInfo: [NSLocalizedDescriptionKey: "Code no longer valid"]
                     )
                     return nil
                 }
@@ -195,15 +213,13 @@ class InviteManager: ObservableObject {
                 }
                 
                 // Create user profile with personal code
-                let createdBy = data["createdBy"] as? String ?? "admin"
                 // Capitalize first letter of username for display name (e.g. "dylan" -> "Dylan")
                 let displayName = username.prefix(1).uppercased() + username.dropFirst()
-                transaction.setData([
+                
+                var userData: [String: Any] = [
                     "id": userId,  // Required field for UserProfile decoder
                     "username": username,
                     "displayName": displayName,  // Capitalized first letter of username
-                    "inviteCodeUsed": codeString,
-                    "invitedBy": createdBy,
                     "personalInviteCode": personalCode,  // Their personal code to share
                     "createdAt": FieldValue.serverTimestamp(),
                     "lastActiveAt": FieldValue.serverTimestamp(),
@@ -215,7 +231,15 @@ class InviteManager: ObservableObject {
                     "followingCount": 0,
                     "hasSeenOnboarding": false,  // Show profile setup sheet to new users
                     "acceptedTermsAt": FieldValue.serverTimestamp()  // Track terms acceptance for App Store compliance
-                ], forDocument: userRef)
+                ]
+                
+                // Add invite code fields if code was provided
+                if let codeString = codeString {
+                    userData["inviteCodeUsed"] = codeString
+                    userData["invitedBy"] = createdBy
+                }
+                
+                transaction.setData(userData, forDocument: userRef)
                 
                 // Create personal invite code document
                 let personalCodeRef = self.db.collection("invite_codes").document(personalCode)
@@ -232,21 +256,27 @@ class InviteManager: ObservableObject {
                     "status": "active"
                 ], forDocument: personalCodeRef)
                 
-                // Update code usage
-                usedBy.append(userId)
-                let newUsedCount = usedCount + 1
-                let newStatus = (newUsedCount >= maxUses) ? "used" : "active"
-                
-                transaction.updateData([
-                    "usedCount": newUsedCount,
-                    "usedBy": usedBy,
-                    "status": newStatus
-                ], forDocument: codeRef)
+                // Update code usage (if code was provided)
+                if let codeRef = codeRef, codeString != nil {
+                    usedByArray.append(userId)
+                    let newUsedCount = usedCount + 1
+                    let newStatus = (newUsedCount >= maxUses) ? "used" : "active"
+                    
+                    transaction.updateData([
+                        "usedCount": newUsedCount,
+                        "usedBy": usedByArray,
+                        "status": newStatus
+                    ], forDocument: codeRef)
+                }
                 
                 return nil
             }
             
-            Logger.success("Account created successfully with invite code: \(codeString)", category: "InviteManager")
+            if let codeString = codeString {
+                Logger.success("Account created successfully with invite code: \(codeString)", category: "InviteManager")
+            } else {
+                Logger.success("Account created successfully (direct signup, no invite code)", category: "InviteManager")
+            }
             
         } catch {
             Logger.error("Transaction failed", error: error, category: "InviteManager")

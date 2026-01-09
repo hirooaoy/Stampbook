@@ -29,7 +29,8 @@ struct StampsView: View {
     @State private var showAppStoreUrlCopied = false // Show confirmation when App Store URL is copied
     @State private var navigationPath = NavigationPath() // Track navigation stack
     @State private var welcomeStamp: Stamp? // Store the fetched welcome stamp (nil = sheet closed, non-nil = sheet open)
-    @State private var showInviteCodeSheet = false // Show invite code sheet for signed-out users
+    @State private var showInviteCodeSheet = false // Deprecated - kept for old invite code flow (if needed)
+    @State private var showDirectSignInSheet = false // Show direct sign in sheet (no invite code)
     @State private var showPersonalInviteSheet = false // Show personal invite sheet for signed-in users
     // @State private var hasAttemptedRankLoad = false // TODO: POST-MVP - Rank loading disabled
     
@@ -100,18 +101,18 @@ struct StampsView: View {
     // MARK: - Signed-in Menu Buttons
     private var signedInMenuButtons: some View {
         HStack(spacing: 8) {
-            // Invite Friends Button - Opens PersonalInviteSheet
-            Button(action: {
-                showPersonalInviteSheet = true
-            }) {
-                Image(systemName: "square.and.arrow.up")
-                    .font(.system(size: 24))
-                    .foregroundColor(.primary)
-                    .frame(width: 44, height: 44)  // Larger tap target
-                    .contentShape(Rectangle())     // Make entire frame tappable
-            }
-            .disabled(profileManager.currentUserProfile == nil)
-            .accessibilityLabel("Invite friends")
+            // HIDDEN FOR MVP: Invite Friends Button (backend still generates codes)
+            // Button(action: {
+            //     showPersonalInviteSheet = true
+            // }) {
+            //     Image(systemName: "square.and.arrow.up")
+            //         .font(.system(size: 24))
+            //         .foregroundColor(.primary)
+            //         .frame(width: 44, height: 44)  // Larger tap target
+            //         .contentShape(Rectangle())     // Make entire frame tappable
+            // }
+            // .disabled(profileManager.currentUserProfile == nil)
+            // .accessibilityLabel("Invite friends")
             
             // Edit Profile Button - Opens ProfileEditView sheet
             Button(action: {
@@ -239,7 +240,7 @@ struct StampsView: View {
                 
                 // Get Started button
                 Button(action: {
-                    showInviteCodeSheet = true
+                    showDirectSignInSheet = true
                 }) {
                     Text("Get Started")
                         .font(.headline)
@@ -487,47 +488,12 @@ struct StampsView: View {
     // MARK: - Signed-out Menu Button
     private var signedOutMenuButton: some View {
         Menu {
-            Button(action: {
-                showAboutStampbook = true
-            }) {
-                Label("About Stampbook", systemImage: "info.circle")
-            }
-            
-            // TODO: Add back later
-            // Button(action: {
-            //     copyAppStoreUrl()
-            // }) {
-            //     Label("Share app", systemImage: "square.and.arrow.up")
-            // }
-            
-            Divider()
-            
-            Button(action: {
-                showForLocalBusiness = true
-            }) {
-                Label("For local business", systemImage: "storefront")
-            }
-            
-            // TODO: Add back later
-            // Button(action: {
-            //     showForCreators = true
-            // }) {
-            //     Label("For creators", systemImage: "sparkles")
-            // }
-            
-            Divider()
-            
-            Button(action: {
-                showProblemReport = true
-            }) {
-                Label("Report a problem", systemImage: "exclamationmark.bubble")
-            }
-            
-            Button(action: {
-                showFeedback = true
-            }) {
-                Label("Send feedback", systemImage: "envelope")
-            }
+            AppMenuContent.commonItems(
+                showAboutStampbook: $showAboutStampbook,
+                showForLocalBusiness: $showForLocalBusiness,
+                showProblemReport: $showProblemReport,
+                showFeedback: $showFeedback
+            )
         } label: {
             Image(systemName: "ellipsis")
                 .font(.system(size: 24))
@@ -712,9 +678,11 @@ struct StampsView: View {
                 .toolbar(.visible, for: .tabBar)
             }
         }
-        .sheet(isPresented: $showInviteCodeSheet) {
-            InviteCodeSheet(isAuthenticated: $authManager.isSignedIn)
-                .environmentObject(authManager)
+        .sheet(isPresented: $showDirectSignInSheet) {
+            NavigationStack {
+                DirectSignInSheet(isAuthenticated: $authManager.isSignedIn)
+                    .environmentObject(authManager)
+            }
         }
         .alert("Sign Out", isPresented: $showSignOutConfirmation) {
             Button("Cancel", role: .cancel) {}

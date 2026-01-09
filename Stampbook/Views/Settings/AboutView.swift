@@ -104,7 +104,7 @@ struct ForLocalBusinessView: View {
         "",
         "I'd love to partner with you to feature your business with its own unique stamp that visitors can collect when they stop by. I'll work with you to design your custom stamp art and write a short description that reflects your style and story.",
         "",
-        "This app is still in its early stages and growing. For now, I'm asking for a **$25 contribution for a 3-month listing** to help fund development and expand its reach. As always, I'd also love to hear any feedback or ideas you might have.",
+        "This app is still in its early stages and growing. If you're interested in getting your business featured, I'd love to hear from you and discuss the details.",
         "",
         "Let's chat!"
     ]

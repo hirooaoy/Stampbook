@@ -44,42 +44,47 @@ struct ProfileSetupPage: View {
             
             // Username Field
             VStack(alignment: .leading, spacing: 8) {
-                TextField("Username", text: $username)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                    .textFieldStyle(.plain)
-                    .font(.body)
-                    .padding()
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color(.systemBackground))
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(shouldShowRedBorder ? Color.red : Color(.systemGray4), lineWidth: 1)
-                    )
-                    .disabled(isSaving)
-                    .onChange(of: username) { oldValue, newValue in
-                        // Clean username: only letters and numbers, max 20 characters
-                        var cleaned = newValue.lowercased().filter { $0.isLetter || $0.isNumber }
-                        
-                        // Limit to 20 characters
-                        if cleaned.count > 20 {
-                            cleaned = String(cleaned.prefix(20))
+                HStack {
+                    Text("@")
+                        .foregroundColor(.secondary)
+                        .font(.body)
+                    TextField("username", text: $username)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .textFieldStyle(.plain)
+                        .font(.body)
+                        .disabled(isSaving)
+                        .onChange(of: username) { oldValue, newValue in
+                            // Clean username: only letters, numbers, and underscores, max 20 characters
+                            var cleaned = newValue.lowercased().filter { $0.isLetter || $0.isNumber || $0 == "_" }
+                            
+                            // Limit to 20 characters
+                            if cleaned.count > 20 {
+                                cleaned = String(cleaned.prefix(20))
+                            }
+                            
+                            if cleaned != newValue {
+                                username = cleaned
+                            }
+                            
+                            // Clear errors when user types
+                            usernameErrorMessage = nil
+                            errorMessage = nil
+                            usernameAvailable = nil
+                            
+                            // Trigger validation
+                            validateUsernameDebounced()
                         }
-                        
-                        if cleaned != newValue {
-                            username = cleaned
-                        }
-                        
-                        // Clear errors when user types
-                        usernameErrorMessage = nil
-                        errorMessage = nil
-                        usernameAvailable = nil
-                        
-                        // Trigger validation
-                        validateUsernameDebounced()
-                    }
+                }
+                .padding()
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color(.systemBackground))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(shouldShowRedBorder ? Color.red : Color(.systemGray4), lineWidth: 1)
+                )
                 
                 // Fixed height container for validation feedback to prevent layout shifts
                 Group {
